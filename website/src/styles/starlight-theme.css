@@ -1,0 +1,135 @@
+/* Maps Starlight's theme variables onto the Ink & Paper site tokens so the
+   docs read as the same publication as the landing page. */
+:root,
+:root[data-theme='light'],
+:root[data-theme='dark'] {
+	--sl-font: var(--font-sans);
+	--sl-color-accent-low: var(--accent-soft);
+	--sl-color-accent: var(--accent);
+	--sl-color-accent-high: var(--accent);
+	--sl-color-text: var(--ink);
+	--sl-color-text-accent: var(--accent);
+	--sl-color-text-invert: var(--paper);
+	--sl-color-bg: var(--paper);
+	--sl-color-bg-nav: var(--paper);
+	--sl-color-bg-sidebar: var(--paper);
+	--sl-color-bg-inline-code: var(--paper-deep);
+	--sl-color-hairline: var(--hairline);
+	--sl-color-hairline-light: var(--hairline);
+	--sl-color-hairline-shade: var(--hairline);
+	--sl-color-white: var(--ink);
+	--sl-color-gray-1: var(--ink-soft);
+	--sl-color-gray-2: var(--ink-soft);
+	--sl-color-gray-3: var(--ink-faint);
+	--sl-color-black: var(--paper);
+	--sl-text-code: 0.875rem;
+}
+
+.site-title {
+	font-family: var(--font-serif);
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.content-panel h1 {
+	font-family: var(--font-serif);
+	font-weight: 600;
+	letter-spacing: -0.005em;
+}
+
+.sl-markdown-content code,
+.sl-markdown-content pre {
+	font-family: var(--font-mono);
+}
+
+/* Starlight already draws the header hairline; an extra .header rule here would
+   also hit the inner nav row and double the line. */
+
+/* Sidebar */
+.sidebar-pane {
+	border-inline-end: 1px solid var(--hairline);
+}
+
+/* Groups stay open as quiet editorial sections; drop the dated disclosure caret. */
+nav.sidebar summary {
+	pointer-events: none;
+	padding-block: 0.25rem;
+}
+
+nav.sidebar summary .caret {
+	display: none;
+}
+
+nav.sidebar .group-label .large {
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--ink-faint);
+}
+
+nav.sidebar a {
+	font-size: 0.875rem;
+	color: var(--ink-soft);
+	border-radius: 2px;
+	padding-block: 0.3rem;
+	transition:
+		color 0.12s ease,
+		background 0.12s ease;
+}
+
+nav.sidebar a:hover {
+	color: var(--ink);
+	background: transparent;
+}
+
+nav.sidebar a[aria-current='page'] {
+	font-weight: 600;
+	color: var(--accent);
+	background: var(--accent-soft);
+	box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Nested item list: a hairline spine instead of Starlight's default. */
+nav.sidebar .top-level ul ul {
+	border-inline-start: 1px solid var(--hairline);
+	margin-inline-start: 0.5rem;
+}
+
+/* ── Pagination (prev / next) ────────────────────────────── */
+.pagination-links a {
+	padding: 0.6rem 0.85rem;
+	border: 1px solid var(--hairline);
+	border-radius: 2px;
+	box-shadow: none;
+	gap: 0.1rem;
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-faint);
+}
+
+.pagination-links a:hover {
+	border-color: var(--ink-faint);
+	color: var(--ink-soft);
+	background: transparent;
+}
+
+.pagination-links svg {
+	display: none;
+}
+
+.pagination-links a .link-title {
+	font-family: var(--font-sans);
+	font-size: 0.95rem;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	text-transform: none;
+	color: var(--ink);
+	margin-top: 0.15rem;
+}
