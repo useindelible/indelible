@@ -1,0 +1,53 @@
+{
+	"name": "indelible-web",
+	"version": "0.1.0",
+	"private": true,
+	"packageManager": "pnpm@9.15.9",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:e2e": "playwright test",
+		"validate": "pnpm check && pnpm lint && pnpm format:check && pnpm test",
+		"api:generate": "cd ../backend && cargo run -p ind-http-api --example export_openapi -- ../web/.openapi.tmp.json && cd ../web && rm -rf src/lib/api/generated && openapi-ts -i .openapi.tmp.json -o src/lib/api/generated && pnpm exec prettier --write 'src/lib/api/generated/**/*.ts' && rm -f .openapi.tmp.json"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.4",
+		"@hey-api/openapi-ts": "^0.94.4",
+		"@playwright/test": "^1.52",
+		"@sveltejs/adapter-static": "^3",
+		"@sveltejs/kit": "^2",
+		"@sveltejs/vite-plugin-svelte": "^5",
+		"@tailwindcss/vite": "^4",
+		"@testing-library/svelte": "^5",
+		"eslint": "^9",
+		"eslint-config-prettier": "^10",
+		"eslint-plugin-svelte": "^3",
+		"eslint-plugin-svelte-runes": "^0.0.11",
+		"globals": "^16",
+		"jsdom": "^26",
+		"prettier": "^3",
+		"prettier-plugin-svelte": "^3",
+		"svelte": "^5",
+		"svelte-check": "^4",
+		"tailwindcss": "^4",
+		"typescript": "^5",
+		"typescript-eslint": "^8",
+		"vite": "^6",
+		"vitest": "^3"
+	},
+	"dependencies": {
+		"dompurify": "^3.4.11",
+		"marked": "^18.0.5",
+		"pdfjs-dist": "^5.6.205"
+	}
+}
