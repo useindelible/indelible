@@ -1,0 +1,153 @@
+---
+import { Image } from 'astro:assets';
+import library from '../assets/screenshots/library.png';
+---
+
+<section class="hero">
+	<div class="wrap">
+		<p class="kicker rise">Save <span>·</span> Read <span>·</span> Forever</p>
+		<h1 class="rise d1">Read it later.<br />Keep it <em>forever.</em></h1>
+		<p class="sub rise d2">
+			Indelible is an open-source read-it-later app and knowledge archiver. Articles,
+			newsletters, and PDFs are archived in full, videos with their transcript included, so your
+			library never rots.
+		</p>
+		<div class="ctas rise d3">
+			<a class="btn btn-fill" href="https://github.com/useindelible/indelible">Self-host on GitHub</a>
+			<span class="btn btn-soon" role="note" aria-label="Indelible Cloud is coming soon"
+				>Indelible Cloud</span
+			>
+		</div>
+	</div>
+</section>
+
+<section class="shot-band">
+	<div class="wrap">
+		<div class="shot">
+			<Image
+				src={library}
+				alt="The Indelible library: saved articles with summaries, metadata, and a reading list"
+				width={1200}
+				densities={[1, 2]}
+				loading="eager"
+			/>
+		</div>
+		<div class="caption" aria-hidden="true">
+			<span>Fig. 01: The Library</span>
+			<span>Everything you save, archived at save time</span>
+		</div>
+	</div>
+</section>
+
+<style>
+	.hero {
+		padding: 110px 0 90px;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.kicker span {
+		color: var(--ink-faint);
+	}
+
+	h1 {
+		margin-top: 28px;
+		font-family: var(--font-serif);
+		font-size: clamp(48px, 7.5vw, 84px);
+		line-height: 1.02;
+		font-weight: 500;
+		letter-spacing: -0.015em;
+		max-width: 14ch;
+	}
+
+	h1 em {
+		font-style: italic;
+		color: var(--accent);
+	}
+
+	.sub {
+		margin-top: 28px;
+		font-size: 19px;
+		line-height: 1.6;
+		color: var(--ink-soft);
+		max-width: 52ch;
+	}
+
+	.ctas {
+		margin-top: 40px;
+		display: flex;
+		gap: 14px;
+	}
+
+	.shot-band {
+		padding: 72px 0;
+		border-bottom: 1px solid var(--hairline);
+		background: var(--paper-deep);
+	}
+
+	.shot {
+		border: 1px solid var(--hairline);
+		box-shadow: var(--shadow-shot);
+	}
+
+	.shot :global(img) {
+		width: 100%;
+		height: auto;
+	}
+
+	.caption {
+		margin-top: 16px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--ink-faint);
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.rise {
+			animation: rise 0.7s ease both;
+		}
+
+		.d1 {
+			animation-delay: 0.08s;
+		}
+
+		.d2 {
+			animation-delay: 0.16s;
+		}
+
+		.d3 {
+			animation-delay: 0.24s;
+		}
+	}
+
+	@keyframes rise {
+		from {
+			opacity: 0;
+			transform: translateY(14px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (max-width: 720px) {
+		.hero {
+			padding: 64px 0 56px;
+		}
+
+		.ctas {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.caption {
+			flex-direction: column;
+			gap: 4px;
+		}
+	}
+</style>

@@ -1,0 +1,139 @@
+# Indelible local trial: http on localhost, for evaluating on your own machine.
+# Not for exposing to a network. See https://useindelible.com/docs/self-hosting/install/
+# for the production compose with TLS.
+#
+#   curl -fsSL https://useindelible.com/quickstart/docker-compose.yml -o docker-compose.yml
+#   curl -fsSL https://useindelible.com/quickstart/env.example -o .env
+#   docker compose up -d
+#
+# Then open http://localhost:38473 and create your account.
+
+x-app-env: &app-env
+  IND_ENV: development
+  DATABASE_URL: postgres://indelible:${POSTGRES_PASSWORD}@postgres:5432/indelible
+  S3_ENDPOINT: http://silo:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: indelible
+  S3_ACCESS_KEY: indelible
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  S3_FORCE_PATH_STYLE: 'true'
+  AUTH_CREDENTIAL_KEY: ${AUTH_CREDENTIAL_KEY}
+  # Development would otherwise default this open. Keep the SSRF guard closed
+  # even for a local trial. Set EGRESS_ALLOW_PRIVATE_TARGETS=true in .env to
+  # reach an AI server running on this machine, which from inside these
+  # containers is http://host.docker.internal:11434, never localhost.
+  EGRESS_ALLOW_PRIVATE_TARGETS: ${EGRESS_ALLOW_PRIVATE_TARGETS:-false}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: indelible
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: indelible
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U indelible -d indelible']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  silo:
+    image: docker.io/pgsty/silo:RELEASE.2026-08-06T00-00-00Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: indelible
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - silodata:/data
+    healthcheck:
+      test: ['CMD', 'silo', 'healthcheck', 'ready']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Creates the bucket once Silo is healthy, then exits.
+  silo-init:
+    image: docker.io/pgsty/silo:RELEASE.2026-08-06T00-00-00Z
+    environment:
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    depends_on:
+      silo:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mcli alias set silo http://silo:9000 indelible ${MINIO_ROOT_PASSWORD} &&
+      mcli mb --ignore-existing silo/indelible
+      "
+
+  renderer:
+    image: ghcr.io/useindelible/ind-renderer:latest
+    init: true
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      RENDERER_HOST: 0.0.0.0
+      RENDERER_PORT: 3100
+    depends_on:
+      silo:
+        condition: service_healthy
+
+  api:
+    image: ghcr.io/useindelible/ind-api:latest
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      IND_HOST: 0.0.0.0
+      IND_PORT: '8080'
+      IND_BASE_URL: http://localhost:38473
+      FRONTEND_URL: http://localhost:38473
+      EXTENSION_REDIRECT_URIS: ${EXTENSION_REDIRECT_URIS:-https://lblngpkieoichinegfhgacmcjbahjbek.chromiumapp.org/indelible,https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible}
+      CORS_ORIGINS: http://localhost:38473
+      JWT_SECRET: ${JWT_SECRET}
+      CSRF_SECRET: ${CSRF_SECRET}
+      ASSET_COOKIE_SECRET: ${ASSET_COOKIE_SECRET}
+      OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_PROVIDER_NAME: ${OIDC_PROVIDER_NAME:-OpenID Connect}
+      OIDC_SCOPES: ${OIDC_SCOPES:-openid,email,profile}
+      OIDC_AUTO_CREATE_USERS: ${OIDC_AUTO_CREATE_USERS:-true}
+    # Resolves an AI or renderer endpoint running on the host machine. The
+    # egress guard still refuses it unless EGRESS_ALLOW_PRIVATE_TARGETS=true.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '38473:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      silo:
+        condition: service_healthy
+      silo-init:
+        condition: service_completed_successfully
+
+  worker:
+    image: ghcr.io/useindelible/ind-worker:latest
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      RENDERER_URL: http://renderer:3100
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      silo:
+        condition: service_healthy
+      renderer:
+        condition: service_started
+      silo-init:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  silodata:

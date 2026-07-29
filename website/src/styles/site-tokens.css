@@ -1,0 +1,37 @@
+/* Ink & Paper design language: single token source for landing and docs.
+   Gradients and violet/indigo/purple hues are barred project-wide. */
+:root {
+	--paper: #faf8f5;
+	--paper-deep: #f1ede6;
+	--ink: #1a1814;
+	--ink-soft: #6b6557;
+	--ink-faint: #a39b8a;
+	--hairline: rgba(26, 24, 20, 0.12);
+	--accent: #0061c2;
+	--accent-soft: rgba(0, 97, 194, 0.08);
+	--on-ink: #faf8f5;
+	--term-bg: #1a1814;
+	--term-text: #faf8f5;
+	--term-prompt: #8db8e8;
+	--shadow-shot: 0 1px 0 rgba(26, 24, 20, 0.04), 0 24px 60px -24px rgba(26, 24, 20, 0.25);
+
+	--font-serif: 'New York', 'Iowan Old Style', Palatino, Georgia, serif;
+	--font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+	--font-mono: 'SF Mono', Menlo, monospace;
+}
+
+[data-theme='dark'] {
+	--paper: #161412;
+	--paper-deep: #1d1a17;
+	--ink: #ece8e1;
+	--ink-soft: #a89f90;
+	--ink-faint: #6e675b;
+	--hairline: rgba(236, 232, 225, 0.14);
+	--accent: #5da7f2;
+	--accent-soft: rgba(93, 167, 242, 0.12);
+	--on-ink: #161412;
+	--term-bg: #0c0b0a;
+	--term-text: #ece8e1;
+	--term-prompt: #5da7f2;
+	--shadow-shot: 0 1px 0 rgba(0, 0, 0, 0.2), 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+}
