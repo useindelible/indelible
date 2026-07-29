@@ -1,0 +1,413 @@
+<script lang="ts">
+	import type { DocumentListEntry, HighlightWithNoteResponse } from '$lib/api';
+	import type { BookSource } from '$lib/components/reader/book/book-source';
+	import PdfScrollView from '$lib/components/reader/book/PdfScrollView.svelte';
+	import type { ViewTab } from '$lib/components/reader/ViewTabs.svelte';
+	import ReaderToolbar from '$lib/components/reader/ReaderToolbar.svelte';
+	import ReaderContent from '$lib/components/reader/ReaderContent.svelte';
+	import HighlightToolbar from '$lib/components/reader/HighlightToolbar.svelte';
+	import OriginalContent from '$lib/components/reader/OriginalContent.svelte';
+	import ScreenshotContent from '$lib/components/reader/ScreenshotContent.svelte';
+	import ReaderFloatingControls from './ReaderFloatingControls.svelte';
+	import TocRail from '$lib/components/reader/toc/TocRail.svelte';
+	import {
+		currentEntryTops,
+		resolveActiveIndex,
+		resolveEntryTargets
+	} from '$lib/components/reader/toc/active-section';
+	import type { ArticleTocEntry } from '$lib/api';
+
+	type FocusState = 'idle' | 'selecting' | 'active' | 'paused' | 'completed';
+	type HighlightCreateInput = {
+		text_content: string;
+		color: string;
+		start_offset: number;
+		end_offset: number;
+	};
+
+	interface Props {
+		documentId: string;
+		item: DocumentListEntry;
+		progress: number;
+		sepiaActive: boolean;
+		hasPrev: boolean;
+		hasNext: boolean;
+		aaButtonEl: HTMLButtonElement | undefined;
+		readerArticleBodyEl: HTMLDivElement | undefined;
+		tocEntries?: ArticleTocEntry[];
+		activeTab: ViewTab;
+		availableTabs: ViewTab[];
+		ttsOpen: boolean;
+		showTypography: boolean;
+		showDetailPanel: boolean;
+		savedToLibrary: boolean;
+		savingToLibrary: boolean;
+		readableReady: boolean;
+		readerPreparationFailed: boolean;
+		showReaderRetry: boolean;
+		readerRetryError: string | null;
+		readerRetryStatus: string | null;
+		readerRetryLabel: string;
+		readerRetryDisabled: boolean;
+		assetUrls: Partial<Record<ViewTab, string>>;
+		readerHtmlContent: string;
+		highlights: HighlightWithNoteResponse[];
+		targetHighlightId: string | null;
+		articlePdfSource: BookSource | null;
+		articlePdfInitialPage: number;
+		focusModeState: FocusState;
+		focusStartProgress: number;
+		focusHighlightsCreated: number;
+		onBack: () => void;
+		onPrev: () => void;
+		onNext: () => void;
+		onAaClick: () => void;
+		onBookmark?: () => void;
+		onSaveToLibrary?: () => void;
+		onDetailPanelToggle: () => void;
+		onMenuClick?: () => void;
+		onTabChange: (tab: ViewTab) => void;
+		onTtsToggle?: () => void;
+		onRetryReader: () => void;
+		onProgressScroll: (percent: number) => void;
+		onArticlePdfProgress: (percent: number, pageIndex: number) => void;
+		onHighlightCreate: (data: HighlightCreateInput) => void;
+		onHighlightDelete: (highlightId: string) => void;
+		onHighlightColorChange: (highlightId: string, color: string) => void;
+		onHighlightTagsChange: (highlightId: string, tags: string[]) => void;
+		onHighlightCreateForTag: (
+			data: HighlightCreateInput & { chapter_id?: string }
+		) => Promise<string | null>;
+		onTypographyClose: () => void;
+		onFocusStart: () => void;
+		onFocusPause: () => void;
+		onFocusResume: () => void;
+		onFocusComplete: () => void;
+		onFocusExit: () => void;
+	}
+
+	let {
+		documentId,
+		item,
+		progress,
+		sepiaActive,
+		hasPrev,
+		hasNext,
+		aaButtonEl = $bindable(),
+		readerArticleBodyEl = $bindable(),
+		tocEntries = [],
+		activeTab,
+		availableTabs,
+		ttsOpen,
+		showTypography,
+		showDetailPanel,
+		savedToLibrary,
+		savingToLibrary,
+		readableReady,
+		readerPreparationFailed,
+		showReaderRetry,
+		readerRetryError,
+		readerRetryStatus,
+		readerRetryLabel,
+		readerRetryDisabled,
+		assetUrls,
+		readerHtmlContent,
+		highlights,
+		targetHighlightId,
+		articlePdfSource,
+		articlePdfInitialPage,
+		focusModeState,
+		focusStartProgress,
+		focusHighlightsCreated,
+		onBack,
+		onPrev,
+		onNext,
+		onAaClick,
+		onBookmark,
+		onSaveToLibrary,
+		onDetailPanelToggle,
+		onMenuClick,
+		onTabChange,
+		onTtsToggle,
+		onRetryReader,
+		onProgressScroll,
+		onArticlePdfProgress,
+		onHighlightCreate,
+		onHighlightDelete,
+		onHighlightColorChange,
+		onHighlightTagsChange,
+		onHighlightCreateForTag,
+		onTypographyClose,
+		onFocusStart,
+		onFocusPause,
+		onFocusResume,
+		onFocusComplete,
+		onFocusExit
+	}: Props = $props();
+
+	let readerScrollEl = $state<HTMLDivElement | undefined>(undefined);
+	let tocActiveIndex = $state(-1);
+	const showToc = $derived(tocEntries.length > 0 && activeTab === 'reader');
+
+	// Active-section tracking: scroll-geometry against the reader's own scroll
+	// container, recomputed per scroll frame. Runs whenever the rail is visible
+	// so the current tick stays lit while reading. Targets are snapshotted per
+	// run, and the article body element outlives its async content — so the
+	// effect must also key on the HTML itself or it caches null targets from
+	// before the article rendered.
+	$effect(() => {
+		const scrollEl = readerScrollEl;
+		const articleBody = readerArticleBodyEl;
+		const html = readerHtmlContent;
+		if (!showToc || !html || !scrollEl || !articleBody || tocEntries.length === 0) return;
+		const targets = resolveEntryTargets(articleBody, tocEntries);
+		let frame = 0;
+		const update = () => {
+			tocActiveIndex = resolveActiveIndex(currentEntryTops(scrollEl, targets), scrollEl.scrollTop);
+		};
+		const onScroll = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(update);
+		};
+		update();
+		scrollEl.addEventListener('scroll', onScroll, { passive: true });
+		return () => {
+			cancelAnimationFrame(frame);
+			scrollEl.removeEventListener('scroll', onScroll);
+		};
+	});
+
+	function handleTocNavigate(entry: ArticleTocEntry) {
+		const scrollEl = readerScrollEl;
+		const articleBody = readerArticleBodyEl;
+		if (!scrollEl || !articleBody) return;
+		const target = resolveEntryTargets(articleBody, [entry])[0];
+		if (!target) return;
+		const top = currentEntryTops(scrollEl, [target])[0];
+		if (top == null) return;
+		scrollEl.scrollTo({ top: Math.max(0, top - 16), behavior: 'smooth' });
+	}
+</script>
+
+<div class="reader-main" class:sepia-bg={sepiaActive}>
+	<ReaderToolbar
+		{item}
+		{progress}
+		{hasPrev}
+		{hasNext}
+		bind:aaButtonEl
+		isFavorite={item.is_favorite}
+		{savedToLibrary}
+		{savingToLibrary}
+		detailPanelOpen={showDetailPanel}
+		{availableTabs}
+		{activeTab}
+		ttsActive={ttsOpen}
+		{onBack}
+		{onPrev}
+		{onNext}
+		{onAaClick}
+		{onBookmark}
+		{onSaveToLibrary}
+		{onDetailPanelToggle}
+		{onMenuClick}
+		{onTabChange}
+		{onTtsToggle}
+	/>
+
+	<div class="reading-progress-bar">
+		<div class="reading-progress-fill" style:width="{progress}%"></div>
+	</div>
+
+	<ReaderFloatingControls
+		{documentId}
+		{activeTab}
+		{readableReady}
+		{ttsOpen}
+		{readerArticleBodyEl}
+		{showTypography}
+		{aaButtonEl}
+		{focusModeState}
+		{focusStartProgress}
+		{progress}
+		{focusHighlightsCreated}
+		{onTypographyClose}
+		{onFocusStart}
+		{onFocusPause}
+		{onFocusResume}
+		{onFocusComplete}
+		{onFocusExit}
+	/>
+
+	<div class="content-area">
+		{#if activeTab === 'reader' && !readableReady}
+			<div class="content-loading" data-testid="preparing-reader">
+				<span class="loading-text">
+					{readerPreparationFailed
+						? 'Readable content could not be prepared.'
+						: 'Preparing readable content...'}
+				</span>
+				{#if showReaderRetry || readerRetryStatus}
+					{#if showReaderRetry}
+						<p class="loading-hint">
+							{readerPreparationFailed
+								? 'The source may be blocking automated access.'
+								: 'This is taking longer than usual.'}
+						</p>
+					{/if}
+					{#if readerRetryError}
+						<p class="loading-hint retry-error">{readerRetryError}</p>
+					{/if}
+					{#if readerRetryStatus}
+						<p class="loading-hint" aria-live="polite">{readerRetryStatus}</p>
+					{/if}
+					<button
+						type="button"
+						class="retry-button"
+						data-testid="reader-retry"
+						disabled={readerRetryDisabled}
+						onclick={onRetryReader}
+					>
+						{readerRetryLabel}
+					</button>
+				{/if}
+			</div>
+		{:else if activeTab === 'reader'}
+			<ReaderContent
+				htmlContent={readerHtmlContent}
+				title={item.title}
+				author={item.author}
+				domain={item.domain}
+				publishedAt={item.published_at}
+				readingTimeMinutes={item.reading_time_minutes}
+				onScroll={onProgressScroll}
+				initialProgress={progress}
+				bind:articleBodyEl={readerArticleBodyEl}
+				bind:scrollEl={readerScrollEl}
+			/>
+			<HighlightToolbar
+				{highlights}
+				htmlContent={readerHtmlContent}
+				{targetHighlightId}
+				articleBodyEl={readerArticleBodyEl}
+				{onHighlightCreate}
+				{onHighlightDelete}
+				{onHighlightColorChange}
+				{onHighlightTagsChange}
+				{onHighlightCreateForTag}
+			/>
+			{#if showToc}
+				<TocRail
+					entries={tocEntries}
+					activeIndex={tocActiveIndex}
+					{progress}
+					onNavigate={handleTocNavigate}
+				/>
+			{/if}
+		{:else if activeTab === 'original' && assetUrls.original}
+			<OriginalContent downloadUrl={assetUrls.original} />
+		{:else if activeTab === 'pdf' && articlePdfSource}
+			<PdfScrollView
+				source={articlePdfSource}
+				{highlights}
+				initialPage={articlePdfInitialPage}
+				onProgress={onArticlePdfProgress}
+			/>
+		{:else if activeTab === 'screenshot' && assetUrls.screenshot}
+			<ScreenshotContent downloadUrl={assetUrls.screenshot} />
+		{:else}
+			<div class="content-loading">
+				<span class="loading-text">Loading content...</span>
+			</div>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.reader-main {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-content);
+		overflow: hidden;
+		position: relative;
+		z-index: 1;
+	}
+
+	.reader-main.sepia-bg {
+		background: var(--reader-sepia-bg);
+	}
+
+	.reading-progress-bar {
+		height: 2px;
+		background: var(--border-primary);
+		position: relative;
+		z-index: 4;
+		flex-shrink: 0;
+	}
+
+	.reading-progress-fill {
+		height: 100%;
+		background: var(--accent);
+		border-radius: 0 1px 1px 0;
+		transition: width 300ms ease;
+	}
+
+	.content-area {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		position: relative;
+	}
+
+	.content-loading {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		height: 100vh;
+	}
+
+	.loading-text {
+		font-size: 14px;
+		color: var(--text-secondary);
+		font-family: var(--font-sans);
+	}
+
+	.loading-hint {
+		font-size: 13px;
+		color: var(--text-tertiary);
+		font-family: var(--font-sans);
+		margin: 0;
+	}
+
+	.retry-error {
+		color: var(--destructive);
+	}
+
+	.retry-button {
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--accent);
+		background: none;
+		border: 1px solid var(--border-primary);
+		border-radius: 980px;
+		padding: 8px 20px;
+		cursor: pointer;
+		font-family: var(--font-sans);
+		transition: background 120ms ease;
+	}
+
+	.retry-button:hover {
+		background: var(--fill-hover);
+	}
+
+	.retry-button:disabled {
+		cursor: default;
+		opacity: 0.6;
+	}
+</style>
