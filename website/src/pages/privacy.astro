@@ -1,0 +1,167 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import '../styles/site-tokens.css';
+import '../styles/landing.css';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Privacy Policy | Indelible</title>
+		<meta
+			name="description"
+			content="Privacy policy for the Indelible website, browser extension, and mobile apps."
+		/>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<script is:inline>
+			// Reuse Starlight's persisted choice so landing and docs agree on theme.
+			const stored = localStorage.getItem('starlight-theme');
+			document.documentElement.dataset.theme =
+				stored === 'light' || stored === 'dark'
+					? stored
+					: matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+		</script>
+	</head>
+	<body>
+		<SiteHeader />
+		<main class="wrap policy">
+			<h1>Privacy Policy</h1>
+			<p class="meta">Effective July 29, 2026</p>
+
+			<p>
+				This policy covers the useindelible.com website, the Indelible browser extension, and
+				the Indelible mobile apps, all maintained by CoreAxel.
+			</p>
+
+			<h2>The short version</h2>
+			<p>
+				Indelible is self-hosted software. We do not operate servers that receive, store, or
+				process your content. Everything you save with Indelible goes to a server that you run
+				and control. We collect nothing.
+			</p>
+
+			<h2>This website</h2>
+			<p>
+				useindelible.com is a static site. It uses no analytics, no advertising, no tracking
+				cookies, and no third-party scripts. The site is served by Cloudflare, which may keep
+				standard request logs for delivery and security purposes under
+				<a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a>.
+			</p>
+
+			<h2>Browser extension</h2>
+			<p>
+				The extension connects to one server: the Indelible instance whose address you enter in
+				its settings. It sends nothing to us or to any other third party.
+			</p>
+			<ul>
+				<li>
+					<strong>Stored on your device:</strong> your server address and an API token, kept in
+					your browser's extension storage. Both are removed when you uninstall the extension.
+				</li>
+				<li>
+					<strong>Sent to your server:</strong> when you choose to save a page, the extension
+					sends that page's URL, title, and captured content to your configured instance.
+					Nothing is captured or transmitted until you act.
+				</li>
+				<li>
+					<strong>Permissions:</strong> reading the active tab and running the capture script
+					are needed to snapshot the page you save, the context menu adds a right-click save
+					action, and storage holds your settings. None of these are used for tracking.
+				</li>
+			</ul>
+
+			<h2>Mobile apps</h2>
+			<p>
+				The Android and iOS apps follow the same model. Your credentials are stored on your
+				device, and your library syncs only with the server address you configure. The apps
+				contain no analytics or advertising SDKs.
+			</p>
+
+			<h2>Your self-hosted server</h2>
+			<p>
+				Content you save lives on infrastructure you control. Some optional features contact
+				external services, and only when you configure them: the Mila assistant sends document
+				content to the AI provider you supply credentials for, email ingestion uses the email
+				domain you set up, and integrations such as Notion connect to accounts you link. If you
+				never configure them, no external service is contacted.
+			</p>
+
+			<h2>Data retention and deletion</h2>
+			<p>
+				Retention is entirely under your control. Deleting an item, or your whole instance,
+				removes it from your server. We hold no copy to delete.
+			</p>
+
+			<h2>Changes and contact</h2>
+			<p>
+				Changes to this policy are published on this page with an updated effective date.
+				Questions are welcome on
+				<a href="https://github.com/useindelible/indelible">GitHub</a>.
+			</p>
+		</main>
+		<SiteFooter />
+	</body>
+</html>
+
+<style>
+	.policy {
+		max-width: 720px;
+		padding-top: 64px;
+		padding-bottom: 96px;
+	}
+
+	.policy h1 {
+		font-family: var(--font-serif);
+		font-size: 40px;
+		font-weight: 500;
+		margin-bottom: 8px;
+	}
+
+	.policy .meta {
+		font-family: var(--font-mono);
+		font-size: 13px;
+		color: var(--ink-faint);
+		margin-bottom: 40px;
+	}
+
+	.policy h2 {
+		font-family: var(--font-serif);
+		font-size: 24px;
+		font-weight: 500;
+		margin: 40px 0 12px;
+	}
+
+	.policy p,
+	.policy li {
+		font-size: 15px;
+		line-height: 1.7;
+		color: var(--ink-soft);
+	}
+
+	.policy p + p {
+		margin-top: 12px;
+	}
+
+	.policy ul {
+		padding-left: 20px;
+		display: grid;
+		gap: 10px;
+		margin-top: 12px;
+	}
+
+	.policy strong {
+		color: var(--ink);
+		font-weight: 600;
+	}
+
+	.policy a {
+		color: var(--ink);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+</style>

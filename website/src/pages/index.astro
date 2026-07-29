@@ -1,0 +1,44 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+import Hero from '../components/Hero.astro';
+import Features from '../components/Features.astro';
+import DeploymentSplit from '../components/DeploymentSplit.astro';
+import OpenSource from '../components/OpenSource.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import '../styles/site-tokens.css';
+import '../styles/landing.css';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Indelible: Read it later. Keep it forever.</title>
+		<meta
+			name="description"
+			content="Open-source read-it-later and knowledge archiver. Everything you save is captured in full, so your library never rots."
+		/>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<script is:inline>
+			// Reuse Starlight's persisted choice so landing and docs agree on theme.
+			const stored = localStorage.getItem('starlight-theme');
+			document.documentElement.dataset.theme =
+				stored === 'light' || stored === 'dark'
+					? stored
+					: matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light';
+		</script>
+	</head>
+	<body>
+		<SiteHeader />
+		<main>
+			<Hero />
+			<Features />
+			<DeploymentSplit />
+			<OpenSource />
+		</main>
+		<SiteFooter />
+	</body>
+</html>
