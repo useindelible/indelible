@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO oauth_identities (id, user_id, provider, provider_user_id, provider_email, access_token_enc, refresh_token_enc, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, user_id, provider, provider_user_id, provider_email, access_token_enc, refresh_token_enc, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "provider_user_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "provider_email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "access_token_enc",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 6,
+        "name": "refresh_token_enc",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "b16ca88cf558c40b86479e5cc8c732f891c546d253dcd66cdf9befb111aac1fb"
+}

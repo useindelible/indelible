@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM feed_deliveries\n            WHERE dismissed_at IS NULL\n              AND seen_at IS NOT NULL\n              AND seen_at < now() - ($1::int * interval '1 day')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3b4b793376d303fdf97d9c29a96e780a3b3a8eaff743737d4ac64d7eca2b2a4d"
+}

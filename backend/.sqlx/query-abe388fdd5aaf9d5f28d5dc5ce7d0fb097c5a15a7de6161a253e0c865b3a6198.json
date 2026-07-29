@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(DISTINCT cv.document_id) AS \"count!\"\n            FROM content_vectors cv\n            WHERE cv.user_id = $1\n              AND cv.embedding_model = $2\n              AND cv.embedding_dim = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "abe388fdd5aaf9d5f28d5dc5ce7d0fb097c5a15a7de6161a253e0c865b3a6198"
+}

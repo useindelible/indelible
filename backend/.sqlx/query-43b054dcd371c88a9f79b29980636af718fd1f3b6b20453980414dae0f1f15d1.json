@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) FILTER (WHERE replayed_at IS NULL)::BIGINT AS \"unresolved!\", COUNT(*) FILTER (WHERE replayed_at IS NOT NULL)::BIGINT AS \"replayed!\", COUNT(DISTINCT original_job_type) FILTER (WHERE replayed_at IS NULL)::BIGINT AS \"distinct_unresolved_job_types!\", MIN(failed_at) FILTER (WHERE replayed_at IS NULL) AS oldest_unresolved_failed_at, MAX(failed_at) FILTER (WHERE replayed_at IS NULL) AS newest_unresolved_failed_at FROM dead_letter_jobs",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "unresolved!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "replayed!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "distinct_unresolved_job_types!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "oldest_unresolved_failed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "newest_unresolved_failed_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "43b054dcd371c88a9f79b29980636af718fd1f3b6b20453980414dae0f1f15d1"
+}

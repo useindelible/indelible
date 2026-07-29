@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO search_documents (\n                id, document_id, user_id, document_kind, section_key,\n                section_title, title, body_text, highlight_text, metadata_text,\n                search_config, saved_at, updated_at\n            )\n            VALUES (\n                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ($11::text)::regconfig, $12, $13\n            )\n            ON CONFLICT (document_id, section_key) WHERE document_id IS NOT NULL DO UPDATE SET\n                user_id = EXCLUDED.user_id,\n                document_kind = EXCLUDED.document_kind,\n                section_title = EXCLUDED.section_title,\n                title = EXCLUDED.title,\n                body_text = EXCLUDED.body_text,\n                highlight_text = EXCLUDED.highlight_text,\n                metadata_text = EXCLUDED.metadata_text,\n                search_config = EXCLUDED.search_config,\n                saved_at = EXCLUDED.saved_at,\n                updated_at = EXCLUDED.updated_at\n            RETURNING\n                id,\n                document_id AS \"document_id!\",\n                user_id,\n                document_kind,\n                section_key,\n                section_title,\n                title,\n                body_text,\n                highlight_text,\n                metadata_text,\n                search_config::text AS \"search_config!\",\n                saved_at,\n                updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "document_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "section_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "section_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "body_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "highlight_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "metadata_text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "search_config!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "saved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "5e4b66d7525705bc5dd5d9e53f10aebb922a898c8ad8284cb493eedc4ca6fe83"
+}

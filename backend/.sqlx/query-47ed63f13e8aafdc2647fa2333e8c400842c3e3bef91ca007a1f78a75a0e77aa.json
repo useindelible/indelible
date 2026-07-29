@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT es.list_id AS \"list_id!\"\n            FROM email_senders es\n            JOIN documents d ON d.sender_id = es.id AND d.user_id = $1\n            WHERE es.user_id = $1\n              AND es.list_id IS NOT NULL\n              AND lower(es.list_id) LIKE $2\n            GROUP BY es.list_id\n            ORDER BY count(d.id) DESC, lower(es.list_id)\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "list_id!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "47ed63f13e8aafdc2647fa2333e8c400842c3e3bef91ca007a1f78a75a0e77aa"
+}

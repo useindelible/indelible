@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM tag_aliases WHERE tag_id = ANY($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2fea53c77c25bb28608ebe0aaf4018276969d2c56ccd6e07d1114d2277d39f64"
+}

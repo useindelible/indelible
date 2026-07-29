@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                cv.id AS chunk_id,\n                cv.document_id AS document_id,\n                d.title AS item_title,\n                cv.content AS snippet,\n                (1.0 - (cv.embedding <=> ($2::text)::vector)) AS \"final_score!\",\n                d.document_type AS item_type,\n                COALESCE(d.canonical_url, d.original_url) AS url,\n                COALESCE(le.saved_at, d.created_at) AS \"saved_at!\",\n                d.updated_at,\n                CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_kind END AS section_kind,\n                CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_key END AS section_key,\n                NULL::text AS section_title\n            FROM content_vectors cv\n            JOIN documents d ON d.id = cv.document_id AND d.user_id = $1\n            LEFT JOIN library_entries le\n                ON le.document_id = d.id AND le.user_id = $1 AND le.deleted_at IS NULL\n            WHERE cv.user_id = $1\n              AND cv.document_id = $5\n              AND cv.embedding_model = $6\n              AND cv.embedding_dim = $7\n              AND ($3::text IS NULL OR cv.section_kind = $3)\n            ORDER BY\n                cv.embedding <=> ($2::text)::vector ASC,\n                COALESCE(le.saved_at, d.created_at) DESC,\n                cv.document_id DESC,\n                COALESCE(cv.section_key, '') DESC,\n                cv.chunk_index ASC\n            LIMIT $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chunk_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "item_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "snippet",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "final_score!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "item_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "saved_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "section_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "section_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "section_title",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8",
+        "Uuid",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "bf77f904fd01678f9203a5d9725bdee3b2290af32de05f342c60dcb3a3332e49"
+}

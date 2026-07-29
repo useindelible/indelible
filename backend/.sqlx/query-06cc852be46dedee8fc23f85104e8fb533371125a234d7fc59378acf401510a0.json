@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT d.author AS \"author!\"\n            FROM documents d\n            WHERE d.user_id = $1\n              AND d.author IS NOT NULL\n              AND d.author <> ''\n              AND lower(d.author) LIKE $2\n            GROUP BY d.author\n            ORDER BY count(*) DESC, lower(d.author)\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "author!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "06cc852be46dedee8fc23f85104e8fb533371125a234d7fc59378acf401510a0"
+}

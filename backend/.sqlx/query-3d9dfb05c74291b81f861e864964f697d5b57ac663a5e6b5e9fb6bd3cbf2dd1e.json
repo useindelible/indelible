@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM feed_subscriptions WHERE id = $1 AND user_id = $2 RETURNING source_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "source_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3d9dfb05c74291b81f861e864964f697d5b57ac663a5e6b5e9fb6bd3cbf2dd1e"
+}

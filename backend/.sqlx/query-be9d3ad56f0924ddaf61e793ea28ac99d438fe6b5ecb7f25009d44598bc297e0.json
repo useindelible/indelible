@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT recovery_attempts, next_retry_at FROM background_job_recoveries WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "recovery_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "next_retry_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "be9d3ad56f0924ddaf61e793ea28ac99d438fe6b5ecb7f25009d44598bc297e0"
+}

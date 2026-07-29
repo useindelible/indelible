@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM feed_sources WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM feed_subscriptions WHERE source_id = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4fe4c203594d692b46bc72b58392bdf6de8bdea7525fe896e3956b5b628b98d6"
+}

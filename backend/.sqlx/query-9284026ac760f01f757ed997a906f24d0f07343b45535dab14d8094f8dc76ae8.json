@@ -1,0 +1,39 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT le.id AS \"library_entry_id!\",\n                      le.document_id AS \"document_id!\",\n                      le.saved_at AS \"saved_at!\"\n               FROM library_entries le\n               JOIN documents d ON d.id = le.document_id\n               LEFT JOIN notion_export_item_selection s\n                 ON s.connection_id = $2 AND s.library_entry_id = le.id\n               LEFT JOIN integration_export_cursor c\n                 ON c.connection_id = $2 AND c.library_entry_id = le.id\n               WHERE le.user_id = $1\n                 AND le.deleted_at IS NULL\n                 AND (NOT $3 OR COALESCE(s.selected, true) = true)\n                 AND (c.last_synced_at IS NULL\n                      OR c.last_synced_at < GREATEST(\n                          COALESCE(d.updated_at, '-infinity'::timestamptz),\n                          COALESCE(le.updated_at, '-infinity'::timestamptz)\n                      )\n                      OR EXISTS (\n                          SELECT 1\n                          FROM highlights h\n                          WHERE h.document_id = d.id\n                            AND h.user_id = d.user_id\n                            AND (\n                                c.last_exported_highlight_created_at IS NULL\n                                OR h.created_at > c.last_exported_highlight_created_at\n                                OR (\n                                    h.created_at = c.last_exported_highlight_created_at\n                                    AND h.id > c.last_exported_highlight_id\n                                )\n                            )\n                      ))\n                 AND ($4::timestamptz IS NULL\n                      OR le.saved_at > $4\n                      OR (le.saved_at = $4 AND le.id > $5))\n               ORDER BY le.saved_at ASC, le.id ASC\n               LIMIT $6",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "library_entry_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "saved_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "Timestamptz",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9284026ac760f01f757ed997a906f24d0f07343b45535dab14d8094f8dc76ae8"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE apalis.jobs SET run_at = now() + make_interval(secs => $1::double precision) WHERE id = $2 AND lock_by = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Float8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc72fad248fca8c60cc5a37af13ac23ccbc845da68708b4e42e8a43223ebec37"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO tts_element_timings (\n                chunk_record_id, element_index, start_timestamp, end_timestamp\n            )\n            SELECT * FROM UNNEST($1::uuid[], $2::int4[], $3::float8[], $4::float8[])\n            ON CONFLICT (chunk_record_id, element_index) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Int4Array",
+        "Float8Array",
+        "Float8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "03407ac52f013a2035ba61a78c417031aabcab0cf6d356822106af64dd14bced"
+}

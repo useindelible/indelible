@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE import_jobs\n               SET status = $2, finished_at = now(), error = $3\n               WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "33c3220272cc8092617320f5bbdb3bce6e34d32af9eb06dd28c8f6433885c8e5"
+}

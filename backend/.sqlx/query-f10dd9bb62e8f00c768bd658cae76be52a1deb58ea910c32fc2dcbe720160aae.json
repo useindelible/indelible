@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_source_entries SET canonical_url = $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f10dd9bb62e8f00c768bd658cae76be52a1deb58ea910c32fc2dcbe720160aae"
+}

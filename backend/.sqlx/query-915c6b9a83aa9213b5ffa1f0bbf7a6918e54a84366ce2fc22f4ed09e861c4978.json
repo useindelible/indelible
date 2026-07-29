@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(DISTINCT cv.document_id) AS \"count!\"\n            FROM content_vectors cv\n            WHERE cv.user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "915c6b9a83aa9213b5ffa1f0bbf7a6918e54a84366ce2fc22f4ed09e861c4978"
+}

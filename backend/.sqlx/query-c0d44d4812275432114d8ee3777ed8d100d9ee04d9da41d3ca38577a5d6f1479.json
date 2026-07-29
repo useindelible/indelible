@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.name\n               FROM library_entry_tags let\n               JOIN tags t ON t.id = let.tag_id\n               WHERE let.library_entry_id = $1\n               ORDER BY t.name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c0d44d4812275432114d8ee3777ed8d100d9ee04d9da41d3ca38577a5d6f1479"
+}

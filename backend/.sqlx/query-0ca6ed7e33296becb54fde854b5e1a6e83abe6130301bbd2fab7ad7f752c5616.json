@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_document_state (user_id, document_id, progress_percent, max_progress_percent, finished_at, chapter_locator, chapter_offset, last_read_at, created_at, updated_at) SELECT $1, $2, $3, $3, CASE WHEN $3 >= 100 THEN now() END, $4, $5, now(), now(), now() FROM documents d WHERE d.id = $2 AND d.user_id = $1 ON CONFLICT (user_id, document_id) DO UPDATE SET progress_percent = EXCLUDED.progress_percent, max_progress_percent = GREATEST(user_document_state.max_progress_percent, EXCLUDED.max_progress_percent), finished_at = CASE WHEN GREATEST(COALESCE(user_document_state.max_progress_percent, 0), EXCLUDED.max_progress_percent) >= 100 THEN COALESCE(user_document_state.finished_at, now()) ELSE user_document_state.finished_at END, chapter_locator = COALESCE(EXCLUDED.chapter_locator, user_document_state.chapter_locator), chapter_offset = COALESCE(EXCLUDED.chapter_offset, user_document_state.chapter_offset), last_read_at = now(), updated_at = now() RETURNING user_id, document_id, progress_percent, max_progress_percent, scroll_position AS \"scroll_position?: serde_json::Value\", chapter_locator, chapter_offset, last_read_at, finished_at, first_opened_at, last_opened_at, created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "progress_percent",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "max_progress_percent",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "scroll_position?: serde_json::Value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "chapter_locator",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "chapter_offset",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "last_read_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "finished_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "first_opened_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "last_opened_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "0ca6ed7e33296becb54fde854b5e1a6e83abe6130301bbd2fab7ad7f752c5616"
+}

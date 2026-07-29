@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\"\n               FROM integration_connections ic\n               JOIN library_entries le ON le.user_id = ic.user_id AND le.deleted_at IS NULL\n               JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id\n               WHERE ic.id = $1\n                 AND ic.user_id = $2\n                 AND ic.provider = 'notion'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "8aafc457f335084c537a060bba929475e9bb61caddff1974ee281e6e7af01eb7"
+}

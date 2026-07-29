@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, created_at\n            FROM documents\n            WHERE (\n                    $1::timestamptz IS NULL\n                    OR created_at < $1\n                    OR (created_at = $1 AND id < $2)\n              )\n            ORDER BY created_at DESC, id DESC\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f8b59374e7bf23fe6eac2a5004220427b69c06f8c66e47484d7bdd334aea0a1b"
+}

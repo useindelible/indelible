@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH item_entity_mentions AS (\n                SELECT entity_id, mention_count\n                FROM entity_mentions\n                WHERE document_id = $2\n            ),\n            entity_stats AS (\n                SELECT\n                    e.id,\n                    e.user_id,\n                    e.name,\n                    e.entity_type,\n                    e.description,\n                    e.created_at,\n                    COALESCE(SUM(em.mention_count), 0)::int8 AS total_mentions,\n                    COUNT(DISTINCT em.document_id)::int8 AS item_count,\n                    COALESCE(MIN(em.first_seen_at), e.created_at) AS first_seen_at,\n                    COALESCE(MAX(le.saved_at), e.created_at) AS last_seen_at\n                FROM entities e\n                JOIN item_entity_mentions iem ON iem.entity_id = e.id\n                LEFT JOIN entity_mentions em ON em.entity_id = e.id\n                LEFT JOIN library_entries le\n                    ON le.document_id = em.document_id AND le.user_id = e.user_id AND le.deleted_at IS NULL\n                WHERE e.user_id = $1\n                GROUP BY e.id, e.user_id, e.name, e.entity_type, e.description, e.created_at\n            )\n            SELECT\n                es.id AS \"id!\",\n                es.user_id AS \"user_id!\",\n                es.name AS \"name!\",\n                es.entity_type AS \"entity_type!\",\n                es.description,\n                es.created_at AS \"created_at!\",\n                es.total_mentions AS \"total_mentions!\",\n                es.item_count AS \"item_count!\",\n                es.first_seen_at AS \"first_seen_at!\",\n                es.last_seen_at AS \"last_seen_at!\"\n            FROM entity_stats es\n            JOIN item_entity_mentions iem ON iem.entity_id = es.id\n            ORDER BY iem.mention_count DESC, lower(es.name) ASC\n            LIMIT 100\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "entity_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "total_mentions!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "item_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "first_seen_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "last_seen_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a20ab4127ef9d775e1af614d10c4b878a6c7c4f9e66d37c8f763cb3c779d29b4"
+}

@@ -1,0 +1,89 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE library_entries SET deleted_at = NULL, saved_at = now(), updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING id, user_id, document_id, saved_at, triage_state, is_favorite, is_shortlisted, deleted_at, source, source_delivery_id, created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "saved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "triage_state",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_favorite",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_shortlisted",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "deleted_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "source_delivery_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "36e02efde12e2806706d8d1ab61e04fd47aa308c5a46d806f14c92de927c124d"
+}

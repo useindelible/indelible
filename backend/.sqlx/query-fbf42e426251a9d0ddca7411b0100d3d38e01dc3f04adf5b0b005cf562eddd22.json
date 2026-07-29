@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM highlight_notes WHERE highlight_id = $1 AND EXISTS (SELECT 1 FROM highlights WHERE id = $1 AND user_id = $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fbf42e426251a9d0ddca7411b0100d3d38e01dc3f04adf5b0b005cf562eddd22"
+}

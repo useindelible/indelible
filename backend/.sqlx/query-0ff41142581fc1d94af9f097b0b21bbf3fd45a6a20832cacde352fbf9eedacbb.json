@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO projector_cursors (projector_name, updated_at) VALUES ('webhook_projector', $1) ON CONFLICT (projector_name) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0ff41142581fc1d94af9f097b0b21bbf3fd45a6a20832cacde352fbf9eedacbb"
+}

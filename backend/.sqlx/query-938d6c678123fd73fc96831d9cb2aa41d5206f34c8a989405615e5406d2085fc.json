@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE obsidian_export_runs\n               SET status = 'failed',\n                   error = $2,\n                   updated_at = now(),\n                   finished_at = now()\n               WHERE id = $1 AND status = 'running'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "938d6c678123fd73fc96831d9cb2aa41d5206f34c8a989405615e5406d2085fc"
+}

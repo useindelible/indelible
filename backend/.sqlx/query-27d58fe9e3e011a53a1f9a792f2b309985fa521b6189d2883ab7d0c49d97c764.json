@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, document_id AS \"document_id!\", asset_kind, s3_key, s3_bucket, content_type, size_bytes, status, failed_reason, created_at FROM archive_assets WHERE document_id = $1 AND asset_kind = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "asset_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "s3_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "s3_bucket",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "size_bytes",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "failed_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "27d58fe9e3e011a53a1f9a792f2b309985fa521b6189d2883ab7d0c49d97c764"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT le.document_id\n            FROM entity_mentions em\n            JOIN library_entries le\n                ON le.document_id = em.document_id AND le.user_id = $2 AND le.deleted_at IS NULL\n            WHERE em.entity_id = $1\n              AND em.document_id IS NOT NULL\n            ORDER BY le.saved_at DESC, le.document_id DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "document_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f53987fca3a7227f0fdd9a8a64bd5172714ed6a804399ef706c9ad80e348b666"
+}

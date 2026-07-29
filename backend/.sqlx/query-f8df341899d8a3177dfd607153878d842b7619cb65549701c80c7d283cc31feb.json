@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notification_preferences (user_id, daily_review_reminder_enabled, daily_review_reminder_time, weekly_digest_enabled, new_highlights_sync, feed_updates, marketing_emails, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_id) DO UPDATE SET daily_review_reminder_enabled = EXCLUDED.daily_review_reminder_enabled, daily_review_reminder_time = EXCLUDED.daily_review_reminder_time, weekly_digest_enabled = EXCLUDED.weekly_digest_enabled, new_highlights_sync = EXCLUDED.new_highlights_sync, feed_updates = EXCLUDED.feed_updates, marketing_emails = EXCLUDED.marketing_emails, updated_at = EXCLUDED.updated_at RETURNING user_id, daily_review_reminder_enabled, daily_review_reminder_time, weekly_digest_enabled, new_highlights_sync, feed_updates, marketing_emails, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "daily_review_reminder_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "daily_review_reminder_time",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "weekly_digest_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_highlights_sync",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "feed_updates",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "marketing_emails",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Text",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f8df341899d8a3177dfd607153878d842b7619cb65549701c80c7d283cc31feb"
+}

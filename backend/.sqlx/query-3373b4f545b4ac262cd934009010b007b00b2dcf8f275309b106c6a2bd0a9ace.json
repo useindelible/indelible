@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO job_outbox (id, job_type, payload, dedupe_key, available_at, created_at)\n            VALUES ($1, 'email.unsubscribe', $2, $3, $4, $5)\n            ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE\n                SET payload = EXCLUDED.payload,\n                    available_at = CASE\n                        WHEN job_outbox.dispatched_at IS NULL\n                            THEN LEAST(job_outbox.available_at, EXCLUDED.available_at)\n                        ELSE EXCLUDED.available_at\n                    END,\n                    dispatched_at = NULL\n            RETURNING id, job_type, payload, dedupe_key, available_at, dispatched_at, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "job_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "dedupe_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "available_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "dispatched_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "3373b4f545b4ac262cd934009010b007b00b2dcf8f275309b106c6a2bd0a9ace"
+}

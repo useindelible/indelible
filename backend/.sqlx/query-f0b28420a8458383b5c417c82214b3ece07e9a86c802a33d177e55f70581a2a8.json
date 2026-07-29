@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_connections\n               SET config = $4, updated_at = now(), version = version + 1\n               WHERE id = $1 AND user_id = $2 AND version = $3\n               RETURNING version",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f0b28420a8458383b5c417c82214b3ece07e9a86c802a33d177e55f70581a2a8"
+}

@@ -1,0 +1,43 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT sc.session_id, sc.chunk_id, sc.chunk_record_id, sc.position\n            FROM tts_session_chunks sc\n            INNER JOIN tts_sessions s ON s.id = sc.session_id\n            WHERE sc.session_id = $1\n              AND sc.chunk_id = $2\n              AND s.user_id = $3\n              AND s.document_id = $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "session_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "chunk_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "chunk_record_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "position",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4c9d58f7f2ee88418b8bf81441661600a04a50d9cd0596baca23d8f5b8b37e96"
+}

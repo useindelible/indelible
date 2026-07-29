@@ -1,0 +1,176 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT fd.id, fd.user_id, fd.subscription_id, fd.source_id, fd.source_entry_id, fd.document_id, fd.delivered_at, fd.seen_at, fd.dismissed_at, fd.hidden_at, fd.created_at, fd.updated_at, fse.title AS entry_title, fse.url AS entry_url, fse.author AS entry_author, fse.excerpt AS entry_excerpt, fse.published_at AS entry_published_at, fse.lead_image_url AS entry_lead_image_url, d.document_type AS \"doc_document_type?\", d.title AS \"doc_title?\", d.canonical_url AS \"doc_canonical_url?\", d.author AS \"doc_author?\", d.excerpt AS \"doc_excerpt?\", d.lead_image_url AS \"doc_lead_image_url?\", d.thumbnail_url AS \"doc_thumbnail_url?\", (le.id IS NOT NULL) AS \"saved!\" FROM feed_deliveries fd JOIN feed_source_entries fse ON fse.id = fd.source_entry_id LEFT JOIN documents d ON d.id = fd.document_id AND d.user_id = fd.user_id LEFT JOIN library_entries le ON le.user_id = fd.user_id AND le.document_id = d.id AND le.deleted_at IS NULL WHERE fd.user_id = $1 AND fd.seen_at IS NOT NULL AND fd.dismissed_at IS NULL AND fd.hidden_at IS NULL AND le.id IS NULL AND ($2::uuid IS NULL OR fd.subscription_id = $2) AND ($3::timestamptz IS NULL OR (fd.seen_at, fd.id) < ($3, $4)) ORDER BY fd.seen_at DESC, fd.id DESC LIMIT $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "subscription_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "source_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "source_entry_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "delivered_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "seen_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "dismissed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "hidden_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "entry_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "entry_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "entry_author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "entry_excerpt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "entry_published_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "entry_lead_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
+        "name": "doc_document_type?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "doc_title?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "doc_canonical_url?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
+        "name": "doc_author?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "doc_excerpt?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 23,
+        "name": "doc_lead_image_url?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 24,
+        "name": "doc_thumbnail_url?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 25,
+        "name": "saved!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "0baee012c37a83f77412ae08b3adc18b116e47b19a64bc11ada5e384d6cac00c"
+}

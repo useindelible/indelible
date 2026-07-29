@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT parent_folder_deleted, force_item_ids\n               FROM obsidian_export_runs\n               WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "parent_folder_deleted",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "force_item_ids",
+        "type_info": "UuidArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3ab8bf27357d851f6ff7a8065e74953e781a890e270535860ff082fb75573205"
+}

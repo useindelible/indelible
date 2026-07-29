@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM feed_source_entries fse\n            WHERE fse.discovered_at < now() - ($1::int * interval '1 day')\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM feed_deliveries fd\n                  WHERE fd.source_entry_id = fse.id\n              )\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM document_origins origin\n                  WHERE origin.origin_type = 'feed_source_entry'\n                    AND origin.origin_id = fse.id\n              )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "455960e7c1f387b3b53e6286b571f8c711d056f95ad62760c4fff5736e624b43"
+}

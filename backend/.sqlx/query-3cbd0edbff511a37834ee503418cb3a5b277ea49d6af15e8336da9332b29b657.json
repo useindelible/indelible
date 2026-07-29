@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO job_outbox (id, job_type, payload, dedupe_key, available_at, created_at) VALUES ($1, 'webhook.deliver', $2, $3, $4, $4) ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3cbd0edbff511a37834ee503418cb3a5b277ea49d6af15e8336da9332b29b657"
+}

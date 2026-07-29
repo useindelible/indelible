@@ -1,0 +1,38 @@
+[package]
+name = "ind-ingest"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+url = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+ind-html = { workspace = true }
+ind-egress = { workspace = true }
+chrono = { workspace = true }
+bytes = { workspace = true }
+zip = { workspace = true }
+infer = { workspace = true }
+image = { workspace = true }
+pdf_oxide = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+quick-xml = { workspace = true }
+base64 = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true }
+feed-rs = { workspace = true }
+scraper = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[lints]
+workspace = true

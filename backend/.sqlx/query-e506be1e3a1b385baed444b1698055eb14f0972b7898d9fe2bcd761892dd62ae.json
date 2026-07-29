@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO obsidian_export_runs\n               (id, connection_id, user_id, status, requested_by_user, auto,\n                parent_folder_deleted, force_item_ids, created_at, updated_at)\n               VALUES ($1, $2, $3, 'pending', $4, $5, $6, $7, now(), now())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Bool",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e506be1e3a1b385baed444b1698055eb14f0972b7898d9fe2bcd761892dd62ae"
+}

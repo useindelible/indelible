@@ -1,0 +1,39 @@
+[package]
+name = "ind-integrations"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+ind-auth = { workspace = true }
+ind-html = { workspace = true }
+ind-egress = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true, features = ["stream"] }
+futures = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+http = { workspace = true }
+uuid = { workspace = true }
+svix = { workspace = true }
+url = { workspace = true }
+tokio = { workspace = true }
+minijinja = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+percent-encoding = { workspace = true }
+ammonia = { workspace = true }
+scraper = { workspace = true }
+
+[dev-dependencies]
+wiremock = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+
+[lints]
+workspace = true

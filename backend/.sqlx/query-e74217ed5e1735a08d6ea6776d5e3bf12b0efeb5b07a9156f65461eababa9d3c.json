@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT EXISTS (\n                SELECT 1\n                FROM job_outbox jo\n                JOIN documents d ON (jo.payload ->> 'document_id') = ('doc_' || d.id::text)\n                WHERE jo.job_type = 'document.ai.embed'\n                  AND jo.dispatched_at IS NULL\n                  AND d.user_id = $1\n            ) AS \"has_pending!\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "has_pending!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e74217ed5e1735a08d6ea6776d5e3bf12b0efeb5b07a9156f65461eababa9d3c"
+}

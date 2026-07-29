@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE oauth_flows SET used_at = now() WHERE state_hash = $1 AND provider = $2 AND flow_kind = $3 AND used_at IS NULL AND expires_at > now() RETURNING sealed_flow",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "sealed_flow",
+        "type_info": "Bytea"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1b855bb460240cfc4be6cf45b402b2a2b4c6bf0ec22f3dda005c54295791596a"
+}
