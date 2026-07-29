@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<!-- Self-hosted servers on LAN addresses cannot obtain public TLS certificates;
+	     the app gates every plain-http remote server behind an explicit
+	     unencrypted-connection confirmation (ConnectServerScreen). -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.useindelible.app.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.useindelible.app</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext (HTTP) is permitted because self-hosted instances commonly run on
+  LAN addresses that can never obtain a public TLS certificate. The app itself
+  gates every plain-http remote server behind an explicit unencrypted-connection
+  confirmation (ServerUrlForm / ConnectServerScreen); loopback and emulator
+  addresses skip that gate. User-installed CAs are trusted so self-signed HTTPS
+  setups work without disabling encryption entirely.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

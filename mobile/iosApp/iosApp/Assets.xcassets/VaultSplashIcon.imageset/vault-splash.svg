@@ -1,0 +1,22 @@
+<svg width="108" height="108" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10.8" y="10.8" width="86.4" height="86.4" rx="22.68" fill="#0071E3"/>
+  <circle cx="54" cy="54" r="34.56" stroke="white" stroke-width="0.81" opacity="0.32"/>
+  <g fill="white" opacity="0.62">
+    <circle cx="54" cy="24.84" r="1.84"/>
+    <circle cx="74.52" cy="33.48" r="1.84"/>
+    <circle cx="83.16" cy="54" r="1.84"/>
+    <circle cx="74.52" cy="74.52" r="1.84"/>
+    <circle cx="54" cy="83.16" r="1.84"/>
+    <circle cx="33.48" cy="74.52" r="1.84"/>
+    <circle cx="24.84" cy="54" r="1.84"/>
+    <circle cx="33.48" cy="33.48" r="1.84"/>
+  </g>
+  <g fill="white">
+    <rect x="50.76" y="25.92" width="6.48" height="21.6" rx="3.24"/>
+    <rect x="50.76" y="60.48" width="6.48" height="21.6" rx="3.24"/>
+    <rect x="25.92" y="50.76" width="21.6" height="6.48" rx="3.24"/>
+    <rect x="60.48" y="50.76" width="21.6" height="6.48" rx="3.24"/>
+  </g>
+  <circle cx="54" cy="54" r="10.26" fill="white"/>
+  <circle cx="54" cy="54" r="3.78" fill="#0071E3"/>
+</svg>

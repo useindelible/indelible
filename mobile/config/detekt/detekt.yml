@@ -1,0 +1,64 @@
+build:
+  maxIssues: 0
+
+complexity:
+  active: true
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 7
+    ignoreAnnotated:
+      - "Composable"
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+    thresholdInInterfaces: 10
+    thresholdInObjects: 10
+    thresholdInEnums: 10
+
+naming:
+  active: true
+  FunctionNaming:
+    ignoreAnnotated:
+      - "Composable"
+  MatchingDeclarationName:
+    active: false
+
+style:
+  active: true
+  WildcardImport:
+    active: true
+    excludeImports:
+      - "kotlinx.coroutines.*"
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  UnusedPrivateMember:
+    active: true
+    # @Preview / @PreviewParameter composables are Compose tooling entry points,
+    # invoked by the IDE/preview renderer rather than app code. detekt cannot see
+    # those callers, so it false-flags every preview as unused. The rule stays
+    # strict for all other private members.
+    ignoreAnnotated:
+      - "Preview"
+      - "PreviewParameter"
+  MagicNumber:
+    active: true
+    # Vector-asset and design-token *definition* files: the literals are SVG path
+    # geometry / ARGB token values, i.e. the data these files exist to hold. The
+    # magic-number rule is meaningless here and stays strict everywhere else.
+    excludes:
+      - "**/ui/theme/IndelibleIcons.kt"
+      - "**/ui/theme/Color.kt"
+      - "**/ui/components/IndelibleVaultMark.kt"
+      # Test fixtures are literal by nature (expected counts, timestamps, sample ids).
+      - "**/commonTest/**"
+    # Preview-only sample data is dead at runtime.
+    ignoreAnnotated:
+      - "Preview"
+      - "PreviewParameter"
+    ignoreRanges: true
