@@ -1,0 +1,95 @@
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import {
+  clearProjectedHighlights,
+  projectHighlights,
+  type ProjectedHighlight,
+} from '../lib/highlight-projection'
+
+describe('highlight projection', () => {
+  beforeEach(() => {
+    document.head.innerHTML = ''
+    document.body.innerHTML = ''
+  })
+
+  it('projects a highlight from a parent-element DOM location', () => {
+    document.body.innerHTML = '<p>Hello brave world.</p>'
+
+    const highlight: ProjectedHighlight = {
+      id: 'h_1',
+      color: 'yellow',
+      text_content: 'brave',
+      source_locator: {
+        type: 'web_page_dom_range',
+        url: 'https://example.com/article',
+        location: '1/0:6,1/0:11',
+        offset: 6,
+        text_content: 'brave',
+      },
+    }
+
+    expect(projectHighlights([highlight], document)).toBe(1)
+
+    const mark = document.querySelector('mark.indelible-projected-highlight')
+    expect(mark?.textContent).toBe('brave')
+    expect(document.body.textContent).toBe('Hello brave world.')
+  })
+
+  it('uses source offset to choose between repeated text matches', () => {
+    document.body.innerHTML = '<p>Alpha target.</p><p>Beta target.</p>'
+    const secondTargetOffset = document.body.textContent?.lastIndexOf('target') ?? 0
+
+    const highlight: ProjectedHighlight = {
+      id: 'h_2',
+      text_content: 'target',
+      source_locator: {
+        type: 'web_page_dom_range',
+        url: 'https://example.com/article',
+        location: '9/9:0,9/9:6',
+        offset: secondTargetOffset,
+        text_content: 'target',
+      },
+    }
+
+    expect(projectHighlights([highlight], document)).toBe(1)
+
+    const paragraphs = Array.from(document.querySelectorAll('p'))
+    expect(paragraphs[0]?.querySelector('mark')).toBeNull()
+    expect(paragraphs[1]?.querySelector('mark')?.textContent).toBe('target')
+  })
+
+  it('falls back from a stale source locator and matches normalized repeated text context', () => {
+    document.body.innerHTML = '<p>Alpha target   phrase.</p><p>Beta target   phrase.</p>'
+
+    const highlight: ProjectedHighlight = {
+      id: 'h_4',
+      text_content: 'target phrase',
+      source_locator: {
+        type: 'web_page_dom_range',
+        url: 'https://example.com/article',
+        location: '99/0:0,99/0:13',
+        offset: document.body.textContent?.lastIndexOf('target') ?? 0,
+        text_content: 'target phrase',
+        prefix: 'Beta',
+        suffix: '.',
+      },
+    }
+
+    expect(projectHighlights([highlight], document)).toBe(1)
+
+    const paragraphs = Array.from(document.querySelectorAll('p'))
+    expect(paragraphs[0]?.querySelector('mark')).toBeNull()
+    expect(paragraphs[1]?.querySelector('mark')?.textContent).toBe('target   phrase')
+  })
+
+  it('clears projected marks without changing page text', () => {
+    document.body.innerHTML = '<p>Hello brave world.</p>'
+    projectHighlights([{ id: 'h_3', text_content: 'brave' }], document)
+
+    clearProjectedHighlights(document)
+
+    expect(document.querySelector('mark.indelible-projected-highlight')).toBeNull()
+    expect(document.body.innerHTML).toBe('<p>Hello brave world.</p>')
+  })
+})
