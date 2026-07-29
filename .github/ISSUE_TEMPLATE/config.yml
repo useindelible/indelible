@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help with self-hosting
+    url: https://github.com/useindelible/indelible/discussions
+    about: Ask in Discussions so the answer helps the next person.
+  - name: Security vulnerability
+    url: https://github.com/useindelible/indelible/security/advisories/new
+    about: Report privately, never in a public issue.

@@ -1,0 +1,31 @@
+# The ind-api image builds from the repository root so it can compile the web
+# app alongside the API, which means this file, not backend/.dockerignore,
+# decides what the build context carries.
+
+.git/
+.gitignore
+.env
+.env.*
+*.md
+
+# Build outputs and dependency trees: enormous, and every stage installs or
+# compiles its own.
+backend/target/
+**/node_modules/
+web/build/
+web/.svelte-kit/
+website/dist/
+website/.astro/
+extension/.output/
+extension/.wxt/
+mobile/build/
+mobile/**/build/
+renderer-test/
+
+# Local state that must never reach an image.
+.db-backups/
+database-backups/
+output/
+.history/
+.claude/
+.backlog/

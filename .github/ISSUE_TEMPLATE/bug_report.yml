@@ -1,0 +1,46 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Save a URL from the extension
+        2. Open it in the reader
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Image tag or commit you are running
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: true
+      options: [Web, Browser extension, Android, iOS, CLI, Server, Obsidian plugin]
+    validations:
+      required: true
+  - type: textarea
+    id: deployment
+    attributes:
+      label: How it is deployed
+      description: Docker compose, reverse proxy, TLS setup, anything unusual about the network
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: shell

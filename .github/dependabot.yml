@@ -1,0 +1,59 @@
+version: 2
+
+# open-pull-requests-limit: 0 turns off routine version-update PRs while leaving
+# security updates enabled, so Dependabot only opens a PR when an advisory lands.
+# Raise the limit per ecosystem once the CI budget can absorb the extra runs.
+updates:
+  - package-ecosystem: cargo
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    ignore:
+      # Reachable only through eslint's minimatch@3, which cannot take 5.x.
+      # Forcing it breaks eslint at runtime, and the path is dev-only.
+      - dependency-name: brace-expansion
+        versions: ['1.x']
+
+  - package-ecosystem: npm
+    directory: /extension
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: brace-expansion
+        versions: ['1.x']
+
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: npm
+    directory: /obsidian
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: gradle
+    directory: /mobile
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  # Pinned action SHAs go stale silently, so these updates stay on: a grouped
+  # monthly PR keeps the supply-chain pins current without weekly CI churn.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
