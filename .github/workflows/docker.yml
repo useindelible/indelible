@@ -1,0 +1,70 @@
+name: Docker
+
+# Two paths in: merges to main publish latest + sha tags once CI succeeds, and
+# release tags publish semver tags directly. A tag is cut from a commit that
+# already passed CI on main, so tag builds do not wait on a second CI run.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      matrix:
+        include:
+          - image: ind-api
+            dockerfile: backend/apps/ind-api/Dockerfile
+            # Root context: this image builds the web app alongside the API.
+            context: .
+          - image: ind-worker
+            dockerfile: backend/apps/ind-worker/Dockerfile
+            context: backend
+          - image: ind-renderer
+            dockerfile: backend/apps/ind-renderer/Dockerfile
+            context: backend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # Empty on tag pushes, which fall back to the pushed ref itself.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        id: meta
+        with:
+          # GITHUB_TOKEN can only publish packages under the repository owner's
+          # namespace, so derive it instead of hardcoding the org.
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
+            type=sha,prefix=,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

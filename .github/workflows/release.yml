@@ -1,0 +1,115 @@
+name: Release
+
+# One tag, every artifact: pushing vX.Y.Z creates a GitHub Release and attaches
+# CLI binaries for five targets, the three browser-extension zips, and a signed
+# Android APK. Version-tagged Docker images are published by docker.yml, which
+# has its own v* trigger.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: taiki-e/create-gh-release-action@eba8ea96c86cca8a37f1b56e94b4d13301fba651 # v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  cli:
+    name: CLI (${{ matrix.target }})
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@3a8b2ad3ea1212417907ff0e1b3d0c4e121bef40 # 1.94.0
+        with:
+          targets: ${{ matrix.target }}
+      - uses: taiki-e/upload-rust-binary-action@f0d45ae91ee7b8ee928de7a9d04d893a08bcbec6 # v1
+        with:
+          bin: ind
+          target: ${{ matrix.target }}
+          manifest-path: backend/Cargo.toml
+          archive: ind-$target
+          checksum: sha256
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  extension:
+    name: Extension zips
+    needs: create-release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+      - run: npm ci
+      - run: npm run zip:all
+      - run: npm run verify:stores
+      - name: Attach zips with checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd .output
+          sha256sum *.zip > extension-checksums-sha256.txt
+          gh release upload "$GITHUB_REF_NAME" *.zip extension-checksums-sha256.txt
+
+  android:
+    name: Android APK
+    needs: create-release
+    runs-on: ubuntu-latest
+    # Holds the signing secrets; deployable only from v* tags, and pauses for
+    # approval once environment protection is enforceable (public repo).
+    environment: release
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Decode signing keystore
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      - name: Build signed APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :composeApp:assembleRelease
+      - name: Attach APK with checksum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          apk="composeApp/build/outputs/apk/release/composeApp-release.apk"
+          cp "$apk" "indelible-$GITHUB_REF_NAME.apk"
+          sha256sum "indelible-$GITHUB_REF_NAME.apk" > "indelible-$GITHUB_REF_NAME.apk.sha256"
+          gh release upload "$GITHUB_REF_NAME" "indelible-$GITHUB_REF_NAME.apk" "indelible-$GITHUB_REF_NAME.apk.sha256"
