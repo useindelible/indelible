@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH inputs AS (\n                   SELECT library_entry_id, selected\n                   FROM UNNEST($2::uuid[], $3::bool[]) AS t(library_entry_id, selected)\n               ),\n               valid AS (\n                   SELECT i.library_entry_id, i.selected\n                   FROM inputs i\n                   JOIN library_entries le\n                     ON le.id = i.library_entry_id AND le.user_id = $4 AND le.deleted_at IS NULL\n               )\n               INSERT INTO notion_export_item_selection\n                   (connection_id, library_entry_id, selected, created_at, updated_at)\n               SELECT $1, library_entry_id, selected, now(), now()\n               FROM valid\n               ON CONFLICT (connection_id, library_entry_id) DO UPDATE\n                   SET selected = EXCLUDED.selected,\n                       updated_at = now()\n               RETURNING library_entry_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "library_entry_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "BoolArray",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cd770f91825f1c610ff3dd4ef1bdac85828c06c2535a45eaea6928a627ad4522"
+}

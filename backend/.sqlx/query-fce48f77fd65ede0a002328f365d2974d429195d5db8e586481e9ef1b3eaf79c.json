@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS( SELECT 1 FROM archive_assets WHERE document_id = $1 AND asset_kind = 'readable_html' AND status = 'completed')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fce48f77fd65ede0a002328f365d2974d429195d5db8e586481e9ef1b3eaf79c"
+}

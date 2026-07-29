@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH failed(library_entry_id) AS (\n                     SELECT library_entry_id FROM UNNEST($2::uuid[]) AS failed(library_entry_id)\n                   ),\n                   bumped AS (\n                     UPDATE obsidian_export_refresh_queue AS queue\n                     SET delivery_attempts = queue.delivery_attempts + 1,\n                         next_attempt_at = now() + (interval '1 minute' * (1 << LEAST(queue.delivery_attempts, 8)))\n                     FROM failed\n                     WHERE queue.connection_id = $1\n                       AND queue.library_entry_id = failed.library_entry_id\n                     RETURNING queue.library_entry_id, queue.delivery_attempts\n                   )\n                   SELECT library_entry_id, delivery_attempts FROM bumped",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "library_entry_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "delivery_attempts",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0577b8d43707694bb088010cd3b67e0b96a9bf3a0e684fb5fb10dce235d1380b"
+}

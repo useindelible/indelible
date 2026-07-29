@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO content_vectors (\n                id,\n                document_id,\n                user_id,\n                embedding_model,\n                embedding_dim,\n                section_kind,\n                section_key,\n                chunk_index,\n                content,\n                token_count,\n                search_config,\n                embedding,\n                created_at\n            )\n            VALUES (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                CAST($11 AS text)::regconfig,\n                CAST($12 AS text)::vector,\n                $13\n            )\n            ON CONFLICT (document_id, section_key, chunk_index) WHERE document_id IS NOT NULL DO UPDATE SET\n                user_id = EXCLUDED.user_id,\n                embedding_model = EXCLUDED.embedding_model,\n                embedding_dim = EXCLUDED.embedding_dim,\n                section_kind = EXCLUDED.section_kind,\n                content = EXCLUDED.content,\n                token_count = EXCLUDED.token_count,\n                search_config = EXCLUDED.search_config,\n                embedding = EXCLUDED.embedding,\n                created_at = EXCLUDED.created_at\n            RETURNING\n                id,\n                document_id,\n                user_id,\n                embedding_model,\n                embedding_dim,\n                section_kind,\n                section_key,\n                chunk_index,\n                content,\n                token_count,\n                search_config::text AS \"search_config!\",\n                embedding::text AS \"embedding!\",\n                created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "embedding_model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "embedding_dim",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "section_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "section_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "chunk_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "token_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "search_config!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "embedding!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int4",
+        "Text",
+        "Text",
+        "Int4",
+        "Text",
+        "Int4",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      false
+    ]
+  },
+  "hash": "58938e7df9655a34eeab6a1c15b4f8b7446c60b3d050fce3067dc883bc5e54e5"
+}

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO obsidian_export_refresh_queue\n                (connection_id, library_entry_id, reason, requested_at)\n               SELECT $1, library_entry_id, $3, now()\n               FROM UNNEST($2::uuid[]) AS input(library_entry_id)\n               ON CONFLICT (connection_id, library_entry_id) DO UPDATE\n                 SET reason = EXCLUDED.reason, requested_at = EXCLUDED.requested_at\n               RETURNING library_entry_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "library_entry_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "877697a8635f5048832f6fa8b59eb476529095ac2a1dc49cc6e314b6bf9c2262"
+}

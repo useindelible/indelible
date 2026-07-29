@@ -1,0 +1,97 @@
+use ind_domain::ItemType;
+
+/// Infer the library content type for a URL-bearing save.
+///
+/// This intentionally recognizes only concrete Twitter/X status URLs as tweets.
+/// Profile pages, RSSHub feed URLs, and ordinary articles with social tracking
+/// parameters remain articles.
+pub fn infer_item_type_for_url(url: &str) -> ItemType {
+    inferred_url_item_type(url).unwrap_or(ItemType::Article)
+}
+
+fn inferred_url_item_type(url: &str) -> Option<ItemType> {
+    if is_youtube_url(url) {
+        Some(ItemType::Video)
+    } else if is_twitter_status_url(url) {
+        Some(ItemType::Tweet)
+    } else {
+        None
+    }
+}
+
+/// Returns true when `url` parses as a watch-style YouTube URL.
+///
+/// Recognised forms:
+/// - `https://www.youtube.com/watch?v=...`
+/// - `https://m.youtube.com/watch?v=...`
+/// - `https://music.youtube.com/watch?v=...`
+/// - `https://youtube.com/watch?v=...`
+/// - `https://youtu.be/...`
+pub fn is_youtube_url(url: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(url) else {
+        return false;
+    };
+    let Some(host) = parsed.host_str() else {
+        return false;
+    };
+    let host = host.trim_start_matches("www.").to_ascii_lowercase();
+    match host.as_str() {
+        "youtube.com" | "m.youtube.com" | "music.youtube.com" => parsed.path() == "/watch",
+        "youtu.be" => parsed.path().trim_start_matches('/').len() >= 6,
+        _ => false,
+    }
+}
+
+/// Returns true for direct Twitter/X status URLs.
+pub fn is_twitter_status_url(url: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(url) else {
+        return false;
+    };
+    let Some(host) = parsed.host_str() else {
+        return false;
+    };
+    let host = host.to_ascii_lowercase();
+    if !matches!(
+        host.as_str(),
+        "x.com" | "www.x.com" | "twitter.com" | "www.twitter.com" | "mobile.twitter.com"
+    ) {
+        return false;
+    }
+
+    let segments = parsed
+        .path_segments()
+        .map(|segments| segments.collect::<Vec<_>>())
+        .unwrap_or_default();
+    match segments.as_slice() {
+        [handle, "status", status_id, ..] => {
+            !handle.is_empty()
+                && !status_id.is_empty()
+                && status_id.chars().all(|c| c.is_ascii_digit())
+        }
+        ["i", "web", "status", status_id, ..] => {
+            !status_id.is_empty() && status_id.chars().all(|c| c.is_ascii_digit())
+        }
+        _ => false,
+    }
+}
+
+/// Extract the YouTube video ID from a watch URL.
+pub fn extract_youtube_video_id(url: &str) -> Option<String> {
+    let parsed = url::Url::parse(url).ok()?;
+    let host = parsed.host_str()?.trim_start_matches("www.").to_lowercase();
+    match host.as_str() {
+        "youtube.com" | "m.youtube.com" | "music.youtube.com" => parsed
+            .query_pairs()
+            .find(|(k, _)| k == "v")
+            .map(|(_, v)| v.into_owned()),
+        "youtu.be" => {
+            let id = parsed.path().trim_start_matches('/');
+            if id.is_empty() {
+                None
+            } else {
+                Some(id.to_string())
+            }
+        }
+        _ => None,
+    }
+}

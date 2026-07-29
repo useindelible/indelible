@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE search_index_state\n            SET current_version = GREATEST(current_version, $1),\n                target_version = NULL,\n                cursor_created_at = NULL,\n                cursor_document_id = NULL,\n                updated_at = now()\n            WHERE singleton = true\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dc9e06fb8cf4669d202bbeba738641056a11ff693a2edf9d174fc6786a01bee7"
+}

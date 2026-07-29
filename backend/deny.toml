@@ -1,0 +1,54 @@
+# cargo-deny configuration. Reviewed 2026-06-12.
+
+[advisories]
+# See .cargo/audit.toml for the full justification of each exception. All are
+# unfixable for the resolved versions and are either not exploitable in our
+# usage or confined to dev/test builds.
+ignore = [
+    "RUSTSEC-2023-0071", # rsa Marvin timing side-channel (sig-verify only, no fix)
+    "RUSTSEC-2026-0098", # rustls-webpki 0.101.7 name constraints (AWS-SDK TLS, no 0.101.x fix)
+    "RUSTSEC-2026-0099", # rustls-webpki 0.101.7 name constraints
+    "RUSTSEC-2026-0104", # rustls-webpki 0.101.7 CRL parse panic (DoS)
+    "RUSTSEC-2025-0111", # tokio-tar PAX smuggling (dev-only via testcontainers)
+    # Unmaintained / unsound advisories (not vulnerabilities) in build-time or
+    # transitive deps with no drop-in replacement available. cargo-audit treats
+    # these as non-failing warnings; cargo-deny denies them by default.
+    "RUSTSEC-2024-0370", # proc-macro-error unmaintained (build-time, transitive)
+    "RUSTSEC-2024-0436", # paste unmaintained (build-time, transitive)
+    "RUSTSEC-2025-0134", # rustls-pemfile unmaintained (dev-only via testcontainers/bollard)
+    "RUSTSEC-2026-0097", # rand unsound only with a custom global logger calling rand::rng()
+    "RUSTSEC-2026-0173", # proc-macro-error2 unmaintained (build-time, transitive)
+]
+
+[licenses]
+# Indelible ships under AGPL-3.0-or-later (the first-party workspace crates).
+# html2md is GPL-3.0, which is compatible with our AGPL license. Everything
+# else is a permissive OSI license.
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "BSD-1-Clause",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "0BSD",
+    "ISC",
+    "Unicode-3.0",
+    "CC0-1.0",
+    "Zlib",
+    "BSL-1.0",
+    "MPL-2.0",
+    "Unlicense",
+    "CDLA-Permissive-2.0",
+    "AGPL-3.0-or-later",
+    "GPL-3.0-or-later",
+]
+confidence-threshold = 0.8
+
+[bans]
+# Transitive duplicate versions are common and are not a security gate here.
+multiple-versions = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

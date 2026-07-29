@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE obsidian_export_runs\n               SET status = 'artifact_ready',\n                   total_documents = $2,\n                   documents_exported = 0,\n                   error = NULL,\n                   updated_at = now(),\n                   finished_at = now()\n               WHERE id = $1 AND status = 'running'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "837fc7f0df3abb37ef9909a37b52fd9aaa4ae60f0054c73dfca1343895a4349c"
+}

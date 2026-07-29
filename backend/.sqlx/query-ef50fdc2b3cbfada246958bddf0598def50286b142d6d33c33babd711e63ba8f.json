@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE library_entries le\n                   SET deleted_at = now(),\n                       updated_at = now()\n                   WHERE le.user_id = $1\n                     AND le.deleted_at IS NULL\n                     AND EXISTS (\n                         SELECT 1\n                         FROM document_origins origin\n                         WHERE origin.user_id = le.user_id\n                           AND origin.document_id = le.document_id\n                           AND origin.origin_type = 'readwise_import_item'\n                           AND origin.origin_id = ANY($2)\n                     )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ef50fdc2b3cbfada246958bddf0598def50286b142d6d33c33babd711e63ba8f"
+}

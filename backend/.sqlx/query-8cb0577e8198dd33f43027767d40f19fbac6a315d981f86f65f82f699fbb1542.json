@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH RECURSIVE collection_scope(id) AS (\n                SELECT c.id\n                FROM collections c\n                WHERE c.id = $3\n                  AND c.user_id = $1\n                UNION ALL\n                SELECT child.id\n                FROM collections child\n                JOIN collection_scope parent ON parent.id = child.parent_id\n                WHERE child.user_id = $1\n                  AND $5::boolean\n            ),\n            matches AS (\n                SELECT\n                    cv.id AS chunk_id,\n                    cv.document_id,\n                    cv.content AS snippet,\n                    (\n                        ts_rank_cd(cv.content_tsv, fts_relaxed_query('english'::regconfig, $2), 32)::double precision\n                        + CASE\n                            WHEN cv.content_tsv @@ plainto_tsquery('english'::regconfig, $2)\n                                THEN 0.25::double precision\n                            ELSE 0.0::double precision\n                          END\n                    ) AS fts_rank,\n                    CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_kind END AS section_kind,\n                    CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_key END AS section_key,\n                    NULL::text AS section_title\n                FROM content_vectors cv\n                WHERE cv.user_id = $1\n                  AND cv.search_config = 'english'::regconfig\n                  AND cv.content_tsv @@ fts_relaxed_query('english'::regconfig, $2)\n\n                UNION ALL\n\n                SELECT\n                    cv.id AS chunk_id,\n                    cv.document_id,\n                    cv.content AS snippet,\n                    (\n                        ts_rank_cd(cv.content_tsv, fts_relaxed_query('simple'::regconfig, $2), 32)::double precision\n                        + CASE\n                            WHEN cv.content_tsv @@ plainto_tsquery('simple'::regconfig, $2)\n                                THEN 0.25::double precision\n                            ELSE 0.0::double precision\n                          END\n                    ) AS fts_rank,\n                    CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_kind END AS section_kind,\n                    CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_key END AS section_key,\n                    NULL::text AS section_title\n                FROM content_vectors cv\n                WHERE cv.user_id = $1\n                  AND cv.search_config = 'simple'::regconfig\n                  AND cv.content_tsv @@ fts_relaxed_query('simple'::regconfig, $2)\n\n                UNION ALL\n\n                SELECT\n                    NULL::uuid AS chunk_id,\n                    sd.document_id,\n                    ts_headline(\n                        'english'::regconfig,\n                        concat_ws(\n                            E'\\n',\n                            NULLIF(sd.title, ''),\n                            NULLIF(sd.section_title, ''),\n                            NULLIF(sd.highlight_text, ''),\n                            NULLIF(sd.metadata_text, ''),\n                            NULLIF(sd.body_text, '')\n                        ),\n                        fts_relaxed_query('english'::regconfig, $2),\n                        'StartSel=<<,StopSel=>>,MaxFragments=1,MinWords=8,MaxWords=40'\n                    ) AS snippet,\n                    (\n                        ts_rank_cd(sd.document_tsv, fts_relaxed_query('english'::regconfig, $2), 32)::double precision\n                        + CASE\n                            WHEN sd.document_tsv @@ plainto_tsquery('english'::regconfig, $2)\n                                THEN 0.25::double precision\n                            ELSE 0.0::double precision\n                          END\n                    ) AS fts_rank,\n                    CASE WHEN sd.section_key = '' THEN NULL ELSE sd.document_kind END AS section_kind,\n                    CASE WHEN sd.section_key = '' THEN NULL ELSE sd.section_key END AS section_key,\n                    CASE WHEN sd.section_key = '' THEN NULL ELSE sd.section_title END AS section_title\n                FROM search_documents sd\n                WHERE sd.user_id = $1\n                  AND sd.search_config = 'english'::regconfig\n                  AND sd.document_tsv @@ fts_relaxed_query('english'::regconfig, $2)\n                  AND NOT EXISTS (\n                      SELECT 1\n                      FROM content_vectors existing\n                      WHERE existing.user_id = $1\n                        AND existing.document_id = sd.document_id\n                  )\n\n                UNION ALL\n\n                SELECT\n                    NULL::uuid AS chunk_id,\n                    sd.document_id,\n                    ts_headline(\n                        'simple'::regconfig,\n                        concat_ws(\n                            E'\\n',\n                            NULLIF(sd.title, ''),\n                            NULLIF(sd.section_title, ''),\n                            NULLIF(sd.highlight_text, ''),\n                            NULLIF(sd.metadata_text, ''),\n                            NULLIF(sd.body_text, '')\n                        ),\n                        fts_relaxed_query('simple'::regconfig, $2),\n                        'StartSel=<<,StopSel=>>,MaxFragments=1,MinWords=8,MaxWords=40'\n                    ) AS snippet,\n                    (\n                        ts_rank_cd(sd.document_tsv, fts_relaxed_query('simple'::regconfig, $2), 32)::double precision\n                        + CASE\n                            WHEN sd.document_tsv @@ plainto_tsquery('simple'::regconfig, $2)\n                                THEN 0.25::double precision\n                            ELSE 0.0::double precision\n                          END\n                    ) AS fts_rank,\n                    CASE WHEN sd.section_key = '' THEN NULL ELSE sd.document_kind END AS section_kind,\n                    CASE WHEN sd.section_key = '' THEN NULL ELSE sd.section_key END AS section_key,\n                    CASE WHEN sd.section_key = '' THEN NULL ELSE sd.section_title END AS section_title\n                FROM search_documents sd\n                WHERE sd.user_id = $1\n                  AND sd.search_config = 'simple'::regconfig\n                  AND sd.document_tsv @@ fts_relaxed_query('simple'::regconfig, $2)\n                  AND NOT EXISTS (\n                      SELECT 1\n                      FROM content_vectors existing\n                      WHERE existing.user_id = $1\n                        AND existing.document_id = sd.document_id\n                  )\n            )\n            SELECT\n                COALESCE(matches.chunk_id, matches.document_id) AS \"chunk_id!\",\n                (matches.chunk_id IS NULL) AS \"coarse_fallback!\",\n                matches.document_id AS \"document_id!\",\n                d.title AS item_title,\n                matches.snippet AS \"snippet!\",\n                matches.fts_rank AS \"fts_rank!\",\n                d.document_type AS item_type,\n                COALESCE(d.canonical_url, d.original_url) AS url,\n                COALESCE(le.saved_at, d.created_at) AS \"saved_at!\",\n                d.updated_at,\n                matches.section_kind,\n                matches.section_key,\n                matches.section_title\n            FROM matches\n            JOIN documents d ON d.id = matches.document_id AND d.user_id = $1\n            LEFT JOIN library_entries le\n                ON le.document_id = d.id AND le.user_id = $1 AND le.deleted_at IS NULL\n            WHERE EXISTS (\n                SELECT 1\n                FROM collection_entries ce\n                JOIN collection_scope cs ON cs.id = ce.collection_id\n                JOIN library_entries le2\n                  ON le2.id = ce.library_entry_id AND le2.deleted_at IS NULL\n                WHERE le2.document_id = matches.document_id\n                  AND le2.user_id = $1\n            )\n            ORDER BY matches.fts_rank DESC, COALESCE(le.saved_at, d.created_at) DESC\n            LIMIT $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chunk_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "coarse_fallback!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "item_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "snippet!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "fts_rank!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "item_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "saved_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "section_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "section_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "section_title",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Int8",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      false,
+      null,
+      null,
+      false,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "8cb0577e8198dd33f43027767d40f19fbac6a315d981f86f65f82f699fbb1542"
+}

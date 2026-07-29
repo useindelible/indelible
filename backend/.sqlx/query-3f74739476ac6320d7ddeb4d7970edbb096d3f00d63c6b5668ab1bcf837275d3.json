@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO projector_cursors (projector_name, last_seen_created_at, last_seen_event_id, updated_at) VALUES ('webhook_projector', $1, $2, $3) ON CONFLICT (projector_name) DO UPDATE SET last_seen_created_at = EXCLUDED.last_seen_created_at, last_seen_event_id = EXCLUDED.last_seen_event_id, updated_at = EXCLUDED.updated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3f74739476ac6320d7ddeb4d7970edbb096d3f00d63c6b5668ab1bcf837275d3"
+}

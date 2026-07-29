@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO tts_sessions (\n                id, user_id, document_id, voice_persona_id, speed, audio_format,\n                generation_scope, created_at\n            )\n            VALUES (\n                $1, $2, $3, $4, $5::float8::numeric(4,2), $6, $7, $8\n            )\n            RETURNING\n                id,\n                user_id,\n                document_id,\n                voice_persona_id,\n                speed::float8 AS speed,\n                audio_format,\n                generation_scope,\n                created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "voice_persona_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "speed",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "audio_format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "generation_scope",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Float8",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4d6f9825c54f38c5d0ac63a884a99dfca51bd821a56891e48a000859815a4f03"
+}

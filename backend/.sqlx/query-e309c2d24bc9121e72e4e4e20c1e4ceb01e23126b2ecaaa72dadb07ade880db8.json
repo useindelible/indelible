@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_export_cursor\n               SET last_synced_at = $3,\n                   last_attempted_at = $3,\n                   last_error = NULL,\n                   cursor_version = cursor_version + 1,\n                   updated_at = now()\n               WHERE connection_id = $1 AND library_entry_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e309c2d24bc9121e72e4e4e20c1e4ceb01e23126b2ecaaa72dadb07ade880db8"
+}

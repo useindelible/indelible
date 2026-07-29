@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_deliveries SET hidden_at = now(), updated_at = now() WHERE user_id = $1 AND document_id = $2 AND hidden_at IS NULL AND dismissed_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "39fd2b120f0288bd629e4944e7a57b905e988405e2bdd5830a5d0886c07519e2"
+}

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id,\n                user_id,\n                effective_plan_id,\n                entitlements,\n                quotas,\n                computed_at\n            FROM entitlement_snapshots\n            WHERE user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "effective_plan_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "entitlements",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "quotas",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "computed_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "22b01a940369ef9dae1b317987cf5683afdae7764160b42c96ffbf7e5330cb49"
+}

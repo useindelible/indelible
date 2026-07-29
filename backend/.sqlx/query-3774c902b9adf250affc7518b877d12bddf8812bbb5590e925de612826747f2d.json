@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                (\n                    SELECT COUNT(DISTINCT d.id)::BIGINT\n                    FROM documents d\n                    WHERE (\n                            EXISTS (\n                                SELECT 1\n                                FROM library_entries le\n                                WHERE le.document_id = d.id\n                                  AND le.deleted_at IS NULL\n                            )\n                            OR EXISTS (\n                                SELECT 1\n                                FROM feed_deliveries fd\n                                WHERE fd.document_id = d.id\n                                  AND fd.dismissed_at IS NULL\n                                  AND fd.hidden_at IS NULL\n                            )\n                        )\n                      AND NOT EXISTS (\n                            SELECT 1\n                            FROM search_documents sd\n                            WHERE sd.document_id = d.id\n                        )\n                ) AS documents_missing_search_rows,\n                (\n                    SELECT COUNT(DISTINCT d.id)::BIGINT\n                    FROM documents d\n                    WHERE d.user_id IS NOT NULL\n                      AND EXISTS (\n                            SELECT 1\n                            FROM archive_assets aa\n                            WHERE aa.document_id = d.id\n                              AND aa.status = 'completed'\n                              AND aa.s3_key <> ''\n                              AND (\n                                    (aa.asset_kind = 'readable_html' AND aa.content_type = 'text/html')\n                                    OR (aa.asset_kind = 'epub' AND aa.content_type = 'application/json')\n                                    OR (aa.asset_kind = 'original_upload' AND aa.content_type = 'application/pdf')\n                              )\n                        )\n                      AND NOT EXISTS (\n                            SELECT 1\n                            FROM content_vectors cv\n                            WHERE cv.document_id = d.id\n                        )\n                      AND NOT EXISTS (\n                            SELECT 1\n                            FROM job_outbox jo\n                            WHERE jo.dedupe_key = ('document.ai.embed:doc_' || d.id::text)\n                              AND jo.dispatched_at IS NULL\n                        )\n                ) AS documents_missing_vectors,\n                (\n                    SELECT COUNT(*)::BIGINT\n                    FROM archive_assets aa\n                    WHERE aa.document_id IS NOT NULL\n                      AND aa.status IN ('failed', 'degraded')\n                      AND aa.asset_kind IN (\n                            'readable_html',\n                            'monolith',\n                            'pdf',\n                            'screenshot',\n                            'thumbnail',\n                            'warc',\n                            'epub',\n                            'extracted_text'\n                      )\n                ) AS failed_derived_assets,\n                (\n                    SELECT COUNT(*)::BIGINT\n                    FROM dead_letter_jobs\n                    WHERE replayed_at IS NULL\n                ) AS dead_letter_jobs\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "documents_missing_search_rows",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "documents_missing_vectors",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "failed_derived_assets",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "dead_letter_jobs",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3774c902b9adf250affc7518b877d12bddf8812bbb5590e925de612826747f2d"
+}

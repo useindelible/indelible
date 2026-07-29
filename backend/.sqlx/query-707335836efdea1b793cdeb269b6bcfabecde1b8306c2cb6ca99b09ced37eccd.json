@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.id, r.status, r.total_documents, r.documents_exported, r.error,\n                  COALESCE(array_agg(a.id ORDER BY a.created_at) FILTER (WHERE a.id IS NOT NULL), '{}') AS \"artifact_ids!: Vec<uuid::Uuid>\"\n           FROM obsidian_export_runs r\n           LEFT JOIN obsidian_export_artifacts a ON a.run_id = r.id\n           WHERE r.id = $1 AND r.user_id = $2\n           GROUP BY r.id, r.status, r.total_documents, r.documents_exported, r.error",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_documents",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "documents_exported",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "artifact_ids!: Vec<uuid::Uuid>",
+        "type_info": "UuidArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "707335836efdea1b793cdeb269b6bcfabecde1b8306c2cb6ca99b09ced37eccd"
+}

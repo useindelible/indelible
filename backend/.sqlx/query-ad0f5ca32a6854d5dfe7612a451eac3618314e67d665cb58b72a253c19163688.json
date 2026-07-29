@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE import_jobs\n               SET imported_count = imported_count + $2,\n                   updated_count = updated_count + $3,\n                   duplicate_count = duplicate_count + $4,\n                   skipped_private_count = skipped_private_count + $5,\n                   failed_count = failed_count + $6\n               WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ad0f5ca32a6854d5dfe7612a451eac3618314e67d665cb58b72a253c19163688"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT EXISTS (\n                SELECT 1\n                FROM apalis.jobs\n                WHERE (\n                    metadata->>'dedupe_key' = ANY($1)\n                    OR metadata->>'dedupe_key' LIKE $2\n                  )\n                  AND (\n                    status IN ('Pending', 'Queued', 'Running')\n                    OR (status = 'Failed' AND attempts < max_attempts)\n                  )\n            ) AS \"exists!\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "254a64d738ab77bbdf69188567f1642d93839cfc9548465dc1377d27841a6995"
+}

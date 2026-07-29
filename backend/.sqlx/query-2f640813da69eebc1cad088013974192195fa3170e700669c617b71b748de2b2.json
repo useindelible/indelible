@@ -1,0 +1,49 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO email_unsubscribe_targets (\n                sender_id, one_click_post_url, mailto_addr, web_url, last_seen_at\n            )\n            VALUES ($1, $2, $3, $4, now())\n            ON CONFLICT (sender_id) DO UPDATE\n            SET one_click_post_url = EXCLUDED.one_click_post_url,\n                mailto_addr        = EXCLUDED.mailto_addr,\n                web_url            = EXCLUDED.web_url,\n                last_seen_at       = now()\n            RETURNING sender_id, one_click_post_url, mailto_addr, web_url, last_seen_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "sender_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "one_click_post_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "mailto_addr",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "web_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_seen_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "2f640813da69eebc1cad088013974192195fa3170e700669c617b71b748de2b2"
+}

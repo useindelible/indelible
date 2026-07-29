@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE email_senders SET blocked_at = COALESCE(blocked_at, now()), updated_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "60a4b9f43af2821bd8eb107880b39c95ddcb309df32e9306d5a4c6464466915b"
+}

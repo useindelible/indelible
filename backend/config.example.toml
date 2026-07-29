@@ -1,0 +1,306 @@
+# Indelible backend configuration — TOML format
+#
+# Copy this file to config.toml and fill in the values for your environment.
+# Optionally create config.development.toml / config.production.toml / etc. to
+# overlay environment-specific overrides on top of the base config.toml.
+# Load order (highest priority wins): env vars → config.{env}.toml → config.toml → defaults
+#
+# Environment variables always override values in this file.
+# The env var names are documented next to each field.
+#
+# Secrets can be set here or via environment variables. Prefer env vars (or a
+# secrets manager) in production so this file does not contain plaintext credentials.
+
+# ---------------------------------------------------------------------------
+# ind-api / ind-worker / ind-renderer  (shared settings)
+# ---------------------------------------------------------------------------
+
+# Env: DATABASE_URL  [required]
+database_url = "postgres://indelible:indelible@localhost:5439/indelible"
+
+# Env: RUST_LOG — tracing filter (e.g. "info", "ind_api=debug,info")
+log_level = "info"
+
+# ---------------------------------------------------------------------------
+# Server
+# ---------------------------------------------------------------------------
+
+[server]
+# Env: IND_ENV — "development" | "staging" | "production"
+environment = "development"
+
+# Env: IND_HOST
+host = "0.0.0.0"
+
+# Env: IND_PORT
+port = 38473
+
+# Env: IND_BASE_URL — public-facing API base URL
+base_url = "http://localhost:38473"
+
+# ---------------------------------------------------------------------------
+# Authentication secrets  [required in production]
+# ---------------------------------------------------------------------------
+
+[auth]
+# Env: CSRF_SECRET
+# csrf_secret = "change-me-in-production"
+
+# Env: JWT_SECRET — must be >= 32 characters
+# jwt_secret = "change-me-in-production-at-least-32-chars"
+
+# Env: COOKIE_DOMAIN — optional; restrict session cookies to a domain
+# cookie_domain = "example.com"
+
+# ---------------------------------------------------------------------------
+# CORS / Frontend
+# ---------------------------------------------------------------------------
+
+[cors]
+# Env: FRONTEND_URL — URL of the web frontend (used for redirects)
+frontend_url = "http://localhost:5173"
+
+# Env: CORS_ORIGINS — comma-separated list of allowed origins (env) or TOML array (file)
+origins = ["http://localhost:5173"]
+
+# ---------------------------------------------------------------------------
+# OAuth providers (all optional)
+# ---------------------------------------------------------------------------
+
+[oauth]
+# Google
+# Env: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# google_client_id  = ""
+# google_client_secret = ""
+
+# Apple
+# Env: APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY_PEM
+#      (APPLE_CLIENT_SECRET is accepted as an alias for APPLE_PRIVATE_KEY_PEM)
+# apple_client_id      = ""
+# apple_team_id        = ""
+# apple_key_id         = ""
+# apple_private_key_pem = "-----BEGIN PRIVATE KEY-----\n..."
+
+# Generic OpenID Connect SSO (authentik, ZITADEL, Authelia, Keycloak, etc.)
+# Env: OIDC_ENABLED, OIDC_ISSUER_URL, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET,
+#      OIDC_PROVIDER_NAME, OIDC_SCOPES, OIDC_AUTO_CREATE_USERS
+# oidc_enabled = false
+# oidc_issuer_url = "http://localhost:9080/application/o/indelible/"
+# oidc_client_id = ""
+# oidc_client_secret = ""
+# oidc_provider_name = "OpenID Connect"
+# oidc_scopes = ["openid", "email", "profile"]
+# oidc_auto_create_users = true
+
+# ---------------------------------------------------------------------------
+# Integration OAuth credentials (all optional — enable each provider by filling in)
+# ---------------------------------------------------------------------------
+
+[integrations.notion]
+# Obtain from https://www.notion.so/my-integrations — create a Public integration.
+# Env: NOTION_CLIENT_ID, NOTION_CLIENT_SECRET, NOTION_REDIRECT_URL
+# client_id     = ""
+# client_secret = ""   # SecretString — never appears in logs or debug output
+# redirect_url  = "https://your-domain.com/api/v1/integrations/notion/callback"
+
+# ---------------------------------------------------------------------------
+# Object storage (S3-compatible)
+# ---------------------------------------------------------------------------
+
+[storage]
+# Env: S3_ENABLED — set true to enable S3 storage (also implicit if S3_ENDPOINT is set)
+# s3_enabled = true
+
+# Env: S3_ENDPOINT — S3-compatible API base (e.g. MinIO at http://localhost:9000)
+# s3_endpoint = "http://localhost:9000"
+
+# Env: S3_REGION (default: us-east-1)
+# s3_region = "us-east-1"
+
+# Env: S3_ACCESS_KEY — stored as SecretString; never logged
+# s3_access_key = "minioadmin"
+
+# Env: S3_SECRET_KEY — stored as SecretString; never logged
+# s3_secret_key = "minioadmin"
+
+# Env: S3_BUCKET — bucket name used by ind-api for assets
+# s3_bucket = "indelible"
+
+# Env: S3_FORCE_PATH_STYLE — true for MinIO/path-style endpoints, false for AWS virtual-hosted
+# s3_force_path_style = true
+
+# Env: ASSET_SERVING_MODE — "presigned" (default) | "passthrough"
+asset_serving_mode = "presigned"
+
+# Env: ASSET_COOKIE_SECRET — hex-encoded 32+ byte HMAC key; required for passthrough mode
+# asset_cookie_secret = "deadbeefdeadbeef..."
+
+# Env: UPLOAD_MAX_BYTES — maximum file upload size in bytes (default: 52428800 = 50 MiB)
+# max_upload_bytes = 52428800
+
+# ---------------------------------------------------------------------------
+# Shared Mila defaults
+# ---------------------------------------------------------------------------
+
+[mila]
+# Local OpenAI-compatible provider defaults can be set here, or overridden per
+# environment via configurations/{env}.toml.
+enabled = false
+
+# Env: MILA_CHAT_API_BASE
+chat_api_base = "https://api.openai.com/v1"
+
+# Env: MILA_CHAT_MODEL
+chat_model = "gpt-4.1-mini"
+
+# Env: MILA_EMBEDDING_API_BASE
+embedding_api_base = "https://api.openai.com/v1"
+
+# Env: MILA_EMBEDDING_MODEL
+embedding_model = "text-embedding-3-small"
+
+# Env: MILA_EMBEDDING_DIM
+embedding_dim = 768
+
+# Env: MILA_CONTEXT_THRESHOLD
+context_threshold = 12000
+
+# Env: MILA_CHUNK_SIZE
+chunk_size = 512
+
+# Env: MILA_CHUNK_OVERLAP
+chunk_overlap = 64
+
+# Env: MILA_TOP_K
+top_k = 6
+
+# Env: MILA_CROSS_ITEM_TOP_K
+cross_item_top_k = 20
+
+# Env: MILA_CROSS_ITEM_MAX_PER_ITEM
+cross_item_max_per_item = 3
+
+# ---------------------------------------------------------------------------
+# Native cloud TTS
+# ---------------------------------------------------------------------------
+
+[tts]
+# Env: TTS_ENABLED
+enabled = true
+
+# Env: TTS_HOSTED_MANAGED_CUSTOM_PERSONA
+# Set true only when hosted deployments should allow provider-side custom
+# persona creation/design. Preset provider_voice_id personas work without it.
+hosted_managed_custom_persona = false
+
+[tts.dashscope]
+# Env: TTS_DASHSCOPE_API_KEY
+api_key = "replace-with-dashscope-api-key"
+
+# Env: TTS_DASHSCOPE_API_BASE
+api_base = "https://dashscope-intl.aliyuncs.com"
+
+[tts.unreal_speech]
+# Env: TTS_UNREAL_SPEECH_API_KEY
+api_key = "replace-with-unreal-speech-api-key"
+
+# Env: TTS_UNREAL_SPEECH_API_BASE
+api_base = "https://api.v8.unrealspeech.com"
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+
+[rate_limit.login]
+# Env: LOGIN_RATE_LIMIT_REQUESTS, LOGIN_RATE_LIMIT_WINDOW_SECS
+requests   = 5
+window_secs = 30
+
+[rate_limit.registration]
+# Env: REGISTRATION_RATE_LIMIT_REQUESTS, REGISTRATION_RATE_LIMIT_WINDOW_SECS
+requests   = 3
+window_secs = 60
+
+[rate_limit.password_reset]
+# Env: PASSWORD_RESET_RATE_LIMIT_REQUESTS, PASSWORD_RESET_RATE_LIMIT_WINDOW_SECS
+requests   = 3
+window_secs = 900
+
+# ---------------------------------------------------------------------------
+# ind-worker specific
+# ---------------------------------------------------------------------------
+
+[server]
+# Env: IND_ENV — "development" | "staging" | "production"  (shared with ind-api)
+environment = "development"
+# Env: RUST_LOG
+log_level   = "info"
+
+# (no [server].host/port — the worker has no HTTP listener)
+
+# Env: RENDERER_URL — URL of the ind-renderer service
+renderer_url = "http://127.0.0.1:3100"
+
+# ind-worker reads the same S3_* env vars as ind-api. Keys live at the top
+# level (not under [storage]) because the worker has no asset-serving config.
+#
+# Env: S3_ENABLED, S3_ENDPOINT, S3_REGION, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET,
+#      S3_FORCE_PATH_STYLE
+# s3_enabled          = true
+# s3_endpoint         = "http://localhost:9000"
+# s3_region           = "us-east-1"
+# s3_access_key       = "minioadmin"  # SecretString
+# s3_secret_key       = "minioadmin"  # SecretString
+# s3_force_path_style = true
+
+# Env: S3_BUCKET — S3 bucket name used when embedding asset references into job metadata
+s3_bucket = "indelible"
+
+[relay]
+# Env: RELAY_POLL_INTERVAL_MS, RELAY_BATCH_SIZE
+poll_interval_ms = 1000
+batch_size       = 10
+
+[auto_heal]
+# Env: AUTO_HEAL_ENABLED, AUTO_HEAL_INTERVAL_SECS, AUTO_HEAL_STALE_AFTER_SECS,
+#      AUTO_HEAL_LEASE_SECS, AUTO_HEAL_BATCH_SIZE
+enabled          = true
+interval_secs    = 60
+stale_after_secs = 180
+lease_secs       = 180
+batch_size       = 100
+
+# ---------------------------------------------------------------------------
+# ind-renderer specific
+# ---------------------------------------------------------------------------
+
+[server]
+# Env: IND_ENV — "development" | "staging" | "production"  (shared with ind-api)
+environment = "development"
+# Env: RUST_LOG
+log_level   = "info"
+# Env: RENDERER_HOST, RENDERER_PORT
+host = "127.0.0.1"
+port = 3100
+
+[chromium]
+# Env: CHROMIUM_PATH — path to the Chromium binary (auto-detected if absent)
+# path = "/usr/bin/chromium"
+
+# Env: CHROMIUM_SINGLE_PROCESS — "true"/"1" to run Chromium in single-process mode
+single_process = false
+
+# Env: CHROMIUM_VIRTUAL_TIME_BUDGET — virtual time budget in milliseconds
+# virtual_time_budget = 5000
+
+idle_timeout_secs = 30
+
+# S3 credentials for the renderer
+[s3]
+# Env: S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY, S3_FORCE_PATH_STYLE
+# endpoint        = "http://localhost:9000"
+# region          = "us-east-1"
+# bucket          = "indelible"
+# access_key      = "minioadmin"
+# secret_key      = "minioadmin"
+force_path_style = true

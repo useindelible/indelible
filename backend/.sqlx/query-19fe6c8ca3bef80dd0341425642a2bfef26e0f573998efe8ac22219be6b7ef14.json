@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT le.id AS \"library_entry_id!\",\n                      d.id AS \"document_id!\",\n                      iec.last_delivered_at,\n                      iec.last_exported_highlight_created_at,\n                      iec.last_exported_highlight_id,\n                      iec.last_exported_file_hash,\n                      iec.last_exported_full_document_hash,\n                      iec.generated_path,\n                      iec.generated_full_document_path,\n                      ($4 OR le.id = ANY($3) OR q.library_entry_id IS NOT NULL OR iec.last_delivered_at IS NULL) AS \"force_full!: bool\"\n               FROM library_entries le\n               JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id\n               LEFT JOIN integration_export_cursor iec\n                 ON iec.connection_id = $2 AND iec.library_entry_id = le.id\n               LEFT JOIN obsidian_export_refresh_queue q\n                 ON q.connection_id = $2 AND q.library_entry_id = le.id\n                    AND (q.next_attempt_at IS NULL OR q.next_attempt_at <= now())\n               WHERE le.user_id = $1\n                 AND le.deleted_at IS NULL\n                 AND (\n                   le.id = ANY($3)\n                   OR q.library_entry_id IS NOT NULL\n                   OR $4\n                   OR iec.last_delivered_at IS NULL\n                   OR EXISTS (\n                     SELECT 1\n                     FROM highlights h\n                     WHERE h.user_id = $1\n                       AND h.document_id = d.id\n                       AND (\n                         iec.last_exported_highlight_created_at IS NULL\n                         OR h.created_at > iec.last_exported_highlight_created_at\n                         OR (\n                           h.created_at = iec.last_exported_highlight_created_at\n                           AND h.id > COALESCE(iec.last_exported_highlight_id, '00000000-0000-0000-0000-000000000000'::uuid)\n                         )\n                       )\n                   )\n                   OR (\n                     $5\n                     AND EXISTS (\n                       SELECT 1\n                       FROM archive_assets aa\n                       WHERE aa.document_id = d.id\n                         AND aa.asset_kind IN ('readable_html', 'epub', 'pdf')\n                         AND aa.status = 'completed'\n                         AND btrim(aa.s3_key) <> ''\n                         AND (\n                           iec.last_delivered_at IS NULL\n                           OR iec.last_exported_full_document_hash IS NULL\n                           OR aa.created_at > iec.last_delivered_at\n                         )\n                     )\n                   )\n                 )\n                 AND (\n                   le.id = ANY($3)\n                   OR q.library_entry_id IS NOT NULL\n                   OR EXISTS (\n                     SELECT 1\n                     FROM highlights h\n                     WHERE h.user_id = $1 AND h.document_id = d.id\n                   )\n                   OR (\n                     $5\n                     AND EXISTS (\n                       SELECT 1\n                       FROM archive_assets aa\n                       WHERE aa.document_id = d.id\n                         AND aa.asset_kind IN ('readable_html', 'epub', 'pdf')\n                         AND aa.status = 'completed'\n                         AND btrim(aa.s3_key) <> ''\n                     )\n                   )\n                 )\n               ORDER BY le.saved_at ASC, le.id ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "library_entry_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_delivered_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "last_exported_highlight_created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_exported_highlight_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "last_exported_file_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "last_exported_full_document_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "generated_path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "generated_full_document_path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "force_full!: bool",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "19fe6c8ca3bef80dd0341425642a2bfef26e0f573998efe8ac22219be6b7ef14"
+}

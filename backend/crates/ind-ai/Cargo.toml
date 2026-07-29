@@ -1,0 +1,37 @@
+[package]
+name = "ind-ai"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+ind-egress = { workspace = true }
+ind-auth = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+hound = { workspace = true }
+reqwest = { workspace = true, features = ["stream"] }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+axum = { workspace = true }
+ind-html = { workspace = true }
+ind-persistence = { workspace = true }
+ind-test-support = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+wiremock = { workspace = true }
+
+[lints]
+workspace = true

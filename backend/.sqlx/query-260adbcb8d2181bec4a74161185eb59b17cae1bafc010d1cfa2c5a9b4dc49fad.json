@@ -1,0 +1,151 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id, recovery_key, job_type, payload, dedupe_key, outbox_id,\n                subject_kind, subject_id, status, failure_class,\n                failure_reason_code, error_message, apalis_attempts,\n                recovery_attempts, next_retry_at, lease_owner, lease_expires_at,\n                first_failed_at, last_failed_at, resolved_at, created_at, updated_at\n            FROM background_job_recoveries\n            WHERE ($1::text IS NULL OR status = $1)\n              AND ($1::text IS NOT NULL OR status <> 'resolved')\n              AND ($2::text IS NULL OR job_type = $2)\n              AND ($3::text IS NULL OR subject_kind = $3)\n            ORDER BY updated_at DESC\n            LIMIT $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "recovery_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "job_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "dedupe_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "outbox_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "subject_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "failure_class",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "failure_reason_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "error_message",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "apalis_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "recovery_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "next_retry_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "lease_owner",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "lease_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "first_failed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "last_failed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 19,
+        "name": "resolved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 21,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "260adbcb8d2181bec4a74161185eb59b17cae1bafc010d1cfa2c5a9b4dc49fad"
+}

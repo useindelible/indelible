@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_export_cursor\n               SET last_attempted_at = $3, last_error = $4, updated_at = now()\n               WHERE connection_id = $1 AND library_entry_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e7e46385f145a364b1b3b7c2abb97ba7a829475d346bb109d2ffcd2a2ea6b796"
+}

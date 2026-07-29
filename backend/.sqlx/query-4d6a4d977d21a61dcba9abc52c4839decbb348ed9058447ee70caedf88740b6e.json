@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_deliveries SET seen_at = now(), updated_at = now() WHERE user_id = $1 AND seen_at IS NULL AND dismissed_at IS NULL AND hidden_at IS NULL AND ($2::uuid IS NULL OR subscription_id = $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4d6a4d977d21a61dcba9abc52c4839decbb348ed9058447ee70caedf88740b6e"
+}

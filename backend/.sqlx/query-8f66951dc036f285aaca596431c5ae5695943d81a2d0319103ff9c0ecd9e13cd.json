@@ -1,0 +1,68 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.id, t.user_id, t.name, t.color, t.parent_id, t.created_at, COUNT(DISTINCT le.id) AS item_count, COUNT(DISTINCT ht.highlight_id) AS highlight_count FROM tags t LEFT JOIN library_entry_tags let ON let.tag_id = t.id LEFT JOIN library_entries le ON le.id = let.library_entry_id AND le.deleted_at IS NULL LEFT JOIN highlight_tags ht ON ht.tag_id = t.id WHERE t.user_id = $1 AND (t.name, t.id) > ($2, $3) GROUP BY t.id HAVING ($5 = 0) OR ($5 = 1 AND COUNT(DISTINCT le.id) > 0) OR ($5 = 2 AND COUNT(DISTINCT ht.highlight_id) > 0) ORDER BY t.name ASC, t.id ASC LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "color",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "parent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "item_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "highlight_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Int8",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "8f66951dc036f285aaca596431c5ae5695943d81a2d0319103ff9c0ecd9e13cd"
+}

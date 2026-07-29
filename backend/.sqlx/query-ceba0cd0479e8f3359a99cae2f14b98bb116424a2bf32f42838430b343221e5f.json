@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE email_aliases\n               SET status = 'retired',\n                   retired_at = now()\n               WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ceba0cd0479e8f3359a99cae2f14b98bb116424a2bf32f42838430b343221e5f"
+}

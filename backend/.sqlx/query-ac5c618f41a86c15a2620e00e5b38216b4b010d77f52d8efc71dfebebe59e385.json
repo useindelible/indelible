@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT EXISTS (\n                SELECT 1\n                FROM job_outbox\n                WHERE dispatched_at IS NULL\n                  AND (\n                    dedupe_key = ANY($1)\n                    OR dedupe_key LIKE $2\n                  )\n            ) AS \"exists!\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "ac5c618f41a86c15a2620e00e5b38216b4b010d77f52d8efc71dfebebe59e385"
+}

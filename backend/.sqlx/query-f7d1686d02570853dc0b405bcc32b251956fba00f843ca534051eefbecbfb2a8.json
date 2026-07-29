@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM ai_prompt_presets\n            WHERE id = $1\n              AND user_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f7d1686d02570853dc0b405bcc32b251956fba00f843ca534051eefbecbfb2a8"
+}

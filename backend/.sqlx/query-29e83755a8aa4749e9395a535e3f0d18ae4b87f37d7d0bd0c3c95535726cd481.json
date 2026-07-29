@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                h.id AS highlight_id,\n                h.text_content AS text,\n                hn.body AS \"note?\",\n                CASE\n                    WHEN h.locator ->> 'type' = 'epub' THEN h.locator ->> 'chapter'\n                    ELSE NULL\n                END AS \"section_key?\"\n            FROM highlights h\n            LEFT JOIN highlight_notes hn ON hn.highlight_id = h.id\n            WHERE h.document_id = $1\n            ORDER BY h.created_at ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "highlight_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "note?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "section_key?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "29e83755a8aa4749e9395a535e3f0d18ae4b87f37d7d0bd0c3c95535726cd481"
+}

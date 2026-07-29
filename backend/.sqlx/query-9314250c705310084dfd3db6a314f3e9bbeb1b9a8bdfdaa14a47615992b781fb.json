@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT DISTINCT cv.user_id AS \"user_id!\"\n            FROM content_vectors cv\n            WHERE NOT EXISTS (\n                    SELECT 1\n                    FROM mila_config mc\n                    WHERE mc.user_id = cv.user_id\n              )\n              AND (\n                    cv.embedding_model <> $1\n                    OR cv.embedding_dim <> $2\n              )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9314250c705310084dfd3db6a314f3e9bbeb1b9a8bdfdaa14a47615992b781fb"
+}

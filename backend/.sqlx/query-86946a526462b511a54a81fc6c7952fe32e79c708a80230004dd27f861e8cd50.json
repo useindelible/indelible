@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, source_id, guid, title, url, canonical_url, author, excerpt, content_html, language, lead_image_url, published_at, discovered_at FROM feed_source_entries WHERE source_id = $1 AND guid = $2 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "source_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "guid",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "canonical_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "excerpt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "content_html",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "language",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "lead_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "published_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "discovered_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "86946a526462b511a54a81fc6c7952fe32e79c708a80230004dd27f861e8cd50"
+}

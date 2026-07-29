@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT name\n            FROM collections\n            WHERE user_id = $1\n              AND lower(name) LIKE $2\n            ORDER BY lower(name)\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "08c10e80afd6ca85d8442f52e676bec1ad41cc2a3d3389b3a31bf8e49902878e"
+}

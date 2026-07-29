@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH source_documents AS (\n                SELECT em.document_id\n                FROM entity_mentions em\n                JOIN library_entries le\n                    ON le.document_id = em.document_id AND le.user_id = $2 AND le.deleted_at IS NULL\n                WHERE em.entity_id = $1\n                  AND em.document_id IS NOT NULL\n            ),\n            shared_entities AS (\n                SELECT\n                    e.id,\n                    e.user_id,\n                    e.name,\n                    e.entity_type,\n                    e.description,\n                    e.created_at,\n                    COUNT(DISTINCT em.document_id)::int8 AS shared_item_count\n                FROM entity_mentions em\n                JOIN source_documents sd ON sd.document_id = em.document_id\n                JOIN entities e ON e.id = em.entity_id\n                WHERE e.user_id = $2\n                  AND e.id <> $1\n                GROUP BY e.id, e.user_id, e.name, e.entity_type, e.description, e.created_at\n            ),\n            totals AS (\n                SELECT\n                    em.entity_id,\n                    COALESCE(SUM(em.mention_count), 0)::int8 AS total_mentions\n                FROM entity_mentions em\n                JOIN library_entries le\n                    ON le.document_id = em.document_id AND le.user_id = $2 AND le.deleted_at IS NULL\n                GROUP BY em.entity_id\n            )\n            SELECT\n                se.id AS \"id!\",\n                se.user_id AS \"user_id!\",\n                se.name AS \"name!\",\n                se.entity_type AS \"entity_type!\",\n                se.description,\n                se.created_at AS \"created_at!\",\n                se.shared_item_count AS \"shared_item_count!\",\n                COALESCE(t.total_mentions, 0) AS \"total_mentions!\"\n            FROM shared_entities se\n            LEFT JOIN totals t ON t.entity_id = se.id\n            ORDER BY se.shared_item_count DESC, COALESCE(t.total_mentions, 0) DESC, lower(se.name), se.name, se.id\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "entity_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "shared_item_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "total_mentions!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "0665c6bbe96faaf314267609549694ec971de6fd1ba4ba352b6da63be6b7b0e3"
+}

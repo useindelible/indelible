@@ -1,0 +1,166 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT accent_color, sidebar_mode, default_view, list_density, side_panel, triage_mode, auto_advance, reader_font_family, reader_font_size, reader_line_height, reader_email_open_mode, ai_mila_enabled, ai_custom_prompt, archival_monolith, archival_pdf, archival_screenshot, archival_warc, duplicate_detection_enabled, duplicate_sensitivity, duplicate_action, browser_timeout_secs, max_concurrent_archives, ai_auto_processing, proxy_url, proxy_all_requests FROM user_preferences WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "accent_color",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "sidebar_mode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "default_view",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "list_density",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "side_panel",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "triage_mode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "auto_advance",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "reader_font_family",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "reader_font_size",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "reader_line_height",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "reader_email_open_mode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "ai_mila_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 12,
+        "name": "ai_custom_prompt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "archival_monolith",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "archival_pdf",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 15,
+        "name": "archival_screenshot",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 16,
+        "name": "archival_warc",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 17,
+        "name": "duplicate_detection_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 18,
+        "name": "duplicate_sensitivity",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "duplicate_action",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "browser_timeout_secs",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 21,
+        "name": "max_concurrent_archives",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 22,
+        "name": "ai_auto_processing",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 23,
+        "name": "proxy_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 24,
+        "name": "proxy_all_requests",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "791b1a95d83436960434835eaf38a4b6384b218149b73598d3c3c9c039f45867"
+}
