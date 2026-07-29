@@ -1,0 +1,53 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Agent tooling (local only)
+.claude/
+
+# Rust
+/backend/target/
+/backend/configurations/development.toml
+
+# Node
+node_modules/
+
+# Web (SvelteKit)
+/web/build/
+/web/.svelte-kit/
+/web/coverage/
+
+# Website (Astro)
+/website/dist/
+/website/.astro/
+
+# Extension (WXT)
+/extension/.output/
+/extension/.wxt/
+
+# Mobile
+/mobile/build/
+/mobile/**/build/
+/mobile/.gradle/
+/mobile/local.properties
+
+# Obsidian plugin build output
+/obsidian/main.js
+
+# Signing material. A committed keystore means rotating the app signing key and
+# breaking update continuity for every sideloaded install.
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+!**/testdata/**/*.pem
+
+# Internal engineering notes, kept out of the published tree.
+ARCHITECTURE.md

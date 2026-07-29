@@ -1,0 +1,149 @@
+name: Docker
+
+# Two paths in: merges to main publish latest + sha tags once CI succeeds, and
+# release tags publish semver tags directly. A tag is cut from a commit that
+# already passed CI on main, so tag builds do not wait on a second CI run.
+#
+# Images are multi-arch. Each architecture builds on its own native runner and
+# pushes an untagged digest; the merge job then assembles the tagged manifest
+# list. Native arm64 runners avoid QEMU emulation, which turns a Rust build into
+# an hours-long job.
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.image }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both axes must be declared. An `include` entry whose keys are not
+        # matrix axes is merged into every combination instead of expanding
+        # them, which silently collapses this to one architecture.
+        image:
+          - ind-api
+          - ind-worker
+          - ind-renderer
+        arch:
+          - amd64
+          - arm64
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # Empty on tag pushes, which fall back to the pushed ref itself.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Resolve build inputs
+        id: img
+        run: |
+          case "${{ matrix.image }}" in
+            ind-api)
+              # Root context: this image builds the web app alongside the API.
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "dockerfile=backend/apps/ind-api/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "context=backend" >> "$GITHUB_OUTPUT"
+              echo "dockerfile=backend/apps/${{ matrix.image }}/Dockerfile" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ steps.img.outputs.context }}
+          file: ${{ steps.img.outputs.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          # GITHUB_TOKEN can only publish packages under the repository owner's
+          # namespace, so derive it instead of hardcoding the org.
+          outputs: type=image,name=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${digest#sha256:}"
+        env:
+          digest: ${{ steps.build.outputs.digest }}
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+          if-no-files-found: error
+
+  merge:
+    name: Publish ${{ matrix.image }} manifest
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [ind-api, ind-worker, ind-renderer]
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: digest-${{ matrix.image }}-*
+          merge-multiple: true
+          path: /tmp/digests
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
+            type=sha,prefix=,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}@sha256:%s ' *)
+
+      - name: Verify both architectures are present
+        run: |
+          docker buildx imagetools inspect "ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ steps.meta.outputs.version }}" \
+            | tee /tmp/inspect.txt
+          for arch in amd64 arm64; do
+            grep -q "linux/$arch" /tmp/inspect.txt || { echo "missing linux/$arch in the published manifest"; exit 1; }
+          done

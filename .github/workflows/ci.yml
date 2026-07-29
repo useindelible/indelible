@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.backlog/**'
+      - 'prototypes/**'
+      - 'obsidian/**'
+      - 'linkwarden-docs/**'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.backlog/**'
+      - 'prototypes/**'
+      - 'obsidian/**'
+      - 'linkwarden-docs/**'
+  schedule:
+    - cron: '17 3 * * 1'
+
+# Read-only by default; no job here needs to write to the repository.
+permissions:
+  contents: read
+
+jobs:
+  rust-lint:
+    name: Rust Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@e43eeffd51aefeea929f4ea14e09fd077153e788 # 1.94.1
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: backend
+          # Keyed separately from the test job: caches are immutable per key,
+          # and clippy's check-only artifacts are useless for building test
+          # binaries — sharing a key let lint's save block the test job's.
+          shared-key: backend-lint
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo fmt --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Confine user deletion to the account purge repository
+        run: |
+          if grep -rn "DELETE FROM users" crates apps --include='*.rs' \
+            | grep -v "account_purge_repo.rs" | grep -v "/tests/"; then
+            echo "DELETE FROM users may only live in account_purge_repo.rs" >&2
+            exit 1
+          fi
+
+  rust-test:
+    name: Rust Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Full debuginfo for a workspace this size overflows the ~14 GB free on
+      # hosted runners; line tables keep file:line in backtraces at a fraction
+      # of the disk cost.
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
+      CARGO_PROFILE_TEST_DEBUG: line-tables-only
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Free runner disk space
+        working-directory: /
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
+      - name: Point renderer tests at the preinstalled browser
+        # Hosted runners ship google-chrome but nothing named `chromium`,
+        # which is what the renderer's auto-detection falls back to.
+        run: |
+          BROWSER=$(command -v google-chrome || command -v chromium-browser || command -v chromium)
+          echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
+          echo "using $BROWSER"
+      - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
+      - uses: dtolnay/rust-toolchain@e43eeffd51aefeea929f4ea14e09fd077153e788 # 1.94.1
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: backend
+          shared-key: backend-test
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo test --workspace --all-features
+      # Runs after the suite so the test binaries are already built: this only
+      # lists them and checks every pinned invariant still resolves.
+      - run: ../scripts/verify-test-invariants.sh
+
+  rust-critical-mutants:
+    name: Rust Critical Mutants
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'pull_request'
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
+      CARGO_PROFILE_TEST_DEBUG: line-tables-only
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Free runner disk space
+        working-directory: /
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
+      - id: changes
+        name: Detect critical-owner changes
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "${{ github.event.pull_request.base.sha }}"...HEAD -- \
+            mutants.toml test-invariants.toml \
+            crates/ind-auth/src/api_token.rs \
+            crates/ind-auth/src/refresh_token.rs \
+            crates/ind-persistence/src/repos/entity_repo/resolution.rs \
+            crates/ind-persistence/src/repos/document_lifecycle_repo \
+            crates/ind-persistence/src/repos/background_job_recovery_repo.rs \
+            crates/ind-persistence/src/repos/search_repo/fts.rs \
+            crates/ind-application/src/services/tts/synthesis/service.rs \
+            crates/ind-ai/src/chat/streaming.rs \
+            crates/ind-ai/src/embed/mod.rs \
+            apps/ind-worker/src/failure.rs \
+            apps/ind-worker/src/jobs/integrations/readwise; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
+        if: steps.changes.outputs.run == 'true'
+      - uses: dtolnay/rust-toolchain@e43eeffd51aefeea929f4ea14e09fd077153e788 # 1.94.1
+        if: steps.changes.outputs.run == 'true'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        if: steps.changes.outputs.run == 'true'
+        with:
+          workspaces: backend
+          shared-key: backend-mutants
+      # Building cargo-mutants from source costs minutes before any mutant runs,
+      # and the pinned version only changes when we bump it.
+      - name: Cache pinned cargo-mutants
+        if: steps.changes.outputs.run == 'true'
+        id: cache-mutants
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cargo/bin/cargo-mutants
+          key: cargo-mutants-27.1.0-${{ runner.os }}
+      - name: Install pinned cargo-mutants
+        if: steps.changes.outputs.run == 'true' && steps.cache-mutants.outputs.cache-hit != 'true'
+        run: cargo install --locked cargo-mutants --version 27.1.0
+      - name: Verify critical mutation sample
+        if: steps.changes.outputs.run == 'true'
+        run: ../scripts/verify-critical-mutants.sh
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec svelte-kit sync
+      - run: pnpm check
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm test
+
+  extension:
+    name: Extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run check
+      - run: npm run dom-preprocessor:check
+      - run: npm test
