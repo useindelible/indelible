@@ -1,0 +1,113 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, user_id, import_source, import_method, status,\n                      imported_count, updated_count, duplicate_count,\n                      skipped_private_count, failed_count, raw_artifact_key,\n                      provider_report, error, created_at, started_at, finished_at\n               FROM import_jobs\n               WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "import_source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "import_method",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "imported_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "duplicate_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "skipped_private_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "failed_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "raw_artifact_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "provider_report",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 12,
+        "name": "error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "started_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "finished_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "e0dc48e827c308782bca91e244aeee8725ad1bd0f7ebcd1dbca759d32617fb6f"
+}

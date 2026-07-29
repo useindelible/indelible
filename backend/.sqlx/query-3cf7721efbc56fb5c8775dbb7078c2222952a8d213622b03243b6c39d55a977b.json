@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.document_type AS \"item_type!\", COUNT(*) FILTER (WHERE uds.finished_at IS NOT NULL) AS \"done!\", COUNT(*) FILTER ( WHERE uds.finished_at IS NULL AND COALESCE(uds.max_progress_percent, 0) > 0 ) AS \"reading!\", COUNT(*) FILTER ( WHERE uds.finished_at IS NULL AND COALESCE(uds.max_progress_percent, 0) = 0 ) AS \"unread!\" FROM library_entries le JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id LEFT JOIN user_document_state uds ON uds.user_id = le.user_id AND uds.document_id = le.document_id WHERE le.user_id = $1 AND le.deleted_at IS NULL AND ($2::text IS NULL OR le.triage_state = $2) GROUP BY d.document_type ORDER BY d.document_type",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "item_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "done!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "reading!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "unread!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3cf7721efbc56fb5c8775dbb7078c2222952a8d213622b03243b6c39d55a977b"
+}

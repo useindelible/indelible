@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT split_part(es.canonical_addr, '@', 2) AS \"domain!\"\n            FROM email_senders es\n            JOIN documents d ON d.sender_id = es.id AND d.user_id = $1\n            WHERE es.user_id = $1\n              AND split_part(es.canonical_addr, '@', 2) <> ''\n              AND lower(split_part(es.canonical_addr, '@', 2)) LIKE $2\n            GROUP BY split_part(es.canonical_addr, '@', 2)\n            ORDER BY count(d.id) DESC, lower(split_part(es.canonical_addr, '@', 2))\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "domain!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0a9b2534b252ec93a77ec20ef20ccab400a1c499a8122e7de7749be3affb7685"
+}

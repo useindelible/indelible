@@ -1,0 +1,169 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH due AS ( SELECT fs.id FROM feed_sources fs WHERE EXISTS ( SELECT 1 FROM feed_subscriptions sub WHERE sub.source_id = fs.id AND sub.status = 'active' ) AND COALESCE(next_poll_at, $1) <= $1 AND (lease_expires_at IS NULL OR lease_expires_at < $1) ORDER BY next_poll_at NULLS FIRST, updated_at ASC LIMIT $2 FOR UPDATE SKIP LOCKED ) UPDATE feed_sources fs SET lease_owner = $3, lease_expires_at = $4, updated_at = now() FROM due WHERE fs.id = due.id RETURNING fs.id, fs.canonical_key, fs.source_url, fs.poll_url, fs.title, fs.description, fs.site_url, fs.image_url, fs.domain, fs.feed_type, fs.visibility, fs.provider, fs.is_resolvable, fs.popularity, fs.last_entry_added_at, fs.last_polled_at, fs.next_poll_at, fs.last_etag, fs.last_modified, fs.consecutive_failures, fs.last_error, fs.lease_owner, fs.lease_expires_at, fs.created_at, fs.updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "canonical_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "source_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "poll_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "site_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "domain",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "feed_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "visibility",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "is_resolvable",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "popularity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "last_entry_added_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "last_polled_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 16,
+        "name": "next_poll_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "last_etag",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
+        "name": "last_modified",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "consecutive_failures",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 20,
+        "name": "last_error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
+        "name": "lease_owner",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "lease_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 23,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 24,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "a008371fda3a886e049da8aa2151296c154e78c09f8dfeacdae27133257aaa1a"
+}

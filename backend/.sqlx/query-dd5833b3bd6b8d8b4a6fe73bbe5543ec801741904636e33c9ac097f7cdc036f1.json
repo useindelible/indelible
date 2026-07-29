@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE documents SET language = $3, updated_at = now() WHERE id = $1 AND user_id = $2 AND language IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dd5833b3bd6b8d8b4a6fe73bbe5543ec801741904636e33c9ac097f7cdc036f1"
+}

@@ -1,0 +1,166 @@
+# Indelible backend — shared defaults (safe to commit)
+#
+# All three services (ind-api, ind-worker, ind-renderer) read this file.
+# Service-specific host/port are kept as Rust built-in defaults to avoid
+# cross-service collisions — they differ between ind-api (38473) and
+# ind-renderer (3100), so they cannot safely live in a shared file.
+#
+# Priority (highest wins): env vars → configurations/{env}.toml → configurations/base.toml → Rust defaults
+
+# ---------------------------------------------------------------------------
+# Shared
+# ---------------------------------------------------------------------------
+
+[server]
+environment = "development"
+log_level   = "info"
+
+# ---------------------------------------------------------------------------
+# ind-api: Authentication — dev placeholder secrets
+# Production validation rejects these values when environment != "development"
+# ---------------------------------------------------------------------------
+
+[auth]
+csrf_secret = "dev-csrf-secret-change-in-production"
+jwt_secret  = "dev-jwt-secret-change-in-production-min32"
+# Allow new user registration. Set false to lock signups after initial setup;
+# the first account can always be created on an empty instance (first-run setup).
+# Env override: AUTH_ALLOW_SIGNUPS.
+allow_signups = true
+
+# ---------------------------------------------------------------------------
+# ind-api: CORS / Frontend
+# ---------------------------------------------------------------------------
+
+[cors]
+frontend_url = "http://localhost:5173"
+origins      = ["http://localhost:5173"]
+
+# ---------------------------------------------------------------------------
+# ind-api: Object storage
+# ---------------------------------------------------------------------------
+
+[storage]
+asset_serving_mode = "presigned"
+
+# ---------------------------------------------------------------------------
+# Shared Mila defaults
+# ---------------------------------------------------------------------------
+
+[mila]
+enabled                 = false
+chat_api_base           = "https://api.openai.com/v1"
+chat_model              = "gpt-4.1-mini"
+embedding_api_base      = "https://api.openai.com/v1"
+embedding_model         = "text-embedding-3-small"
+embedding_dim           = 768
+# Total token window of your chat model (input + output). Defaults to 12000 in code;
+# override per deployment here or via MILA_MODEL_CONTEXT_WINDOW to match your model.
+model_context_window    = 12000
+# Percent (1-100) of model_context_window the chat sends inline before switching to RAG.
+chat_context_pct        = 70
+chunk_size              = 512
+chunk_overlap           = 64
+top_k                   = 6
+cross_item_top_k        = 20
+cross_item_max_per_item = 3
+
+# ---------------------------------------------------------------------------
+# ind-api: Native cloud TTS
+# ---------------------------------------------------------------------------
+
+[tts]
+enabled                       = true
+hosted_managed_custom_persona = false
+
+[tts.dashscope]
+# api_key = "replace-with-dashscope-api-key"
+api_base             = "https://dashscope-intl.aliyuncs.com"
+transcript_supported = false
+
+[tts.unreal_speech]
+# api_key = "replace-with-unreal-speech-api-key"
+api_base             = "https://api.v8.unrealspeech.com"
+transcript_supported = true
+
+# ---------------------------------------------------------------------------
+# ind-api: Rate limiting
+# ---------------------------------------------------------------------------
+
+[rate_limit.login]
+requests    = 5
+window_secs = 30
+
+[rate_limit.registration]
+requests    = 3
+window_secs = 60
+
+[rate_limit.password_reset]
+requests    = 3
+window_secs = 900
+
+# Per-user ceiling across all authenticated API routes. Generous by default so
+# bursty UIs are unaffected; bounds a runaway loop or scripted abuse per account.
+# Override: USER_API_RATE_LIMIT_REQUESTS / USER_API_RATE_LIMIT_WINDOW_SECS.
+[rate_limit.user_api]
+requests    = 1000
+window_secs = 60
+
+# ---------------------------------------------------------------------------
+# ind-worker: Job relay
+# ---------------------------------------------------------------------------
+
+[relay]
+poll_interval_ms = 1000
+batch_size       = 10
+
+# ---------------------------------------------------------------------------
+# ind-worker: Feed polling
+# ---------------------------------------------------------------------------
+
+[feed]
+enabled                       = true
+scheduler_interval_secs       = 60
+batch_size                    = 50
+lease_secs                    = 120
+default_poll_interval_minutes = 15
+min_poll_interval_minutes     = 15
+
+# ---------------------------------------------------------------------------
+# ind-worker: Auto-heal
+# ---------------------------------------------------------------------------
+
+[auto_heal]
+enabled          = true
+interval_secs    = 60
+stale_after_secs = 180
+lease_secs       = 180
+batch_size       = 100
+
+# ---------------------------------------------------------------------------
+# ind-worker: S3 bucket (top-level field, separate from [s3] below)
+# ---------------------------------------------------------------------------
+
+s3_bucket = "indelible"
+
+# ---------------------------------------------------------------------------
+# ind-renderer: Chromium
+# ---------------------------------------------------------------------------
+
+[chromium]
+single_process    = false
+idle_timeout_secs = 30
+
+[capture]
+max_concurrency = 1
+locale          = "en-US"
+timezone        = "UTC"
+
+# ---------------------------------------------------------------------------
+# ind-renderer: S3 (non-secret defaults)
+# ---------------------------------------------------------------------------
+
+[s3]
+region           = "us-east-1"
+bucket           = "indelible"
+force_path_style = true

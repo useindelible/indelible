@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_connections\n               SET config = $3, updated_at = now(), version = version + 1\n               WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "96bf0e3324f00576375a7c764cc0f08c3ecab25b6cefc5daae95ffbbfed5919a"
+}

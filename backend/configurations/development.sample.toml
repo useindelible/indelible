@@ -1,0 +1,116 @@
+# Indelible backend — development secrets template
+#
+# Copy this file to development.toml and fill in your local values.
+# development.toml is gitignored and must never be committed.
+
+database_url = "postgres://USER:PASS@localhost:5432/indelible"
+
+# ---------------------------------------------------------------------------
+# Credential cipher key — encrypts OAuth tokens at rest (AES-256-GCM)
+# ---------------------------------------------------------------------------
+
+[auth]
+credential_key = ""  # run: openssl rand -base64 32
+# Set false to disable new signups after you've created your account(s). The
+# first account can always be created on an empty instance. Env: AUTH_ALLOW_SIGNUPS.
+allow_signups  = true
+
+# ---------------------------------------------------------------------------
+# ind-api: Object storage (passthrough mode for local dev)
+#
+# These are the values ind-api reads. The renderer has its own [s3] table
+# below; the worker uses the same env vars (S3_ENDPOINT etc.) but at the
+# top level of its config — see the env exports or the worker config.
+# ---------------------------------------------------------------------------
+
+[storage]
+s3_enabled          = true
+s3_endpoint         = "http://localhost:9000"
+s3_region           = "us-east-1"
+s3_access_key       = "your-silo-access-key"
+s3_secret_key       = "your-silo-secret-key"
+s3_bucket           = "indelible"
+s3_force_path_style = true
+asset_serving_mode  = "passthrough"
+asset_cookie_secret = "replace-with-at-least-64-hex-chars"
+
+# ---------------------------------------------------------------------------
+# Shared Mila defaults for local OpenAI-compatible providers (LM Studio)
+# ---------------------------------------------------------------------------
+
+[mila]
+enabled                 = true
+chat_api_base           = "http://localhost:1234/v1"
+chat_model              = "gemma-4-e4b-it"
+embedding_api_base      = "http://localhost:1234/v1"
+embedding_model         = "text-embedding-nomic-embed-text-v1.5"
+embedding_dim           = 768
+# REQUIRED: total token window of your chat model (input + output).
+model_context_window    = 12000
+# Percent (1-100) of model_context_window the chat sends inline before switching to RAG.
+chat_context_pct        = 70
+chunk_size              = 512
+chunk_overlap           = 64
+top_k                   = 6
+cross_item_top_k        = 20
+cross_item_max_per_item = 3
+
+# ---------------------------------------------------------------------------
+# Native cloud TTS provider credentials
+# ---------------------------------------------------------------------------
+
+[tts]
+enabled                       = true
+# Set true only when hosted deployments should allow provider-side custom
+# persona creation/design. Preset provider_voice_id personas work without it.
+hosted_managed_custom_persona = true
+
+[tts.dashscope]
+api_key              = "replace-with-dashscope-api-key"
+api_base             = "https://dashscope-intl.aliyuncs.com"
+transcript_supported = false
+
+[tts.unreal_speech]
+api_key              = "replace-with-unreal-speech-api-key"
+api_base             = "https://api.v8.unrealspeech.com"
+transcript_supported = true
+
+# ---------------------------------------------------------------------------
+# Integration OAuth credentials
+# ---------------------------------------------------------------------------
+
+[integrations.notion]
+# Obtain from https://www.notion.so/my-integrations — create a Public integration.
+# Set the redirect URI in Notion to: http://localhost:38473/api/v1/integrations/notion/callback
+client_id     = ""
+client_secret = ""  # stored as SecretString; never logged
+redirect_url  = "http://localhost:38473/api/v1/integrations/notion/callback"
+
+# ---------------------------------------------------------------------------
+# ind-renderer: S3 credentials (Silo or compatible)
+# ---------------------------------------------------------------------------
+
+[s3]
+endpoint   = "http://localhost:9000"
+access_key = "your-silo-access-key"
+secret_key = "your-silo-secret-key"
+
+# ---------------------------------------------------------------------------
+# Inbound email ingestion
+#
+# Inbound addresses are formed as `<token>@<feed_domain>` (newsletter feed)
+# and `<token>@<library_domain>` (one-off library forwards). The defaults
+# below match the Indelible-hosted SaaS; self-hosters should override per
+# deployment to point at their own MX-backed subdomains.
+#
+# The same values can be set via env vars: EMAIL_FEED_DOMAIN,
+# EMAIL_LIBRARY_DOMAIN, EMAIL_INGEST_PROVIDER, EMAIL_INGEST_WEBHOOK_SECRET,
+# RESEND_API_KEY.
+# ---------------------------------------------------------------------------
+
+[email_ingest]
+feed_domain    = "feed.useindelible.com"
+library_domain = "library.useindelible.com"
+# provider          = "resend"
+# webhook_secret    = "whsec_..."
+# resend_api_key    = "re_..."

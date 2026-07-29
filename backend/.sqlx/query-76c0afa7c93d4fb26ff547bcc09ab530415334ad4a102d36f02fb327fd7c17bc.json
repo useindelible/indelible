@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_sources SET lease_owner = NULL, lease_expires_at = NULL, updated_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "76c0afa7c93d4fb26ff547bcc09ab530415334ad4a102d36f02fb327fd7c17bc"
+}

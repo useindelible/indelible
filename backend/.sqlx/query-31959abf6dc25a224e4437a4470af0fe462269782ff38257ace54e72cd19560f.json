@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT h.id, h.text_content AS text, h.color, h.created_at, hn.body AS \"note?\"\n               FROM highlights h\n               LEFT JOIN highlight_notes hn ON hn.highlight_id = h.id\n               WHERE h.document_id = $1 AND h.user_id = $2\n               ORDER BY h.created_at, h.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "text",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "color",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "note?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "31959abf6dc25a224e4437a4470af0fe462269782ff38257ace54e72cd19560f"
+}

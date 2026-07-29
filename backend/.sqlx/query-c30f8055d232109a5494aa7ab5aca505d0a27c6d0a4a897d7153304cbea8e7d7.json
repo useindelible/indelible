@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE email_aliases\n               SET retire_at = now() + make_interval(days => $2::int),\n                   is_default = false\n               WHERE id = $1\n                 AND status = 'active'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c30f8055d232109a5494aa7ab5aca505d0a27c6d0a4a897d7153304cbea8e7d7"
+}

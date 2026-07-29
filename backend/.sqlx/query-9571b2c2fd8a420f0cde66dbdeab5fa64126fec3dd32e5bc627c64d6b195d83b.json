@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE documents SET lead_image_url = $3, thumbnail_url = COALESCE(thumbnail_url, $3), updated_at = now() WHERE id = $1 AND user_id = $2 AND lead_image_url IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9571b2c2fd8a420f0cde66dbdeab5fa64126fec3dd32e5bc627c64d6b195d83b"
+}

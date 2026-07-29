@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE webhook_dispatches SET status = 'exhausted', exhausted_at = $2, last_error = $3, updated_at = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f8c638585bbc3007bd04fc8b0a809f6f998790dd425ba099779ce81f95ba5727"
+}

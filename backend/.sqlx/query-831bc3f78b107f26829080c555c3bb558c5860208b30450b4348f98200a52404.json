@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id, le.id AS \"library_entry_id!\", d.title,\n                      COALESCE(d.original_url, d.canonical_url) AS url,\n                      d.author, d.document_type AS item_type, d.lead_image_url, d.excerpt\n               FROM library_entries le\n               JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id\n               WHERE le.id = $1\n                 AND le.user_id = $2\n                 AND le.deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "library_entry_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "item_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "lead_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "excerpt",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "831bc3f78b107f26829080c555c3bb558c5860208b30450b4348f98200a52404"
+}

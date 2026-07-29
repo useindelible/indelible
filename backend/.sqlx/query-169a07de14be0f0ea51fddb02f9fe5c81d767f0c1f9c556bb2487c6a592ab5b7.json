@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS \"count!\" FROM feed_deliveries fd LEFT JOIN documents d ON d.id = fd.document_id AND d.user_id = fd.user_id LEFT JOIN library_entries le ON le.user_id = fd.user_id AND le.document_id = d.id AND le.deleted_at IS NULL WHERE fd.user_id = $1 AND fd.seen_at IS NULL AND fd.dismissed_at IS NULL AND fd.hidden_at IS NULL AND le.id IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "169a07de14be0f0ea51fddb02f9fe5c81d767f0c1f9c556bb2487c6a592ab5b7"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO tts_session_chunks (\n                session_id, chunk_id, chunk_record_id, position\n            )\n            SELECT * FROM UNNEST($1::uuid[], $2::text[], $3::uuid[], $4::int4[])\n            ON CONFLICT (session_id, chunk_id) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "TextArray",
+        "UuidArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc79531054de04f27e5332a15cb13d34111e49de115bee9376c4edc0b7d22c79"
+}

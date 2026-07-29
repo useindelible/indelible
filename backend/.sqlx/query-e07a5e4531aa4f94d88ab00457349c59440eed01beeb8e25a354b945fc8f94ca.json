@@ -1,0 +1,57 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO ai_outputs (\n                id, document_id, output_type, content, ai_run_id, created_at\n            )\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ON CONFLICT (document_id, output_type) WHERE document_id IS NOT NULL\n            DO UPDATE SET\n                content = EXCLUDED.content,\n                ai_run_id = EXCLUDED.ai_run_id,\n                created_at = EXCLUDED.created_at\n            RETURNING id, document_id AS \"document_id!\", output_type, content, ai_run_id, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "output_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "content",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "ai_run_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "e07a5e4531aa4f94d88ab00457349c59440eed01beeb8e25a354b945fc8f94ca"
+}

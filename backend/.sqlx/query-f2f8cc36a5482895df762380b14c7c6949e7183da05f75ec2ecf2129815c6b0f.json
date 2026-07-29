@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE archive_assets SET s3_key = $1, size_bytes = $2 WHERE document_id = $3 AND asset_kind = 'readable_html' AND created_at = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2f8cc36a5482895df762380b14c7c6949e7183da05f75ec2ecf2129815c6b0f"
+}

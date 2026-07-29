@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM entity_mentions WHERE document_id = $1 AND NOT (entity_id = ANY($2))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "37d0dbb23716746ba8c67e749c8780684801f9b78850ef7b46479ff466eddf87"
+}

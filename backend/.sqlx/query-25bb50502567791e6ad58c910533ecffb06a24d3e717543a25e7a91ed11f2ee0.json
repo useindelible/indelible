@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE documents\n               SET document_type = 'video',\n                   title = COALESCE($3, title),\n                   excerpt = COALESCE($4, excerpt),\n                   lead_image_url = COALESCE($5, lead_image_url),\n                   updated_at = now()\n               WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "25bb50502567791e6ad58c910533ecffb06a24d3e717543a25e7a91ed11f2ee0"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM obsidian_export_refresh_queue WHERE connection_id = $1 AND library_entry_id = ANY($2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9902a8233c41d363c276b5760697b96e1cbcc89a7e93c357fc3ee207bf351635"
+}

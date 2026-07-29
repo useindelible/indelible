@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO obsidian_export_artifact_items\n                   (artifact_id, library_entry_id, file_path, full_document_path,\n                    last_highlight_created_at, last_highlight_id, content_hash,\n                    full_document_hash, created_at)\n                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a20b39430f9ddd8b328248b4f9b8cb9ed854514fd954b8af4b3885a7e09fc261"
+}

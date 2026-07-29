@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO archive_assets (id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, status, failed_reason, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now()) ON CONFLICT (document_id, asset_kind) WHERE document_id IS NOT NULL DO UPDATE SET s3_key = EXCLUDED.s3_key, s3_bucket = EXCLUDED.s3_bucket, content_type = EXCLUDED.content_type, size_bytes = EXCLUDED.size_bytes, status = EXCLUDED.status, failed_reason = EXCLUDED.failed_reason, created_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2e2074a2dba24189d8aba45a1260e5452367f938458e92db5cf3f7be7f4a8c4e"
+}

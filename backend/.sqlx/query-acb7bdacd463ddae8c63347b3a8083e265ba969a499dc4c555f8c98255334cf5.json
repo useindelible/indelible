@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT d.id\n        FROM documents d\n        JOIN library_entries le\n          ON le.document_id = d.id\n         AND le.user_id = d.user_id\n         AND le.deleted_at IS NULL\n        WHERE d.user_id = $1\n          AND EXISTS (\n                SELECT 1\n                FROM archive_assets aa\n                WHERE aa.document_id = d.id\n                  AND aa.status = 'completed'\n                  AND aa.s3_key <> ''\n                  AND (\n                        (aa.asset_kind = 'readable_html' AND aa.content_type = 'text/html')\n                        OR (aa.asset_kind = 'epub' AND aa.content_type = 'application/json')\n                        OR (aa.asset_kind = 'original_upload' AND aa.content_type = 'application/pdf')\n                  )\n          )\n        ORDER BY le.saved_at DESC, le.id DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "acb7bdacd463ddae8c63347b3a8083e265ba969a499dc4c555f8c98255334cf5"
+}

@@ -1,0 +1,37 @@
+[package]
+name = "ind-persistence"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+apalis = { workspace = true }
+apalis-postgres = { workspace = true }
+sqlx = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+tokio = { workspace = true }
+base64 = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+ulid = { workspace = true }
+aws-sdk-s3 = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+tokio-util = { workspace = true }
+secrecy = { workspace = true }
+
+[dev-dependencies]
+ind-html = { workspace = true }
+ind-test-support = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+dotenvy = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                s.id,\n                s.user_id,\n                s.session_type,\n                s.document_id,\n                s.collection_id,\n                s.created_at,\n                s.last_active,\n                m.content AS \"preview_content: _\",\n                m.role AS \"preview_role: _\"\n            FROM mila_sessions s\n            LEFT JOIN LATERAL (\n                SELECT content, role\n                FROM mila_messages\n                WHERE session_id = s.id\n                ORDER BY created_at DESC\n                LIMIT 1\n            ) m ON true\n            WHERE s.user_id = $1\n            ORDER BY s.last_active DESC\n            LIMIT $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "session_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "collection_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "last_active",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "preview_content: _",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "preview_role: _",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7e6de93d473b103998564180fd23eb5c609bb7bb415871be709cc7311329686f"
+}

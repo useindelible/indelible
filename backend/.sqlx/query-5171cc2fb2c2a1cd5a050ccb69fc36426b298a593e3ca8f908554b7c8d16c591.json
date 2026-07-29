@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO job_outbox (id, job_type, payload, dedupe_key, available_at, created_at)\n                VALUES ($1, $2, $3, NULL, $4, $5)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5171cc2fb2c2a1cd5a050ccb69fc36426b298a593e3ca8f908554b7c8d16c591"
+}

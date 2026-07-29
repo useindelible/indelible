@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO library_entry_tags (user_id, library_entry_id, tag_id, source, added_at) SELECT user_id, library_entry_id, $2, source, added_at FROM library_entry_tags WHERE tag_id = ANY($1) ON CONFLICT (library_entry_id, tag_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6529c58963f1cab2d640e54c455a24b55795e3ad8e520ea5bd143ede0372c7b7"
+}

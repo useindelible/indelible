@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE documents SET word_count = $3, reading_time_minutes = $4, updated_at = now() WHERE id = $1 AND user_id = $2 AND (word_count IS DISTINCT FROM $3 OR reading_time_minutes IS DISTINCT FROM $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1adb6e9a834527d9eebb17f3568a16309c7e5847ab296daa25e526ae130becb6"
+}

@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id,\n                slug,\n                name,\n                version,\n                is_active,\n                stripe_price_id_monthly,\n                stripe_price_id_annual,\n                entitlements,\n                quotas,\n                created_at\n            FROM plans\n            WHERE slug = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "version",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "stripe_price_id_monthly",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "stripe_price_id_annual",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "entitlements",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "quotas",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "aa8ffbb5c8c74286eb2846a40371efb20da7ae150010a8522268ec8533e0adbb"
+}

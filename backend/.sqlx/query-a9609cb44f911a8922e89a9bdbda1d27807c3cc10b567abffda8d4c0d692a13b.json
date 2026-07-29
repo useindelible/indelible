@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                e.id AS entity_id,\n                e.name,\n                e.entity_type,\n                COALESCE(sum(em.mention_count), 0)::int8 AS \"mention_count!\"\n            FROM entities e\n            JOIN entity_mentions em ON em.entity_id = e.id\n            JOIN documents d ON d.id = em.document_id\n            WHERE e.user_id = $1\n              AND d.user_id = $1\n              AND lower(e.name) LIKE $2\n            GROUP BY e.id, e.name, e.entity_type\n            ORDER BY COALESCE(sum(em.mention_count), 0) DESC, lower(e.name), e.name\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entity_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "entity_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "mention_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "a9609cb44f911a8922e89a9bdbda1d27807c3cc10b567abffda8d4c0d692a13b"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_document_state (user_id, document_id, first_opened_at, last_opened_at, created_at, updated_at) VALUES ($1, $2, now(), now(), now(), now()) ON CONFLICT (user_id, document_id) DO UPDATE SET first_opened_at = COALESCE(user_document_state.first_opened_at, EXCLUDED.first_opened_at), last_opened_at = GREATEST(user_document_state.last_opened_at, EXCLUDED.last_opened_at), updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2bfa2d7396457476000b24bd09b316a7f1ed23d0ec115856bbec8af01c7eb5cf"
+}

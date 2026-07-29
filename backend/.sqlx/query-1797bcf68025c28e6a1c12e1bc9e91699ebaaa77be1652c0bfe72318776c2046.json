@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) FROM collection_entries ce JOIN library_entries le ON le.id = ce.library_entry_id AND le.deleted_at IS NULL WHERE ce.collection_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1797bcf68025c28e6a1c12e1bc9e91699ebaaa77be1652c0bfe72318776c2046"
+}

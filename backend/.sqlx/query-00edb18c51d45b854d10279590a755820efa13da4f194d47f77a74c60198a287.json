@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_oauth_tokens\n               SET access_token_enc = $2,\n                   refresh_token_enc = $3,\n                   token_expires_at = $4,\n                   updated_at = now()\n               WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "00edb18c51d45b854d10279590a755820efa13da4f194d47f77a74c60198a287"
+}

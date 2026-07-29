@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT es.canonical_addr AS \"canonical_addr!\"\n            FROM email_senders es\n            JOIN documents d ON d.sender_id = es.id AND d.user_id = $1\n            WHERE es.user_id = $1\n              AND lower(es.canonical_addr) LIKE $2\n            GROUP BY es.canonical_addr\n            ORDER BY count(d.id) DESC, lower(es.canonical_addr)\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "canonical_addr!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ac6692df4cd7996234dc08d2cd3cac5c2f5ae37e17b3d6bc2927c3d850b1875c"
+}

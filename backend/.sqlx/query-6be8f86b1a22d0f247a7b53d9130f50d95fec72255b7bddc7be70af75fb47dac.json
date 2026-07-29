@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO email_senders (\n                id, user_id, canonical_addr, list_id, display_name,\n                first_seen_at, last_seen_at, created_at, updated_at\n            )\n            VALUES ($1, $2, $3, $4, $5, now(), now(), now(), now())\n            ON CONFLICT (user_id, canonical_addr) DO UPDATE\n            SET list_id = COALESCE(email_senders.list_id, EXCLUDED.list_id),\n                display_name = COALESCE(EXCLUDED.display_name, email_senders.display_name),\n                last_seen_at = now(),\n                updated_at = now()\n            RETURNING id, user_id, canonical_addr, list_id, display_name,\n                      render_default, routing_default, blocked_at,\n                      first_seen_at, last_seen_at, delivery_count,\n                      created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "canonical_addr",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "list_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "render_default",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "routing_default",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "blocked_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "first_seen_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "last_seen_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "delivery_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6be8f86b1a22d0f247a7b53d9130f50d95fec72255b7bddc7be70af75fb47dac"
+}

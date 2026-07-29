@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE search_index_state\n                SET target_version = $1,\n                    cursor_created_at = CASE WHEN target_version = $1 THEN cursor_created_at END,\n                    cursor_document_id = CASE WHEN target_version = $1 THEN cursor_document_id END,\n                    updated_at = now()\n                WHERE singleton = true\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d9193601c355498333fe29a915b1565f176595545eb0ddc315667778265e4b0b"
+}

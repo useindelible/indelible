@@ -1,0 +1,48 @@
+[package]
+name = "ind-http-api"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ind-domain = { workspace = true }
+ind-html = { workspace = true }
+ind-application = { workspace = true }
+ind-auth = { workspace = true }
+ind-ingest = { workspace = true }
+ind-integrations = { workspace = true }
+ind-egress = { path = "../ind-egress", default-features = false }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+utoipa = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
+utoipa-scalar = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+http = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true, features = ["sync", "time"] }
+rand = { workspace = true }
+serde_with = { workspace = true }
+validator = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+url = { workspace = true }
+ipnet = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+tower = { workspace = true }
+axum = { workspace = true }
+http-body-util = "0.1"
+async-trait = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT chunk_record_id, element_index, start_timestamp, end_timestamp\n            FROM tts_element_timings\n            WHERE chunk_record_id = $1 AND element_index = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chunk_record_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "element_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "start_timestamp",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 3,
+        "name": "end_timestamp",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2a4643d1ae583afb63b041cfd3f26d4f627be7558f21e7590df28b083fcd555e"
+}

@@ -1,0 +1,64 @@
+[package]
+name = "ind-worker"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "ind_worker"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ind-worker"
+path = "src/main.rs"
+
+[features]
+default = []
+test-helpers = []
+
+[dependencies]
+ind-ai = { workspace = true }
+ind-auth = { workspace = true }
+ind-config = { workspace = true }
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+ind-html = { workspace = true }
+ind-ingest = { workspace = true }
+ind-integrations = { workspace = true }
+ind-egress = { workspace = true }
+ind-persistence = { workspace = true }
+ind-observability = { workspace = true }
+ind-search = { workspace = true }
+apalis = { workspace = true }
+apalis-postgres = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+dotenvy = { workspace = true }
+config = { workspace = true }
+secrecy = { workspace = true }
+reqwest = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }
+async-trait = { workspace = true }
+url = { workspace = true }
+feed-rs = { workspace = true }
+ammonia = { workspace = true }
+uuid = { workspace = true }
+futures = { workspace = true }
+zip = { workspace = true }
+csv = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+ind-test-support = { workspace = true }
+wiremock = { workspace = true }
+http = { workspace = true }
+
+[lints]
+workspace = true

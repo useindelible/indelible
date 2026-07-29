@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO document_origins (user_id, document_id, origin_type, origin_id) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, origin_type, origin_id) DO NOTHING RETURNING document_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "document_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a2480eedd4ebc73b0fa2eaa20bf557b5a0e9ee16179dd37d471d026c5240d30a"
+}

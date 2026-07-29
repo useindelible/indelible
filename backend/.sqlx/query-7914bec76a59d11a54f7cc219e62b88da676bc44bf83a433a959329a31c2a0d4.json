@@ -1,0 +1,161 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO background_job_recoveries (\n                id, recovery_key, job_type, payload, dedupe_key, outbox_id,\n                subject_kind, subject_id, status, failure_class,\n                failure_reason_code, error_message, apalis_attempts,\n                recovery_attempts, next_retry_at, lease_owner, lease_expires_at,\n                first_failed_at, last_failed_at, resolved_at, created_at, updated_at\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'waiting', $9, $10, $11,\n                    $12, 0, $13, NULL, NULL, $14, $14, NULL, $14, $14)\n            ON CONFLICT (recovery_key) DO UPDATE SET\n                status              = 'waiting',\n                payload             = EXCLUDED.payload,\n                dedupe_key          = EXCLUDED.dedupe_key,\n                outbox_id           = EXCLUDED.outbox_id,\n                subject_kind        = EXCLUDED.subject_kind,\n                subject_id          = EXCLUDED.subject_id,\n                failure_class       = EXCLUDED.failure_class,\n                failure_reason_code = EXCLUDED.failure_reason_code,\n                error_message       = EXCLUDED.error_message,\n                apalis_attempts     = GREATEST(background_job_recoveries.apalis_attempts, EXCLUDED.apalis_attempts),\n                recovery_attempts   = CASE\n                    WHEN background_job_recoveries.failure_class <> EXCLUDED.failure_class THEN 0\n                    ELSE background_job_recoveries.recovery_attempts\n                END,\n                next_retry_at       = EXCLUDED.next_retry_at,\n                lease_owner         = NULL,\n                lease_expires_at    = NULL,\n                resolved_at         = NULL,\n                last_failed_at      = EXCLUDED.last_failed_at,\n                updated_at          = EXCLUDED.updated_at\n            RETURNING\n                id, recovery_key, job_type, payload, dedupe_key, outbox_id,\n                subject_kind, subject_id, status, failure_class,\n                failure_reason_code, error_message, apalis_attempts,\n                recovery_attempts, next_retry_at, lease_owner, lease_expires_at,\n                first_failed_at, last_failed_at, resolved_at, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "recovery_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "job_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "dedupe_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "outbox_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "subject_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "failure_class",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "failure_reason_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "error_message",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "apalis_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "recovery_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "next_retry_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "lease_owner",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "lease_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "first_failed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "last_failed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 19,
+        "name": "resolved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 21,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Text",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "7914bec76a59d11a54f7cc219e62b88da676bc44bf83a433a959329a31c2a0d4"
+}

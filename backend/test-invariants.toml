@@ -1,0 +1,839 @@
+[[invariants]]
+id = "tenant-entity-resolution"
+risk = "tenant-isolation"
+owner_layer = "persistence"
+path = "crates/ind-persistence/src/repos/entity_repo/tests.rs"
+test = "resolution_does_not_leak_entities_across_tenants"
+rationale = "Entity resolution must never return another user's entity or alias."
+
+[[invariants]]
+id = "document-lifecycle-transaction"
+risk = "atomicity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/document_lifecycle_tests.rs"
+test = "failed_transaction_rolls_back_everything"
+rationale = "Document state, assets, events, and outbox work must roll back as one unit."
+
+[[invariants]]
+id = "concurrent-first-save"
+risk = "concurrency-idempotency"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/library_save_tests.rs"
+test = "concurrent_first_save_resolves_to_one_active_entry"
+rationale = "Concurrent first saves must converge on one durable active library entry."
+
+[[invariants]]
+id = "purge-preserves-resave-document"
+risk = "data-loss"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/library_organization_tests.rs"
+test = "purge_keeps_document_and_cascades_membership"
+rationale = "Purging a library entry must remove membership without destroying the reusable document."
+
+[[invariants]]
+id = "protected-route-auth-boundary"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/auth_tests.rs"
+test = "registration_login_and_profile_access_follow_the_public_auth_contract"
+rationale = "A real protected API route must reject requests without an authenticated session."
+
+[[invariants]]
+id = "trusted-proxy-client-ip-boundary"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "crates/ind-http-api/src/middleware/ip_extract.rs"
+test = "forwarded_chain_is_honored_only_from_trusted_rightmost_hops"
+rationale = "Rate-limit and audit identity must ignore spoofed forwarding headers and walk trusted proxy chains from the right."
+
+[[invariants]]
+id = "refresh-either-expiry-boundary"
+risk = "authentication-authorization"
+owner_layer = "auth"
+path = "crates/ind-auth/tests/oauth_flow_journey.rs"
+test = "refresh_tokens_rotate_once_revoke_by_family_and_honor_both_expiry_clocks"
+rationale = "Idle expiry and absolute expiry independently invalidate a refresh token."
+
+[[invariants]]
+id = "asset-cookie-tamper-boundary"
+risk = "authentication-authorization"
+owner_layer = "auth"
+path = "crates/ind-auth/src/asset_cookie.rs"
+test = "cookie_round_trip_rejects_tampering_expiry_and_malformed_values"
+rationale = "Asset access cookies must bind the user and expiry and reject altered signatures or shapes."
+
+[[invariants]]
+id = "api-token-secret-boundary"
+risk = "credential-confidentiality"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/api_token_issuance_tests.rs"
+test = "raw_secret_is_hash_only_at_rest_and_revealed_only_by_creation"
+rationale = "A personal API token secret must be hashed before persistence, appear only in the creation response, and stay absent from list responses."
+
+[[invariants]]
+id = "api-token-immediate-revocation"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/api_token_issuance_tests.rs"
+test = "revocation_invalidates_the_next_request"
+rationale = "Deleting a personal API token must invalidate its next database-backed authentication attempt."
+
+[[invariants]]
+id = "api-token-expired-rejection"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/api_token_issuance_tests.rs"
+test = "expired_token_fails_before_reaching_a_permissioned_route"
+rationale = "An expired personal API token must fail authentication before its permissions can authorize a route."
+
+[[invariants]]
+id = "api-token-expiry-contract"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/api_token_issuance_tests.rs"
+test = "expiry_accepts_the_maximum_and_rejects_values_outside_the_positive_bound"
+rationale = "Personal API token expiry must accept one year while rejecting zero, negative, and greater-than-one-year durations."
+
+[[invariants]]
+id = "api-permission-runtime-catalogue"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "crates/ind-http-api/src/middleware/permission_access/tests.rs"
+test = "every_named_single_permission_policy_enforces_its_permission"
+rationale = "Every issued API permission must map to an exact runtime access policy that rejects a token missing that permission."
+
+[[invariants]]
+id = "api-permission-openapi-global-contract"
+risk = "external-contracts"
+owner_layer = "http"
+path = "crates/ind-http-api/src/openapi/tests/resource_permissions/contract_tests.rs"
+test = "every_api_token_operation_has_global_permission_metadata"
+rationale = "Every OpenAPI operation advertising personal-token authentication must publish non-empty catalogue-backed permission metadata, and no other operation may publish it."
+
+[[invariants]]
+id = "api-permission-openapi-composites"
+risk = "external-contracts"
+owner_layer = "http"
+path = "crates/ind-http-api/src/openapi/tests/resource_permissions/contract_tests.rs"
+test = "ai_and_obsidian_operations_publish_explicit_permission_contracts"
+rationale = "Composite AI operations must retain every required permission while Obsidian sync remains an independent permission."
+
+[[invariants]]
+id = "api-permission-semantic-posts"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/integration_route_permission_tests.rs"
+test = "integration_routes_enforce_named_permissions_and_keep_callback_public"
+rationale = "Read-only integration POST operations such as Obsidian preview must require integrations:read rather than inheriting write authority from the HTTP method."
+
+[[invariants]]
+id = "api-permission-library-query-post"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/library_route_permission_tests.rs"
+test = "library_routes_enforce_named_read_and_write_permissions"
+rationale = "POST /library/query must continue requiring library:read rather than inheriting write authority from the HTTP method."
+
+[[invariants]]
+id = "api-permission-jwt-only-aggregates"
+risk = "information-disclosure"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/jwt_only_route_permission_tests.rs"
+test = "account_onboarding_home_settings_and_events_routes_remain_jwt_only"
+rationale = "Mixed Home and realtime Event payloads must reject personal API tokens until their data can be permission-filtered."
+
+[[invariants]]
+id = "extension-document-asset-boundary"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/ai_asset_route_permission_tests.rs"
+test = "document_assets_accept_library_pat_extension_jwt_and_asset_cookie"
+rationale = "Extension JWTs must retain readable document asset access without gaining general resource permissions."
+
+[[invariants]]
+id = "credential-cipher-authenticity"
+risk = "credential-confidentiality"
+owner_layer = "auth"
+path = "crates/ind-auth/src/credentials.rs"
+test = "seal_round_trip_is_randomized_and_tamper_evident"
+rationale = "Provider credentials must use randomized authenticated encryption and reject wrong keys or changed ciphertext."
+
+[[invariants]]
+id = "webhook-secret-sealing"
+risk = "credential-confidentiality"
+owner_layer = "auth"
+path = "crates/ind-auth/src/webhook_secret.rs"
+test = "generated_and_sealed_webhook_secrets_preserve_public_contracts"
+rationale = "Webhook secrets must remain encrypted at rest while retaining stable hash and preview contracts."
+
+[[invariants]]
+id = "webhook-signature-binding"
+risk = "external-contracts"
+owner_layer = "auth"
+path = "crates/ind-auth/src/webhooks/signing.rs"
+test = "signature_binds_secret_timestamp_and_body"
+rationale = "Webhook signatures must bind all three inputs consumed by receivers."
+
+[[invariants]]
+id = "avatar-reference-ownership"
+risk = "tenant-isolation"
+owner_layer = "auth"
+path = "crates/ind-auth/src/validation.rs"
+test = "avatar_references_are_structurally_and_user_scoped"
+rationale = "Internal avatar keys must be structurally valid and must belong to the authenticated user."
+
+[[invariants]]
+id = "legacy-job-envelope"
+risk = "compatibility"
+owner_layer = "domain"
+path = "crates/ind-domain/src/ops/tests.rs"
+test = "generic_job_envelope_deserializes_pre_task_193_payloads_without_dedupe_key"
+rationale = "Queued envelopes written before dedupe keys existed must remain readable."
+
+[[invariants]]
+id = "dashscope-rate-limit-contract"
+risk = "external-contracts"
+owner_layer = "provider-adapter"
+path = "crates/ind-ai/src/tts/dashscope/tests/errors.rs"
+test = "provider_statuses_share_one_error_classification_contract"
+rationale = "DashScope throttling responses must preserve retry guidance for worker policy."
+
+[[invariants]]
+id = "unreal-synthesis-windowing"
+risk = "media-contract"
+owner_layer = "provider-adapter"
+path = "crates/ind-ai/src/tts/unreal/split.rs"
+test = "splitter_preserves_content_within_character_limits"
+rationale = "Unreal requests must remain within provider character limits without splitting an unbreakable token."
+
+[[invariants]]
+id = "unreal-timestamp-element-mapping"
+risk = "media-contract"
+owner_layer = "provider-adapter"
+path = "crates/ind-ai/src/tts/unreal/timestamps.rs"
+test = "timestamp_aliases_map_unicode_elements_and_offsets"
+rationale = "Provider timestamp aliases and character offsets must map correctly onto Unicode reader elements."
+
+[[invariants]]
+id = "search-cursor-stability"
+risk = "search-correctness"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/search_document_fts_tests.rs"
+test = "cursor_pagination_does_not_repeat_boundary_when_scores_decay"
+rationale = "Durable search pagination must not repeat results as recency scores change."
+
+[[invariants]]
+id = "embedding-replacement-atomicity"
+risk = "ai-safety-correctness"
+owner_layer = "ai-application"
+path = "crates/ind-ai/src/embed/tests.rs"
+test = "later_provider_failure_leaves_vectors_untouched_and_retry_restarts_deterministically"
+rationale = "A partial provider failure must not replace the document's existing embeddings."
+
+[[invariants]]
+id = "chat-citation-sanitized-before-persist"
+risk = "ai-safety-correctness"
+owner_layer = "ai-application"
+path = "crates/ind-ai/src/chat/tests/scenarios.rs"
+test = "streamed_turn_strips_hallucinated_citations_before_persistence"
+rationale = "Model-generated source tokens must be normalized before the assistant turn is stored."
+
+[[invariants]]
+id = "chat-collection-dual-scope"
+risk = "search-correctness"
+owner_layer = "ai-application"
+path = "crates/ind-ai/src/chat/tests/scenarios.rs"
+test = "collection_fallbacks_emit_precise_warnings_and_keep_dual_scope"
+rationale = "Collection chat must query vector and FTS retrieval within the owning collection and report degraded retrieval."
+
+[[invariants]]
+id = "chat-cross-document-diversity"
+risk = "search-correctness"
+owner_layer = "ai-application"
+path = "crates/ind-ai/src/chat/tests/scenarios.rs"
+test = "cross_item_applies_document_diversity_after_fusion"
+rationale = "Cross-library answers must not let one document consume all retrieval slots."
+
+[[invariants]]
+id = "chat-unsectioned-epub-snippet"
+risk = "ai-context-correctness"
+owner_layer = "ai-application"
+path = "crates/ind-ai/src/chat/tests/scenarios.rs"
+test = "unsectioned_epub_fts_uses_hit_snippet_not_first_parent"
+rationale = "EPUB text without section metadata must still provide usable grounded context."
+
+[[invariants]]
+id = "recovery-terminal-dlq-once"
+risk = "retry-recovery"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/background_job_recovery_repo_tests.rs"
+test = "mark_recovery_terminal_does_not_double_write_dlq"
+rationale = "Repeated terminal recovery handling must not duplicate dead-letter records."
+
+[[invariants]]
+id = "tts-no-charge-on-failure"
+risk = "quotas-billing"
+owner_layer = "integration"
+path = "crates/ind-ai/tests/tts_synthesis_journey.rs"
+test = "mark_ready_failure_rolls_back_real_rows_quota_storage_and_billing"
+rationale = "A failed final persistence step must release reserved quota and emit no charge."
+
+[[invariants]]
+id = "tts-element-timing-persistence"
+risk = "media-contract"
+owner_layer = "integration"
+path = "crates/ind-ai/tests/tts_synthesis_journey.rs"
+test = "real_synthesis_persists_timings_scopes_cache_and_repairs_zero_byte_assets"
+rationale = "Successful synthesis must persist the element timings returned to playback clients."
+
+[[invariants]]
+id = "worker-rate-limit-retry"
+risk = "retry-recovery"
+owner_layer = "worker"
+path = "apps/ind-worker/src/failure.rs"
+test = "failure_classification_preserves_retry_and_terminal_boundaries"
+rationale = "Provider throttling must remain retryable and retain its stable recovery reason code."
+
+[[invariants]]
+id = "worker-startup-limit-validation"
+risk = "operability"
+owner_layer = "worker-bootstrap"
+path = "apps/ind-worker/src/config/tests.rs"
+test = "invalid_limits_are_rejected"
+rationale = "Zero queue concurrency, invalid retention, and impossible Mila budgets must fail startup."
+
+[[invariants]]
+id = "worker-s3-startup-contract"
+risk = "archive-integrity"
+owner_layer = "worker-bootstrap"
+path = "apps/ind-worker/src/config/tests.rs"
+test = "s3_boolean_grammar_and_endpoint_contract_are_preserved"
+rationale = "Shared boolean spellings remain compatible and enabled S3 cannot start without an endpoint."
+
+[[invariants]]
+id = "api-production-provider-fail-closed"
+risk = "authentication-authorization"
+owner_layer = "api-bootstrap"
+path = "apps/ind-api/src/config/tests.rs"
+test = "production_provider_configuration_fails_closed"
+rationale = "Partially configured email, OAuth, OIDC, and integration providers must fail production startup."
+
+[[invariants]]
+id = "api-s3-startup-contract"
+risk = "archive-integrity"
+owner_layer = "api-bootstrap"
+path = "apps/ind-api/src/config/tests.rs"
+test = "enabled_s3_requires_an_endpoint"
+rationale = "An API process configured to use S3 must not start without an explicit endpoint."
+
+[[invariants]]
+id = "renderer-browser-identity"
+risk = "capture-compatibility"
+owner_layer = "renderer"
+path = "apps/ind-renderer/src/browser_identity.rs"
+test = "capture_identity_removes_headless_token_and_matches_client_hints"
+rationale = "The capture profile must remove the headless product token while keeping client hints consistent with Chromium."
+
+[[invariants]]
+id = "renderer-capture-concurrency"
+risk = "operability"
+owner_layer = "renderer-bootstrap"
+path = "apps/ind-renderer/src/config.rs"
+test = "capture_defaults_and_env_precedence_are_stable"
+rationale = "The shared capture concurrency setting must override its legacy alias and retain serial defaults."
+
+[[invariants]]
+id = "renderer-partial-output-contract"
+risk = "external-contracts"
+owner_layer = "renderer-http"
+path = "apps/ind-renderer/src/types.rs"
+test = "response_omits_empty_errors_but_serializes_partial_failures"
+rationale = "Empty asset errors stay absent from the wire while partial render failures remain observable."
+
+[[invariants]]
+id = "readwise-retry-repairs-side-effects"
+risk = "import-idempotency"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/scenarios.rs"
+test = "same_readwise_origin_retry_repairs_assets_tags_progress_and_jobs"
+rationale = "Retrying an already-saved Readwise origin must repair missing assets, tags, progress, and downstream jobs."
+
+[[invariants]]
+id = "readwise-cross-source-no-phantom"
+risk = "deduplication"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/scenarios.rs"
+test = "cross_source_duplicate_claims_archive_without_phantom_item"
+rationale = "A canonical cross-source duplicate must claim its archive entry without materializing a phantom document."
+
+[[invariants]]
+id = "readwise-upload-asset-semantics"
+risk = "archive-integrity"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/scenarios.rs"
+test = "epub_pdf_and_malformed_archive_asset_semantics_are_preserved"
+rationale = "EPUB, PDF, and malformed non-readable uploads must retain their authoritative asset and job semantics."
+
+[[invariants]]
+id = "readwise-opml-routing"
+risk = "import-routing"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/scenarios.rs"
+test = "opml_and_youtube_inputs_route_to_their_authoritative_pipelines"
+rationale = "OPML imports create feed subscriptions without materializing library documents."
+
+[[invariants]]
+id = "readwise-youtube-routing"
+risk = "import-routing"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/scenarios.rs"
+test = "opml_and_youtube_inputs_route_to_their_authoritative_pipelines"
+rationale = "A YouTube URL must override an archived watch-page snapshot and enqueue the video pipeline exactly once."
+
+[[invariants]]
+id = "obsidian-summary-precedence"
+risk = "export-correctness"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/obsidian.rs"
+test = "obsidian_worker_smoke_preserves_summary_precedence_and_disambiguates_paths"
+rationale = "Stored summaries take precedence over excerpts, while absent summaries remain absent in exported content."
+
+[[invariants]]
+id = "obsidian-generated-path-collision"
+risk = "export-data-loss"
+owner_layer = "worker-integration"
+path = "apps/ind-worker/tests/readwise_import/obsidian.rs"
+test = "obsidian_worker_smoke_preserves_summary_precedence_and_disambiguates_paths"
+rationale = "Documents with identical generated titles must receive unique artifact paths."
+
+[[invariants]]
+id = "notion-managed-target-schema"
+risk = "external-contracts"
+owner_layer = "integration-adapter"
+path = "crates/ind-integrations/src/notion/config.rs"
+test = "managed_target_round_trip_requires_complete_property_ids"
+rationale = "A managed Notion target is usable only when every required property identifier survives configuration round-trip."
+
+[[invariants]]
+id = "notion-highlight-block-contract"
+risk = "export-correctness"
+owner_layer = "integration-adapter"
+path = "crates/ind-integrations/src/notion/blocks.rs"
+test = "highlight_layouts_preserve_cursor_location_note_and_tags"
+rationale = "Notion export must retain resumable highlight cursors and the selected location, note, and tag content."
+
+[[invariants]]
+id = "notion-required-property-types"
+risk = "external-contracts"
+owner_layer = "integration-adapter"
+path = "crates/ind-integrations/src/notion/schema.rs"
+test = "managed_schema_rejects_missing_and_wrong_property_types"
+rationale = "Provisioning must fail closed when Notion omits or changes a required managed property."
+
+[[invariants]]
+id = "vector-replacement-transaction"
+risk = "atomicity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/critical_security_search_tests.rs"
+test = "vector_replacement_is_atomic"
+rationale = "Replacing a document's vectors must preserve the old set when any new vector is invalid."
+
+[[invariants]]
+id = "vector-search-tenant-scope"
+risk = "tenant-isolation"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/critical_security_search_tests.rs"
+test = "vector_search_enforces_tenant_visibility_and_embedding_identity"
+rationale = "Semantic retrieval must never return another user's vectors."
+
+[[invariants]]
+id = "vector-search-visibility"
+risk = "search-correctness"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/critical_security_search_tests.rs"
+test = "vector_search_enforces_tenant_visibility_and_embedding_identity"
+rationale = "Deleted library entries and vectors from a stale embedding model must remain invisible."
+
+[[invariants]]
+id = "vector-distinct-document-count"
+risk = "quotas-billing"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/critical_security_search_tests.rs"
+test = "vector_search_enforces_tenant_visibility_and_embedding_identity"
+rationale = "Vector quota accounting counts distinct tenant-owned documents rather than chunks."
+
+[[invariants]]
+id = "api-token-owner-scope"
+risk = "tenant-isolation"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/critical_security_search_tests.rs"
+test = "api_token_mutations_are_owner_scoped_and_revocation_is_immediate"
+rationale = "A user must not read or revoke another user's personal API token by identifier."
+
+[[invariants]]
+id = "api-token-revocation-storage"
+risk = "authentication-authorization"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/critical_security_search_tests.rs"
+test = "api_token_mutations_are_owner_scoped_and_revocation_is_immediate"
+rationale = "Revocation must remove the token hash used by authentication immediately."
+
+[[invariants]]
+id = "tts-user-scoped-cache"
+risk = "tenant-isolation"
+owner_layer = "integration"
+path = "crates/ind-ai/tests/tts_synthesis_journey.rs"
+test = "real_synthesis_persists_timings_scopes_cache_and_repairs_zero_byte_assets"
+rationale = "Identical speech from different users must not share a cached audio record."
+
+[[invariants]]
+id = "tts-managed-quota-axes"
+risk = "quotas-billing"
+owner_layer = "integration"
+path = "crates/ind-ai/tests/tts_synthesis_journey.rs"
+test = "every_real_quota_axis_and_empty_audio_roll_back_all_durable_state"
+rationale = "Character, seconds, and cost-unit limits independently block synthesis without leaking reservations."
+
+[[invariants]]
+id = "tts-empty-audio-rollback"
+risk = "data-loss"
+owner_layer = "integration"
+path = "crates/ind-ai/tests/tts_synthesis_journey.rs"
+test = "every_real_quota_axis_and_empty_audio_roll_back_all_durable_state"
+rationale = "An empty provider response must not create cache, asset, timing, storage, or billing state."
+
+[[invariants]]
+id = "tts-zero-byte-cache-repair"
+risk = "data-loss"
+owner_layer = "integration"
+path = "crates/ind-ai/tests/tts_synthesis_journey.rs"
+test = "real_synthesis_persists_timings_scopes_cache_and_repairs_zero_byte_assets"
+rationale = "A ready cache row backed by a zero-byte asset must be removed and regenerated."
+
+[[invariants]]
+id = "search-parser-precedence"
+risk = "search-correctness"
+owner_layer = "search"
+path = "crates/ind-search/src/tests.rs"
+test = "parser_table_covers_text_filters_negation_and_malformed_fallback"
+rationale = "Positive and negative filters, precedence, and malformed-filter fallback must retain their grammar."
+
+[[invariants]]
+id = "search-cursor-compatibility"
+risk = "compatibility"
+owner_layer = "search"
+path = "crates/ind-search/src/tests.rs"
+test = "cursor_round_trip_preserves_stable_boundary_fields"
+rationale = "Persisted search cursors must retain the stable pagination boundary fields."
+
+[[invariants]]
+id = "search-indexed-text-utf8-cap"
+risk = "search-correctness"
+owner_layer = "search"
+path = "crates/ind-search/src/tests.rs"
+test = "indexed_text_cap_is_utf8_safe_and_preserves_short_documents"
+rationale = "Index truncation must never split a UTF-8 code point or alter content below the cap."
+
+[[invariants]]
+id = "search-filter-routing"
+risk = "search-correctness"
+owner_layer = "search"
+path = "crates/ind-search/src/tests.rs"
+test = "fts_routing_preserves_email_entity_and_source_filters"
+rationale = "Sender, email, entity, and feed filters must reach the durable FTS query unchanged."
+
+[[invariants]]
+id = "email-forwarded-header-spoof-boundary"
+risk = "authentication-authorization"
+owner_layer = "integration-parser"
+path = "crates/ind-integrations/src/email/parsing/tests.rs"
+test = "forwarded_header_precedence_and_spoof_boundary"
+rationale = "Untrusted forwarded headers must not override the authoritative sender identity."
+
+[[invariants]]
+id = "email-recipient-routing"
+risk = "import-routing"
+owner_layer = "integration-parser"
+path = "crates/ind-integrations/src/email/parsing/tests.rs"
+test = "ingest_address_routing_and_validation_table"
+rationale = "Feed and library ingest addresses must route only valid recipient shapes to their intended destination."
+
+[[invariants]]
+id = "epub-malformed-input"
+risk = "archive-integrity"
+owner_layer = "egress"
+path = "crates/ind-ingest/src/epub_processing/tests.rs"
+test = "invalid_zip_returns_error"
+rationale = "Malformed EPUB archives must fail explicitly rather than materializing partial reader content."
+
+[[invariants]]
+id = "epub-active-content-sanitization"
+risk = "content-security"
+owner_layer = "ingest"
+path = "crates/ind-ingest/src/epub_processing/tests.rs"
+test = "sanitizes_script_and_style_tags"
+rationale = "EPUB reader HTML must strip active script and style content."
+
+[[invariants]]
+id = "rate-limit-key-isolation"
+risk = "availability-isolation"
+owner_layer = "http"
+path = "crates/ind-http-api/src/middleware/rate_limit/tests.rs"
+test = "limiter_isolates_keys_resets_and_fails_closed_at_capacity"
+rationale = "One client's rate-limit state must not consume another client's allowance."
+
+[[invariants]]
+id = "internal-error-redaction"
+risk = "information-disclosure"
+owner_layer = "http"
+path = "crates/ind-http-api/src/error/tests.rs"
+test = "internal_errors_keep_details_out_of_the_public_response"
+rationale = "Repository and internal error details must never appear in public response bodies."
+
+[[invariants]]
+id = "openapi-generated-client-types"
+risk = "external-contracts"
+owner_layer = "http"
+path = "crates/ind-http-api/src/openapi/tests.rs"
+test = "generated_client_contracts_remain_typed"
+rationale = "OpenAPI fields consumed by generated web and mobile clients must remain concretely typed."
+
+[[invariants]]
+id = "renderer-active-content-removal"
+risk = "content-security"
+owner_layer = "renderer"
+path = "apps/ind-renderer/src/render/defuddle.rs"
+test = "defuddle_output_strips_active_content_but_keeps_formatting"
+rationale = "Rendered reader content must remove executable content while retaining safe formatting."
+
+[[invariants]]
+id = "strict-egress-metadata-block"
+risk = "ssrf"
+owner_layer = "ingest"
+path = "crates/ind-egress/tests/guarded_client.rs"
+test = "guarded_client_enforces_strict_pinned_and_redirect_boundaries"
+rationale = "The real guarded client must reject cloud metadata and loopback destinations before transport."
+
+[[invariants]]
+id = "recovery-active-lease-exclusion"
+risk = "retry-recovery"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/background_job_recovery_repo_tests.rs"
+test = "recovery_claims_honor_leases_backoff_and_expiry"
+rationale = "A second worker must not claim recovery work while another worker's lease is active."
+
+[[invariants]]
+id = "recovery-defer-backoff"
+risk = "retry-recovery"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/background_job_recovery_repo_tests.rs"
+test = "recovery_claims_honor_leases_backoff_and_expiry"
+rationale = "Deferred recovery work must increment its bounded attempt count and remain unavailable until its retry time."
+
+[[invariants]]
+id = "library-mutation-tenant-scope"
+risk = "tenant-isolation"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/library_organization_tests.rs"
+test = "trash_restore_and_purge_are_tenant_scoped_with_atomic_side_effects"
+rationale = "A user must not mutate another user's library entry by identifier."
+
+[[invariants]]
+id = "library-mutation-events"
+risk = "atomicity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/library_organization_tests.rs"
+test = "trash_restore_and_purge_are_tenant_scoped_with_atomic_side_effects"
+rationale = "Trash, restore, and permanent deletion must emit their durable lifecycle events with the mutation."
+
+[[invariants]]
+id = "library-mutation-reindex-outbox"
+risk = "search-correctness"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/library_organization_tests.rs"
+test = "trash_restore_and_purge_are_tenant_scoped_with_atomic_side_effects"
+rationale = "Visibility-changing library mutations must atomically retain one deduplicated reindex request."
+
+[[invariants]]
+id = "public-search-production-wiring"
+risk = "search-correctness"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/search_api_journey_tests.rs"
+test = "search_api_crosses_engine_cursor_suggestions_recent_and_tenant_boundaries"
+rationale = "The public search contract must remain wired through the real engine and persistence adapters for pagination, entity filters, suggestions, and recent searches."
+
+[[invariants]]
+id = "public-search-tenant-boundary"
+risk = "tenant-isolation"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/search_api_journey_tests.rs"
+test = "search_api_crosses_engine_cursor_suggestions_recent_and_tenant_boundaries"
+rationale = "Search results and recent-search deletion must remain scoped to the authenticated user at the public API boundary."
+
+[[invariants]]
+id = "ai-action-production-boundary"
+risk = "ai-safety-correctness"
+owner_layer = "worker"
+path = "apps/ind-api/tests/api/ai_action_journey_tests.rs"
+test = "ai_actions_cross_http_worker_storage_and_persistence_boundaries"
+rationale = "Summary, tag, and entity jobs must cross the production HTTP, worker, storage, provider, persistence, and event boundaries while recording provider failures durably."
+
+[[invariants]]
+id = "renderer-production-capture-boundary"
+risk = "content-integrity"
+owner_layer = "renderer"
+path = "apps/ind-renderer/src/journey_tests.rs"
+test = "render_url_crosses_http_browser_extraction_capture_and_storage_boundaries"
+rationale = "The renderer must traverse its public HTTP route, browser isolation, readable extraction, monolith capture, screenshot, PDF, and S3 upload boundary as one production-composed flow."
+
+[[invariants]]
+id = "auto-heal-maintenance-lease"
+risk = "retry-recovery"
+owner_layer = "worker"
+path = "apps/ind-worker/tests/auto_heal_journey_tests.rs"
+test = "auto_heal_leases_real_maintenance_and_repairs_missing_embeddings_once"
+rationale = "Auto-heal maintenance must release its durable lease and schedule the next run after embedding repair and integrity work complete."
+
+[[invariants]]
+id = "auto-heal-embedding-repair-idempotency"
+risk = "concurrency-idempotency"
+owner_layer = "worker"
+path = "apps/ind-worker/tests/auto_heal_journey_tests.rs"
+test = "auto_heal_leases_real_maintenance_and_repairs_missing_embeddings_once"
+rationale = "An immediate second auto-heal sweep must not enqueue a duplicate embedding repair while the maintenance task is not due."
+
+[[invariants]]
+id = "notion-managed-target-provider-contract"
+risk = "external-contract"
+owner_layer = "provider-adapter"
+path = "crates/ind-integrations/tests/notion_client_journey.rs"
+test = "notion_client_crosses_managed_target_page_block_and_rate_limit_contracts"
+rationale = "Notion export must reuse a valid managed target, repair only missing views, avoid duplicate pages, preserve required provider headers, append blocks, and surface retry timing from the live HTTP contract."
+
+[[invariants]]
+id = "realtime-event-stream-boundary"
+risk = "event-delivery"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/realtime_journey_tests.rs"
+test = "event_stream_drains_filtered_tenant_events_from_a_durable_cursor"
+rationale = "The SSE boundary must replay durable user-scoped events after a cursor, reject invalid filters and cursors, and retain non-buffered authenticated stream headers."
+
+[[invariants]]
+id = "extension-pkce-one-time-exchange"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/extension_auth_journey_tests.rs"
+test = "extension_pkce_crosses_authorize_exchange_refresh_status_and_revoke_boundaries"
+rationale = "Extension authorization must enforce the redirect allowlist and S256 verifier, consume each code once, and issue a token that authenticates the extension boundary."
+
+[[invariants]]
+id = "extension-refresh-family-revocation"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/extension_auth_journey_tests.rs"
+test = "extension_pkce_crosses_authorize_exchange_refresh_status_and_revoke_boundaries"
+rationale = "Extension refresh rotation followed by revoke must leave no active durable refresh token in the user's family."
+
+[[invariants]]
+id = "obsidian-permissioned-export-run"
+risk = "integration-data-integrity"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/integration_journey_tests.rs"
+test = "obsidian_journey_provisions_permissioned_access_and_previews_settings"
+rationale = "A permissioned Obsidian client must create, read, and acknowledge its durable export run while queueing exactly one sync outbox row and a user-owned refresh subject."
+
+[[invariants]]
+id = "upload-type-confusion-and-reader-sanitization"
+risk = "content-security"
+owner_layer = "ingest"
+path = "crates/ind-ingest/tests/file_upload_journey.rs"
+test = "html_upload_validates_type_and_preserves_raw_while_sanitizing_reader_content"
+rationale = "Uploaded HTML must reject type-confused and oversized payloads, preserve the original archive, and remove executable content from the reader representation."
+
+[[invariants]]
+id = "oauth-state-confidentiality-and-single-use"
+risk = "authentication-authorization"
+owner_layer = "auth"
+path = "crates/ind-auth/tests/oauth_flow_journey.rs"
+test = "oauth_state_is_sealed_expiring_and_consumed_exactly_once"
+rationale = "OAuth state must be confidential and tamper-evident at rest, expire durably, and permit exactly one callback to consume it under concurrency."
+
+[[invariants]]
+id = "email-alias-input-contract"
+risk = "input-validation"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/platform_journey_tests.rs"
+test = "email_alias_creation_preserves_namespace_and_default_atomicity"
+rationale = "The public alias boundary must reject local parts outside the supported address grammar."
+
+[[invariants]]
+id = "email-alias-default-rotation-atomicity"
+risk = "transaction-atomicity"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/platform_journey_tests.rs"
+test = "email_alias_creation_preserves_namespace_and_default_atomicity"
+rationale = "A failed replacement must not retire or deselect the user's current default alias."
+
+[[invariants]]
+id = "email-alias-seed-token-namespace"
+risk = "authentication-authorization"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/platform_journey_tests.rs"
+test = "email_alias_creation_preserves_namespace_and_default_atomicity"
+rationale = "Aliases must not claim another user's seed-token address and intercept inbound mail."
+
+[[invariants]]
+id = "import-rollback-preserves-authored-data"
+risk = "data-loss"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/import_rollback_tests.rs"
+test = "import_rollback_removes_membership_but_preserves_authored_data"
+rationale = "Import rollback removes saved-library membership while preserving the document and its authored highlights."
+
+[[invariants]]
+id = "document-reprocess-tenant-boundary"
+risk = "tenant-isolation"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/upload_import_journey_tests.rs"
+test = "reprocess_rejects_a_document_owned_by_another_user"
+rationale = "A user must not enqueue reprocessing for a document owned by another tenant."
+
+[[invariants]]
+id = "feed-seen-does-not-materialize-reader-state"
+risk = "lifecycle-boundary"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/document_search_tests.rs"
+test = "marking_a_feed_delivery_seen_does_not_materialize_reader_state"
+rationale = "Marking an external feed delivery seen must not create a document or user reader state."
+
+[[invariants]]
+id = "patient-recovery-never-dead-letters"
+risk = "durability"
+owner_layer = "worker"
+path = "apps/ind-worker/tests/patient_recovery_tests.rs"
+test = "sweeper_replays_patient_rows_past_the_cap_and_never_dead_letters"
+rationale = "Dependency-outage (patient) recoveries must wait out the outage; they never consume the DLQ cap."
+
+[[invariants]]
+id = "recovery-replay-atomic-outbox"
+risk = "atomicity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/background_job_recovery_repo_tests.rs"
+test = "replay_via_outbox_commits_outbox_and_ledger_in_one_transaction"
+rationale = "Replay must write the outbox row and advance the ledger in one transaction or roll both back."
+
+[[invariants]]
+id = "recovery-mutations-lease-fenced"
+risk = "durability"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/background_job_recovery_lease_tests.rs"
+test = "stale_terminalize_cannot_dead_letter_a_row_that_turned_patient"
+rationale = "Replay and terminalization require an unexpired matching lease; a stale claimant can neither resurrect resolved rows nor dead-letter re-classified ones."
+
+[[invariants]]
+id = "account-purge-leaves-no-residue"
+risk = "data-retention"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/account_purge_tests.rs"
+test = "every_user_owned_column_cascades_from_users"
+rationale = "Delete-forever must remove every row a user owns; a new user-owned table must join the cascade before it ships."

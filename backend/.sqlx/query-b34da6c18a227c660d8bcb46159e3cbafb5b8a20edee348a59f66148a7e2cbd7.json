@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE dead_letter_jobs\n            SET replayed_at = $2, replay_outbox_id = $3\n            WHERE id = $1 AND replayed_at IS NULL\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b34da6c18a227c660d8bcb46159e3cbafb5b8a20edee348a59f66148a7e2cbd7"
+}

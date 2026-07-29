@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS ( SELECT 1 FROM feed_subscriptions s JOIN feed_source_entries fse ON fse.source_id = s.source_id WHERE s.id = $1 AND s.user_id = $2 AND s.source_id = $3 AND fse.id = $4 )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "9849aecbf4224fdb23ef15a421c00f034843e7ba5da646beffff19ba31e13c86"
+}

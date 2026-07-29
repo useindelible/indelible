@@ -1,0 +1,130 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id,\n                user_id,\n                display_name,\n                description,\n                provider,\n                provider_voice_id,\n                provider_model,\n                design_prompt,\n                style_prompt,\n                pace,\n                energy,\n                warmth,\n                formality,\n                pronunciation_prefs,\n                status,\n                is_builtin,\n                prompt_hash,\n                created_at,\n                updated_at\n            FROM tts_voice_personas\n            WHERE user_id = $1 OR (is_builtin = true AND user_id IS NULL)\n            ORDER BY is_builtin DESC, display_name ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "provider_voice_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "provider_model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "design_prompt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "style_prompt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "pace",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "energy",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "warmth",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "formality",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "pronunciation_prefs",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 14,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "is_builtin",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 16,
+        "name": "prompt_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c391c7c8eaa4dc553e5db5448bbbcbae2ca0ba70d6e5f5e65d95f09cbd9704ea"
+}

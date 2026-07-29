@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT le.document_id AS id, d.document_type AS item_type, d.title, d.excerpt, d.original_url AS url, d.domain, d.author, NULL::int AS reading_time_minutes, d.lead_image_url, uds.progress_percent::real AS \"progress_percent?\", uds.max_progress_percent::real AS \"max_progress_percent?\", uds.last_read_at, le.created_at FROM library_entries le JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id LEFT JOIN user_document_state uds ON uds.user_id = le.user_id AND uds.document_id = le.document_id WHERE le.user_id = $1 AND le.deleted_at IS NULL AND d.document_type = 'article' AND uds.last_read_at IS NULL ORDER BY le.created_at DESC LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "item_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "excerpt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "domain",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "reading_time_minutes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "lead_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "progress_percent?",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 10,
+        "name": "max_progress_percent?",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 11,
+        "name": "last_read_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      null,
+      true,
+      null,
+      null,
+      true,
+      false
+    ]
+  },
+  "hash": "c81c83bce8192561dcb2ced692bb5805631e8e973f0f40f1b4610b1db46fad3f"
+}

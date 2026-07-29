@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_connections\n                   SET last_sync_at = now(),\n                       status = CASE WHEN status = 'pending' THEN 'active' ELSE status END,\n                       last_error = NULL,\n                       updated_at = now()\n                   WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "59b8fd1471a54ce55f9f739f4fa560a1ff3d11e8fedcfcc4c9d605c66e39039e"
+}

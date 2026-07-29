@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO collection_entries (user_id, collection_id, library_entry_id, added_at) VALUES ($1, $2, $3, now()) ON CONFLICT (collection_id, library_entry_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d3801f185e3ac8b0442b2a4f64c92de4032a167298c0811b10c26e45057871ea"
+}

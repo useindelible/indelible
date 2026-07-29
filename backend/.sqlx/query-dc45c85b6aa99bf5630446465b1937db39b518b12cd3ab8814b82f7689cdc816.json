@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_export_cursor AS cursor\n                   SET last_error = failed.last_error, updated_at = now()\n                   FROM UNNEST($2::uuid[], $3::text[]) AS failed(library_entry_id, last_error)\n                   WHERE cursor.connection_id = $1\n                     AND cursor.library_entry_id = failed.library_entry_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dc45c85b6aa99bf5630446465b1937db39b518b12cd3ab8814b82f7689cdc816"
+}
