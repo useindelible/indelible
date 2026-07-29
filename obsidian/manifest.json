@@ -1,0 +1,10 @@
+{
+  "id": "indelible",
+  "name": "Indelible",
+  "version": "0.1.0",
+  "minAppVersion": "1.11.4",
+  "description": "Sync Indelible highlights and reader documents into Obsidian.",
+  "author": "Indelible",
+  "authorUrl": "https://indelible.app",
+  "isDesktopOnly": false
+}
