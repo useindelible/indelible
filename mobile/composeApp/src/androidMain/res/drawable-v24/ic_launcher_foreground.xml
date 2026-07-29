@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+    <!-- Indelible vault mark matched to the iOS AppIcon proportions. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M512,184.32a327.68,327.68 0,1 0 0,655.36a327.68,327.68 0,1 0 0,-655.36"
+        android:strokeAlpha="0.32"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7.68" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.62"
+        android:pathData="M529.45,235.52a17.45,17.45 0,1 0 -34.9,0a17.45,17.45 0,1 0 34.9,0M723.63,317.44a17.45,17.45 0,1 0 -34.9,0a17.45,17.45 0,1 0 34.9,0M788.48,529.45a17.45,17.45 0,1 0 0,-34.9a17.45,17.45 0,1 0 0,34.9M723.63,706.56a17.45,17.45 0,1 0 -34.9,0a17.45,17.45 0,1 0 34.9,0M529.45,788.48a17.45,17.45 0,1 0 -34.9,0a17.45,17.45 0,1 0 34.9,0M335.27,706.56a17.45,17.45 0,1 0 -34.9,0a17.45,17.45 0,1 0 34.9,0M235.52,529.45a17.45,17.45 0,1 0 0,-34.9a17.45,17.45 0,1 0 0,34.9M335.27,317.44a17.45,17.45 0,1 0 -34.9,0a17.45,17.45 0,1 0 34.9,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M481.28,245.76h61.44v204.8h-61.44zM481.28,573.44h61.44v204.8h-61.44zM245.76,481.28h204.8v61.44h-204.8zM573.44,481.28h204.8v61.44h-204.8z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M512,414.72C565.73,414.72 609.28,458.27 609.28,512C609.28,565.73 565.73,609.28 512,609.28C458.27,609.28 414.72,565.73 414.72,512C414.72,458.27 458.27,414.72 512,414.72z" />
+    <path
+        android:fillColor="#0071E3"
+        android:pathData="M512,476.16C531.79,476.16 547.84,492.21 547.84,512C547.84,531.79 531.79,547.84 512,547.84C492.21,547.84 476.16,531.79 476.16,512C476.16,492.21 492.21,476.16 512,476.16z" />
+</vector>
