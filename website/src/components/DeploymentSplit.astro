@@ -1,0 +1,102 @@
+<section class="deploy">
+	<div class="wrap split">
+		<div class="side">
+			<h3>Self-hosted</h3>
+			<p>Your hardware, your data, free forever. One compose file and you own your library.</p>
+			<pre class="term"><code><span class="prompt">$</span> docker compose up -d</code></pre>
+			<a class="btn" href="/docs/self-hosting/install/">Read the install guide</a>
+		</div>
+		<div class="side">
+			<h3>Indelible Cloud</h3>
+			<p>Managed hosting, zero setup, always up to date. Launching soon.</p>
+			<div class="spacer"></div>
+			<span class="btn btn-soon" role="note" aria-label="Indelible Cloud is coming soon"
+				>Indelible Cloud</span
+			>
+		</div>
+	</div>
+</section>
+
+<style>
+	/* Vertical padding lives on the section, not on .wrap.split; the .wrap
+	   shorthand would otherwise zero it out. */
+	.deploy {
+		padding: 128px 0;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.split {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		column-gap: 24px;
+	}
+
+	.side {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		padding-right: 64px;
+	}
+
+	.side + .side {
+		border-left: 1px solid var(--hairline);
+		padding-right: 0;
+		padding-left: 64px;
+	}
+
+	h3 {
+		font-family: var(--font-serif);
+		font-size: 28px;
+		font-weight: 600;
+	}
+
+	p {
+		margin-top: 16px;
+		font-size: 15px;
+		line-height: 1.65;
+		color: var(--ink-soft);
+		max-width: 38ch;
+	}
+
+	.term {
+		margin: 28px 0 32px;
+		padding: 14px 18px;
+		background: var(--term-bg);
+		color: var(--term-text);
+		font-family: var(--font-mono);
+		font-size: 13px;
+		border-radius: 2px;
+		border: 1px solid var(--hairline);
+	}
+
+	.prompt {
+		color: var(--term-prompt);
+	}
+
+	.spacer {
+		flex: 1;
+		min-height: 40px;
+	}
+
+	@media (max-width: 720px) {
+		.deploy {
+			padding: 80px 0;
+		}
+
+		.split {
+			grid-template-columns: 1fr;
+			row-gap: 56px;
+		}
+
+		.side {
+			padding-right: 0;
+		}
+
+		.side + .side {
+			border-left: none;
+			border-top: 1px solid var(--hairline);
+			padding-left: 0;
+			padding-top: 56px;
+		}
+	}
+</style>

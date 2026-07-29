@@ -1,0 +1,121 @@
+# Indelible local trial: http on localhost, for evaluating on your own machine.
+# Not for exposing to a network. See https://useindelible.com/docs/self-hosting/install/
+# for the production compose with TLS.
+#
+#   curl -fsSL https://useindelible.com/quickstart/docker-compose.yml -o docker-compose.yml
+#   curl -fsSL https://useindelible.com/quickstart/env.example -o .env
+#   docker compose up -d
+#
+# Then open http://localhost:38473 and create your account.
+
+x-app-env: &app-env
+  IND_ENV: development
+  DATABASE_URL: postgres://indelible:${POSTGRES_PASSWORD}@postgres:5432/indelible
+  S3_ENDPOINT: http://minio:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: indelible
+  S3_ACCESS_KEY: indelible
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  S3_FORCE_PATH_STYLE: 'true'
+  AUTH_CREDENTIAL_KEY: ${AUTH_CREDENTIAL_KEY}
+  # Development would otherwise default this open. Keep the SSRF guard closed
+  # even for a local trial; set it true only to reach a local AI endpoint.
+  EGRESS_ALLOW_PRIVATE_TARGETS: 'false'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: indelible
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: indelible
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U indelible -d indelible']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: indelible
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Creates the bucket once MinIO is healthy, then exits.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://minio:9000 indelible ${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing minio/indelible
+      "
+
+  renderer:
+    image: ghcr.io/useindelible/ind-renderer:latest
+    init: true
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      RENDERER_HOST: 0.0.0.0
+      RENDERER_PORT: 3100
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  api:
+    image: ghcr.io/useindelible/ind-api:latest
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      IND_HOST: 0.0.0.0
+      IND_PORT: '8080'
+      IND_BASE_URL: http://localhost:38473
+      FRONTEND_URL: http://localhost:38473
+      CORS_ORIGINS: http://localhost:38473
+      JWT_SECRET: ${JWT_SECRET}
+      CSRF_SECRET: ${CSRF_SECRET}
+      ASSET_COOKIE_SECRET: ${ASSET_COOKIE_SECRET}
+    ports:
+      - '38473:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  worker:
+    image: ghcr.io/useindelible/ind-worker:latest
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      RENDERER_URL: http://renderer:3100
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      renderer:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  miniodata:
