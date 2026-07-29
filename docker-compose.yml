@@ -1,0 +1,135 @@
+# Local development stack only. It runs the API in development mode with
+# throwaway credentials and a localhost base URL, so auth cookies are not
+# Secure and signups are open. Do not deploy this: the self-hosting guide at
+# https://useindelible.com/docs/self-hosting/install/ ships a production compose.
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: indelible
+      POSTGRES_USER: indelible
+      POSTGRES_PASSWORD: indelible
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indelible -d indelible"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing minio/indelible
+      "
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  renderer:
+    init: true
+    build:
+      context: ./backend
+      dockerfile: apps/ind-renderer/Dockerfile
+    ports:
+      - "3100:3100"
+    environment:
+      RENDERER_HOST: 0.0.0.0
+      RENDERER_PORT: 3100
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: indelible
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
+      IDLE_TIMEOUT_SECS: ${IDLE_TIMEOUT_SECS:-30}
+      IND_ENV: production
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  ind-api:
+    build:
+      # Root context: this image builds the web app alongside the API.
+      context: .
+      dockerfile: backend/apps/ind-api/Dockerfile
+    ports:
+      - "38473:8080"
+    environment:
+      DATABASE_URL: postgres://indelible:indelible@postgres:5432/indelible
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: indelible
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      IND_HOST: 0.0.0.0
+      IND_PORT: 8080
+      IND_BASE_URL: http://localhost:38473
+      IND_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  ind-worker:
+    build:
+      context: ./backend
+      dockerfile: apps/ind-worker/Dockerfile
+    environment:
+      DATABASE_URL: postgres://indelible:indelible@postgres:5432/indelible
+      RENDERER_URL: http://renderer:3100
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: indelible
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      IND_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      renderer:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  minio-data:
