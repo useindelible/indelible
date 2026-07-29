@@ -1,0 +1,1153 @@
+:root {
+	/* Background */
+	--bg-primary: #ffffff;
+	--bg-secondary: #f5f5f7;
+	--bg-tertiary: #e8e8ed;
+	--bg-elevated: #ffffff;
+	--bg-content: #ffffff;
+	--onboarding-card-bg: #ffffff;
+	--onboarding-ai-field-bg: #f7fcf8;
+	--onboarding-ai-field-border: #cfe5d4;
+	--onboarding-ai-section-border: #b8ddc1;
+	--reader-sepia-bg: #f5edda;
+
+	/* Text */
+	--text-primary: #1d1d1f;
+	--text-secondary: #86868b;
+	--text-tertiary: #aeaeb2;
+	--text-quaternary: #c7c7cc;
+
+	/* Accent */
+	--accent: #0071e3;
+	--accent-hover: #0077ed;
+	--destructive: #ff3b30;
+	--red: #ff3b30;
+	--success: #34c759;
+	--warning: #ff9500;
+
+	/* Accent swatch palette (preferences accent picker) */
+	--accent-swatch-blue: #0071e3;
+	--accent-swatch-green: #34c759;
+	--accent-swatch-rose: #ff2d55;
+	--accent-swatch-orange: #ff9500;
+	--accent-swatch-indigo: #5856d6;
+
+	/* Text on colored backgrounds (accent, destructive, etc.) */
+	--text-on-color: #ffffff;
+
+	/* Semantic fill backgrounds */
+	--fill-success: rgba(52, 199, 89, 0.1);
+	--fill-warning: rgba(255, 149, 0, 0.1);
+	--fill-danger: rgba(255, 59, 48, 0.08);
+
+	/* Borders */
+	--border-primary: rgba(0, 0, 0, 0.07);
+	--border-secondary: rgba(0, 0, 0, 0.1);
+
+	/* Fills */
+	--fill-hover: rgba(0, 0, 0, 0.035);
+	--fill-secondary: rgba(0, 0, 0, 0.06);
+	--fill-selected: rgba(0, 113, 227, 0.08);
+	--fill-selected-strong: rgba(0, 113, 227, 0.14);
+
+	/* Radius */
+	--radius-xs: 4px;
+	--radius-sm: 7px;
+	--radius-md: 10px;
+	--radius-lg: 12px;
+	--radius-xl: 14px;
+
+	/* Typography */
+	--font-sans:
+		-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+
+	/* Extended radius */
+	--radius-full: 9999px;
+	--radius-circle: 50%;
+
+	/* Vibrancy surfaces */
+	--vibrancy-sidebar: rgba(243, 243, 248, 0.78);
+	--vibrancy-content: rgba(255, 255, 255, 0.92);
+	--sidebar-bg: rgba(255, 255, 255, 0.65);
+	--detail-bg: rgba(255, 255, 255, 0.92);
+
+	/* Segmented control */
+	--seg-bg: rgba(0, 0, 0, 0.055);
+	--seg-on: #ffffff;
+	--seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+
+	/* Morph switcher */
+	--accent-glow: rgba(0, 113, 227, 0.35);
+	--fill-on-accent: rgba(255, 255, 255, 0.25);
+
+	/* Overlay backdrop */
+	--overlay-backdrop: rgba(0, 0, 0, 0.4);
+
+	/* Elevation shadows */
+	--shadow-1: 0 1px 6px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+	--shadow-3: 0 8px 40px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+
+	/* Highlight colors */
+	--highlight-yellow-bg: #fff3bf;
+	--highlight-blue-bg: #d4eaff;
+	--highlight-green-bg: #d4f5dd;
+	--highlight-pink-bg: #ffd6e0;
+	--highlight-purple-bg: #e8d5f5;
+	--highlight-yellow-border: #ffd600;
+	--highlight-blue-border: #0a84ff;
+	--highlight-green-border: #34c759;
+	--highlight-pink-border: #ff2d55;
+	--highlight-purple-border: #af52de;
+
+	/* Provider icon tints (imports page) */
+	--provider-readwise-bg: rgba(0, 113, 227, 0.12);
+	--provider-readwise-fg: var(--accent);
+
+	/* Vibrancy blob colors */
+	--blob-accent: rgba(0, 113, 227, 0.07);
+	--blob-purple: rgba(175, 82, 222, 0.05);
+	--blob-green: rgba(52, 199, 89, 0.04);
+	--blob-orange: rgba(255, 149, 0, 0.04);
+
+	/* Gradient card action button overlay */
+	--gradient-action-bg: rgba(255, 255, 255, 0.2);
+	--gradient-action-bg-hover: rgba(255, 255, 255, 0.35);
+	--gradient-action-color: rgba(255, 255, 255, 0.9);
+	--gradient-action-danger-bg-hover: rgba(255, 59, 48, 0.6);
+
+	/* Entity type chip colors */
+	--entity-person-bg: rgba(175, 82, 222, 0.1);
+	--entity-person-text: #af52de;
+	--entity-org-bg: rgba(255, 149, 0, 0.1);
+	--entity-org-text: #995500;
+	--entity-location-bg: rgba(52, 199, 89, 0.1);
+	--entity-location-text: #1a7a37;
+	--entity-event-bg: rgba(90, 200, 250, 0.1);
+	--entity-event-text: #0070c9;
+	--entity-work-bg: rgba(0, 113, 227, 0.08);
+	--entity-work-text: var(--accent);
+
+	/* Collection card gradients */
+	--collection-gradient-0: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+	--collection-gradient-1: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+	--collection-gradient-2: linear-gradient(135deg, #059669 0%, #34d399 100%);
+	--collection-gradient-3: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+	--collection-gradient-4: linear-gradient(135deg, #0891b2 0%, #22d3ee 100%);
+	--collection-gradient-5: linear-gradient(135deg, #db2777 0%, #f472b6 100%);
+
+	/* TTS */
+	--tts-strip-bg: linear-gradient(180deg, rgba(0, 113, 227, 0.05) 0%, rgba(0, 113, 227, 0.02) 100%);
+	--tts-strip-border: rgba(0, 113, 227, 0.14);
+	--tts-element-bg: rgba(0, 113, 227, 0.055);
+	--tts-element-border: #0071e3;
+	--tts-banner-setup-bg: rgba(0, 113, 227, 0.06);
+	--tts-banner-setup-border: rgba(0, 113, 227, 0.18);
+	--tts-banner-setup-icon-bg: rgba(0, 113, 227, 0.13);
+	--tts-banner-warning-bg: rgba(255, 149, 0, 0.08);
+	--tts-banner-warning-border: rgba(255, 149, 0, 0.28);
+	--tts-banner-warning-icon-bg: rgba(255, 149, 0, 0.18);
+	--tts-banner-error-bg: rgba(255, 59, 48, 0.07);
+	--tts-banner-error-border: rgba(255, 59, 48, 0.26);
+	--tts-banner-error-icon-bg: rgba(255, 59, 48, 0.14);
+	--tts-quota-bar-bg: rgba(0, 0, 0, 0.06);
+	--tts-popover-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+	--tts-primary-shadow: 0 2px 10px rgba(0, 113, 227, 0.28);
+
+	/* Settings hero — supporting tokens (light) */
+	--accent-soft: rgba(0, 113, 227, 0.1);
+	--success-soft: rgba(52, 199, 89, 0.14);
+	--destructive-soft: rgba(215, 0, 21, 0.06);
+	--destructive-border: rgba(215, 0, 21, 0.2);
+	--border-hairline: rgba(0, 0, 0, 0.05);
+	--input-bg: #ffffff;
+	--input-border: rgba(0, 0, 0, 0.1);
+	--input-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--card-bg: rgba(0, 0, 0, 0.025);
+	--pill-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+
+	/* Settings hero — Account (warm peach) */
+	--hero-account-from: #ffeedd;
+	--hero-account-to: #ffd8c2;
+	--hero-account-blob-a: rgba(255, 200, 176, 0.85);
+	--hero-account-blob-b: rgba(255, 168, 135, 0.55);
+	--hero-account-edge: rgba(255, 140, 90, 0.2);
+	--hero-account-eyebrow: rgba(70, 40, 20, 0.62);
+	--hero-account-name: #1d1d1f;
+	--hero-account-pill-bg: rgba(255, 255, 255, 0.62);
+	--hero-account-pill-text: rgba(70, 40, 20, 0.78);
+	--hero-account-pill-border: rgba(70, 40, 20, 0.1);
+	--hero-account-pill-key: rgba(70, 40, 20, 0.95);
+	--hero-account-avatar-from: #ff9f70;
+	--hero-account-avatar-to: #ff6b45;
+	--hero-account-pill-verified-bg: rgba(52, 199, 89, 0.18);
+	--hero-account-pill-verified-text: #1f7a3a;
+	--hero-account-pill-verified-border: rgba(52, 199, 89, 0.32);
+
+	/* Settings hero — Reading (paper-and-ink) */
+	--hero-reading-from: #f4eee0;
+	--hero-reading-to: #eae2cf;
+	--hero-reading-blob-a: rgba(190, 170, 120, 0.45);
+	--hero-reading-blob-b: rgba(220, 200, 160, 0.55);
+	--hero-reading-edge: rgba(180, 150, 100, 0.3);
+	--hero-reading-eyebrow: rgba(80, 55, 30, 0.55);
+	--hero-reading-name: #2c1f12;
+	--hero-reading-sub: rgba(50, 35, 18, 0.65);
+	--hero-reading-rule: rgba(120, 90, 50, 0.2);
+	--hero-reading-paper-grain: rgba(120, 90, 50, 0.04);
+	--hero-reading-tile-bg: #fffdf7;
+	--hero-reading-tile-border: rgba(120, 90, 50, 0.1);
+	--hero-reading-tile-shadow: 0 24px 56px rgba(80, 50, 20, 0.12), 0 6px 14px rgba(80, 50, 20, 0.06);
+	--hero-reading-tile-text: #1f1814;
+	--hero-reading-tile-byline: #7a6448;
+	--hero-reading-tile-rule: rgba(80, 55, 30, 0.1);
+	--hero-reading-tile-stack-shadow: 0 14px 36px rgba(80, 50, 20, 0.1);
+
+	/* Settings hero — Integrations (marketplace violet) */
+	--hero-integrations-from: #eceaff;
+	--hero-integrations-to: #d4d2ff;
+	--hero-integrations-blob-a: rgba(180, 170, 255, 0.85);
+	--hero-integrations-blob-b: rgba(140, 130, 240, 0.45);
+	--hero-integrations-blob-c: rgba(255, 180, 210, 0.4);
+	--hero-integrations-edge: rgba(120, 110, 230, 0.22);
+	--hero-integrations-eyebrow: rgba(60, 40, 140, 0.62);
+	--hero-integrations-headline: #1d1d1f;
+
+	/* Settings hero — Notion (cream paper + walnut ink) */
+	--hero-notion-from: #faf6ec;
+	--hero-notion-to: #ece2c8;
+	--hero-notion-blob-a: rgba(220, 180, 90, 0.45);
+	--hero-notion-blob-b: rgba(170, 130, 60, 0.3);
+	--hero-notion-edge: rgba(122, 98, 52, 0.22);
+	--hero-notion-rule: rgba(122, 98, 52, 0.06);
+	--hero-notion-eyebrow: rgba(60, 45, 15, 0.62);
+	--hero-notion-name: #1d1a12;
+	--hero-notion-sub: rgba(60, 45, 15, 0.72);
+	--hero-notion-icon-bg: #1d1a12;
+	--hero-notion-icon-fg: #fbf8f1;
+	--hero-notion-indelible-from: #0071e3;
+	--hero-notion-indelible-to: #5e5ce6;
+	--notion-accent: #7a6234;
+	--notion-accent-soft: rgba(122, 98, 52, 0.1);
+	--notion-accent-strong: #5a481f;
+	--notion-card-bg: rgba(40, 30, 10, 0.025);
+	--notion-input-bg: #ffffff;
+	--notion-input-shadow: inset 0 0 0 0.5px rgba(40, 30, 10, 0.06);
+	--notion-toggle-bg: rgba(40, 30, 10, 0.18);
+	--notion-toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+	--notion-tile-bg: rgba(255, 255, 255, 0.96);
+	--notion-tile-shadow:
+		0 24px 50px -20px rgba(60, 45, 15, 0.3), 0 8px 18px -8px rgba(60, 45, 15, 0.18),
+		0 0 0 0.5px rgba(40, 30, 10, 0.05);
+	--notion-tile-text: #1d1a12;
+	--notion-tile-sub: rgba(60, 45, 15, 0.65);
+	--notion-tile-divider: rgba(40, 30, 10, 0.1);
+	--notion-success-soft: rgba(79, 122, 61, 0.14);
+	--notion-success-text: #4f7a3d;
+	--notion-warning-soft: rgba(255, 159, 10, 0.14);
+	--notion-warning-text: #b25e09;
+	--notion-info-soft: rgba(43, 91, 176, 0.1);
+	--notion-info-text: #2b5bb0;
+	--notion-danger-soft: rgba(194, 54, 43, 0.06);
+	--notion-danger-border: rgba(194, 54, 43, 0.2);
+	--notion-danger-text: #c2362b;
+	--notion-type-title: #b25e09;
+	--notion-type-title-bg: rgba(178, 94, 9, 0.1);
+	--notion-type-rich-text: #5c5340;
+	--notion-type-rich-text-bg: rgba(92, 83, 64, 0.1);
+	--notion-type-url: #2b5bb0;
+	--notion-type-url-bg: rgba(43, 91, 176, 0.1);
+	--notion-type-select: #7a6234;
+	--notion-type-select-bg: rgba(122, 98, 52, 0.1);
+	--notion-type-multi: #7a3d9c;
+	--notion-type-multi-bg: rgba(122, 61, 156, 0.1);
+	--notion-type-date: #2e7373;
+	--notion-type-date-bg: rgba(46, 115, 115, 0.1);
+
+	/* Settings hero — Obsidian (gem violet) */
+	--hero-obsidian-from: #ddcffc;
+	--hero-obsidian-to: #b69cf5;
+	--hero-obsidian-blob-a: rgba(167, 139, 250, 0.62);
+	--hero-obsidian-blob-b: rgba(110, 72, 224, 0.3);
+	--hero-obsidian-blob-c: rgba(255, 200, 235, 0.34);
+	--hero-obsidian-edge: rgba(110, 72, 224, 0.22);
+	--hero-obsidian-eyebrow: rgba(75, 45, 160, 0.74);
+	--hero-obsidian-headline: #1d1d1f;
+
+	/* Obsidian page — supporting tokens */
+	--obs-accent: #6e48e0;
+	--obs-accent-soft: rgba(110, 72, 224, 0.11);
+	--obs-accent-ink: #4b3aa6;
+	--obs-card-tint: 4.5%;
+	--obs-card-gem-opacity: 0.055;
+	--obs-mark-from: #6e48e0;
+	--obs-mark-to: #3d2680;
+	--obs-card-bg: rgba(75, 45, 160, 0.038);
+	--obs-editor-bg: #f5f1fe;
+	--obs-editor-border: rgba(110, 72, 224, 0.16);
+	--obs-preview-bg: #fafafa;
+	--obs-preview-border: rgba(0, 0, 0, 0.07);
+	--obs-preview-path: rgba(110, 72, 224, 0.62);
+	--obs-state-idle-bg: rgba(0, 0, 0, 0.06);
+	--obs-state-idle-text: #6e6e73;
+	--obs-state-running-bg: rgba(0, 113, 227, 0.14);
+	--obs-state-running-text: #0050b5;
+	--obs-state-error-bg: rgba(255, 59, 48, 0.12);
+	--obs-state-error-text: #b91c1c;
+	--obs-status-active-bg: rgba(52, 199, 89, 0.16);
+	--obs-status-active-text: #1f7a3a;
+	--obs-alert-bg: rgba(255, 59, 48, 0.09);
+	--obs-alert-border: rgba(255, 59, 48, 0.22);
+	--obs-alert-text: #b91c1c;
+	--obs-input-bg: #ffffff;
+	--obs-input-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--obs-body-bleed: linear-gradient(
+		to bottom,
+		rgba(110, 72, 224, 0.1) 0px,
+		rgba(110, 72, 224, 0.05) 200px,
+		rgba(110, 72, 224, 0.02) 480px,
+		transparent 760px
+	);
+
+	/* Integrations — metric/ring/sparkline + brand marks + status pills */
+	--int-metric-card-bg: rgba(255, 255, 255, 0.62);
+	--int-metric-card-border: rgba(80, 60, 200, 0.1);
+	--int-metric-num: #1d1d1f;
+	--int-metric-label: rgba(60, 40, 140, 0.7);
+	--int-ring-track: rgba(120, 110, 230, 0.18);
+	--int-ring-connected: #5e5ce6;
+	--int-ring-syncing: #ff9500;
+	--int-ring-attention: #ff3b30;
+	--int-spark-stroke: #5e5ce6;
+	--int-spark-fill: rgba(94, 92, 230, 0.18);
+	--int-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--int-shadow-card-hover: 0 4px 14px rgba(94, 92, 230, 0.1), 0 0 0 0.5px rgba(94, 92, 230, 0.2);
+	--int-code-bg: rgba(0, 0, 0, 0.04);
+	--int-code-text: #4a4a4d;
+	--int-copy-success: #1f7a3a;
+	--int-table-head-bg: rgba(0, 0, 0, 0.025);
+	--int-table-row-hover: rgba(94, 92, 230, 0.04);
+	--int-status-active-bg: rgba(52, 199, 89, 0.16);
+	--int-status-active-text: #1f7a3a;
+	--int-status-syncing-bg: rgba(255, 149, 0, 0.14);
+	--int-status-syncing-text: #b25e09;
+	--int-status-attention-bg: rgba(255, 59, 48, 0.12);
+	--int-status-attention-text: #c2231d;
+	--int-status-coming-bg: rgba(94, 92, 230, 0.1);
+	--int-status-coming-text: #4d4bd0;
+	--int-brand-email-from: #34c759;
+	--int-brand-email-to: #1f7a3a;
+	--int-brand-browser-from: #ff9500;
+	--int-brand-browser-to: #ff6b22;
+	--int-brand-notion-bg: #f1f1ef;
+	--int-brand-notion-text: #1d1d1f;
+	--int-brand-obsidian-from: #6644aa;
+	--int-brand-obsidian-to: #4b2d8b;
+	--int-brand-kindle-from: #ff9900;
+	--int-brand-kindle-to: #ff6b00;
+	--int-brand-webhook-from: #5e5ce6;
+	--int-brand-webhook-to: #bf5af2;
+	--int-brand-readwise-from: #4f8ff7;
+	--int-brand-readwise-to: #2c6fe0;
+
+	/* Settings hero — Feed Management (RSS amber) */
+	--hero-feed-from: #ffefc4;
+	--hero-feed-to: #ffd884;
+	--hero-feed-blob-a: rgba(255, 200, 80, 0.85);
+	--hero-feed-blob-b: rgba(255, 160, 40, 0.45);
+	--hero-feed-blob-c: rgba(255, 225, 160, 0.55);
+	--hero-feed-edge: rgba(199, 113, 0, 0.22);
+	--hero-feed-eyebrow: rgba(120, 72, 0, 0.62);
+	--hero-feed-headline: #1d1d1f;
+
+	/* Settings hero — Archival (slate graphite + iron shimmer) */
+	--hero-archival-from: #e2e5eb;
+	--hero-archival-to: #c9cfd8;
+	--hero-archival-blob-a: rgba(160, 170, 190, 0.55);
+	--hero-archival-blob-b: rgba(110, 125, 148, 0.4);
+	--hero-archival-edge: rgba(60, 75, 98, 0.22);
+	--hero-archival-noise: rgba(255, 255, 255, 0.06);
+	--hero-archival-eyebrow: rgba(45, 55, 72, 0.62);
+	--hero-archival-name: #1d2433;
+	--hero-archival-sub: rgba(45, 55, 72, 0.72);
+
+	/* Settings hero — Mila (aurora violet→pink) */
+	--hero-mila-from: #efe0ff;
+	--hero-mila-to: #d8c5ff;
+	--hero-mila-blob-a: rgba(255, 180, 200, 0.62);
+	--hero-mila-blob-b: rgba(160, 140, 255, 0.55);
+	--hero-mila-blob-c: rgba(255, 210, 180, 0.4);
+	--hero-mila-edge: rgba(140, 80, 220, 0.22);
+	--hero-mila-eyebrow: rgba(72, 40, 140, 0.62);
+	--hero-mila-headline: #1d1d1f;
+
+	/* Settings hero — Developer (electric cyan) */
+	--hero-developer-from: #ddf0ff;
+	--hero-developer-to: #b0dbf6;
+	--hero-developer-blob-a: rgba(95, 180, 255, 0.5);
+	--hero-developer-blob-b: rgba(85, 210, 225, 0.42);
+	--hero-developer-edge: rgba(0, 80, 140, 0.22);
+	--hero-developer-noise: rgba(255, 255, 255, 0.1);
+	--hero-developer-grid: rgba(0, 60, 120, 0.07);
+	--hero-developer-eyebrow: rgba(0, 60, 120, 0.62);
+	--hero-developer-name: #051633;
+	--hero-developer-sub: rgba(15, 40, 75, 0.7);
+
+	/* Developer page — supporting tokens */
+	--dev-card-bg: rgba(15, 30, 55, 0.025);
+	--dev-card-strong: #ffffff;
+	--dev-accent: #0058b6;
+	--dev-accent-soft: rgba(0, 88, 182, 0.1);
+	--dev-accent-strong: #003f84;
+	--dev-accent-glow: rgba(60, 150, 235, 0.28);
+	--dev-pill-shadow: 0 2px 12px rgba(0, 40, 80, 0.08), 0 0 0 0.5px rgba(0, 40, 80, 0.06);
+
+	/* Developer terminal */
+	--dev-term-bg: rgba(255, 255, 255, 0.74);
+	--dev-term-bg-strong: #ffffff;
+	--dev-term-border: rgba(0, 60, 120, 0.18);
+	--dev-term-shadow: 0 18px 40px -16px rgba(0, 40, 90, 0.3), 0 0 0 0.5px rgba(0, 60, 120, 0.16);
+	--dev-term-bar: rgba(15, 30, 55, 0.04);
+	--dev-term-divider: rgba(0, 60, 120, 0.1);
+	--dev-term-text: #0e1827;
+	--dev-term-dim: #607089;
+	--dev-term-accent: #0058b6;
+	--dev-term-method-get: #1b6e32;
+	--dev-term-method-post: #0058b6;
+	--dev-term-method-delete: #b40015;
+	--dev-term-status-2xx: #1f7a3a;
+	--dev-term-status-4xx: #b25e09;
+	--dev-term-status-5xx: #c70015;
+
+	/* Developer scopes */
+	--dev-scope-read-bg: rgba(0, 113, 227, 0.1);
+	--dev-scope-read-fg: #0058b6;
+	--dev-scope-write-bg: rgba(255, 149, 0, 0.14);
+	--dev-scope-write-fg: #b25e09;
+	--dev-scope-other-bg: rgba(15, 30, 55, 0.06);
+	--dev-scope-other-fg: #4f5c71;
+	--dev-scope-ext-bg: rgba(94, 92, 230, 0.12);
+	--dev-scope-ext-fg: #4945c2;
+
+	--dev-success-soft: rgba(52, 199, 89, 0.16);
+	--dev-success-fg: #1f7a3a;
+	--dev-warning-soft: rgba(255, 159, 10, 0.18);
+	--dev-warning-fg: #b25e09;
+	--dev-destructive: #c70015;
+	--dev-destructive-soft: rgba(199, 0, 21, 0.07);
+	--dev-destructive-border: rgba(199, 0, 21, 0.22);
+	--dev-text-quaternary: #b8c0cf;
+
+	/* Archival page — supporting tokens */
+	--arc-card-bg: rgba(15, 25, 40, 0.025);
+	--arc-accent: #475a78;
+	--arc-accent-soft: rgba(71, 90, 120, 0.1);
+	--arc-accent-strong: #2f3d54;
+	--arc-fmt-card-bg: rgba(255, 255, 255, 0.62);
+	--arc-fmt-card-border: rgba(60, 75, 98, 0.18);
+	--arc-fmt-card-shadow: 0 8px 24px -10px rgba(45, 55, 72, 0.3), 0 0 0 0.5px rgba(60, 75, 98, 0.16);
+	--arc-fmt-card-text: #1d2433;
+	--arc-fmt-card-sub: rgba(45, 55, 72, 0.62);
+	--arc-fmt-card-icon-bg: rgba(60, 75, 98, 0.1);
+	--arc-fmt-divider: rgba(60, 75, 98, 0.16);
+	--arc-fmt-preview-bg: rgba(255, 255, 255, 0.5);
+	--arc-fmt-pdf-bg: rgba(255, 200, 200, 0.18);
+	--arc-fmt-pdf-label: rgba(180, 40, 40, 0.8);
+	--arc-fmt-screenshot-bg: linear-gradient(
+		135deg,
+		rgba(180, 200, 230, 0.5),
+		rgba(130, 160, 210, 0.3)
+	);
+	--arc-fmt-screenshot-overlay: linear-gradient(
+		180deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.18) 100%
+	);
+	--arc-fmt-warc-bg: repeating-linear-gradient(
+		45deg,
+		rgba(60, 75, 98, 0.1),
+		rgba(60, 75, 98, 0.1) 4px,
+		transparent 4px,
+		transparent 8px
+	);
+	--arc-toggle-bg: rgba(60, 75, 98, 0.18);
+	--arc-toggle-knob: #ffffff;
+	--arc-toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+	--arc-pulse-shadow: 0 0 0 3px rgba(52, 199, 89, 0.18);
+	--arc-pulse-shadow-strong: 0 0 0 5px rgba(52, 199, 89, 0.06);
+	--arc-warning-soft: rgba(255, 159, 10, 0.14);
+	--arc-warning-fg: #b25e09;
+	--arc-warning-pulse: rgba(255, 159, 10, 0.18);
+	--arc-success-soft: rgba(52, 199, 89, 0.14);
+	--arc-success-fg: #1f7a3a;
+	--arc-tertiary-pulse: rgba(139, 146, 160, 0.18);
+	--arc-sensitivity-track: linear-gradient(
+		90deg,
+		rgba(34, 197, 94, 0.45) 0%,
+		rgba(234, 179, 8, 0.45) 50%,
+		rgba(239, 68, 68, 0.45) 100%
+	);
+	--arc-input-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--arc-input-focus-ring: rgba(71, 90, 120, 0.18);
+
+	--feed-amber: #c77100;
+	--feed-amber-strong: #b25e09;
+	--feed-amber-soft: rgba(199, 113, 0, 0.08);
+	--feed-amber-shadow:
+		0 6px 16px rgba(199, 113, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+	--feed-amber-shadow-hover:
+		0 8px 22px rgba(199, 113, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+	--feed-amber-button-shadow: 0 4px 14px rgba(199, 113, 0, 0.28);
+	--feed-amber-button-shadow-hover: 0 8px 22px rgba(199, 113, 0, 0.4);
+	--feed-pulse-color: rgba(199, 113, 0, 0.5);
+	--feed-pulse-fade: rgba(199, 113, 0, 0);
+	--feed-eyebrow-color: rgba(120, 72, 0, 0.62);
+	--feed-metric-card-bg: rgba(255, 255, 255, 0.62);
+	--feed-metric-card-border: rgba(180, 110, 0, 0.1);
+	--feed-metric-card-shadow: 0 0 0 0.5px rgba(180, 110, 0, 0.1), 0 6px 18px rgba(120, 72, 0, 0.08);
+	--feed-metric-num-color: #1d1d1f;
+	--feed-metric-label-color: rgba(120, 72, 0, 0.7);
+	--feed-status-active-bg: rgba(52, 199, 89, 0.16);
+	--feed-status-active-text: #1f7a3a;
+	--feed-status-paused-bg: rgba(0, 0, 0, 0.06);
+	--feed-status-paused-text: #6e6e73;
+	--feed-status-error-bg: rgba(255, 59, 48, 0.12);
+	--feed-status-error-text: #c2231d;
+	--feed-status-pending-bg: rgba(0, 113, 227, 0.12);
+	--feed-status-pending-text: #0058b0;
+	--feed-chip-bg: rgba(0, 0, 0, 0.04);
+	--feed-chip-active-bg: rgba(199, 113, 0, 0.14);
+	--feed-chip-active-text: #8c5300;
+	--feed-chip-active-border: rgba(199, 113, 0, 0.3);
+	--feed-table-head-bg: rgba(0, 0, 0, 0.025);
+	--feed-table-row-hover: rgba(199, 113, 0, 0.04);
+	--feed-table-error-bg: rgba(255, 59, 48, 0.05);
+	--feed-table-error-border: rgba(255, 59, 48, 0.18);
+	--feed-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--feed-input-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.07);
+	--feed-toggle-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+	--feed-code-bg: rgba(0, 0, 0, 0.04);
+	--feed-code-text: #4a4a4d;
+	--feed-icon-blue-bg: rgba(0, 113, 227, 0.14);
+	--feed-icon-blue-fg: #0071e3;
+	--feed-icon-green-bg: rgba(52, 199, 89, 0.14);
+	--feed-icon-green-fg: #1d8a3a;
+	--feed-icon-orange-bg: rgba(255, 149, 0, 0.14);
+	--feed-icon-orange-fg: #c47500;
+	--feed-icon-rose-bg: rgba(255, 45, 85, 0.14);
+	--feed-icon-rose-fg: #d4003d;
+	--feed-icon-purple-bg: rgba(175, 82, 222, 0.14);
+	--feed-icon-purple-fg: #8944b8;
+	--feed-icon-cyan-bg: rgba(50, 173, 230, 0.14);
+	--feed-icon-cyan-fg: #0071a4;
+	--feed-icon-red-bg: rgba(255, 59, 48, 0.14);
+	--feed-icon-red-fg: #c4251b;
+	--feed-icon-teal-bg: rgba(100, 200, 100, 0.14);
+	--feed-icon-teal-fg: #2a7a2a;
+
+	/* Mila & AI page tokens (light) */
+	--mila-violet: #8442d9;
+	--mila-violet-strong: #6b2fb5;
+	--mila-pink: #e66b98;
+	--mila-violet-soft: rgba(132, 66, 217, 0.1);
+	--mila-pink-soft: rgba(230, 107, 152, 0.1);
+	--mila-orb-shadow:
+		0 24px 50px rgba(132, 66, 217, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2),
+		inset -8px -10px 30px rgba(132, 66, 217, 0.4), inset 8px 8px 24px rgba(255, 180, 200, 0.4);
+	--mila-orb-highlight: radial-gradient(
+		circle at 35% 32%,
+		rgba(255, 255, 255, 0.85),
+		rgba(255, 255, 255, 0.1) 40%
+	);
+	--mila-orb-spec: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.65), transparent 70%);
+	--mila-button-shadow:
+		0 4px 12px rgba(132, 66, 217, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+	--mila-button-shadow-hover:
+		0 6px 16px rgba(132, 66, 217, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+	--mila-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--mila-input-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--mila-metric-card-bg: rgba(255, 255, 255, 0.62);
+	--mila-metric-card-border: rgba(132, 66, 217, 0.1);
+	--mila-metric-card-shadow:
+		0 0 0 0.5px rgba(132, 66, 217, 0.1), 0 4px 14px rgba(72, 40, 140, 0.06);
+	--mila-metric-num-color: #1d1d1f;
+	--mila-metric-label-color: rgba(72, 40, 140, 0.7);
+	--mila-status-ok-bg: rgba(52, 199, 89, 0.16);
+	--mila-status-ok-text: #1f7a3a;
+	--mila-status-err-bg: rgba(255, 59, 48, 0.12);
+	--mila-status-err-text: #c2231d;
+	--mila-status-test-bg: rgba(0, 113, 227, 0.1);
+	--mila-status-test-text: #0071e3;
+	--mila-status-idle-bg: rgba(0, 0, 0, 0.04);
+	--mila-status-idle-text: #6e6e73;
+	--mila-code-bg: rgba(0, 0, 0, 0.04);
+	--mila-code-text: #4a4a4d;
+	--mila-edit-form-shadow:
+		0 0 0 1px rgba(132, 66, 217, 0.1), 0 8px 28px -10px rgba(132, 66, 217, 0.22),
+		0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	--mila-action-summary: #0071e3;
+	--mila-action-tags: #1f7a3a;
+	--mila-action-entities: #c77100;
+	--mila-action-chat: #8442d9;
+	--mila-action-custom: #6e6e73;
+
+	--switch-thumb: #ffffff;
+	--switch-checkmark: #ffffff;
+	--obs-gem-highlight: #ffffff;
+}
+
+[data-theme='dark'] {
+	--bg-primary: #000000;
+	--bg-secondary: #1c1c1e;
+	--bg-tertiary: #2c2c2e;
+	--bg-elevated: #2c2c2e;
+	--bg-content: #1c1c1e;
+	--onboarding-card-bg: #1c1c1e;
+	--onboarding-ai-field-bg: #111a14;
+	--onboarding-ai-field-border: #31543a;
+	--onboarding-ai-section-border: #315f3c;
+	--reader-sepia-bg: #f5edda;
+
+	--text-primary: #f5f5f7;
+	--text-secondary: #98989d;
+	--text-tertiary: #636366;
+	--text-quaternary: #48484a;
+
+	--accent: #0a84ff;
+	--accent-hover: #409cff;
+	--destructive: #ff453a;
+	--red: #ff453a;
+	--success: #30d158;
+	--warning: #ff9f0a;
+
+	--accent-swatch-blue: #0a84ff;
+	--accent-swatch-green: #30d158;
+	--accent-swatch-rose: #ff375f;
+	--accent-swatch-orange: #ff9f0a;
+	--accent-swatch-indigo: #5e5ce6;
+
+	--text-on-color: #ffffff;
+
+	--fill-success: rgba(48, 209, 88, 0.12);
+	--fill-warning: rgba(255, 159, 10, 0.12);
+	--fill-danger: rgba(255, 69, 58, 0.1);
+
+	--border-primary: rgba(255, 255, 255, 0.08);
+	--border-secondary: rgba(255, 255, 255, 0.12);
+
+	--fill-hover: rgba(255, 255, 255, 0.06);
+	--fill-secondary: rgba(255, 255, 255, 0.1);
+	--fill-selected: rgba(10, 132, 255, 0.14);
+	--fill-selected-strong: rgba(10, 132, 255, 0.2);
+
+	/* Provider icon tints (dark) */
+	--provider-readwise-bg: rgba(10, 132, 255, 0.18);
+	--provider-readwise-fg: var(--accent);
+
+	--vibrancy-sidebar: rgba(28, 28, 30, 0.82);
+	--vibrancy-content: rgba(28, 28, 30, 0.88);
+	--sidebar-bg: rgba(28, 28, 30, 0.82);
+	--detail-bg: rgba(28, 28, 30, 0.88);
+
+	--seg-bg: rgba(255, 255, 255, 0.07);
+	--seg-on: rgba(255, 255, 255, 0.14);
+	--seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+
+	/* Morph switcher */
+	--accent-glow: rgba(10, 132, 255, 0.45);
+	--fill-on-accent: rgba(255, 255, 255, 0.25);
+
+	--overlay-backdrop: rgba(0, 0, 0, 0.6);
+
+	--shadow-1: 0 1px 6px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+	--shadow-3: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+
+	/* Gradient card action button overlay (dark — same values work on dark gradients) */
+	--gradient-action-bg: rgba(255, 255, 255, 0.18);
+	--gradient-action-bg-hover: rgba(255, 255, 255, 0.3);
+	--gradient-action-color: rgba(255, 255, 255, 0.85);
+	--gradient-action-danger-bg-hover: rgba(255, 69, 58, 0.65);
+
+	/* Highlight colors (dark) */
+	--highlight-yellow-bg: rgba(255, 214, 0, 0.22);
+	--highlight-blue-bg: rgba(10, 132, 255, 0.18);
+	--highlight-green-bg: rgba(52, 199, 89, 0.18);
+	--highlight-pink-bg: rgba(255, 45, 85, 0.18);
+	--highlight-purple-bg: rgba(175, 82, 222, 0.18);
+
+	/* Entity type chip colors (dark) */
+	--entity-person-bg: rgba(175, 82, 222, 0.16);
+	--entity-person-text: #bf5af2;
+	--entity-org-bg: rgba(255, 159, 10, 0.16);
+	--entity-org-text: #ff9f0a;
+	--entity-location-bg: rgba(52, 199, 89, 0.16);
+	--entity-location-text: #30d158;
+	--entity-event-bg: rgba(90, 200, 250, 0.16);
+	--entity-event-text: #64d2ff;
+	--entity-work-bg: rgba(10, 132, 255, 0.14);
+	--entity-work-text: var(--accent);
+
+	/* Collection card gradients (dark — deeper starts) */
+	--collection-gradient-0: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+	--collection-gradient-1: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+	--collection-gradient-2: linear-gradient(135deg, #064e3b 0%, #059669 100%);
+	--collection-gradient-3: linear-gradient(135deg, #78350f 0%, #d97706 100%);
+	--collection-gradient-4: linear-gradient(135deg, #164e63 0%, #0891b2 100%);
+	--collection-gradient-5: linear-gradient(135deg, #831843 0%, #db2777 100%);
+
+	/* TTS (dark) */
+	--tts-strip-bg: linear-gradient(
+		180deg,
+		rgba(10, 132, 255, 0.09) 0%,
+		rgba(10, 132, 255, 0.03) 100%
+	);
+	--tts-strip-border: rgba(10, 132, 255, 0.22);
+	--tts-element-bg: rgba(10, 132, 255, 0.11);
+	--tts-element-border: #0a84ff;
+	--tts-banner-setup-bg: rgba(10, 132, 255, 0.1);
+	--tts-banner-setup-border: rgba(10, 132, 255, 0.28);
+	--tts-banner-setup-icon-bg: rgba(10, 132, 255, 0.2);
+	--tts-banner-warning-bg: rgba(255, 159, 10, 0.12);
+	--tts-banner-warning-border: rgba(255, 159, 10, 0.32);
+	--tts-banner-warning-icon-bg: rgba(255, 159, 10, 0.22);
+	--tts-banner-error-bg: rgba(255, 69, 58, 0.12);
+	--tts-banner-error-border: rgba(255, 69, 58, 0.32);
+	--tts-banner-error-icon-bg: rgba(255, 69, 58, 0.22);
+	--tts-quota-bar-bg: rgba(255, 255, 255, 0.08);
+	--tts-popover-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+	--tts-primary-shadow: 0 2px 10px rgba(10, 132, 255, 0.32);
+
+	/* Settings hero — supporting tokens (dark) */
+	--accent-soft: rgba(10, 132, 255, 0.18);
+	--success-soft: rgba(48, 209, 88, 0.18);
+	--destructive-soft: rgba(255, 69, 58, 0.1);
+	--destructive-border: rgba(255, 69, 58, 0.24);
+	--border-hairline: rgba(255, 255, 255, 0.06);
+	--input-bg: #1c1c1e;
+	--input-border: rgba(255, 255, 255, 0.1);
+	--input-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+	--card-bg: rgba(255, 255, 255, 0.04);
+	--pill-shadow: 0 2px 16px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+
+	/* Settings hero — Account (deep peach embers) */
+	--hero-account-from: #2c1b12;
+	--hero-account-to: #3a2418;
+	--hero-account-blob-a: rgba(255, 140, 90, 0.3);
+	--hero-account-blob-b: rgba(255, 100, 60, 0.2);
+	--hero-account-edge: rgba(255, 140, 90, 0.4);
+	--hero-account-eyebrow: rgba(255, 200, 170, 0.55);
+	--hero-account-name: #f5f5f7;
+	--hero-account-pill-bg: rgba(255, 255, 255, 0.06);
+	--hero-account-pill-text: rgba(255, 210, 180, 0.85);
+	--hero-account-pill-border: rgba(255, 180, 140, 0.16);
+	--hero-account-pill-key: rgba(255, 220, 200, 1);
+	--hero-account-avatar-from: #ff9f70;
+	--hero-account-avatar-to: #ff7050;
+	--hero-account-pill-verified-bg: rgba(48, 209, 88, 0.18);
+	--hero-account-pill-verified-text: #58d178;
+	--hero-account-pill-verified-border: rgba(48, 209, 88, 0.3);
+
+	/* Settings hero — Reading (lamp-lit paper) */
+	--hero-reading-from: #1f1a14;
+	--hero-reading-to: #2a231c;
+	--hero-reading-blob-a: rgba(180, 140, 80, 0.2);
+	--hero-reading-blob-b: rgba(220, 170, 90, 0.15);
+	--hero-reading-edge: rgba(220, 170, 100, 0.3);
+	--hero-reading-eyebrow: rgba(220, 190, 140, 0.55);
+	--hero-reading-name: #f2e8d6;
+	--hero-reading-sub: rgba(220, 190, 140, 0.65);
+	--hero-reading-rule: rgba(220, 170, 100, 0.2);
+	--hero-reading-paper-grain: rgba(255, 220, 160, 0.03);
+	--hero-reading-tile-bg: #1a1714;
+	--hero-reading-tile-border: rgba(255, 220, 160, 0.1);
+	--hero-reading-tile-shadow: 0 24px 56px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 220, 160, 0.1);
+	--hero-reading-tile-text: #ece2cf;
+	--hero-reading-tile-byline: #a18e70;
+	--hero-reading-tile-rule: rgba(255, 220, 160, 0.1);
+	--hero-reading-tile-stack-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+
+	/* Settings hero — Integrations (deep violet aurora) */
+	--hero-integrations-from: #18152c;
+	--hero-integrations-to: #1f1a38;
+	--hero-integrations-blob-a: rgba(140, 120, 255, 0.32);
+	--hero-integrations-blob-b: rgba(94, 92, 230, 0.28);
+	--hero-integrations-blob-c: rgba(255, 140, 200, 0.18);
+	--hero-integrations-edge: rgba(140, 120, 255, 0.4);
+	--hero-integrations-eyebrow: rgba(200, 190, 255, 0.65);
+	--hero-integrations-headline: #f5f5f7;
+
+	/* Settings hero — Notion (charcoal slab + cream ink) */
+	--hero-notion-from: #18171a;
+	--hero-notion-to: #25232a;
+	--hero-notion-blob-a: rgba(212, 179, 108, 0.2);
+	--hero-notion-blob-b: rgba(120, 86, 42, 0.22);
+	--hero-notion-edge: rgba(212, 179, 108, 0.28);
+	--hero-notion-rule: rgba(236, 227, 203, 0.05);
+	--hero-notion-eyebrow: rgba(236, 227, 203, 0.62);
+	--hero-notion-name: #ece3cb;
+	--hero-notion-sub: rgba(236, 227, 203, 0.72);
+	--hero-notion-icon-bg: #ece3cb;
+	--hero-notion-icon-fg: #0f0e11;
+	--hero-notion-indelible-from: #0a84ff;
+	--hero-notion-indelible-to: #8c7bff;
+	--notion-accent: #d4b36c;
+	--notion-accent-soft: rgba(212, 179, 108, 0.16);
+	--notion-accent-strong: #e8cb89;
+	--notion-card-bg: rgba(236, 227, 203, 0.04);
+	--notion-input-bg: #1b1a1f;
+	--notion-input-shadow: inset 0 0 0 0.5px rgba(236, 227, 203, 0.05);
+	--notion-toggle-bg: rgba(236, 227, 203, 0.16);
+	--notion-toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+	--notion-tile-bg: rgba(27, 26, 31, 0.96);
+	--notion-tile-shadow: 0 24px 56px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(236, 227, 203, 0.08);
+	--notion-tile-text: #ece3cb;
+	--notion-tile-sub: rgba(236, 227, 203, 0.62);
+	--notion-tile-divider: rgba(236, 227, 203, 0.1);
+	--notion-success-soft: rgba(91, 186, 110, 0.18);
+	--notion-success-text: #5bba6e;
+	--notion-warning-soft: rgba(229, 165, 59, 0.16);
+	--notion-warning-text: #e5a53b;
+	--notion-info-soft: rgba(111, 161, 240, 0.16);
+	--notion-info-text: #6fa1f0;
+	--notion-danger-soft: rgba(229, 92, 80, 0.1);
+	--notion-danger-border: rgba(229, 92, 80, 0.24);
+	--notion-danger-text: #e55c50;
+	--notion-type-title: #e5a53b;
+	--notion-type-title-bg: rgba(229, 165, 59, 0.16);
+	--notion-type-rich-text: #aba188;
+	--notion-type-rich-text-bg: rgba(236, 227, 203, 0.08);
+	--notion-type-url: #6fa1f0;
+	--notion-type-url-bg: rgba(111, 161, 240, 0.16);
+	--notion-type-select: #d4b36c;
+	--notion-type-select-bg: rgba(212, 179, 108, 0.16);
+	--notion-type-multi: #c28cea;
+	--notion-type-multi-bg: rgba(194, 140, 234, 0.16);
+	--notion-type-date: #74b8b8;
+	--notion-type-date-bg: rgba(116, 184, 184, 0.16);
+
+	/* Settings hero — Obsidian (deep gem violet) */
+	--hero-obsidian-from: #1a152e;
+	--hero-obsidian-to: #251a3f;
+	--hero-obsidian-blob-a: rgba(167, 139, 250, 0.34);
+	--hero-obsidian-blob-b: rgba(110, 72, 224, 0.32);
+	--hero-obsidian-blob-c: rgba(255, 200, 235, 0.2);
+	--hero-obsidian-edge: rgba(167, 139, 250, 0.42);
+	--hero-obsidian-eyebrow: rgba(220, 200, 255, 0.8);
+	--hero-obsidian-headline: #f5f5f7;
+
+	/* Obsidian page — supporting tokens (dark) */
+	--obs-accent: #a78bfa;
+	--obs-accent-soft: rgba(167, 139, 250, 0.16);
+	--obs-accent-ink: #b9a8ff;
+	--obs-card-tint: 7%;
+	--obs-card-gem-opacity: 0.085;
+	--obs-mark-from: #8a6fe8;
+	--obs-mark-to: #3d2680;
+	--obs-card-bg: rgba(167, 139, 250, 0.055);
+	--obs-editor-bg: #161228;
+	--obs-editor-border: rgba(167, 139, 250, 0.16);
+	--obs-preview-bg: #121018;
+	--obs-preview-border: rgba(255, 255, 255, 0.06);
+	--obs-preview-path: rgba(167, 139, 250, 0.65);
+	--obs-state-idle-bg: rgba(255, 255, 255, 0.06);
+	--obs-state-idle-text: #98989d;
+	--obs-state-running-bg: rgba(10, 132, 255, 0.2);
+	--obs-state-running-text: #5eafff;
+	--obs-state-error-bg: rgba(255, 69, 58, 0.14);
+	--obs-state-error-text: #ff8a82;
+	--obs-status-active-bg: rgba(48, 209, 88, 0.16);
+	--obs-status-active-text: #58d178;
+	--obs-alert-bg: rgba(255, 69, 58, 0.1);
+	--obs-alert-border: rgba(255, 69, 58, 0.26);
+	--obs-alert-text: #ff8a82;
+	--obs-input-bg: #1c1c1e;
+	--obs-input-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+	--obs-body-bleed: linear-gradient(
+		to bottom,
+		rgba(167, 139, 250, 0.13) 0px,
+		rgba(167, 139, 250, 0.06) 220px,
+		rgba(167, 139, 250, 0.025) 520px,
+		transparent 820px
+	);
+
+	/* Integrations — metric/ring/sparkline + brand marks + status pills (dark) */
+	--int-metric-card-bg: rgba(255, 255, 255, 0.06);
+	--int-metric-card-border: rgba(140, 120, 255, 0.18);
+	--int-metric-num: #f5f5f7;
+	--int-metric-label: rgba(200, 190, 255, 0.7);
+	--int-ring-track: rgba(140, 120, 255, 0.18);
+	--int-ring-connected: #8c7bff;
+	--int-ring-syncing: #ff9f0a;
+	--int-ring-attention: #ff453a;
+	--int-spark-stroke: #8c7bff;
+	--int-spark-fill: rgba(140, 123, 255, 0.22);
+	--int-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+	--int-shadow-card-hover: 0 6px 22px rgba(94, 92, 230, 0.3), 0 0 0 0.5px rgba(94, 92, 230, 0.4);
+	--int-code-bg: rgba(255, 255, 255, 0.06);
+	--int-code-text: #c4c4c9;
+	--int-copy-success: #58d178;
+	--int-table-head-bg: rgba(255, 255, 255, 0.03);
+	--int-table-row-hover: rgba(140, 123, 255, 0.06);
+	--int-status-active-bg: rgba(48, 209, 88, 0.16);
+	--int-status-active-text: #58d178;
+	--int-status-syncing-bg: rgba(255, 159, 10, 0.14);
+	--int-status-syncing-text: #ffb143;
+	--int-status-attention-bg: rgba(255, 69, 58, 0.14);
+	--int-status-attention-text: #ff8a85;
+	--int-status-coming-bg: rgba(140, 123, 255, 0.14);
+	--int-status-coming-text: #b4a8ff;
+	--int-brand-email-from: #34c759;
+	--int-brand-email-to: #248a3d;
+	--int-brand-browser-from: #ff9500;
+	--int-brand-browser-to: #c77100;
+	--int-brand-notion-bg: #1c1c1e;
+	--int-brand-notion-text: #f5f5f7;
+	--int-brand-obsidian-from: #8867d8;
+	--int-brand-obsidian-to: #5e3fb8;
+	--int-brand-kindle-from: #ff9900;
+	--int-brand-kindle-to: #b36900;
+	--int-brand-webhook-from: #8c7bff;
+	--int-brand-webhook-to: #bf5af2;
+	--int-brand-readwise-from: #4f8ff7;
+	--int-brand-readwise-to: #1f5bc0;
+
+	/* Settings hero — Feed Management (deep amber) */
+	--hero-feed-from: #2a2110;
+	--hero-feed-to: #3a2c16;
+	--hero-feed-blob-a: rgba(255, 180, 40, 0.32);
+	--hero-feed-blob-b: rgba(255, 140, 20, 0.28);
+	--hero-feed-blob-c: rgba(255, 200, 80, 0.2);
+	--hero-feed-edge: rgba(255, 180, 40, 0.4);
+	--hero-feed-eyebrow: rgba(255, 210, 140, 0.7);
+	--hero-feed-headline: #f5f5f7;
+
+	/* Settings hero — Archival (iron at dusk) */
+	--hero-archival-from: #1a1d24;
+	--hero-archival-to: #22262e;
+	--hero-archival-blob-a: rgba(120, 140, 180, 0.2);
+	--hero-archival-blob-b: rgba(70, 90, 130, 0.18);
+	--hero-archival-edge: rgba(143, 168, 210, 0.3);
+	--hero-archival-noise: rgba(255, 255, 255, 0.025);
+	--hero-archival-eyebrow: rgba(180, 195, 225, 0.55);
+	--hero-archival-name: #f5f5f7;
+	--hero-archival-sub: rgba(180, 195, 225, 0.7);
+
+	/* Settings hero — Mila (deep aurora) */
+	--hero-mila-from: #221833;
+	--hero-mila-to: #2c1f44;
+	--hero-mila-blob-a: rgba(255, 120, 170, 0.3);
+	--hero-mila-blob-b: rgba(160, 120, 255, 0.32);
+	--hero-mila-blob-c: rgba(255, 180, 140, 0.18);
+	--hero-mila-edge: rgba(180, 140, 255, 0.4);
+	--hero-mila-eyebrow: rgba(220, 200, 255, 0.7);
+	--hero-mila-headline: #f5f5f7;
+
+	/* Settings hero — Developer (deep cyan night) */
+	--hero-developer-from: #0b1424;
+	--hero-developer-to: #14223a;
+	--hero-developer-blob-a: rgba(60, 150, 235, 0.3);
+	--hero-developer-blob-b: rgba(80, 200, 225, 0.22);
+	--hero-developer-edge: rgba(90, 200, 255, 0.3);
+	--hero-developer-noise: rgba(180, 210, 255, 0.05);
+	--hero-developer-grid: rgba(90, 180, 240, 0.1);
+	--hero-developer-eyebrow: rgba(150, 200, 250, 0.62);
+	--hero-developer-name: #f5f8fe;
+	--hero-developer-sub: rgba(180, 210, 255, 0.72);
+
+	/* Developer page — supporting tokens (dark) */
+	--dev-card-bg: rgba(180, 210, 255, 0.04);
+	--dev-card-strong: #161b26;
+	--dev-accent: #5ac8ff;
+	--dev-accent-soft: rgba(90, 200, 255, 0.16);
+	--dev-accent-strong: #8fdbff;
+	--dev-accent-glow: rgba(60, 180, 255, 0.32);
+	--dev-pill-shadow: 0 2px 16px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(180, 210, 255, 0.08);
+
+	--dev-term-bg: rgba(10, 18, 30, 0.9);
+	--dev-term-bg-strong: #0e141f;
+	--dev-term-border: rgba(90, 200, 255, 0.22);
+	--dev-term-shadow:
+		0 24px 50px -16px rgba(0, 0, 0, 0.7), 0 0 0 0.5px rgba(90, 200, 255, 0.14),
+		inset 0 0 0 0.5px rgba(90, 200, 255, 0.08);
+	--dev-term-bar: rgba(180, 210, 255, 0.04);
+	--dev-term-divider: rgba(90, 200, 255, 0.1);
+	--dev-term-text: #ecf1f8;
+	--dev-term-dim: #768298;
+	--dev-term-accent: #5ac8ff;
+	--dev-term-method-get: #58d178;
+	--dev-term-method-post: #5ac8ff;
+	--dev-term-method-delete: #ff5a4a;
+	--dev-term-status-2xx: #58d178;
+	--dev-term-status-4xx: #ffb23a;
+	--dev-term-status-5xx: #ff5a4a;
+
+	--dev-scope-read-bg: rgba(90, 200, 255, 0.16);
+	--dev-scope-read-fg: #5ac8ff;
+	--dev-scope-write-bg: rgba(255, 159, 10, 0.18);
+	--dev-scope-write-fg: #ffb23a;
+	--dev-scope-other-bg: rgba(180, 210, 255, 0.1);
+	--dev-scope-other-fg: #b7c2d5;
+	--dev-scope-ext-bg: rgba(140, 135, 255, 0.18);
+	--dev-scope-ext-fg: #b0aaff;
+
+	--dev-success-soft: rgba(48, 209, 88, 0.18);
+	--dev-success-fg: #58d178;
+	--dev-warning-soft: rgba(255, 159, 10, 0.2);
+	--dev-warning-fg: #ffb23a;
+	--dev-destructive: #ff5a4a;
+	--dev-destructive-soft: rgba(255, 90, 74, 0.1);
+	--dev-destructive-border: rgba(255, 90, 74, 0.26);
+	--dev-text-quaternary: #444b5b;
+
+	/* Archival page — supporting tokens (dark) */
+	--arc-card-bg: rgba(255, 255, 255, 0.04);
+	--arc-accent: #8fa8d2;
+	--arc-accent-soft: rgba(143, 168, 210, 0.18);
+	--arc-accent-strong: #b5c5e0;
+	--arc-fmt-card-bg: rgba(28, 32, 42, 0.72);
+	--arc-fmt-card-border: rgba(143, 168, 210, 0.2);
+	--arc-fmt-card-shadow:
+		0 12px 28px -12px rgba(0, 0, 0, 0.6), inset 0 0 0 0.5px rgba(143, 168, 210, 0.16);
+	--arc-fmt-card-text: #f5f5f7;
+	--arc-fmt-card-sub: rgba(180, 195, 225, 0.55);
+	--arc-fmt-card-icon-bg: rgba(143, 168, 210, 0.14);
+	--arc-fmt-divider: rgba(143, 168, 210, 0.16);
+	--arc-fmt-preview-bg: rgba(255, 255, 255, 0.04);
+	--arc-fmt-pdf-bg: rgba(255, 80, 70, 0.06);
+	--arc-fmt-pdf-label: rgba(255, 140, 130, 0.85);
+	--arc-fmt-screenshot-bg: linear-gradient(135deg, rgba(80, 110, 160, 0.3), rgba(60, 80, 130, 0.2));
+	--arc-fmt-screenshot-overlay: linear-gradient(
+		180deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.18) 100%
+	);
+	--arc-fmt-warc-bg: repeating-linear-gradient(
+		45deg,
+		rgba(143, 168, 210, 0.1),
+		rgba(143, 168, 210, 0.1) 4px,
+		transparent 4px,
+		transparent 8px
+	);
+	--arc-toggle-bg: rgba(143, 168, 210, 0.18);
+	--arc-toggle-knob: #ffffff;
+	--arc-toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+	--arc-pulse-shadow: 0 0 0 3px rgba(48, 209, 88, 0.2);
+	--arc-pulse-shadow-strong: 0 0 0 5px rgba(48, 209, 88, 0.08);
+	--arc-warning-soft: rgba(255, 159, 10, 0.18);
+	--arc-warning-fg: #ffb23a;
+	--arc-warning-pulse: rgba(255, 159, 10, 0.18);
+	--arc-success-soft: rgba(48, 209, 88, 0.18);
+	--arc-success-fg: #58d178;
+	--arc-tertiary-pulse: rgba(139, 146, 160, 0.16);
+	--arc-sensitivity-track: linear-gradient(
+		90deg,
+		rgba(48, 209, 88, 0.55) 0%,
+		rgba(255, 159, 10, 0.55) 50%,
+		rgba(255, 69, 58, 0.55) 100%
+	);
+	--arc-input-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+	--arc-input-focus-ring: rgba(143, 168, 210, 0.3);
+
+	--feed-amber: #ffb143;
+	--feed-amber-strong: #ffc56a;
+	--feed-amber-soft: rgba(255, 177, 67, 0.1);
+	--feed-amber-shadow:
+		0 6px 16px rgba(255, 159, 10, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+	--feed-amber-shadow-hover:
+		0 8px 22px rgba(255, 159, 10, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+	--feed-amber-button-shadow: 0 4px 14px rgba(255, 159, 10, 0.28);
+	--feed-amber-button-shadow-hover: 0 8px 22px rgba(255, 159, 10, 0.4);
+	--feed-pulse-color: rgba(255, 159, 10, 0.5);
+	--feed-pulse-fade: rgba(255, 159, 10, 0);
+	--feed-eyebrow-color: rgba(255, 210, 140, 0.7);
+	--feed-metric-card-bg: rgba(255, 255, 255, 0.06);
+	--feed-metric-card-border: rgba(255, 180, 40, 0.18);
+	--feed-metric-card-shadow: 0 0 0 0.5px rgba(255, 180, 40, 0.18), 0 6px 18px rgba(0, 0, 0, 0.3);
+	--feed-metric-num-color: #f5f5f7;
+	--feed-metric-label-color: rgba(255, 210, 140, 0.72);
+	--feed-status-active-bg: rgba(48, 209, 88, 0.16);
+	--feed-status-active-text: #58d178;
+	--feed-status-paused-bg: rgba(255, 255, 255, 0.06);
+	--feed-status-paused-text: #98989d;
+	--feed-status-error-bg: rgba(255, 69, 58, 0.14);
+	--feed-status-error-text: #ff6b61;
+	--feed-status-pending-bg: rgba(64, 156, 255, 0.16);
+	--feed-status-pending-text: #6fb6ff;
+	--feed-chip-bg: rgba(255, 255, 255, 0.06);
+	--feed-chip-active-bg: rgba(255, 159, 10, 0.2);
+	--feed-chip-active-text: #ffc56a;
+	--feed-chip-active-border: rgba(255, 159, 10, 0.4);
+	--feed-table-head-bg: rgba(255, 255, 255, 0.04);
+	--feed-table-row-hover: rgba(255, 177, 67, 0.06);
+	--feed-table-error-bg: rgba(255, 69, 58, 0.06);
+	--feed-table-error-border: rgba(255, 69, 58, 0.22);
+	--feed-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+	--feed-input-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+	--feed-toggle-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+	--feed-code-bg: rgba(255, 255, 255, 0.05);
+	--feed-code-text: #c0c0c5;
+	--feed-icon-blue-bg: rgba(10, 132, 255, 0.18);
+	--feed-icon-blue-fg: #6cb4ff;
+	--feed-icon-green-bg: rgba(48, 209, 88, 0.18);
+	--feed-icon-green-fg: #58d178;
+	--feed-icon-orange-bg: rgba(255, 159, 10, 0.18);
+	--feed-icon-orange-fg: #ffc56a;
+	--feed-icon-rose-bg: rgba(255, 55, 95, 0.18);
+	--feed-icon-rose-fg: #ff6b8a;
+	--feed-icon-purple-bg: rgba(191, 90, 242, 0.18);
+	--feed-icon-purple-fg: #d28aff;
+	--feed-icon-cyan-bg: rgba(64, 200, 224, 0.18);
+	--feed-icon-cyan-fg: #6cd6e0;
+	--feed-icon-red-bg: rgba(255, 69, 58, 0.18);
+	--feed-icon-red-fg: #ff7d72;
+	--feed-icon-teal-bg: rgba(100, 200, 140, 0.18);
+	--feed-icon-teal-fg: #80d8a0;
+
+	/* Mila & AI page tokens (dark) */
+	--mila-violet: #b58bf5;
+	--mila-violet-strong: #c9a6ff;
+	--mila-pink: #ff8eb6;
+	--mila-violet-soft: rgba(181, 139, 245, 0.14);
+	--mila-pink-soft: rgba(255, 142, 182, 0.12);
+	--mila-orb-shadow:
+		0 24px 50px rgba(132, 66, 217, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2),
+		inset -8px -10px 30px rgba(132, 66, 217, 0.4), inset 8px 8px 24px rgba(255, 180, 200, 0.4);
+	--mila-orb-highlight: radial-gradient(
+		circle at 35% 32%,
+		rgba(255, 255, 255, 0.85),
+		rgba(255, 255, 255, 0.1) 40%
+	);
+	--mila-orb-spec: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.65), transparent 70%);
+	--mila-button-shadow:
+		0 4px 12px rgba(132, 66, 217, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+	--mila-button-shadow-hover:
+		0 6px 16px rgba(132, 66, 217, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+	--mila-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+	--mila-input-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+	--mila-metric-card-bg: rgba(255, 255, 255, 0.06);
+	--mila-metric-card-border: rgba(180, 140, 255, 0.18);
+	--mila-metric-card-shadow: 0 0 0 0.5px rgba(180, 140, 255, 0.18), 0 4px 14px rgba(0, 0, 0, 0.3);
+	--mila-metric-num-color: #f5f5f7;
+	--mila-metric-label-color: rgba(220, 200, 255, 0.7);
+	--mila-status-ok-bg: rgba(48, 209, 88, 0.16);
+	--mila-status-ok-text: #58d178;
+	--mila-status-err-bg: rgba(255, 69, 58, 0.16);
+	--mila-status-err-text: #ff6b61;
+	--mila-status-test-bg: rgba(10, 132, 255, 0.18);
+	--mila-status-test-text: #5ab0ff;
+	--mila-status-idle-bg: rgba(255, 255, 255, 0.06);
+	--mila-status-idle-text: #98989d;
+	--mila-code-bg: rgba(255, 255, 255, 0.05);
+	--mila-code-text: #c0c0c5;
+	--mila-edit-form-shadow:
+		0 0 0 1px rgba(181, 139, 245, 0.18), 0 8px 28px -10px rgba(132, 66, 217, 0.4),
+		0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+	--mila-action-summary: #5ab0ff;
+	--mila-action-tags: #58d178;
+	--mila-action-entities: #ffb143;
+	--mila-action-chat: #b58bf5;
+	--mila-action-custom: #98989d;
+
+	--switch-thumb: #f5f5f7;
+	--switch-checkmark: #ffffff;
+	--obs-gem-highlight: #f5f5f7;
+}
