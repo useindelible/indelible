@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_connections\n               SET last_error = $3, updated_at = now()\n               WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d81a226a843fd49ea71ffcbbf4ba3491b6d82a08525ca97eb2d2ee1d7e38131f"
+}

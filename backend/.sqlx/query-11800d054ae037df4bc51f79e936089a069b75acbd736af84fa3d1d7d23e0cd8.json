@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE background_job_recoveries\n            SET status = 'terminal',\n                failure_class = 'terminal',\n                failure_reason_code = $2,\n                error_message = $3,\n                next_retry_at = NULL,\n                lease_owner = NULL,\n                lease_expires_at = NULL,\n                last_failed_at = $4,\n                updated_at = $4\n            WHERE id = $1\n              AND status = 'leased'\n              AND lease_owner = $5\n              AND lease_expires_at > $4\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "11800d054ae037df4bc51f79e936089a069b75acbd736af84fa3d1d7d23e0cd8"
+}

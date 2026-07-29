@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH RECURSIVE collection_scope(id) AS (\n                SELECT c.id\n                FROM collections c\n                WHERE c.id = $5\n                  AND c.user_id = $1\n                UNION ALL\n                SELECT child.id\n                FROM collections child\n                JOIN collection_scope parent ON parent.id = child.parent_id\n                WHERE child.user_id = $1\n                  AND $6::boolean\n            )\n            SELECT\n                cv.id AS chunk_id,\n                cv.document_id AS document_id,\n                d.title AS item_title,\n                cv.content AS snippet,\n                (1.0 - (cv.embedding <=> ($2::text)::vector)) AS \"final_score!\",\n                d.document_type AS item_type,\n                COALESCE(d.canonical_url, d.original_url) AS url,\n                COALESCE(le.saved_at, d.created_at) AS \"saved_at!\",\n                d.updated_at,\n                CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_kind END AS section_kind,\n                CASE WHEN cv.section_key = '' THEN NULL ELSE cv.section_key END AS section_key,\n                NULL::text AS section_title\n            FROM content_vectors cv\n            JOIN documents d ON d.id = cv.document_id AND d.user_id = $1\n            LEFT JOIN library_entries le\n                ON le.document_id = d.id AND le.user_id = $1 AND le.deleted_at IS NULL\n            WHERE cv.user_id = $1\n              AND cv.embedding_model = $7\n              AND cv.embedding_dim = $8\n              AND ($3::text IS NULL OR cv.section_kind = $3)\n              AND EXISTS (\n                  SELECT 1\n                  FROM collection_entries ce\n                  JOIN collection_scope cs ON cs.id = ce.collection_id\n                  JOIN library_entries le2\n                    ON le2.id = ce.library_entry_id AND le2.deleted_at IS NULL\n                  WHERE le2.document_id = cv.document_id AND le2.user_id = $1\n              )\n            ORDER BY\n                cv.embedding <=> ($2::text)::vector ASC,\n                COALESCE(le.saved_at, d.created_at) DESC,\n                cv.document_id DESC,\n                COALESCE(cv.section_key, '') DESC,\n                cv.chunk_index ASC\n            LIMIT $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chunk_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "item_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "snippet",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "final_score!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "item_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "saved_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "section_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "section_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "section_title",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8",
+        "Uuid",
+        "Bool",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "8c7573f400567e7e92b0e510bc739b601f2c08d63966dd84ab8becb791a9535c"
+}

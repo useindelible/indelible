@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH daily AS ( SELECT DISTINCT date_trunc('day', last_read_at) AS day FROM user_document_state WHERE user_id = $1 AND last_read_at IS NOT NULL ORDER BY day DESC ), numbered AS ( SELECT day, row_number() OVER (ORDER BY day DESC) AS rn FROM daily ) SELECT COUNT(*)::int FROM numbered WHERE day = current_date - make_interval(days => (rn - 1)::int)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "7c91593047f5a474de6e06f026fde7f770ad204d4eaea089906872679792fd89"
+}

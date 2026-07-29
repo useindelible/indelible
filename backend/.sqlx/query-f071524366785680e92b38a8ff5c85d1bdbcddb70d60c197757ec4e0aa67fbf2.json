@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT le.document_id, d.title, d.author, d.excerpt, d.domain, le.saved_at\n                FROM entity_mentions em\n                JOIN library_entries le\n                    ON le.document_id = em.document_id AND le.user_id = $2 AND le.deleted_at IS NULL\n                JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id\n                WHERE em.entity_id = $1\n                  AND em.document_id IS NOT NULL\n                ORDER BY le.saved_at DESC, le.document_id DESC\n                LIMIT $3\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "excerpt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "domain",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "saved_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "f071524366785680e92b38a8ff5c85d1bdbcddb70d60c197757ec4e0aa67fbf2"
+}

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH daily AS ( SELECT DISTINCT date_trunc('day', reviewed_at) AS day FROM review_events re JOIN review_cards rc ON rc.id = re.card_id WHERE rc.user_id = $1 ORDER BY day DESC ), numbered AS ( SELECT day, row_number() OVER (ORDER BY day DESC) AS rn FROM daily ) SELECT COUNT(*)::int FROM numbered WHERE day = current_date - make_interval(days => (rn - 1)::int)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "3b9025cafebe85084ad8faa559b57c77e3871772c6f8a7d01669e23d52151dca"
+}

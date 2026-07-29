@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH ranked_entities AS (\n                SELECT\n                    e.id AS entity_id,\n                    e.name,\n                    e.entity_type,\n                    sum(em.mention_count)::int8 AS mention_count,\n                    min(em.first_seen_at) AS first_seen_at,\n                    max(COALESCE(le.saved_at, d.created_at)) AS last_seen_at,\n                    CASE\n                        WHEN lower(e.name) = $2 THEN 0\n                        WHEN lower(e.name) LIKE $3 THEN 1\n                        WHEN strpos(lower(e.name), $2) > 0 THEN 2\n                        ELSE 3\n                    END AS match_rank\n                FROM entities e\n                JOIN entity_mentions em ON em.entity_id = e.id\n                JOIN documents d ON d.id = em.document_id\n                LEFT JOIN library_entries le\n                    ON le.document_id = d.id AND le.user_id = $1 AND le.deleted_at IS NULL\n                WHERE e.user_id = $1\n                  AND d.user_id = $1\n                  AND (\n                        lower(e.name) = $2\n                        OR lower(e.name) LIKE $3\n                        OR strpos(lower(e.name), $2) > 0\n                  )\n                GROUP BY e.id, e.name, e.entity_type\n            )\n            SELECT\n                entity_id,\n                name,\n                entity_type,\n                mention_count AS \"mention_count!\",\n                first_seen_at AS \"first_seen_at!\",\n                last_seen_at AS \"last_seen_at!\"\n            FROM ranked_entities\n            ORDER BY match_rank ASC, mention_count DESC, last_seen_at DESC, lower(name), name\n            LIMIT 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entity_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "entity_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "mention_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "first_seen_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "last_seen_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e4319cdadb7b0b999734b12c2305196d41b79423cbfd7bf551c401eccd335847"
+}

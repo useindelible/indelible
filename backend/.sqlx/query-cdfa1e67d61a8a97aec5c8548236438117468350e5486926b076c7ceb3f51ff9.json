@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO document_playback_states (\n                user_id, document_id, playback_kind, position_seconds, playback_speed,\n                element_index, tts_chunk_id, tts_voice_persona_id, is_playing\n            )\n            SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9\n            FROM documents\n            WHERE id = $2 AND user_id = $1\n            ON CONFLICT (user_id, document_id, playback_kind) DO UPDATE SET\n                position_seconds     = EXCLUDED.position_seconds,\n                playback_speed       = EXCLUDED.playback_speed,\n                element_index        = EXCLUDED.element_index,\n                tts_chunk_id         = EXCLUDED.tts_chunk_id,\n                tts_voice_persona_id = EXCLUDED.tts_voice_persona_id,\n                is_playing           = EXCLUDED.is_playing,\n                updated_at           = now()\n            RETURNING\n                user_id, document_id, playback_kind, position_seconds, playback_speed,\n                element_index, tts_chunk_id, tts_voice_persona_id, is_playing, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "playback_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "position_seconds",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "playback_speed",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "element_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "tts_chunk_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "tts_voice_persona_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_playing",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Float8",
+        "Float8",
+        "Int4",
+        "Text",
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "cdfa1e67d61a8a97aec5c8548236438117468350e5486926b076c7ceb3f51ff9"
+}

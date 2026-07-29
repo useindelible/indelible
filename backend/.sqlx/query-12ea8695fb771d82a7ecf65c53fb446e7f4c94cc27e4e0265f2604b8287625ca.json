@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_source_entries SET language = $2 WHERE id = $1 AND language IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "12ea8695fb771d82a7ecf65c53fb446e7f4c94cc27e4e0265f2604b8287625ca"
+}

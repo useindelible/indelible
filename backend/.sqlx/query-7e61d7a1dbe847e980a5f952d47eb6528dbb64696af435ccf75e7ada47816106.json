@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO oauth_flows (state_hash, provider, flow_kind, sealed_flow, used_at, expires_at, created_at) VALUES ($1, $2, $3, $4, NULL, $5, $6) ON CONFLICT (state_hash) DO UPDATE SET provider = EXCLUDED.provider, flow_kind = EXCLUDED.flow_kind, sealed_flow = EXCLUDED.sealed_flow, used_at = NULL, expires_at = EXCLUDED.expires_at, created_at = EXCLUDED.created_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Bytea",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7e61d7a1dbe847e980a5f952d47eb6528dbb64696af435ccf75e7ada47816106"
+}

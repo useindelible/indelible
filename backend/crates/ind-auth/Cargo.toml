@@ -1,0 +1,44 @@
+[package]
+name = "ind-auth"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+argon2 = { workspace = true }
+rand = { workspace = true }
+sha2 = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+oauth2 = { workspace = true }
+openidconnect = { workspace = true }
+jsonwebtoken = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+validator = { workspace = true }
+aes-gcm = { workspace = true }
+hkdf = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+percent-encoding = { workspace = true }
+subtle = { workspace = true }
+
+[dev-dependencies]
+ind-persistence = { workspace = true }
+ind-test-support = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
+serde_json = { workspace = true }
+url = { workspace = true }
+wiremock = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,53 @@
+[package]
+name = "ind-test-support"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ind-domain = { workspace = true }
+ind-persistence = { workspace = true }
+ind-application = { workspace = true }
+ind-auth = { workspace = true }
+ind-ai = { workspace = true }
+ind-http-api = { workspace = true }
+ind-integrations = { workspace = true }
+ind-ingest = { workspace = true }
+ind-egress = { workspace = true }
+ind-search = { workspace = true }
+ind-api = { workspace = true }
+tokio = { workspace = true }
+sqlx = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+http = { workspace = true }
+reqwest = { version = "0.13", features = ["json", "multipart"] }
+jsonwebtoken = { workspace = true }
+testcontainers = "0.24"
+fake = { version = "3", features = ["derive", "chrono", "uuid"] }
+rstest = "0.25"
+rand = { workspace = true }
+bytes = { workspace = true }
+aws-sdk-s3 = { workspace = true }
+aws-config = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
+dtor = "1.0.5"
+
+[lints.clippy]
+# Fixtures crate: helpers panic on setup failure by design (fail-fast in tests).
+# Permanent allow, not part of the production burndown. See docs/panic-audit.md.
+unwrap_used = "allow"
+expect_used = "allow"
+panic = "allow"
+unreachable = "allow"
+todo = "allow"
+unimplemented = "allow"
+
+[lints.rust]
+unsafe_code = "deny"

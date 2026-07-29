@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id AS \"id!\",\n                user_id AS \"user_id!\",\n                name AS \"name!\",\n                entity_type AS \"entity_type!\",\n                description,\n                created_at AS \"created_at!\"\n            FROM (\n                SELECT 0 AS pref, e.id, e.user_id, e.name, e.entity_type, e.description, e.created_at\n                FROM entities e\n                WHERE e.user_id = $1 AND e.entity_type = $2 AND e.name = $3\n                UNION ALL\n                SELECT 1 AS pref, e.id, e.user_id, e.name, e.entity_type, e.description, e.created_at\n                FROM entity_aliases a\n                JOIN entities e ON e.id = a.entity_id\n                WHERE a.user_id = $1 AND e.user_id = $1 AND a.entity_type = $2 AND a.name = $3\n            ) candidates\n            ORDER BY pref\n            LIMIT 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "entity_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "edb00dde88251b3bcc13b4ffa32a5ef7f39802fdab653b5a3fc2e9e74d30a7c3"
+}

@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, user_id, canonical_addr, list_id, display_name,\n                   render_default, routing_default, blocked_at,\n                   first_seen_at, last_seen_at, delivery_count,\n                   created_at, updated_at\n            FROM email_senders\n            WHERE user_id = $1 AND canonical_addr = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "canonical_addr",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "list_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "render_default",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "routing_default",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "blocked_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "first_seen_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "last_seen_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "delivery_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d40778dd4d56d4855dafb65872c01b740bb5ea680568a9bea05f880fc6efa82d"
+}

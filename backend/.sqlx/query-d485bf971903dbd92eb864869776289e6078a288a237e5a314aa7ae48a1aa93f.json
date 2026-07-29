@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE job_outbox SET job_type = $2, payload = $3, available_at = $4, dispatched_at = NULL WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d485bf971903dbd92eb864869776289e6078a288a237e5a314aa7ae48a1aa93f"
+}

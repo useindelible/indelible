@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE obsidian_export_runs\n               SET status = 'success',\n                   total_documents = $2,\n                   documents_exported = $3,\n                   error = NULL,\n                   updated_at = now(),\n                   finished_at = now()\n               WHERE id = $1 AND status = 'running'\n               RETURNING connection_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "connection_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "49d891f7c26809cc38367bc782a21899ca29991caf9d943e1486a8fa4129a5b8"
+}

@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH RECURSIVE subtree AS (\n                       SELECT id AS root_id, id AS node_id\n                       FROM collections\n                       WHERE user_id = $1\n                   UNION ALL\n                       SELECT st.root_id, c.id\n                       FROM collections c\n                       JOIN subtree st ON c.parent_id = st.node_id\n                       WHERE c.user_id = $1\n                   ),\n                   recursive_counts AS (\n                       SELECT st.root_id, COUNT(le.id) AS total\n                       FROM subtree st\n                       LEFT JOIN collection_entries ce ON ce.collection_id = st.node_id\n                       LEFT JOIN library_entries le\n                           ON le.id = ce.library_entry_id AND le.deleted_at IS NULL\n                       GROUP BY st.root_id\n                   )\n                   SELECT c.id, c.user_id, c.parent_id, c.name, c.description, c.icon, c.color,\n                          c.sort_order, c.is_pinned, c.rss_token, c.created_at, c.updated_at,\n                          COALESCE(rc.total, 0) AS item_count\n                   FROM collections c\n                   LEFT JOIN recursive_counts rc ON rc.root_id = c.id\n                   WHERE c.user_id = $1\n                   ORDER BY c.sort_order ASC, c.name ASC, c.id ASC\n                   LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "parent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "icon",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "color",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_pinned",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "rss_token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "item_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "7ab19e52f3d50c25e9e37d9390cfe01d9bf5de8e88e842f41b8fe8a9ef118852"
+}

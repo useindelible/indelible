@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM archive_assets WHERE document_id = $1 AND asset_kind = 'extracted_text' AND status <> 'completed'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7f74aca3307fd351f19406da5313975a6f15f85684ce1deda1cfd571b9bbf37b"
+}

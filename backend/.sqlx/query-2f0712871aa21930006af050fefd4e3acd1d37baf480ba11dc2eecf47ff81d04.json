@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE integration_export_cursor\n               SET remote_page_id = NULL,\n                   last_exported_highlight_created_at = NULL,\n                   last_exported_highlight_id = NULL,\n                   last_synced_at = NULL,\n                   last_attempted_at = NULL,\n                   last_error = NULL,\n                   cursor_version = cursor_version + 1,\n                   updated_at = now()\n               WHERE connection_id = $1 AND library_entry_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2f0712871aa21930006af050fefd4e3acd1d37baf480ba11dc2eecf47ff81d04"
+}

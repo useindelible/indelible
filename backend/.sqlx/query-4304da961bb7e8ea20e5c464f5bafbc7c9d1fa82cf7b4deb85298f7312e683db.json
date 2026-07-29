@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM documents d\n            WHERE d.created_at < now() - ($1::int * interval '1 day')\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM library_entries le\n                  WHERE le.document_id = d.id\n                    AND le.user_id = d.user_id\n              )\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM highlights h\n                  WHERE h.document_id = d.id\n                    AND h.user_id = d.user_id\n              )\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM item_notes n\n                  WHERE n.document_id = d.id\n                    AND n.user_id = d.user_id\n              )\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM mila_sessions ms\n                  WHERE ms.document_id = d.id\n                    AND ms.user_id = d.user_id\n              )\n              AND NOT EXISTS (\n                  SELECT 1\n                  FROM feed_deliveries fd\n                  WHERE fd.document_id = d.id\n                    AND fd.user_id = d.user_id\n                    AND (\n                        (\n                            fd.dismissed_at IS NOT NULL\n                            AND fd.dismissed_at >= now() - ($4::int * interval '1 day')\n                        )\n                        OR (\n                            fd.dismissed_at IS NULL\n                            AND fd.seen_at IS NOT NULL\n                            AND fd.seen_at >= now() - ($3::int * interval '1 day')\n                        )\n                        OR (\n                            fd.dismissed_at IS NULL\n                            AND fd.seen_at IS NULL\n                            AND fd.delivered_at >= now() - ($2::int * interval '1 day')\n                        )\n                    )\n              )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4304da961bb7e8ea20e5c464f5bafbc7c9d1fa82cf7b4deb85298f7312e683db"
+}

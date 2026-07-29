@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM collection_entries WHERE collection_id = $1 AND library_entry_id = $2 AND user_id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a96edfbd2c1ebf514212d0ff31f5e72f076cdace7ad961e2441deb769be72bb2"
+}

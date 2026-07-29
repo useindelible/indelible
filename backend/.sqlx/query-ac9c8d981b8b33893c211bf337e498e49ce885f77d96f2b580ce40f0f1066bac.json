@@ -1,0 +1,154 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                user_id,\n                chat_api_base,\n                chat_api_key_enc,\n                chat_model,\n                embedding_api_base,\n                embedding_api_key_enc,\n                embedding_model,\n                embedding_dim,\n                byo_enabled,\n                model_context_window,\n                chat_context_pct,\n                chunk_size,\n                chunk_overlap,\n                top_k,\n                cross_item_top_k,\n                cross_item_max_per_item,\n                enabled,\n                supports_structured_output,\n                supports_reasoning_effort,\n                chat_cipher_version,\n                embedding_cipher_version,\n                created_at,\n                updated_at\n            FROM mila_config\n            WHERE user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "chat_api_base",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "chat_api_key_enc",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 3,
+        "name": "chat_model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "embedding_api_base",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "embedding_api_key_enc",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 6,
+        "name": "embedding_model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "embedding_dim",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "byo_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "model_context_window",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "chat_context_pct",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "chunk_size",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "chunk_overlap",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "top_k",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "cross_item_top_k",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "cross_item_max_per_item",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 17,
+        "name": "supports_structured_output",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 18,
+        "name": "supports_reasoning_effort",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 19,
+        "name": "chat_cipher_version",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 20,
+        "name": "embedding_cipher_version",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 21,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 22,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ac9c8d981b8b33893c211bf337e498e49ce885f77d96f2b580ce40f0f1066bac"
+}

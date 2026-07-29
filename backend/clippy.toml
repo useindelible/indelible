@@ -1,0 +1,13 @@
+# In-test allowances for part of the panic-family deny set in
+# [workspace.lints.clippy]. clippy only offers in-test allow keys for
+# unwrap/expect/panic, and only inside #[cfg(test)] modules and #[test] fns.
+# unreachable/todo/unimplemented have no in-test key, and integration-test helper
+# fns / #[tokio::test] bodies are not recognised as test context by these keys.
+# Those gaps are closed at the crate level: lib crates carry
+# `#![cfg_attr(test, allow(<panic family>))]`, integration-test crates and the
+# worker test_hooks module carry `#![allow(...)]`. As a result
+# `cargo clippy --workspace --all-targets -- -D warnings` is clean. The CI/production
+# gate stays `cargo clippy -- -D warnings` (no --all-targets); keep both green.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true

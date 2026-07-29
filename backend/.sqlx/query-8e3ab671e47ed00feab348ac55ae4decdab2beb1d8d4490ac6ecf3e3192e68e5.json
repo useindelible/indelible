@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO highlight_notes (id, highlight_id, body, created_at, updated_at) SELECT $1, h.id, $3, $4, $4 FROM highlights h WHERE h.id = $2 AND h.user_id = $5 ON CONFLICT (highlight_id) DO UPDATE SET body = EXCLUDED.body, updated_at = EXCLUDED.updated_at RETURNING id, highlight_id, body, created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "highlight_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "body",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8e3ab671e47ed00feab348ac55ae4decdab2beb1d8d4490ac6ecf3e3192e68e5"
+}

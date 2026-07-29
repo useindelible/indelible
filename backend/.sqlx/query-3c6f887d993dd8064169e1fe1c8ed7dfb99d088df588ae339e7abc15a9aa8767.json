@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM library_entry_tags WHERE tag_id = ANY($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3c6f887d993dd8064169e1fe1c8ed7dfb99d088df588ae339e7abc15a9aa8767"
+}

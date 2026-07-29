@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT external_id\n               FROM import_job_items\n               WHERE import_job_id = $1\n                 AND outcome = 'imported'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "external_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "146284b1c0bdf175e821d70737acd2e544f63bd939a54d5c24f717c924c7e0ba"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tag_aliases (id, tag_id, alias) SELECT gen_random_uuid(), $2, name FROM tags WHERE id = $1 ON CONFLICT (tag_id, alias) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f7a62e03bcba2bbb73b6ea84d502df2fb5ae213d397e2c6061ee71215c1cc2dc"
+}

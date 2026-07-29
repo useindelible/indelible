@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO usage_counters (\n                id,\n                user_id,\n                quota_name,\n                period_start,\n                period_end,\n                current_value,\n                limit_value\n            )\n            SELECT $1, $2, $3, $4, $5, $7::bigint, $6::bigint\n            WHERE $7::bigint <= $6::bigint\n            ON CONFLICT (user_id, quota_name, period_start) DO UPDATE SET\n                current_value = usage_counters.current_value + EXCLUDED.current_value,\n                period_end = EXCLUDED.period_end,\n                limit_value = EXCLUDED.limit_value\n            WHERE usage_counters.current_value + EXCLUDED.current_value <= EXCLUDED.limit_value\n            RETURNING\n                quota_name,\n                current_value,\n                limit_value,\n                period_start,\n                period_end\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "quota_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "current_value",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "limit_value",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "period_start",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "period_end",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2f1a292a0e025faaf3f9602bcbae8f45d6ae28f804f7cfef5ab37065deef45e0"
+}
