@@ -1,0 +1,23 @@
+{
+	"name": "indelible-website",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"check": "astro check"
+	},
+	"dependencies": {
+		"@astrojs/starlight": "^0.41.3",
+		"@astrojs/svelte": "^9.0.1",
+		"astro": "^7.1.1",
+		"sharp": "^0.35.1",
+		"svelte": "^5.56.3"
+	},
+	"devDependencies": {
+		"@astrojs/check": "^0.9.9",
+		"typescript": "^6.0.3"
+	}
+}

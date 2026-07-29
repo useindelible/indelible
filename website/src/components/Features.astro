@@ -1,0 +1,116 @@
+<section class="features">
+	<div class="wrap">
+		<h2 class="sec-head">Most apps save a link.<br />Indelible saves the thing itself.</h2>
+		<div class="grid">
+			<article class="f">
+				<div class="num">01</div>
+				<h3>Archived in full</h3>
+				<p>
+					Pages are captured at save time: text, images, the lot. The original can vanish;
+					your copy stays.
+				</p>
+			</article>
+			<article class="f">
+				<div class="num">02</div>
+				<h3>A reader that respects the text</h3>
+				<p>Clean typography, highlights, notes, and progress that syncs across web and mobile.</p>
+			</article>
+			<article class="f">
+				<div class="num">03</div>
+				<h3>Find anything</h3>
+				<p>
+					Full-text and semantic search across your whole library, finding what it was about, not
+					just the words.
+				</p>
+			</article>
+		</div>
+		<div class="grid row2">
+			<article class="f">
+				<div class="num">04</div>
+				<h3>Mila, your AI assistant</h3>
+				<p>Ask questions across everything you've read. Summaries, connections, recall.</p>
+			</article>
+			<article class="f">
+				<div class="num">05</div>
+				<h3>Content in from anywhere</h3>
+				<p>Browser extension, email-in addresses, RSS feeds, file uploads.</p>
+			</article>
+			<article class="f">
+				<div class="num">06</div>
+				<h3>Plays well with your tools</h3>
+				<p>Obsidian and Notion sync. Mobile apps for iOS and Android.</p>
+			</article>
+		</div>
+	</div>
+</section>
+
+<style>
+	.features {
+		padding: 96px 0;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.grid {
+		margin-top: 64px;
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+	}
+
+	.row2 {
+		margin-top: 0;
+		border-top: 1px solid var(--hairline);
+	}
+
+	.f {
+		padding: 32px 28px 36px;
+		border-left: 1px solid var(--hairline);
+	}
+
+	.f:first-child {
+		border-left: none;
+		padding-left: 0;
+	}
+
+	.num {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: var(--accent);
+	}
+
+	.f h3 {
+		margin-top: 14px;
+		font-family: var(--font-serif);
+		font-size: 21px;
+		font-weight: 600;
+		letter-spacing: 0;
+	}
+
+	.f p {
+		margin-top: 10px;
+		font-size: 14.5px;
+		line-height: 1.6;
+		color: var(--ink-soft);
+	}
+
+	@media (max-width: 820px) {
+		.grid {
+			grid-template-columns: 1fr;
+			margin-top: 40px;
+		}
+
+		.row2 {
+			border-top: none;
+			margin-top: 0;
+		}
+
+		.f {
+			border-left: none;
+			border-top: 1px solid var(--hairline);
+			padding: 28px 0;
+		}
+
+		.grid:not(.row2) .f:first-child {
+			border-top: none;
+		}
+	}
+</style>
