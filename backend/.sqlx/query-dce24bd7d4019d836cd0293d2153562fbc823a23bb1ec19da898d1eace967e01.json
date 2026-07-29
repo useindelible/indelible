@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO dead_letter_jobs\n            (id, original_job_type, original_payload, original_dedupe_key,\n             failure_reason_code, error_message, attempts, failed_at)\n        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Jsonb",
+        "Text",
+        "Text",
+        "Text",
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dce24bd7d4019d836cd0293d2153562fbc823a23bb1ec19da898d1eace967e01"
+}

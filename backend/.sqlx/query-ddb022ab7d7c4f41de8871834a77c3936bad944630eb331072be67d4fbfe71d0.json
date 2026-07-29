@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE obsidian_export_runs\n               SET status = 'running', error = NULL, updated_at = now()\n               WHERE id = $1 AND status IN ('pending', 'running')\n               RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ddb022ab7d7c4f41de8871834a77c3936bad944630eb331072be67d4fbfe71d0"
+}

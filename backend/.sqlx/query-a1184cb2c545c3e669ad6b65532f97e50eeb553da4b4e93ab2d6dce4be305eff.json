@@ -1,0 +1,185 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT le.id, le.user_id, le.document_id, le.saved_at, le.triage_state, le.is_favorite, le.is_shortlisted, le.deleted_at, le.source, le.source_delivery_id, le.created_at, le.updated_at, d.document_type AS doc_document_type, d.canonical_url AS doc_canonical_url, d.original_url AS doc_original_url, d.content_hash AS doc_content_hash, d.title AS doc_title, d.author AS doc_author, d.excerpt AS doc_excerpt, d.published_at AS doc_published_at, d.language AS doc_language, d.domain AS doc_domain, d.lead_image_url AS doc_lead_image_url, d.thumbnail_url AS doc_thumbnail_url, d.word_count AS doc_word_count, d.reading_time_minutes AS doc_reading_time_minutes, d.created_at AS doc_created_at, d.updated_at AS doc_updated_at FROM library_entries le JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id WHERE le.id = $1 AND le.user_id = $2 AND le.deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "saved_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "triage_state",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_favorite",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_shortlisted",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "deleted_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "source_delivery_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "doc_document_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "doc_canonical_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "doc_original_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "doc_content_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "doc_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "doc_author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
+        "name": "doc_excerpt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "doc_published_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "doc_language",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
+        "name": "doc_domain",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "doc_lead_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 23,
+        "name": "doc_thumbnail_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 24,
+        "name": "doc_word_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 25,
+        "name": "doc_reading_time_minutes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 26,
+        "name": "doc_created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 27,
+        "name": "doc_updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "a1184cb2c545c3e669ad6b65532f97e50eeb553da4b4e93ab2d6dce4be305eff"
+}

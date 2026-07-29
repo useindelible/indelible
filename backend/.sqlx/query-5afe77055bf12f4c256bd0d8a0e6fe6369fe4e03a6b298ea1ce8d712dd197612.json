@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT candidate AS \"candidate!\"\n            FROM (\n                SELECT t.name::text AS candidate\n                FROM tags t\n                WHERE t.user_id = $1\n                  AND lower(t.name) LIKE $2\n\n                UNION\n\n                SELECT ta.alias::text AS candidate\n                FROM tag_aliases ta\n                JOIN tags t ON t.id = ta.tag_id\n                WHERE t.user_id = $1\n                  AND lower(ta.alias) LIKE $2\n            ) suggestions\n            ORDER BY lower(candidate), candidate\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "candidate!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5afe77055bf12f4c256bd0d8a0e6fe6369fe4e03a6b298ea1ce8d712dd197612"
+}

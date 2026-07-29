@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE obsidian_export_artifact_items AS target\n                   SET delivered_at = now(), last_error = NULL\n                   FROM UNNEST($1::uuid[], $2::uuid[]) AS delivered(artifact_id, library_entry_id)\n                   WHERE target.artifact_id = delivered.artifact_id\n                     AND target.library_entry_id = delivered.library_entry_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5463976de2ae27217287fcb96ed429e0a163071d7bc589a1098e91eeb6c2066b"
+}

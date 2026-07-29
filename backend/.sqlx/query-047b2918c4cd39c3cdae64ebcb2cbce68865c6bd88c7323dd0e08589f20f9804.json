@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id AS \"id!\", d.dispatch_id AS \"dispatch_id!\", d.domain_event_id AS \"domain_event_id!\", d.endpoint_id AS \"endpoint_id!\", d.event_type AS \"event_type!\", d.payload AS \"payload!: serde_json::Value\", d.status_code, d.response_body, d.attempt_number AS \"attempt_number!\", d.latency_ms, d.delivered_at, d.next_retry_at, d.created_at AS \"created_at!\" FROM webhook_deliveries d JOIN webhook_endpoints e ON e.id = d.endpoint_id WHERE d.endpoint_id = $1 AND e.user_id = $2 ORDER BY d.created_at DESC LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "dispatch_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "domain_event_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "endpoint_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "event_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "payload!: serde_json::Value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 6,
+        "name": "status_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "response_body",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "attempt_number!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "latency_ms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "delivered_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "next_retry_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "047b2918c4cd39c3cdae64ebcb2cbce68865c6bd88c7323dd0e08589f20f9804"
+}

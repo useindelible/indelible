@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\"\n               FROM integration_connections ic\n               JOIN library_entries le ON le.user_id = ic.user_id AND le.deleted_at IS NULL\n               JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id\n               WHERE ic.id = $1\n                 AND ic.user_id = $2\n                 AND ic.provider = 'notion'\n                 AND ($3::text IS NULL\n                      OR d.title ILIKE $3 ESCAPE '\\'\n                      OR COALESCE(d.original_url, d.canonical_url) ILIKE $3 ESCAPE '\\')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d9c0d9d9dea7ca0f149546e175ac27264c8408d5696ac8b401000e0644d74712"
+}

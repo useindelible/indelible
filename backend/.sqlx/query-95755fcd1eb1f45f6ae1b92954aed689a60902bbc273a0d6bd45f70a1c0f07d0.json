@@ -1,0 +1,228 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH updated AS ( UPDATE feed_subscriptions SET status = $3, updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING id, user_id, source_id, input_url, title_override, auto_save, auto_save_collection_id, poll_interval_override_minutes, status, created_at, updated_at ) SELECT updated.id, updated.user_id, updated.source_id, updated.input_url, updated.title_override, updated.auto_save, updated.auto_save_collection_id, updated.poll_interval_override_minutes, updated.status, updated.created_at, updated.updated_at, src.canonical_key AS source_canonical_key, src.source_url AS source_source_url, src.poll_url AS source_poll_url, src.title AS source_title, src.description AS source_description, src.site_url AS source_site_url, src.image_url AS source_image_url, src.domain AS source_domain, src.feed_type AS source_feed_type, src.visibility AS source_visibility, src.provider AS source_provider, src.is_resolvable AS source_is_resolvable, src.popularity AS source_popularity, src.last_entry_added_at AS source_last_entry_added_at, src.last_polled_at AS source_last_polled_at, src.next_poll_at AS source_next_poll_at, src.last_etag AS source_last_etag, src.last_modified AS source_last_modified, src.consecutive_failures AS source_consecutive_failures, src.last_error AS source_last_error, src.lease_owner AS source_lease_owner, src.lease_expires_at AS source_lease_expires_at, src.created_at AS source_created_at, src.updated_at AS source_updated_at FROM updated INNER JOIN feed_sources src ON src.id = updated.source_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "source_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "input_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "title_override",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "auto_save",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "auto_save_collection_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "poll_interval_override_minutes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "source_canonical_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "source_source_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "source_poll_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "source_title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "source_description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "source_site_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "source_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
+        "name": "source_domain",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 19,
+        "name": "source_feed_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "source_visibility",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 21,
+        "name": "source_provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "source_is_resolvable",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 23,
+        "name": "source_popularity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 24,
+        "name": "source_last_entry_added_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 25,
+        "name": "source_last_polled_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 26,
+        "name": "source_next_poll_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 27,
+        "name": "source_last_etag",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 28,
+        "name": "source_last_modified",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 29,
+        "name": "source_consecutive_failures",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 30,
+        "name": "source_last_error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 31,
+        "name": "source_lease_owner",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 32,
+        "name": "source_lease_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 33,
+        "name": "source_created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 34,
+        "name": "source_updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "95755fcd1eb1f45f6ae1b92954aed689a60902bbc273a0d6bd45f70a1c0f07d0"
+}

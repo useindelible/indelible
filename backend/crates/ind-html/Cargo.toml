@@ -1,0 +1,17 @@
+[package]
+name = "ind-html"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+scraper = { workspace = true }
+html2md = { workspace = true }
+ammonia = { workspace = true }
+lol_html = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

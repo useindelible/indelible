@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO highlight_tags (highlight_id, tag_id, added_at) SELECT $1, $2, $3 WHERE EXISTS (SELECT 1 FROM highlights WHERE id = $1 AND user_id = $4) AND EXISTS (SELECT 1 FROM tags WHERE id = $2 AND user_id = $4) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a9f0aa517237db9f7a00935558f988b8b942918eb88f87355fd7c9332b4b5470"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO entity_aliases (user_id, entity_type, name, entity_id)\n            SELECT $1, $2, $3, $4\n            WHERE NOT EXISTS (\n                SELECT 1 FROM entities e\n                WHERE e.user_id = $1 AND e.entity_type = $2 AND e.name = $3\n            )\n              AND NOT EXISTS (\n                SELECT 1 FROM entity_aliases a\n                WHERE a.user_id = $1 AND a.entity_type = $2 AND a.name = $3\n            )\n            ON CONFLICT DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ffc01009e3d622c4a863b4d792cdd1fa07f7eb3318130977bb6023593fa5d02e"
+}

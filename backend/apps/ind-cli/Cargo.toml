@@ -1,0 +1,32 @@
+[package]
+name = "ind-cli"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "ind"
+path = "src/main.rs"
+
+[features]
+default = ["db"]
+db = ["dep:ind-persistence"]
+
+[dependencies]
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+dotenvy = { workspace = true }
+ind-application = { workspace = true }
+ind-domain = { workspace = true }
+ind-persistence = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+
+[lints]
+workspace = true

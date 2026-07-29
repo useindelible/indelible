@@ -1,0 +1,5 @@
+[target.'cfg(all())']
+rustflags = ["-D", "warnings"]
+
+[env]
+SQLX_OFFLINE = "true"

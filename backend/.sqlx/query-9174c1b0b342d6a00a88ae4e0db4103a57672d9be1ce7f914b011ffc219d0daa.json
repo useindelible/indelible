@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE email_ingest_log SET status = 'failed', error = $2, processed_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9174c1b0b342d6a00a88ae4e0db4103a57672d9be1ce7f914b011ffc219d0daa"
+}

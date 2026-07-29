@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO entity_mentions (entity_id, document_id, mention_count, first_seen_at)\n            SELECT\n                $1,\n                em.document_id,\n                em.mention_count,\n                em.first_seen_at\n            FROM entity_mentions em\n            WHERE em.entity_id = $2 AND em.document_id IS NOT NULL\n            ON CONFLICT (entity_id, document_id) WHERE document_id IS NOT NULL\n            DO UPDATE SET\n                mention_count = entity_mentions.mention_count + EXCLUDED.mention_count,\n                first_seen_at = LEAST(entity_mentions.first_seen_at, EXCLUDED.first_seen_at)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6c426b10912e39a56ed3d815af15fd0ccbf390f2008848cf9ced9ddb92b5b50e"
+}

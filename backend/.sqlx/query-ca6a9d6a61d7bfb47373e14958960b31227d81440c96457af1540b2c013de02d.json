@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE ai_runs\n            SET\n                status = 'failed',\n                error_message = $2,\n                completed_at = $3\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ca6a9d6a61d7bfb47373e14958960b31227d81440c96457af1540b2c013de02d"
+}

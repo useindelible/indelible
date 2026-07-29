@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO library_entry_tags (user_id, library_entry_id, tag_id, source, added_at) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (library_entry_id, tag_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "edf2dad23df41eb729eaed3cf365314c2164a608fbe9aea55dee58d8191b8e4f"
+}

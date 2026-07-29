@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT count(*)\n                FROM apalis.jobs\n                WHERE metadata->>'dedupe_key' = $1\n                  AND metadata->>'job_type' = $2\n                  AND status = 'Failed'\n                  AND attempts >= max_attempts\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d0c2858c855b9b03be73c092ac4ec3776dd74179c90961384130429c3b9e61b5"
+}

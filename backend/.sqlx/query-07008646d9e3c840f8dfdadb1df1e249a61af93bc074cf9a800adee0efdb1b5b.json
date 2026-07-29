@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO document_video_metadata\n                       (document_id, duration_seconds, channel_name, created_at, updated_at)\n                   VALUES ($1, $2, $3, now(), now())\n                   ON CONFLICT (document_id) DO UPDATE\n                   SET duration_seconds = COALESCE(\n                           EXCLUDED.duration_seconds,\n                           document_video_metadata.duration_seconds\n                       ),\n                       channel_name = COALESCE(\n                           EXCLUDED.channel_name,\n                           document_video_metadata.channel_name\n                       ),\n                       updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "07008646d9e3c840f8dfdadb1df1e249a61af93bc074cf9a800adee0efdb1b5b"
+}

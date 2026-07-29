@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO email_senders (\n                user_id, canonical_addr, list_id, display_name,\n                first_seen_at, last_seen_at, created_at, updated_at\n            )\n            VALUES ($1, $2, $3, $4, $5, $5, $5, $5)\n            ON CONFLICT (user_id, canonical_addr) DO UPDATE SET\n                list_id      = COALESCE(email_senders.list_id, EXCLUDED.list_id),\n                display_name = COALESCE(EXCLUDED.display_name, email_senders.display_name),\n                last_seen_at = EXCLUDED.last_seen_at,\n                updated_at   = EXCLUDED.updated_at\n            RETURNING id, blocked_at, list_id, routing_default\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "blocked_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "list_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "routing_default",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c2a7722c4fc7b254fe42d9d2f5aac0e5a35c2246879f03f37b121448ccc5c54e"
+}

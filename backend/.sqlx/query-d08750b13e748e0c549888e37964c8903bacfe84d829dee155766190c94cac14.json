@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT payload->>'connection_id' AS connection_id,\n                      COUNT(*)::bigint AS \"count!\"\n               FROM job_outbox\n               WHERE dispatched_at IS NULL\n                 AND job_type LIKE 'integration.%'\n                 AND payload->>'user_id' = $1\n               GROUP BY payload->>'connection_id'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "connection_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "d08750b13e748e0c549888e37964c8903bacfe84d829dee155766190c94cac14"
+}

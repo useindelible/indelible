@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH RECURSIVE descendants AS ( SELECT id FROM tags WHERE id = $1 AND user_id = $2 UNION ALL SELECT t.id FROM tags t JOIN descendants d ON t.parent_id = d.id WHERE t.user_id = $2 ) SELECT EXISTS(SELECT 1 FROM descendants WHERE id = $3)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "697ae8f995a5886a8d721e8c1c3c3206703eaaf3515a499aa02d0cb6fee2840b"
+}

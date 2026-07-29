@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_provider_instances SET last_success_at = now(), consecutive_failures = 0, updated_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "79b83fa4194c72222f551a3fc0327a86b167dc329e5ae586c1d8e9f66c359ef6"
+}

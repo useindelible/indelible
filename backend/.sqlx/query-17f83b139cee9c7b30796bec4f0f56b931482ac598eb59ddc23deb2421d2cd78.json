@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM tts_audio_assets\n            WHERE user_id = $1 AND chunk_record_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "17f83b139cee9c7b30796bec4f0f56b931482ac598eb59ddc23deb2421d2cd78"
+}

@@ -1,0 +1,58 @@
+[package]
+name = "ind-api"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "ind-api"
+path = "src/main.rs"
+
+[dependencies]
+ind-http-api = { workspace = true }
+ind-config = { workspace = true }
+ind-persistence = { workspace = true }
+ind-auth = { workspace = true }
+ind-ingest = { workspace = true }
+ind-integrations = { workspace = true }
+ind-egress = { workspace = true }
+ind-observability = { workspace = true }
+ind-domain = { workspace = true }
+ind-application = { workspace = true }
+ind-ai = { workspace = true }
+ind-search = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+dotenvy = { workspace = true }
+config = { workspace = true }
+secrecy = { workspace = true }
+serde = { workspace = true }
+sqlx = { workspace = true }
+http = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+url = { workspace = true }
+reqwest = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
+bytes = { workspace = true }
+
+[dev-dependencies]
+ind-test-support = { workspace = true }
+ind-worker = { workspace = true, features = ["test-helpers"] }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+wiremock = { workspace = true }
+zip = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+
+[lints]
+workspace = true

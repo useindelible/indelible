@@ -1,0 +1,137 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO documents (id, user_id, document_type, content_hash, original_url, title, author, excerpt, published_at, language, domain, lead_image_url, thumbnail_url, sender_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT (user_id, content_hash) WHERE canonical_url IS NULL AND content_hash IS NOT NULL DO NOTHING RETURNING id, user_id, document_type, canonical_url, original_url, content_hash, title, author, excerpt, published_at, language, domain, lead_image_url, thumbnail_url, word_count, reading_time_minutes, created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "document_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "canonical_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "original_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "content_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "excerpt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "published_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "language",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "domain",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "lead_image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "thumbnail_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "word_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "reading_time_minutes",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d65b81216ff6ada77b59d01a1933c37c50a6a383aff3c0a55fd040618174b961"
+}

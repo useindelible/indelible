@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE documents SET sender_id = $3, updated_at = now() WHERE id = $1 AND user_id = $2 AND sender_id IS DISTINCT FROM $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0759aecfea931816e3d7a29c0658924c7668c2c60a9589873aae86d5499aff80"
+}

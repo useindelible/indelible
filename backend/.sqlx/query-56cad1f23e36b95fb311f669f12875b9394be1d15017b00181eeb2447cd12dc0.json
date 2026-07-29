@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                em.document_id AS \"document_id!\",\n                e.id AS entity_id,\n                e.name,\n                e.entity_type,\n                em.mention_count\n            FROM entity_mentions em\n            JOIN entities e ON e.id = em.entity_id\n            JOIN documents d ON d.id = em.document_id\n            WHERE e.user_id = $1\n              AND d.user_id = $1\n              AND em.document_id = ANY($2)\n            ORDER BY em.document_id, em.mention_count DESC, lower(e.name), e.name\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "entity_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "entity_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "mention_count",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "56cad1f23e36b95fb311f669f12875b9394be1d15017b00181eeb2447cd12dc0"
+}

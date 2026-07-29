@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO content_vectors (\n            id,\n            document_id,\n            user_id,\n            embedding_model,\n            embedding_dim,\n            section_kind,\n            section_key,\n            chunk_index,\n            content,\n            token_count,\n            search_config,\n            embedding,\n            created_at\n        )\n        VALUES (\n            $1,\n            $2,\n            $3,\n            $4,\n            $5,\n            $6,\n            $7,\n            $8,\n            $9,\n            $10,\n            CAST($11 AS text)::regconfig,\n            CAST($12 AS text)::vector,\n            $13\n        )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int4",
+        "Text",
+        "Text",
+        "Int4",
+        "Text",
+        "Int4",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5de33f5e9cb5b4537883ae505adfea94a2431e99b7b4e63734bd3889c82923fc"
+}

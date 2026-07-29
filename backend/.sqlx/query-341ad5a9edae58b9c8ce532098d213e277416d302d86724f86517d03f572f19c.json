@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE feed_deliveries fd SET document_id = $1, updated_at = now() FROM feed_source_entries fse WHERE fd.source_entry_id = fse.id AND fd.user_id = $2 AND fd.document_id IS NULL AND fse.canonical_url = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "341ad5a9edae58b9c8ce532098d213e277416d302d86724f86517d03f572f19c"
+}

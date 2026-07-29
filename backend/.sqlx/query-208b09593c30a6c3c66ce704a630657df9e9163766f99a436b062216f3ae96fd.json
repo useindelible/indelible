@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM obsidian_export_artifacts\n                 WHERE id = ANY($1) AND run_id = $2 AND user_id = $3 AND connection_id = $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "208b09593c30a6c3c66ce704a630657df9e9163766f99a436b062216f3ae96fd"
+}

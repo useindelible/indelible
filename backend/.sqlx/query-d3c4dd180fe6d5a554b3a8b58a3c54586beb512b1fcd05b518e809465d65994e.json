@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT s3_key\n            FROM tts_audio_assets\n            WHERE s3_key = ANY($1)\n            ORDER BY s3_key\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "s3_key",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d3c4dd180fe6d5a554b3a8b58a3c54586beb512b1fcd05b518e809465d65994e"
+}

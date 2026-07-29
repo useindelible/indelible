@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, user_id, source_id, auto_save, auto_save_collection_id, poll_interval_override_minutes FROM feed_subscriptions WHERE source_id = $1 AND status = 'active' ORDER BY created_at ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "source_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "auto_save",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "auto_save_collection_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "poll_interval_override_minutes",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f49d4f1af9088b9cfef3f3bfa98ce3dd53d53ec9458ce18ba58b2d01f0dcd094"
+}

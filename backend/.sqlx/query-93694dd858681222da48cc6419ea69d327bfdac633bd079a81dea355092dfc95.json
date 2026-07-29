@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO entity_aliases (user_id, entity_type, name, entity_id)\n            SELECT $1, $2, $3, $4\n            WHERE EXISTS (\n                SELECT 1 FROM entities e WHERE e.id = $4 AND e.user_id = $1\n            )\n            ON CONFLICT (user_id, entity_type, name) DO UPDATE SET entity_id = EXCLUDED.entity_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "93694dd858681222da48cc6419ea69d327bfdac633bd079a81dea355092dfc95"
+}

@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH upserted AS ( INSERT INTO archive_assets (id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, status, failed_reason, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now()) ON CONFLICT (document_id, asset_kind) WHERE document_id IS NOT NULL DO UPDATE SET s3_key = EXCLUDED.s3_key, s3_bucket = EXCLUDED.s3_bucket, content_type = EXCLUDED.content_type, size_bytes = EXCLUDED.size_bytes, status = EXCLUDED.status, failed_reason = EXCLUDED.failed_reason, created_at = now() WHERE archive_assets.status <> 'completed' OR EXCLUDED.status = 'completed' RETURNING id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, status, failed_reason, created_at ) SELECT id AS \"id!\", document_id AS \"document_id!\", asset_kind AS \"asset_kind!\", s3_key AS \"s3_key!\", s3_bucket AS \"s3_bucket!\", content_type AS \"content_type!\", size_bytes AS \"size_bytes!\", status AS \"status!\", failed_reason, created_at AS \"created_at!\" FROM upserted UNION ALL SELECT id, document_id AS \"document_id!\", asset_kind, s3_key, s3_bucket, content_type, size_bytes, status, failed_reason, created_at FROM archive_assets WHERE document_id = $2 AND asset_kind = $3 AND NOT EXISTS (SELECT 1 FROM upserted) LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "asset_kind!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "s3_key!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "s3_bucket!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "content_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "size_bytes!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "status!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "failed_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "4aad7c27f9e2c3efd12a28a781bead92c5dac0bfaa36b134f27ac3fc7e9d476c"
+}

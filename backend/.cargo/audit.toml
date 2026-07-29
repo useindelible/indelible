@@ -1,0 +1,28 @@
+# cargo-audit configuration.
+#
+# The advisories below have no upstream fix for the versions our dependency
+# tree resolves to, and each is either not reachable in an exploitable way for
+# our usage or is confined to dev/test builds. They are accepted exceptions,
+# reviewed 2026-06-12. Re-evaluate whenever dependencies are bumped.
+[advisories]
+ignore = [
+    # rsa 0.9.x Marvin timing side-channel (medium, AC:High, confidentiality-
+    # only). Pulled transitively by `openidconnect` for RSA *signature
+    # verification*; the Marvin oracle targets PKCS#1 v1.5 *decryption*, which
+    # we do not perform. No fixed release exists.
+    "RUSTSEC-2023-0071",
+    # rustls-webpki 0.101.7 — name-constraint acceptance bugs. Reachable only
+    # through the AWS SDK's bundled rustls 0.21 TLS stack used to reach the
+    # operator-configured S3/MinIO endpoint; exploiting it requires a malicious
+    # certificate from that trusted endpoint. No 0.101.x patch exists (fix is in
+    # 0.103.12+, which the pinned AWS smithy client does not yet use). Our own
+    # rustls-webpki is upgraded to 0.103.13.
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    # rustls-webpki 0.101.7 — reachable panic parsing a malicious CRL (DoS).
+    # Same AWS-SDK-only reachability as above; we do not feed attacker CRLs.
+    "RUSTSEC-2026-0104",
+    # tokio-tar 0.3.1 PAX header file-smuggling. Dev-dependency only, pulled by
+    # `testcontainers`; never compiled into shipped binaries. No fixed release.
+    "RUSTSEC-2025-0111",
+]

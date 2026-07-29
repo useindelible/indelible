@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ht.highlight_id, t.name\n                   FROM highlight_tags ht\n                   JOIN tags t ON t.id = ht.tag_id\n                   WHERE ht.highlight_id = ANY($1)\n                   ORDER BY ht.highlight_id, t.name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "highlight_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "387acc5afda223226a36b59c3ba133dc54de6751e267c4e65c5007c6fd434a58"
+}
