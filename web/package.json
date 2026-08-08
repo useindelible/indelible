@@ -55,6 +55,6 @@
 	"dependencies": {
 		"dompurify": "^3.4.12",
 		"marked": "^18.0.7",
-		"pdfjs-dist": "^5.7.284"
+		"pdfjs-dist": "^6.2.108"
 	}
 }
