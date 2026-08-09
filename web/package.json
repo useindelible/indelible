@@ -53,7 +53,7 @@
 		"vitest": "^3.2.7"
 	},
 	"dependencies": {
-		"dompurify": "^3.4.12",
+		"dompurify": "^3.4.13",
 		"marked": "^18.0.7",
 		"pdfjs-dist": "^5.7.284"
 	}
