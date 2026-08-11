@@ -39,6 +39,35 @@
 	let currentIndex = $state(0);
 	let pageLoading = $state(true);
 	let initError = $state<string | null>(null);
+	let annotationError = $state<string | null>(null);
+
+	const annotationErrorFallback = 'Could not save annotation. Please try again.';
+
+	function annotationErrorMessage(error: unknown): string {
+		if (!error || typeof error !== 'object') return annotationErrorFallback;
+		const problem = error as {
+			detail?: unknown;
+			message?: unknown;
+			errors?: Array<{ message?: unknown }>;
+		};
+		const fieldMessage = problem.errors?.find(
+			(entry) => typeof entry.message === 'string' && entry.message.trim()
+		)?.message;
+		if (typeof fieldMessage === 'string') return fieldMessage;
+		if (typeof problem.detail === 'string' && problem.detail.trim()) return problem.detail;
+		if (
+			!(error instanceof Error) &&
+			typeof problem.message === 'string' &&
+			problem.message.trim()
+		) {
+			return problem.message;
+		}
+		return annotationErrorFallback;
+	}
+
+	function showAnnotationError(error?: unknown) {
+		annotationError = annotationErrorMessage(error);
+	}
 
 	let sidebarTab = $state<SidebarTab>('contents');
 	let sidebarOpen = $state(true);
@@ -363,7 +392,7 @@
 				};
 
 		try {
-			const { data: created } = await apiSdk.createHighlight({
+			const { data: created, error } = await apiSdk.createHighlight({
 				path: { document_id: item.id },
 				body: {
 					text_content: visibleText.trim() || 'Bookmark',
@@ -371,11 +400,18 @@
 					locator
 				}
 			});
-			if (created) {
-				highlights = [...highlights, { ...created, note: null, tags: [] }];
+			if (error) {
+				showAnnotationError(error);
+				return;
 			}
-		} catch {
-			// Bookmark creation failed
+			if (created) {
+				annotationError = null;
+				highlights = [...highlights, { ...created, note: null, tags: [] }];
+			} else {
+				showAnnotationError();
+			}
+		} catch (error) {
+			showAnnotationError(error);
 		}
 	}
 
@@ -418,7 +454,7 @@
 				};
 
 		try {
-			const { data: created } = await apiSdk.createHighlight({
+			const { data: created, error } = await apiSdk.createHighlight({
 				path: { document_id: item.id },
 				body: {
 					text_content: data.text_content,
@@ -426,36 +462,55 @@
 					locator
 				}
 			});
-			if (created) {
-				highlights = [...highlights, { ...created, note: null, tags: [] }];
+			if (error) {
+				showAnnotationError(error);
+				return;
 			}
-		} catch {
-			// Highlight creation failed
+			if (created) {
+				annotationError = null;
+				highlights = [...highlights, { ...created, note: null, tags: [] }];
+			} else {
+				showAnnotationError();
+			}
+		} catch (error) {
+			showAnnotationError(error);
 		}
 	}
 
 	async function handleHighlightDelete(highlightId: string) {
 		try {
-			await apiSdk.deleteHighlight({ path: { highlight_id: highlightId } });
+			const { error } = await apiSdk.deleteHighlight({ path: { highlight_id: highlightId } });
+			if (error) {
+				showAnnotationError(error);
+				return;
+			}
+			annotationError = null;
 			highlights = highlights.filter((h) => h.id !== highlightId);
-		} catch {
-			// Deletion failed
+		} catch (error) {
+			showAnnotationError(error);
 		}
 	}
 
 	async function handleHighlightColorChange(highlightId: string, color: string) {
 		try {
-			const { data: updated } = await apiSdk.patchHighlight({
+			const { data: updated, error } = await apiSdk.patchHighlight({
 				path: { highlight_id: highlightId },
 				body: { color }
 			});
+			if (error) {
+				showAnnotationError(error);
+				return;
+			}
 			if (updated) {
+				annotationError = null;
 				highlights = highlights.map((h) =>
 					h.id === highlightId ? { ...h, color: updated.color } : h
 				);
+			} else {
+				showAnnotationError();
 			}
-		} catch {
-			// Color change failed
+		} catch (error) {
+			showAnnotationError(error);
 		}
 	}
 
@@ -477,16 +532,22 @@
 			end_offset: data.end_offset
 		};
 		try {
-			const { data: created } = await apiSdk.createHighlight({
+			const { data: created, error } = await apiSdk.createHighlight({
 				path: { document_id: item.id },
 				body: { text_content: data.text_content, color: data.color, locator }
 			});
+			if (error) {
+				showAnnotationError(error);
+				return null;
+			}
 			if (created) {
+				annotationError = null;
 				highlights = [...highlights, { ...created, note: null, tags: [] }];
 				return created.id;
 			}
-		} catch {
-			// ignore
+			showAnnotationError();
+		} catch (error) {
+			showAnnotationError(error);
 		}
 		return null;
 	}
@@ -582,6 +643,18 @@
 				onMenuClick={vp.isMobile && source ? () => (mobileTocOpen = true) : undefined}
 				menuAriaLabel="Open contents"
 			/>
+			{#if annotationError}
+				<div class="annotation-error" role="alert">
+					<span>{annotationError}</span>
+					<button
+						type="button"
+						aria-label="Dismiss annotation error"
+						onclick={() => (annotationError = null)}
+					>
+						&times;
+					</button>
+				</div>
+			{/if}
 
 			<div class="reading-progress-bar">
 				<div class="reading-progress-fill" style:width="{progress}%"></div>
@@ -722,6 +795,30 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+	}
+
+	.annotation-error {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 8px 14px;
+		border-bottom: 1px solid var(--border-primary);
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		font-size: 13px;
+		font-family: var(--font-sans);
+		flex-shrink: 0;
+	}
+
+	.annotation-error button {
+		border: 0;
+		background: transparent;
+		color: var(--text-secondary);
+		font: inherit;
+		font-size: 18px;
+		line-height: 1;
+		cursor: pointer;
 	}
 
 	.reading-progress-bar {

@@ -1,0 +1,144 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DocumentListEntry, HighlightResponse } from '$lib/api';
+import type { BookSource } from '$lib/components/reader/book/book-source';
+
+const mocks = vi.hoisted(() => ({
+	createHighlight: vi.fn(),
+	updateProgress: vi.fn(async () => ({ data: {} }))
+}));
+
+vi.mock('$app/navigation', () => ({ goto: vi.fn(), afterNavigate: vi.fn() }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
+vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$lib/styles/theme', () => ({ applyTheme: vi.fn(), getSavedTheme: vi.fn(() => 'system') }));
+vi.mock('$lib/api', async (importOriginal) => {
+	const original = await importOriginal<typeof import('$lib/api')>();
+	return {
+		...original,
+		createHighlight: (...args: unknown[]) => mocks.createHighlight(...args),
+		updateProgress: (...args: unknown[]) => mocks.updateProgress(...args)
+	};
+});
+vi.mock('$lib/components/reader/book/book-source', async (importOriginal) => {
+	const original = await importOriginal<typeof import('$lib/components/reader/book/book-source')>();
+	return {
+		...original,
+		createEpubSource: vi.fn(async () => source()),
+		createPdfSource: vi.fn()
+	};
+});
+vi.mock('$lib/components/reader/book/PdfScrollView.svelte', () => ({
+	default: vi.fn(() => ({ c: vi.fn(), m: vi.fn(), p: vi.fn(), d: vi.fn() }))
+}));
+vi.mock('$lib/components/reader/book/EpubScrollView.svelte', () => ({
+	default: vi.fn(() => ({ c: vi.fn(), m: vi.fn(), p: vi.fn(), d: vi.fn() }))
+}));
+
+import BookReader from '$lib/components/reader/book/BookReader.svelte';
+
+function source(): BookSource {
+	return {
+		metadata: {
+			title: 'Annotation Boundaries',
+			author: 'Indelible',
+			totalChapters: 1
+		},
+		toc: [
+			{
+				id: 'chapter-1',
+				title: 'Chapter 1',
+				depth: 1,
+				index: 0,
+				wordCount: 100,
+				startPage: 1
+			}
+		],
+		async loadPage() {
+			return {
+				type: 'html',
+				html: '<p>Chapter body</p>',
+				id: 'chapter-1',
+				title: 'Chapter 1',
+				wordCount: 100
+			};
+		},
+		destroy() {}
+	};
+}
+
+function item(): DocumentListEntry {
+	return {
+		id: 'doc_1',
+		document_id: 'doc_1',
+		title: 'Annotation Boundaries',
+		document_type: 'book',
+		item_type: 'book',
+		object: 'library_entry',
+		source: 'manual',
+		created_at: '2026-08-11T00:00:00Z',
+		updated_at: '2026-08-11T00:00:00Z',
+		saved_at: '2026-08-11T00:00:00Z',
+		triage_state: 'inbox',
+		is_favorite: false,
+		is_shortlisted: false,
+		progress_percent: 0
+	} as DocumentListEntry;
+}
+
+function createdBookmark(): HighlightResponse {
+	return {
+		id: 'hl_1',
+		color: 'bookmark',
+		text_content: 'Bookmark',
+		locator: {
+			type: 'epub',
+			chapter: 'chapter-1',
+			start_offset: 0,
+			end_offset: 0
+		},
+		created_at: '2026-08-11T00:00:00Z',
+		updated_at: '2026-08-11T00:00:00Z'
+	};
+}
+
+beforeEach(() => {
+	mocks.createHighlight.mockReset();
+	mocks.updateProgress.mockClear();
+});
+
+describe('BookReader annotation failures', () => {
+	it('keeps failed bookmarks out of local state and clears the server error after a later success', async () => {
+		mocks.createHighlight
+			.mockResolvedValueOnce({
+				data: undefined,
+				error: { detail: 'Canonical annotation source is not ready.' }
+			})
+			.mockResolvedValueOnce({ data: createdBookmark(), error: undefined });
+
+		render(BookReader, { props: { item: item(), assets: [], highlights: [] } });
+		const addBookmark = await screen.findByRole('button', { name: 'Add bookmark' });
+
+		await fireEvent.click(addBookmark);
+		expect((await screen.findByRole('alert')).textContent).toContain(
+			'Canonical annotation source is not ready.'
+		);
+		await fireEvent.click(screen.getByRole('button', { name: 'Bookmarks' }));
+		expect(screen.getByText('No bookmarks yet')).toBeTruthy();
+
+		await fireEvent.click(addBookmark);
+		await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+		expect(await screen.findByText('Bookmark')).toBeTruthy();
+	});
+
+	it('shows a stable fallback when the annotation request throws', async () => {
+		mocks.createHighlight.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+		render(BookReader, { props: { item: item(), assets: [], highlights: [] } });
+		await fireEvent.click(await screen.findByRole('button', { name: 'Add bookmark' }));
+
+		expect((await screen.findByRole('alert')).textContent).toContain(
+			'Could not save annotation. Please try again.'
+		);
+	});
+});

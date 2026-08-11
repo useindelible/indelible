@@ -1,6 +1,6 @@
 //! Document reader read-model, content serving, and document-keyed authored capabilities
 //! (highlights, the single note, reading progress). Highlights and notes require the document
-//! to have a completed readable asset (canonical rendered content); progress writes
+//! to have its completed format-specific canonical asset; progress writes
 //! `user_document_state` without requiring a Library entry. See
 //! docs/document-feed-library-architecture.md (Document Reader; User highlights or notes an
 //! unsaved feed delivery; Reading progress).
@@ -11,8 +11,8 @@ use std::time::Duration;
 use chrono::Utc;
 use ind_domain::{
     ArchiveAssetKind, ArchiveAssetStatus, Document, DocumentAsset, DocumentId, DocumentNote,
-    DomainError, Highlight, HighlightId, HighlightLocator, HighlightSourceLocator, NewHighlight,
-    UserDocumentState, UserId,
+    DocumentType, DomainError, Highlight, HighlightId, HighlightLocator, HighlightSourceLocator,
+    NewHighlight, UserDocumentState, UserId,
 };
 
 use futures::future::BoxFuture;
@@ -84,19 +84,24 @@ impl DocumentReaderService {
             })
     }
 
-    /// Durable annotations require canonical rendered content. Reject (422) when the document has
-    /// no completed `readable_html` asset so locators never anchor to ephemeral feed preview HTML.
-    async fn require_readable(&self, document_id: DocumentId) -> Result<(), AppError> {
+    /// Durable annotations require the completed canonical asset for their document format so
+    /// locators never anchor to an ephemeral or cross-format representation.
+    async fn require_annotation_source(&self, document: &Document) -> Result<(), AppError> {
+        let required = match document.document_type {
+            DocumentType::Book => ArchiveAssetKind::Epub,
+            DocumentType::Pdf => ArchiveAssetKind::Pdf,
+            _ => ArchiveAssetKind::ReadableHtml,
+        };
         if self
             .asset_repo
-            .has_successful_asset(document_id, ArchiveAssetKind::ReadableHtml)
+            .has_successful_asset(document.id, required)
             .await?
         {
             Ok(())
         } else {
             Err(AppError::Domain(DomainError::Validation {
                 field: "document_id".into(),
-                message: "document has no rendered readable content yet; prepare it before \
+                message: "document has no completed reader content yet; prepare it before \
                           highlighting or noting"
                     .into(),
             }))
@@ -210,7 +215,7 @@ impl DocumentReaderService {
         source_locator: Option<HighlightSourceLocator>,
     ) -> Result<Highlight, AppError> {
         let document = self.require_document(user_id, document_id).await?;
-        self.require_readable(document_id).await?;
+        self.require_annotation_source(&document).await?;
         validate_color(&color)?;
         validate_highlight_locators_for_document(
             document.document_type,
@@ -281,8 +286,8 @@ impl DocumentReaderService {
         document_id: DocumentId,
         body: String,
     ) -> Result<DocumentNote, AppError> {
-        self.require_document(user_id, document_id).await?;
-        self.require_readable(document_id).await?;
+        let document = self.require_document(user_id, document_id).await?;
+        self.require_annotation_source(&document).await?;
         let now = Utc::now();
         self.note_repo
             .upsert_for_document(
