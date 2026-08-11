@@ -388,7 +388,7 @@
 					type: 'epub' as const,
 					chapter: currentTocEntry?.id ?? '',
 					start_offset: currentCharOffset,
-					end_offset: currentCharOffset
+					end_offset: currentCharOffset + 1
 				};
 
 		try {

@@ -2,7 +2,7 @@ use ind_domain::{DocumentType, DomainError, HighlightLocator, HighlightSourceLoc
 
 use crate::AppError;
 
-const ALLOWED_COLORS: &[&str] = &["yellow", "blue", "green", "pink", "purple"];
+const ALLOWED_COLORS: &[&str] = &["yellow", "blue", "green", "pink", "purple", "bookmark"];
 
 pub(crate) fn validate_color(color: &str) -> Result<(), AppError> {
     if ALLOWED_COLORS.contains(&color) {

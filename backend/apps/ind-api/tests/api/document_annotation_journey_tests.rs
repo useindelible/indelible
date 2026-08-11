@@ -40,6 +40,10 @@ async fn annotations_require_the_completed_canonical_asset_for_each_document_for
             }),
         ),
     ] {
+        let color = match document_type {
+            DocumentType::Book | DocumentType::Pdf => "bookmark",
+            _ => "yellow",
+        };
         let document = DocumentFactory::new(owner.user.id)
             .with_document_type(document_type)
             .insert(app.pool())
@@ -51,7 +55,7 @@ async fn annotations_require_the_completed_canonical_asset_for_each_document_for
                 .post_json(
                     &format!("/api/v1/documents/{}/highlights", document.id),
                     &json!({
-                        "color": "yellow",
+                        "color": color,
                         "text_content": "selected",
                         "locator": locator
                     }),

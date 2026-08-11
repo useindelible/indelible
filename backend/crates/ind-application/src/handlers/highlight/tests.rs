@@ -37,7 +37,7 @@ fn source(url: &str, location: &str, text: &str) -> HighlightSourceLocator {
 
 #[test]
 fn colors_offsets_and_document_types_enforce_the_public_highlight_contract() {
-    for color in ["yellow", "blue", "green", "pink", "purple"] {
+    for color in ["yellow", "blue", "green", "pink", "purple", "bookmark"] {
         validate_color(color).unwrap();
     }
     assert_eq!(field(validate_color("red")), "color");

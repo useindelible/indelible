@@ -120,6 +120,15 @@ describe('BookReader annotation failures', () => {
 		const addBookmark = await screen.findByRole('button', { name: 'Add bookmark' });
 
 		await fireEvent.click(addBookmark);
+		expect(mocks.createHighlight).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				body: expect.objectContaining({
+					color: 'bookmark',
+					locator: expect.objectContaining({ start_offset: 0, end_offset: 1 })
+				})
+			})
+		);
 		expect((await screen.findByRole('alert')).textContent).toContain(
 			'Canonical annotation source is not ready.'
 		);
