@@ -259,6 +259,10 @@ private fun ItemList(
 ) {
     val listState = rememberLazyListState()
 
+    LaunchedEffect(state.items.firstOrNull()?.id) {
+        if (state.items.isNotEmpty()) listState.scrollToItem(0)
+    }
+
     LaunchedEffect(listState) {
         snapshotFlow {
             val totalItems = listState.layoutInfo.totalItemsCount

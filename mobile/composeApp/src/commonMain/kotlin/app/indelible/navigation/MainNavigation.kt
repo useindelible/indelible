@@ -98,6 +98,8 @@ fun MainNavigation(
             currentDestination?.hierarchy?.any { it.route == tab.route } == true
         }
 
+    RefreshLibraryOnDestination(currentDestination?.route, appContainer.libraryViewModel::refresh)
+
     // Drawer collections/smart-lists load once; the drawer is shared by Home, Library, and Feed,
     // so the fetch lives at the navigation root rather than inside a tab composable.
     LaunchedEffect(Unit) { appContainer.sidebarViewModel.load() }
@@ -233,5 +235,15 @@ fun MainNavigation(
                 milaChatRoutes(navController, appContainer.milaRepository)
             }
         }
+    }
+}
+
+@Composable
+internal fun RefreshLibraryOnDestination(
+    currentRoute: String?,
+    refresh: () -> Unit,
+) {
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == TabItem.LIBRARY.route) refresh()
     }
 }
