@@ -27,7 +27,8 @@ impl FeedService {
                 poll_interval_override_minutes: None,
             };
             match self.subscribe(user_id, input).await {
-                Ok(_) => created += 1,
+                Ok(result) if result.is_new => created += 1,
+                Ok(_) => skipped += 1,
                 Err(AppError::Domain(DomainError::Conflict { .. })) => skipped += 1,
                 Err(e) => errors.push(format!("{url}: {e}")),
             }
