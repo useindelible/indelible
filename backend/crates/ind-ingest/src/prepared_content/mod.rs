@@ -15,7 +15,7 @@ use ind_domain::{
     ArchiveAssetKind, ArchiveAssetStatus, Document, DocumentAsset, DocumentId, NewDocumentAsset,
     PreparedItemContent,
 };
-use ind_html::{html_to_markdown, html_to_text};
+use ind_html::html_to_markdown;
 
 const FALLBACK_CHUNK_SIZE: usize = 512;
 const FALLBACK_CHUNK_OVERLAP: usize = 64;
@@ -129,23 +129,10 @@ impl PreparedContentProvider for AssetBackedPreparedContentProvider {
         &self,
         document_id: DocumentId,
     ) -> Result<Option<String>, AppError> {
-        let Some(asset) = self
-            .document_asset_repo
-            .find_by_document_and_kind(document_id, ArchiveAssetKind::ReadableHtml)
-            .await?
-        else {
-            return Ok(None);
-        };
-        if asset.status != ArchiveAssetStatus::Completed || asset.content_type != "text/html" {
-            return Ok(None);
-        }
-        let html = load_text_asset(self.object_storage.as_ref(), &asset.s3_key).await?;
-        let text = html_to_text(&html);
-        if text.trim().is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(text))
-        }
+        let content = self.load_for_document(document_id).await?;
+        Ok(content.and_then(|content| {
+            (!content.root_text.trim().is_empty()).then_some(content.root_text)
+        }))
     }
 }
 
