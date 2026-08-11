@@ -118,7 +118,7 @@ async fn stored_monolith() -> Html<&'static str> {
     Html(
         r#"<!doctype html><html><head><title>Stored monolith</title></head>
         <body><article><h1>Stored monolith</h1>
-        <p>Archived content must remain readable while derived captures are regenerated.</p>
+        <p>Archived content must remain readable while derived captures are regenerated with stable formatting, metadata, images, links, and complete source context.</p>
         </article></body></html>"#,
     )
 }

