@@ -228,7 +228,7 @@ fn validate_notion_export_item_selections(
         ("id" = String, Path, description = "Integration connection ID"),
         ("library_entry_id" = String, Path, description = "Library entry ID to refresh")
     ),
-    responses((status = 200, description = "Document export cursor reset", body = NotionRefreshItemResponse)),
+    responses((status = 200, description = "Prior Notion page archived and replacement queued", body = NotionRefreshItemResponse)),
     security(("bearer" = []), ("api_token" = [])),
     extensions(("x-indelible-permissions" = json!(["integrations:write"]))),
     tag = "Integrations",
@@ -254,10 +254,13 @@ pub async fn refresh_notion_export_item(
         entity: "integrations",
         id: id.clone(),
     })?;
-    ops.refresh_notion_export_item(auth_user.user_id, parsed_id, parsed_library_entry_id)
+    let refreshed = ops
+        .refresh_notion_export_item(auth_user.user_id, parsed_id, parsed_library_entry_id)
         .await
         .map_err(ApiError::from)?;
     Ok(ApiResponse::new(NotionRefreshItemResponse {
         library_entry_id,
+        job_id: refreshed.job_id,
+        archived_page_url: refreshed.archived_page_url,
     }))
 }

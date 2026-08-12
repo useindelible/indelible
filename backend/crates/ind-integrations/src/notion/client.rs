@@ -309,4 +309,17 @@ impl NotionClient {
         .await?;
         Ok(())
     }
+
+    pub async fn archive_page(&self, page_id: &str) -> Result<String, NotionError> {
+        let page = self
+            .request(
+                reqwest::Method::PATCH,
+                &format!("/v1/pages/{page_id}"),
+                Some(&serde_json::json!({"in_trash": true})),
+            )
+            .await?;
+        page["url"].as_str().map(str::to_string).ok_or_else(|| {
+            NotionError::State("archived page response did not include its URL".into())
+        })
+    }
 }

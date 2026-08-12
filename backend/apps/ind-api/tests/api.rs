@@ -32,6 +32,7 @@ mod api {
     mod mila_action_retry_journey_tests;
     mod mila_journey_tests;
     mod notion_control_journey_tests;
+    mod notion_refresh_journey_tests;
     mod oauth_journey_tests;
     mod platform_journey_tests;
     mod product_journey_tests;

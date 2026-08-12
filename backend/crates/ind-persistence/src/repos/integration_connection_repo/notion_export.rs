@@ -62,6 +62,44 @@ impl TryFrom<NotionExportItemFlat> for NotionExportItem {
 }
 
 impl PgIntegrationConnectionRepository {
+    pub(super) async fn find_notion_export_item_impl(
+        &self,
+        user_id: UserId,
+        connection_id: IntegrationConnectionId,
+        library_entry_id: LibraryEntryId,
+    ) -> Result<Option<NotionExportItem>, AppError> {
+        let row = sqlx::query_as!(
+            NotionExportItemFlat,
+            r#"SELECT le.id AS "library_entry_id!",
+                      d.id AS "document_id!",
+                      d.title AS "title!",
+                      COALESCE(d.original_url, d.canonical_url) AS url,
+                      d.document_type AS "document_type!",
+                      le.source AS "source!",
+                      COALESCE(s.selected, true) AS "selected!: bool",
+                      c.remote_page_id,
+                      c.last_synced_at AS export_last_synced_at,
+                      c.last_error AS export_last_error
+               FROM integration_connections ic
+               JOIN library_entries le
+                 ON le.id = $3 AND le.user_id = ic.user_id AND le.deleted_at IS NULL
+               JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id
+               LEFT JOIN notion_export_item_selection s
+                 ON s.connection_id = ic.id AND s.library_entry_id = le.id
+               LEFT JOIN integration_export_cursor c
+                 ON c.connection_id = ic.id AND c.library_entry_id = le.id
+               WHERE ic.id = $1 AND ic.user_id = $2 AND ic.provider = 'notion'"#,
+            connection_id.into_uuid(),
+            user_id.into_uuid(),
+            library_entry_id.into_uuid(),
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(map_err)?;
+
+        row.map(NotionExportItem::try_from).transpose()
+    }
+
     pub(super) async fn list_notion_export_items_impl(
         &self,
         user_id: UserId,

@@ -219,6 +219,53 @@ describe('NotionStatusPanel', () => {
 		expect(calls).toContain('refresh:lib_123');
 	});
 
+	it('explains automated replacement and keeps a link to the archived page', () => {
+		render(NotionStatusPanel, {
+			props: {
+				connection: makeConnection(),
+				settings: { ...settings, selection_enabled: true },
+				items: [],
+				refreshNotice: {
+					message: 'Replacement queued.',
+					archivedPageUrl: 'https://www.notion.so/Old-page-old'
+				},
+				...panelHandlers()
+			}
+		});
+
+		expect(
+			screen.getByText(/archives the current Notion page and queues its replacement/i)
+		).toBeTruthy();
+		expect(screen.queryByText(/delete.*from Notion first/i)).toBeNull();
+		const rollback = screen.getByRole('link', { name: 'Open archived page in Notion' });
+		expect(rollback.getAttribute('href')).toBe('https://www.notion.so/Old-page-old');
+	});
+
+	it('does not offer Refresh before a document has a Notion page', () => {
+		render(NotionStatusPanel, {
+			props: {
+				connection: makeConnection(),
+				settings: { ...settings, selection_enabled: true },
+				items: [
+					{
+						library_entry_id: 'lib_pending',
+						title: 'Pending export',
+						item_type: 'article',
+						url: 'https://example.com/pending',
+						selected: true,
+						exported_page_id: null,
+						last_synced_at: null,
+						last_error: null
+					}
+				],
+				...panelHandlers()
+			}
+		});
+
+		const action = screen.getByRole('button', { name: 'Not exported' });
+		expect(action.hasAttribute('disabled')).toBe(true);
+	});
+
 	it('calls load-more when the pager button is clicked', async () => {
 		const calls: string[] = [];
 		vi.stubGlobal(

@@ -230,6 +230,9 @@ pub struct NotionExportItemSelectionDto {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct NotionRefreshItemResponse {
     pub library_entry_id: String,
+    pub job_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub archived_page_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

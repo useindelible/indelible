@@ -122,6 +122,12 @@ pub struct IntegrationSyncEnqueued {
     pub job_id: String,
 }
 
+#[derive(Debug)]
+pub struct NotionRefreshEnqueued {
+    pub job_id: String,
+    pub archived_page_url: Option<String>,
+}
+
 pub trait IntegrationOperations: Send + Sync {
     /// OAuth providers this instance holds credentials for. A provider absent
     /// here cannot complete an authorization; clients use this to disable
@@ -198,7 +204,7 @@ pub trait IntegrationOperations: Send + Sync {
         user_id: UserId,
         connection_id: IntegrationConnectionId,
         library_entry_id: LibraryEntryId,
-    ) -> BoxFuture<'_, Result<(), AppError>>;
+    ) -> BoxFuture<'_, Result<NotionRefreshEnqueued, AppError>>;
 
     fn get_obsidian_settings(
         &self,

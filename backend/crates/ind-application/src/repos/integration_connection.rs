@@ -123,6 +123,13 @@ pub trait IntegrationConnectionRepository: Send + Sync {
         offset: i64,
     ) -> Result<NotionExportItemsPage, AppError>;
 
+    async fn find_notion_export_item(
+        &self,
+        user_id: UserId,
+        connection_id: IntegrationConnectionId,
+        library_entry_id: LibraryEntryId,
+    ) -> Result<Option<NotionExportItem>, AppError>;
+
     /// Keyset-paginated saved Library entries to export to Notion (TASK-236 AC#4). When
     /// `selected_only` is true only entries with a `selected` selection row are returned; the
     /// `library_entries JOIN documents` enumeration is itself the saved-content filter.

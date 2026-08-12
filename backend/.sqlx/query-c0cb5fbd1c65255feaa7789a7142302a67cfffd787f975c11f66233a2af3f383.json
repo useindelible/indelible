@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO job_outbox\n                    (id, job_type, payload, dedupe_key, available_at, created_at)\n               VALUES ($1, $2, $3, $4, $5, $5)\n               ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE\n                 SET payload = EXCLUDED.payload,\n                     available_at = EXCLUDED.available_at,\n                     dispatched_at = NULL\n               RETURNING id, job_type, payload, dedupe_key,\n                         available_at, dispatched_at, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "job_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "dedupe_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "available_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "dispatched_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "c0cb5fbd1c65255feaa7789a7142302a67cfffd787f975c11f66233a2af3f383"
+}

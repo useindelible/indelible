@@ -11,6 +11,7 @@
 		itemsHasNext?: boolean;
 		savingItemId?: string | null;
 		refreshingItemId?: string | null;
+		refreshNotice?: { message: string; archivedPageUrl?: string | null } | null;
 		selectedCount: number;
 		exportItemsMeta: string;
 		onItemsSearch: (query: string) => void;
@@ -28,6 +29,7 @@
 		itemsHasNext = false,
 		savingItemId = null,
 		refreshingItemId = null,
+		refreshNotice = null,
 		selectedCount,
 		exportItemsMeta,
 		onItemsSearch,
@@ -56,10 +58,21 @@
 <div class="items-section" class:visible>
 	<div class="group-label">Documents to export</div>
 	<div class="group-desc">
-		Pick the documents Indelible includes on the next export. Refresh recreates a doc from current
-		highlights, notes, and tags.
+		Pick the documents Indelible includes on the next export. Refresh archives the current Notion
+		page and queues its replacement from current highlights, notes, and tags.
 	</div>
 	<div class="group-card">
+		{#if refreshNotice}
+			<div class="refresh-notice" role="status">
+				<span>{refreshNotice.message}</span>
+				{#if refreshNotice.archivedPageUrl}
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Notion returns this external page URL. -->
+					<a href={refreshNotice.archivedPageUrl} target="_blank" rel="noopener noreferrer">
+						Open archived page in Notion
+					</a>
+				{/if}
+			</div>
+		{/if}
 		<div class="items-toolbar">
 			<div class="search-wrap">
 				<span class="search-icon">
@@ -83,7 +96,7 @@
 		{#if itemsError}
 			<div class="callout error" role="alert">
 				<div class="callout-body">
-					<div class="callout-title">Couldn't load items</div>
+					<div class="callout-title">Couldn't update documents</div>
 					<div class="callout-detail">{itemsError}</div>
 				</div>
 			</div>
@@ -139,10 +152,14 @@
 								<button
 									class="text-action"
 									type="button"
-									disabled={refreshingItemId === item.library_entry_id}
+									disabled={refreshingItemId === item.library_entry_id || !item.exported_page_id}
 									onclick={() => onRefreshItem(item)}
 								>
-									{refreshingItemId === item.library_entry_id ? 'Refreshing…' : 'Refresh'}
+									{refreshingItemId === item.library_entry_id
+										? 'Refreshing…'
+										: item.exported_page_id
+											? 'Refresh'
+											: 'Not exported'}
 								</button>
 							</td>
 						</tr>
@@ -200,6 +217,22 @@
 		box-shadow: inset 0 0 0 0.5px var(--border-primary);
 		container-type: inline-size;
 		container-name: settings-card;
+	}
+
+	.refresh-notice {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 12px 18px;
+		border-bottom: 0.5px solid var(--border-primary);
+		font-size: 12px;
+		color: var(--text-secondary);
+	}
+
+	.refresh-notice a {
+		color: var(--accent);
+		white-space: nowrap;
 	}
 
 	.items-toolbar,

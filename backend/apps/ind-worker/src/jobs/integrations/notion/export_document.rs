@@ -168,7 +168,11 @@ async fn handle_export_document_with_highlight_batch_size(
     let page_id = match client
         .upsert_page(
             &target.data_source_id,
-            cursor.remote_page_id.as_deref(),
+            if job.replaced_page_id.as_deref() == cursor.remote_page_id.as_deref() {
+                None
+            } else {
+                cursor.remote_page_id.as_deref()
+            },
             &page_spec,
         )
         .await

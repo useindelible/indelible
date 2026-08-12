@@ -159,6 +159,7 @@ async fn harness(
         Arc::new(PgObsidianPreviewRepository::new(pool.clone())),
         oauth_service,
         with_cipher.then_some(cipher),
+        "https://api.notion.com".into(),
     );
 
     Harness {

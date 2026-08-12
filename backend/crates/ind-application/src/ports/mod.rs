@@ -47,9 +47,9 @@ pub use http_fetcher::{FetchRequest, FetchResponse, HttpFetchError, HttpFetcher}
 pub use integration::{
     EmailAliasCreateError, EmailAliasOperations, EmailIngestOperations, EmailSenderOperations,
     EmailSenderUnsubscribeOutcome, ExportOperations, ImportOperations, ImportUpload,
-    IntegrationAuthorizeStart, IntegrationOperations, IntegrationSyncEnqueued, ObsidianAckSubject,
-    ObsidianRefreshRequest, ObsidianRunAck, ObsidianRunCreate, ReadwiseImportUpload,
-    WebhookOperations,
+    IntegrationAuthorizeStart, IntegrationOperations, IntegrationSyncEnqueued,
+    NotionRefreshEnqueued, ObsidianAckSubject, ObsidianRefreshRequest, ObsidianRunAck,
+    ObsidianRunCreate, ReadwiseImportUpload, WebhookOperations,
 };
 pub use opml_parser::{OpmlParseError, OpmlParser};
 pub use tts_adapter::{

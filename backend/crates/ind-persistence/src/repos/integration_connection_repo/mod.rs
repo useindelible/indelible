@@ -424,6 +424,16 @@ impl IntegrationConnectionRepository for PgIntegrationConnectionRepository {
             .await
     }
 
+    async fn find_notion_export_item(
+        &self,
+        user_id: UserId,
+        connection_id: IntegrationConnectionId,
+        library_entry_id: LibraryEntryId,
+    ) -> Result<Option<ind_domain::NotionExportItem>, AppError> {
+        self.find_notion_export_item_impl(user_id, connection_id, library_entry_id)
+            .await
+    }
+
     async fn list_notion_export_candidates(
         &self,
         user_id: UserId,

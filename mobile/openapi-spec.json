@@ -4982,12 +4982,22 @@
       },
       "NotionRefreshItemResponse": {
         "properties": {
+          "archived_page_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "job_id": {
+            "type": "string"
+          },
           "library_entry_id": {
             "type": "string"
           }
         },
         "required": [
-          "library_entry_id"
+          "library_entry_id",
+          "job_id"
         ],
         "type": "object"
       },
@@ -14183,7 +14193,7 @@
                 }
               }
             },
-            "description": "Document export cursor reset"
+            "description": "Prior Notion page archived and replacement queued"
           }
         },
         "security": [

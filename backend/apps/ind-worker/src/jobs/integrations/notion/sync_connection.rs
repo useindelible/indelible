@@ -105,6 +105,7 @@ async fn handle_sync_connection_with_item_batch_size(
                 user_id: job.user_id,
                 library_entry_id: candidate.library_entry_id,
                 document_id: candidate.document_id,
+                replaced_page_id: None,
             })
             .map_err(|e| AppError::ExternalService {
                 service: "notion".into(),

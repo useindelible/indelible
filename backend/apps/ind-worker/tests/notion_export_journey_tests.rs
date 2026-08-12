@@ -164,6 +164,7 @@ async fn export_provisions_target_persists_cursor_and_syncs_saved_candidates_to_
             user_id: user.id,
             library_entry_id: first.library_entry_id,
             document_id: first.document_id,
+            replaced_page_id: None,
         },
     )
     .await
@@ -235,4 +236,136 @@ async fn export_provisions_target_persists_cursor_and_syncs_saved_candidates_to_
             .await
             .unwrap();
     assert!(last_sync_at.is_some());
+}
+
+#[tokio::test]
+async fn replacement_export_ignores_a_cursor_repopulated_by_an_older_job() {
+    let db = TestDb::new().await;
+    let server = MockServer::start().await;
+    let user = UserFactory::new().insert(db.pool()).await;
+    let saved = SavedDocumentFactory::new(user.id)
+        .with_title("Replacement boundary article")
+        .insert(db.pool())
+        .await;
+    let now = Utc::now();
+    let connection = PgIntegrationConnectionRepository::new(db.pool().clone())
+        .create(IntegrationConnection {
+            id: IntegrationConnectionId::new(),
+            user_id: user.id,
+            provider: IntegrationProvider::Notion,
+            config: serde_json::json!({
+                "database_id": "managed-database",
+                "data_source_id": "managed-source",
+                "property_ids": {
+                    "title": "title", "author": "author", "url": "url",
+                    "canonical_url": "canonical", "source": "source", "saved_at": "saved",
+                    "tags": "tags", "category": "category", "reading_status": "status",
+                    "indelible_id": "indelible", "last_synced_at": "synced"
+                }
+            }),
+            status: "active".into(),
+            last_sync_at: None,
+            last_error: None,
+            created_at: now,
+            updated_at: now,
+            version: 0,
+        })
+        .await
+        .unwrap();
+    let cipher = CredentialCipher::from_base64(TEST_CIPHER_KEY_B64).unwrap();
+    PgIntegrationOAuthTokenRepository::new(db.pool().clone())
+        .upsert(
+            user.id,
+            IntegrationOAuthProvider::Notion,
+            cipher.seal(b"test-access-token"),
+            None,
+            None,
+            serde_json::json!({}),
+        )
+        .await
+        .unwrap();
+    let cursor_repo = PgExportCursorRepository::new(db.pool().clone());
+    use ind_application::repos::export_cursor::ExportCursorRepository;
+    cursor_repo
+        .upsert(connection.id, saved.library_entry_id)
+        .await
+        .unwrap();
+    cursor_repo
+        .mark_remote_page_resolved(connection.id, saved.library_entry_id, "archived-old", now)
+        .await
+        .unwrap();
+    Mock::given(method("GET"))
+        .and(path("/v1/data_sources/managed-source"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "properties": {
+                "Title": {"id": "title", "type": "title"},
+                "Author": {"id": "author", "type": "rich_text"},
+                "URL": {"id": "url", "type": "url"},
+                "Canonical URL": {"id": "canonical", "type": "url"},
+                "Source": {"id": "source", "type": "select"},
+                "Saved At": {"id": "saved", "type": "date"},
+                "Tags": {"id": "tags", "type": "multi_select"},
+                "Category": {"id": "category", "type": "select"},
+                "Reading Status": {"id": "status", "type": "select"},
+                "Indelible ID": {"id": "indelible", "type": "rich_text"},
+                "Last Synced At": {"id": "synced", "type": "date"}
+            }
+        })))
+        .expect(2)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v1/data_sources/managed-source/query"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "results": [], "next_cursor": null, "has_more": false
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v1/pages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "id": "replacement-page"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("PATCH"))
+        .and(path("/v1/pages/archived-old"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .expect(0)
+        .mount(&server)
+        .await;
+    Mock::given(method("PATCH"))
+        .and(path("/v1/pages/replacement-page"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let deps = notion_deps(&db, &server);
+
+    let replacement_job = NotionExportDocumentJob {
+        connection_id: connection.id,
+        user_id: user.id,
+        library_entry_id: saved.library_entry_id,
+        document_id: saved.document_id,
+        replaced_page_id: Some("archived-old".into()),
+    };
+    handle_export_document(&deps, replacement_job.clone())
+        .await
+        .unwrap();
+    handle_export_document(&deps, replacement_job)
+        .await
+        .unwrap();
+
+    let remote_page: Option<String> = sqlx::query_scalar(
+        "SELECT remote_page_id FROM integration_export_cursor \
+         WHERE connection_id = $1 AND library_entry_id = $2",
+    )
+    .bind(connection.id.into_uuid())
+    .bind(saved.library_entry_id.into_uuid())
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    assert_eq!(remote_page.as_deref(), Some("replacement-page"));
 }

@@ -1382,6 +1382,8 @@ export type NotionExportItemsResponse = {
 }
 
 export type NotionRefreshItemResponse = {
+  archived_page_url?: string | null
+  job_id: string
   library_entry_id: string
 }
 
@@ -6014,7 +6016,7 @@ export type RefreshNotionExportItemData = {
 
 export type RefreshNotionExportItemResponses = {
   /**
-   * Document export cursor reset
+   * Prior Notion page archived and replacement queued
    */
   200: NotionRefreshItemResponse
 }

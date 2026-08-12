@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT le.id AS \"library_entry_id!\",\n                      d.id AS \"document_id!\",\n                      d.title AS \"title!\",\n                      COALESCE(d.original_url, d.canonical_url) AS url,\n                      d.document_type AS \"document_type!\",\n                      le.source AS \"source!\",\n                      COALESCE(s.selected, true) AS \"selected!: bool\",\n                      c.remote_page_id,\n                      c.last_synced_at AS export_last_synced_at,\n                      c.last_error AS export_last_error\n               FROM integration_connections ic\n               JOIN library_entries le\n                 ON le.id = $3 AND le.user_id = ic.user_id AND le.deleted_at IS NULL\n               JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id\n               LEFT JOIN notion_export_item_selection s\n                 ON s.connection_id = ic.id AND s.library_entry_id = le.id\n               LEFT JOIN integration_export_cursor c\n                 ON c.connection_id = ic.id AND c.library_entry_id = le.id\n               WHERE ic.id = $1 AND ic.user_id = $2 AND ic.provider = 'notion'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "library_entry_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "title!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "document_type!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "source!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "selected!: bool",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "remote_page_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "export_last_synced_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "export_last_error",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      false,
+      false,
+      null,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "92b2fb2b46c33cdb370824a93e6e6c8e4d5381bceb8fa69cad39b31aab003658"
+}

@@ -34,6 +34,7 @@
 		itemsHasNext?: boolean;
 		savingItemId?: string | null;
 		refreshingItemId?: string | null;
+		refreshNotice?: { message: string; archivedPageUrl?: string | null } | null;
 		onSync: () => void;
 		onReauthorize: () => void;
 		onChangeAccount: () => void;
@@ -61,6 +62,7 @@
 		itemsHasNext = false,
 		savingItemId = null,
 		refreshingItemId = null,
+		refreshNotice = null,
 		onSync,
 		onReauthorize,
 		onChangeAccount,
@@ -96,6 +98,7 @@
 			{itemsHasNext}
 			{savingItemId}
 			{refreshingItemId}
+			{refreshNotice}
 			{selectedCount}
 			{exportItemsMeta}
 			{onItemsSearch}

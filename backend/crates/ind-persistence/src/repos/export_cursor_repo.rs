@@ -4,7 +4,10 @@ use uuid::Uuid;
 
 use ind_application::AppError;
 use ind_application::repos::export_cursor::ExportCursorRepository;
-use ind_domain::{ExportCursor, HighlightId, IntegrationConnectionId, LibraryEntryId};
+use ind_domain::{
+    DocumentId, ExportCursor, HighlightId, IntegrationConnectionId, JobOutbox, JobOutboxId,
+    LibraryEntryId, NotionExportDocumentJob, UserId, job_types,
+};
 
 pub struct PgExportCursorRepository {
     pool: PgPool,
@@ -214,11 +217,15 @@ impl ExportCursorRepository for PgExportCursorRepository {
         Ok(())
     }
 
-    async fn reset_document_export(
+    async fn reset_document_export_and_enqueue_notion(
         &self,
+        user_id: UserId,
         connection_id: IntegrationConnectionId,
         library_entry_id: LibraryEntryId,
-    ) -> Result<(), AppError> {
+        document_id: DocumentId,
+        replaced_page_id: Option<String>,
+    ) -> Result<JobOutbox, AppError> {
+        let mut tx = self.pool.begin().await.map_err(map_err)?;
         sqlx::query!(
             r#"UPDATE integration_export_cursor
                SET remote_page_id = NULL,
@@ -233,10 +240,50 @@ impl ExportCursorRepository for PgExportCursorRepository {
             connection_id.into_uuid(),
             library_entry_id.into_uuid(),
         )
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_err)?;
-        Ok(())
+
+        let payload = serde_json::to_value(NotionExportDocumentJob {
+            connection_id,
+            user_id,
+            library_entry_id,
+            document_id,
+            replaced_page_id,
+        })
+        .map_err(|error| AppError::ExternalService {
+            service: "notion".into(),
+            message: format!("failed to serialize export_document payload: {error}"),
+        })?;
+        let now = Utc::now();
+        let id = JobOutboxId::new();
+        let dedupe_key = format!(
+            "export:{}:{}",
+            connection_id.into_uuid(),
+            library_entry_id.into_uuid()
+        );
+        let row = sqlx::query_as!(
+            NotionOutboxRow,
+            r#"INSERT INTO job_outbox
+                    (id, job_type, payload, dedupe_key, available_at, created_at)
+               VALUES ($1, $2, $3, $4, $5, $5)
+               ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE
+                 SET payload = EXCLUDED.payload,
+                     available_at = EXCLUDED.available_at,
+                     dispatched_at = NULL
+               RETURNING id, job_type, payload, dedupe_key,
+                         available_at, dispatched_at, created_at"#,
+            id.as_uuid(),
+            job_types::INTEGRATION_NOTION_EXPORT_DOCUMENT,
+            payload,
+            dedupe_key,
+            now,
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(map_err)?;
+        tx.commit().await.map_err(map_err)?;
+        Ok(row.into())
     }
 
     async fn record_generated_path(
@@ -264,5 +311,29 @@ impl ExportCursorRepository for PgExportCursorRepository {
         .await
         .map_err(map_err)?;
         Ok(rows.rows_affected() > 0)
+    }
+}
+
+struct NotionOutboxRow {
+    id: uuid::Uuid,
+    job_type: String,
+    payload: serde_json::Value,
+    dedupe_key: Option<String>,
+    available_at: DateTime<Utc>,
+    dispatched_at: Option<DateTime<Utc>>,
+    created_at: DateTime<Utc>,
+}
+
+impl From<NotionOutboxRow> for JobOutbox {
+    fn from(row: NotionOutboxRow) -> Self {
+        Self {
+            id: JobOutboxId::from(row.id),
+            job_type: row.job_type,
+            payload: row.payload,
+            dedupe_key: row.dedupe_key,
+            available_at: row.available_at,
+            dispatched_at: row.dispatched_at,
+            created_at: row.created_at,
+        }
     }
 }

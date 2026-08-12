@@ -144,6 +144,8 @@ pub struct NotionExportDocumentJob {
     pub user_id: UserId,
     pub library_entry_id: LibraryEntryId,
     pub document_id: DocumentId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub replaced_page_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

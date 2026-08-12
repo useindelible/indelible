@@ -147,6 +147,7 @@ pub(super) fn build_integration_services(
             Arc::new(PgObsidianPreviewRepository::new(pool.clone())),
             integration_oauth_service,
             credential_cipher.clone(),
+            "https://api.notion.com".into(),
         ),
     )
         as Arc<dyn IntegrationOperations>);

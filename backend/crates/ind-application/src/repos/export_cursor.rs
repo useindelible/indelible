@@ -1,7 +1,10 @@
 use chrono::{DateTime, Utc};
 
 use crate::error::AppError;
-use ind_domain::{ExportCursor, HighlightId, IntegrationConnectionId, LibraryEntryId};
+use ind_domain::{
+    DocumentId, ExportCursor, HighlightId, IntegrationConnectionId, JobOutbox, LibraryEntryId,
+    UserId,
+};
 
 #[async_trait::async_trait]
 pub trait ExportCursorRepository: Send + Sync {
@@ -50,11 +53,14 @@ pub trait ExportCursorRepository: Send + Sync {
         at: DateTime<Utc>,
     ) -> Result<(), AppError>;
 
-    async fn reset_document_export(
+    async fn reset_document_export_and_enqueue_notion(
         &self,
+        user_id: UserId,
         connection_id: IntegrationConnectionId,
         library_entry_id: LibraryEntryId,
-    ) -> Result<(), AppError>;
+        document_id: DocumentId,
+        replaced_page_id: Option<String>,
+    ) -> Result<JobOutbox, AppError>;
 
     async fn record_generated_path(
         &self,

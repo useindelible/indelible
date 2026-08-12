@@ -115,6 +115,7 @@ async fn notion_client_crosses_managed_target_page_block_and_rate_limit_contract
         .await;
     Mock::given(method("PATCH"))
         .and(path("/v1/pages/page_created"))
+        .and(body_partial_json(json!({"properties": {}})))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
         .expect(1)
         .mount(&server)
@@ -158,6 +159,22 @@ async fn notion_client_crosses_managed_target_page_block_and_rate_limit_contract
         .append_blocks(&page_id, &[NotionBlock::Divider])
         .await
         .unwrap();
+
+    Mock::given(method("PATCH"))
+        .and(path("/v1/pages/page_created"))
+        .and(body_partial_json(json!({"in_trash": true})))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "page_created",
+            "in_trash": true,
+            "url": "https://www.notion.so/Archived-page_created"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    assert_eq!(
+        notion.archive_page(&page_id).await.unwrap(),
+        "https://www.notion.so/Archived-page_created"
+    );
 
     Mock::given(method("GET"))
         .and(path("/v1/data_sources/rate_limited"))

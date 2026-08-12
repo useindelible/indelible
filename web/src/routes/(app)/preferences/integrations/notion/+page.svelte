@@ -47,6 +47,7 @@
 	let exportItemsFilteredCount = $state(0);
 	let savingItemId = $state<string | null>(null);
 	let refreshingItemId = $state<string | null>(null);
+	let refreshNotice = $state<{ message: string; archivedPageUrl?: string | null } | null>(null);
 	let itemSearchTimer: ReturnType<typeof setTimeout> | undefined;
 	const exportItemsLimit = 25;
 
@@ -201,15 +202,21 @@
 	async function handleRefreshItem(item: NotionExportItemDto) {
 		if (!connection) return;
 		const confirmed = window.confirm(
-			`Delete "${item.title}" from Notion first. Then Indelible will recreate it on the next Start Export with current highlights, notes, and tags. Continue?`
+			`Archive the current Notion page for "${item.title || 'Untitled'}" and queue its replacement?`
 		);
 		if (!confirmed) return;
 		refreshingItemId = item.library_entry_id;
 		exportItemsError = null;
+		refreshNotice = null;
 		const result = await refreshNotionDocumentExport(connection.id, item.library_entry_id);
 		refreshingItemId = null;
 		if (result.success) {
+			refreshNotice = {
+				message: `Replacement queued for ${item.title || 'Untitled'}.`,
+				archivedPageUrl: result.data.archived_page_url
+			};
 			await loadExportItems(0, undefined, false);
+			await refreshConnectionOnly();
 		} else {
 			exportItemsError = result.error;
 		}
@@ -281,6 +288,7 @@
 			itemsHasNext={exportItemsHasNext}
 			{savingItemId}
 			{refreshingItemId}
+			{refreshNotice}
 			onSync={handleSync}
 			onReauthorize={handleAuthorize}
 			onChangeAccount={handleChangeAccount}
