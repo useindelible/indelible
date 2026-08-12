@@ -1,0 +1,129 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const api = vi.hoisted(() => ({
+	createPromptPreset: vi.fn(),
+	deletePromptPreset: vi.fn(),
+	getConfig: vi.fn(),
+	getStatus: vi.fn(),
+	listPromptPresets: vi.fn(),
+	reindexConfig: vi.fn(),
+	testConfig: vi.fn(),
+	updatePromptPreset: vi.fn(),
+	upsertConfig: vi.fn()
+}));
+
+vi.mock('$lib/api', () => api);
+
+import AiPreferencesPage from '../src/routes/(app)/preferences/ai/+page.svelte';
+
+const config = {
+	byo_enabled: true,
+	chat_api_base: 'http://localhost:18086/v1',
+	chat_context_pct: 70,
+	chat_model: 'qa-chat',
+	cross_item_max_per_item: 3,
+	cross_item_top_k: 10,
+	embedding_api_base: 'http://localhost:18086/v1',
+	embedding_dim: 768,
+	embedding_model: 'qa-embed',
+	enabled: true,
+	has_chat_api_key: true,
+	has_embedding_api_key: false,
+	model_context_window: 12000,
+	supports_reasoning_effort: false,
+	supports_structured_output: true,
+	top_k: 5
+};
+
+function status(overrides: Record<string, unknown> = {}) {
+	return {
+		enabled: true,
+		eligible_items: 8,
+		indexed_items: 6,
+		is_indexing: true,
+		progress_percent: 75,
+		reindex_required: true,
+		stale_items: 2,
+		...overrides
+	};
+}
+
+describe('Mila indexing status', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		api.getConfig.mockResolvedValue({ data: config });
+		api.listPromptPresets.mockResolvedValue({ data: { groups: [] } });
+		api.getStatus.mockResolvedValue({ data: status() });
+	});
+
+	it('shows live indexed, eligible, stale and active progress', async () => {
+		render(AiPreferencesPage);
+
+		const region = await screen.findByRole('status', { name: 'Mila indexing status' });
+		expect(region.textContent).toContain('Indexing Mila library');
+		expect(region.textContent).toContain('6 of 8 items indexed');
+		expect(region.textContent).toContain('75%');
+		expect(region.textContent).toContain('2 stale');
+		expect(region.textContent).toContain('qa-embed');
+		expect(region.querySelector('progress')?.getAttribute('value')).toBe('75');
+	});
+
+	it('offers retry after indexing stops with stale items and refreshes the status', async () => {
+		api.getStatus
+			.mockResolvedValueOnce({ data: status({ is_indexing: false, progress_percent: 75 }) })
+			.mockResolvedValueOnce({
+				data: status({
+					indexed_items: 8,
+					stale_items: 0,
+					is_indexing: false,
+					progress_percent: 100
+				})
+			});
+		api.reindexConfig.mockResolvedValue({ data: config });
+		render(AiPreferencesPage);
+
+		await fireEvent.click(await screen.findByRole('button', { name: 'Retry indexing' }));
+
+		await waitFor(() => expect(api.reindexConfig).toHaveBeenCalledOnce());
+		expect(api.reindexConfig.mock.calls[0][0].body.embedding_model).toBe('qa-embed');
+		await waitFor(() => expect(screen.getByText('8 of 8 items indexed')).toBeTruthy());
+		expect(screen.getByText('Mila library is ready')).toBeTruthy();
+	});
+
+	it('polls while indexing and stops after completion', async () => {
+		vi.useFakeTimers();
+		api.getStatus.mockResolvedValueOnce({ data: status() }).mockResolvedValueOnce({
+			data: status({ indexed_items: 8, stale_items: 0, is_indexing: false, progress_percent: 100 })
+		});
+		render(AiPreferencesPage);
+		await vi.advanceTimersByTimeAsync(2000);
+		await vi.runAllTicks();
+
+		expect(api.getStatus).toHaveBeenCalledTimes(2);
+		expect(screen.getByText('Mila library is ready')).toBeTruthy();
+		await vi.advanceTimersByTimeAsync(4000);
+		expect(api.getStatus).toHaveBeenCalledTimes(2);
+		vi.useRealTimers();
+	});
+
+	it('keeps provider settings usable when status is temporarily unavailable', async () => {
+		api.getStatus.mockRejectedValueOnce(new Error('offline'));
+		render(AiPreferencesPage);
+
+		expect(await screen.findByText('Use my own AI provider')).toBeTruthy();
+		expect(screen.getByRole('alert').textContent).toBe(
+			'Mila indexing status is unavailable. Try again.'
+		);
+	});
+
+	it('shows indexing as paused without offering retry while Mila is disabled', async () => {
+		api.getStatus.mockResolvedValue({
+			data: status({ enabled: false, is_indexing: false, progress_percent: 75 })
+		});
+		render(AiPreferencesPage);
+
+		expect(await screen.findByText('Mila indexing is paused')).toBeTruthy();
+		expect(screen.queryByRole('button', { name: 'Retry indexing' })).toBeNull();
+	});
+});

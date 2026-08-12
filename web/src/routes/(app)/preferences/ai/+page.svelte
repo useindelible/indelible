@@ -4,6 +4,7 @@
 		createPromptPreset,
 		deletePromptPreset,
 		getConfig,
+		getStatus,
 		listPromptPresets,
 		testConfig,
 		updatePromptPreset,
@@ -13,10 +14,12 @@
 	import type {
 		MilaConfigResponse,
 		MilaPromptPresetResponse,
-		MilaPromptPresetsResponse
+		MilaPromptPresetsResponse,
+		MilaStatusResponse
 	} from '$lib/api';
 	import SavePill from '$lib/components/settings/SavePill.svelte';
 	import MilaHero from './components/MilaHero.svelte';
+	import MilaIndexingStatus from './components/MilaIndexingStatus.svelte';
 	import MilaProviderSettings from './components/MilaProviderSettings.svelte';
 	import PromptPresetSection from './components/PromptPresetSection.svelte';
 	import {
@@ -49,6 +52,9 @@
 	let expandedPresetId = $state<string | null>(null);
 	let editorState = $state<PresetEditorState | null>(null);
 	let editorSaving = $state(false);
+	let indexingStatus = $state<MilaStatusResponse | null>(null);
+	let indexingRetrying = $state(false);
+	let indexingStatusError = $state('');
 
 	const isDirty = $derived(milaConfigSnapshot(draft) !== savedSnapshot);
 
@@ -69,12 +75,45 @@
 			untrack(() => {
 				savedSnapshot = milaConfigSnapshot(draft);
 			});
+			await refreshIndexingStatus();
 		} catch {
 			loadError = 'Failed to load AI configuration.';
 		} finally {
 			loading = false;
 		}
 	}
+
+	async function refreshIndexingStatus() {
+		try {
+			const { data, error } = await getStatus();
+			if (error || !data) throw new Error('Status unavailable');
+			indexingStatus = data;
+			indexingStatusError = '';
+		} catch {
+			indexingStatusError = 'Mila indexing status is unavailable. Try again.';
+		}
+	}
+
+	async function retryIndexing() {
+		indexingRetrying = true;
+		saveError = '';
+		try {
+			const { data, error } = await reindexConfig({ body: buildMilaSaveBody(draft) });
+			if (error || !data) throw new Error('Retry failed');
+			config = data;
+			await refreshIndexingStatus();
+		} catch {
+			saveError = 'Failed to restart Mila indexing.';
+		} finally {
+			indexingRetrying = false;
+		}
+	}
+
+	$effect(() => {
+		if (!indexingStatus?.is_indexing) return;
+		const timer = setTimeout(() => void refreshIndexingStatus(), 2000);
+		return () => clearTimeout(timer);
+	});
 
 	function updateDraft(patch: Partial<MilaConfigDraft>) {
 		draft = { ...draft, ...patch };
@@ -116,6 +155,7 @@
 			if (data) {
 				config = data;
 				draft = applyMilaConfig(data);
+				await refreshIndexingStatus();
 				untrack(() => {
 					savedSnapshot = milaConfigSnapshot(draft);
 				});
@@ -229,6 +269,18 @@
 				onChange={updateDraft}
 				onTestConnection={testConnection}
 			/>
+
+			{#if indexingStatus}
+				<MilaIndexingStatus
+					status={indexingStatus}
+					embeddingModel={config?.embedding_model ?? draft.embeddingModel}
+					retrying={indexingRetrying}
+					onRetry={retryIndexing}
+				/>
+			{/if}
+			{#if indexingStatusError}
+				<p class="save-error" role="alert">{indexingStatusError}</p>
+			{/if}
 
 			<PromptPresetSection
 				actions={ACTIONS}
