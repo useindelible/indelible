@@ -12,6 +12,8 @@
 	let { scope, label }: Props = $props();
 
 	const config = getMilaConfig();
+	const scopeType = $derived(scope.type);
+	const scopeId = $derived(scope.type === 'collection' ? scope.collectionId : scope.documentId);
 
 	let chat = $state(createMilaChat({ type: 'single_document', documentId: '' }));
 
@@ -23,7 +25,10 @@
 	});
 
 	$effect(() => {
-		const currentScope = scope;
+		const currentScope: ChatScope =
+			scopeType === 'collection'
+				? { type: 'collection', collectionId: scopeId }
+				: { type: 'single_document', documentId: scopeId };
 		if (!config.configured) return;
 		const c = createMilaChat(currentScope);
 		chat = c;
