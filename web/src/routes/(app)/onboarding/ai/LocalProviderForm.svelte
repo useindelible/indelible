@@ -5,12 +5,14 @@
 		endpoint = $bindable(),
 		chatModel = $bindable(),
 		embeddingModel = $bindable(),
-		probe
+		probe,
+		disabled = false
 	}: {
 		endpoint: string;
 		chatModel: string;
 		embeddingModel: string;
 		probe: LocalProbe | null;
+		disabled?: boolean;
 	} = $props();
 </script>
 
@@ -28,6 +30,7 @@
 			bind:value={endpoint}
 			placeholder="http://host.docker.internal:11434"
 			aria-label="OpenAI-compatible server URL"
+			{disabled}
 		/>
 	</label>
 	<p class="field-hint">
@@ -45,6 +48,7 @@
 				bind:value={chatModel}
 				placeholder="qwen3:8b"
 				aria-label="Chat model ID"
+				{disabled}
 			/>
 		</label>
 		<label class="field">
@@ -55,6 +59,7 @@
 				bind:value={embeddingModel}
 				placeholder="nomic-embed-text"
 				aria-label="Embedding model ID"
+				{disabled}
 			/>
 		</label>
 	</div>

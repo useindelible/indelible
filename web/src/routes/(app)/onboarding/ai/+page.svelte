@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { onDestroy } from 'svelte';
 	import * as apiSdk from '$lib/api';
 	import StepLayout from '$lib/components/onboarding/StepLayout.svelte';
 	import { getOnboarding } from '$lib/stores/onboarding.svelte';
@@ -45,6 +46,11 @@
 	let submitting = $state(false);
 	let testError = $state('');
 	let localProbe = $state<LocalProbe | null>(null);
+	let checkingModels = $state(false);
+	let checkElapsedSeconds = $state(0);
+	let checkTimer: ReturnType<typeof setInterval> | null = null;
+	let checkController: AbortController | null = null;
+	let checkGeneration = 0;
 
 	const showSharedOpenAiKey = $derived(selectedProvider === 'openai');
 	const showEndpoint = $derived(selectedProvider === 'ollama');
@@ -57,10 +63,33 @@
 	);
 
 	function selectProvider(id: Provider) {
+		cancelModelChecks(false);
 		selectedProvider = id;
 		testError = '';
 		localProbe = null;
 	}
+
+	function stopCheckTimer() {
+		if (checkTimer) clearInterval(checkTimer);
+		checkTimer = null;
+	}
+
+	function cancelModelChecks(showMessage = true) {
+		if (!checkingModels) return;
+		checkGeneration += 1;
+		checkController?.abort();
+		checkController = null;
+		stopCheckTimer();
+		checkingModels = false;
+		submitting = false;
+		if (showMessage) testError = 'Model checks canceled. You can try again.';
+	}
+
+	onDestroy(() => {
+		checkGeneration += 1;
+		checkController?.abort();
+		stopCheckTimer();
+	});
 
 	async function handleSkip() {
 		if (await onboarding.completeStep(4)) goto(resolve('/onboarding/ready'));
@@ -69,6 +98,7 @@
 	async function handleContinue() {
 		submitting = true;
 		testError = '';
+		const generation = ++checkGeneration;
 		try {
 			if (!selectedProvider || selectedProvider === 'skip') {
 				if (!(await onboarding.completeStep(4))) return;
@@ -86,7 +116,22 @@
 				}
 				const testBody = buildTestBody();
 				if (testBody) {
-					const { data: result } = await apiSdk.testConfig({ body: testBody });
+					checkController = new AbortController();
+					checkingModels = true;
+					checkElapsedSeconds = 0;
+					const startedAt = Date.now();
+					stopCheckTimer();
+					checkTimer = setInterval(() => {
+						checkElapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+					}, 1000);
+					const { data: result } = await apiSdk.testConfig({
+						body: testBody,
+						signal: checkController.signal
+					});
+					if (generation !== checkGeneration) return;
+					checkingModels = false;
+					checkController = null;
+					stopCheckTimer();
 					if (selectedProvider === 'ollama' && result) {
 						localProbe = {
 							chatOk: result.chat_model_ok,
@@ -122,8 +167,17 @@
 				if (!(await onboarding.completeStep(4, payload))) return;
 			}
 			goto(resolve('/onboarding/ready'));
+		} catch (error) {
+			if (generation !== checkGeneration) return;
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			testError = error instanceof Error ? error.message : 'Connection test failed. Try again.';
 		} finally {
-			submitting = false;
+			if (generation === checkGeneration) {
+				checkingModels = false;
+				checkController = null;
+				stopCheckTimer();
+				submitting = false;
+			}
 		}
 	}
 
@@ -174,6 +228,7 @@
 					type="button"
 					class="provider-row"
 					class:selected={selectedProvider === provider.id}
+					disabled={submitting}
 					onclick={() => selectProvider(provider.id)}
 				>
 					<div class="provider-icon" style="background: {provider.iconBg};" aria-hidden="true">
@@ -233,6 +288,7 @@
 				bind:chatModel={localChatModel}
 				bind:embeddingModel={localEmbeddingModel}
 				probe={localProbe}
+				disabled={submitting}
 			/>
 		{/if}
 
@@ -244,8 +300,28 @@
 					class="field-input"
 					bind:value={sharedOpenAiKey}
 					placeholder="sk-..."
+					disabled={submitting}
 				/>
 			</label>
+		{/if}
+
+		{#if checkingModels}
+			<div class="model-checks" role="status" aria-live="polite">
+				<div class="model-check-row">
+					<span class="check-spinner" aria-hidden="true"></span>
+					<span>Checking chat model…</span>
+				</div>
+				<div class="model-check-row">
+					<span class="check-spinner" aria-hidden="true"></span>
+					<span>Checking embedding model…</span>
+				</div>
+				<div class="model-check-footer">
+					<span>{checkElapsedSeconds}s elapsed</span>
+					<button type="button" class="cancel-checks" onclick={() => cancelModelChecks()}>
+						Cancel model checks
+					</button>
+				</div>
+			</div>
 		{/if}
 
 		{#if testError}
@@ -409,6 +485,68 @@
 		font-size: 13px;
 		color: var(--destructive);
 		margin: 0 0 8px;
+	}
+
+	.model-checks {
+		display: grid;
+		gap: 8px;
+		margin-top: 12px;
+		padding: 11px 12px;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		background: var(--fill-selected);
+	}
+
+	.model-check-row,
+	.model-check-footer {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+		color: var(--text-secondary);
+	}
+
+	.model-check-footer {
+		justify-content: space-between;
+		padding-top: 4px;
+		font-size: 11px;
+		color: var(--text-tertiary);
+	}
+
+	.check-spinner {
+		width: 12px;
+		height: 12px;
+		border: 2px solid var(--border-secondary);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: check-spin 0.8s linear infinite;
+	}
+
+	.cancel-checks {
+		border: 0;
+		padding: 3px 0;
+		background: transparent;
+		color: var(--accent);
+		font: inherit;
+		font-weight: 650;
+		cursor: pointer;
+	}
+
+	.cancel-checks:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	@keyframes check-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.check-spinner {
+			animation: none;
+		}
 	}
 
 	.note {

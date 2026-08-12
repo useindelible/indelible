@@ -321,18 +321,21 @@ describe('AI Setup page (step 5)', () => {
 		await fireEvent.click(screen.getByText('Continue'));
 
 		await waitFor(() =>
-			expect(mockTestConfig).toHaveBeenCalledWith({
-				body: {
-					chat_api_base: 'https://api.openai.com/v1',
-					chat_api_key: 'sk-test',
-					chat_model: 'gpt-5.4-mini',
-					supports_reasoning_effort: true,
-					embedding_api_base: 'https://api.openai.com/v1',
-					embedding_api_key: 'sk-test',
-					embedding_model: 'text-embedding-3-small',
-					embedding_dim: 768
-				}
-			})
+			expect(mockTestConfig).toHaveBeenCalledWith(
+				expect.objectContaining({
+					body: {
+						chat_api_base: 'https://api.openai.com/v1',
+						chat_api_key: 'sk-test',
+						chat_model: 'gpt-5.4-mini',
+						supports_reasoning_effort: true,
+						embedding_api_base: 'https://api.openai.com/v1',
+						embedding_api_key: 'sk-test',
+						embedding_model: 'text-embedding-3-small',
+						embedding_dim: 768
+					},
+					signal: expect.any(AbortSignal)
+				})
+			)
 		);
 	});
 
@@ -391,6 +394,77 @@ describe('AI Setup page (step 5)', () => {
 		expect(mockCompleteStep).not.toHaveBeenCalled();
 	});
 
+	it('shows both model checks and elapsed time while the provider probe is pending', async () => {
+		vi.useFakeTimers();
+		let resolveProbe!: (value: unknown) => void;
+		mockTestConfig.mockReturnValue(
+			new Promise((resolve) => {
+				resolveProbe = resolve;
+			}) as never
+		);
+		render(AiPage);
+		await fireEvent.input(screen.getByLabelText('Chat model ID'), {
+			target: { value: 'gemma-4-e4b-it' }
+		});
+		await fireEvent.input(screen.getByLabelText('Embedding model ID'), {
+			target: { value: 'nomic-embed-text' }
+		});
+		await fireEvent.click(screen.getByText('Continue'));
+
+		expect(screen.getByText('Checking chat model…')).toBeTruthy();
+		expect(screen.getByText('Checking embedding model…')).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Cancel model checks' })).toBeTruthy();
+		expect((screen.getByLabelText('Chat model ID') as HTMLInputElement).disabled).toBe(true);
+		expect((screen.getByLabelText('Embedding model ID') as HTMLInputElement).disabled).toBe(true);
+		await vi.advanceTimersByTimeAsync(3_000);
+		expect(screen.getByText('3s elapsed')).toBeTruthy();
+
+		resolveProbe({
+			data: {
+				success: false,
+				chat_model_ok: false,
+				embedding_model_ok: false
+			}
+		});
+		await vi.runAllTimersAsync();
+		vi.useRealTimers();
+	});
+
+	it('cancels an in-flight model probe without completing onboarding', async () => {
+		let resolveProbe!: (value: unknown) => void;
+		mockTestConfig.mockImplementation(
+			(options) =>
+				new Promise((resolve) => {
+					resolveProbe = resolve;
+					expect(options.signal).toBeInstanceOf(AbortSignal);
+				}) as never
+		);
+		render(AiPage);
+		await fireEvent.input(screen.getByLabelText('Chat model ID'), {
+			target: { value: 'gemma-4-e4b-it' }
+		});
+		await fireEvent.input(screen.getByLabelText('Embedding model ID'), {
+			target: { value: 'nomic-embed-text' }
+		});
+		await fireEvent.click(screen.getByText('Continue'));
+		await fireEvent.click(screen.getByRole('button', { name: 'Cancel model checks' }));
+
+		expect(screen.getByText('Model checks canceled. You can try again.')).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy();
+		expect((screen.getByLabelText('Chat model ID') as HTMLInputElement).disabled).toBe(false);
+		expect(mockCompleteStep).not.toHaveBeenCalled();
+
+		resolveProbe({
+			data: {
+				success: true,
+				chat_model_ok: true,
+				embedding_model_ok: true
+			}
+		});
+		await Promise.resolve();
+		expect(mockCompleteStep).not.toHaveBeenCalled();
+	});
+
 	it('persists exact verified local choices', async () => {
 		mockTestConfig.mockResolvedValue({
 			data: {
@@ -421,7 +495,8 @@ describe('AI Setup page (step 5)', () => {
 				embedding_api_base: 'http://localhost:1234/v1',
 				embedding_model: 'text-embedding-nomic-embed-text-v1.5',
 				embedding_dim: 768
-			}
+			},
+			signal: expect.any(AbortSignal)
 		});
 		expect(mockCompleteStep).toHaveBeenCalledWith({
 			path: { step: 4 },
