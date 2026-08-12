@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use ind_application::AppError;
+use ind_application::repos::tag::TaggedHighlight;
 use ind_application::repos::{Cursor, Page};
 use ind_domain::{DocumentId, Tag, TagId, UserId};
 
@@ -138,7 +139,7 @@ impl PgTagRepository {
         user_id: UserId,
         cursor: Option<Cursor>,
         limit: u32,
-    ) -> Result<Page<ind_domain::Highlight>, AppError> {
+    ) -> Result<Page<TaggedHighlight>, AppError> {
         let limit = clamp_limit(limit);
         let fetch_limit = limit + 1;
 
@@ -154,6 +155,10 @@ impl PgTagRepository {
             source_locator: Option<serde_json::Value>,
             created_at: DateTime<Utc>,
             updated_at: DateTime<Utc>,
+            item_title: String,
+            item_domain: Option<String>,
+            item_type: String,
+            note: Option<String>,
         }
 
         let rows = if let Some(ref cursor) = cursor {
@@ -162,9 +167,13 @@ impl PgTagRepository {
                 HighlightRow,
                 "SELECT ht.added_at AS link_added_at, \
                  h.id, h.document_id AS \"document_id!\", h.user_id, h.color, h.text_content, \
-                 h.locator, h.source_locator, h.created_at, h.updated_at \
+                 h.locator, h.source_locator, h.created_at, h.updated_at, \
+                 d.title AS item_title, d.domain AS item_domain, \
+                 d.document_type AS item_type, hn.body AS note \
                  FROM highlights h \
                  JOIN highlight_tags ht ON ht.highlight_id = h.id \
+                 JOIN documents d ON d.id = h.document_id AND d.user_id = h.user_id \
+                 LEFT JOIN highlight_notes hn ON hn.highlight_id = h.id \
                  WHERE ht.tag_id = $1 AND h.user_id = $2 AND h.document_id IS NOT NULL \
                  AND (ht.added_at, h.id) < ($3, $4) \
                  ORDER BY ht.added_at DESC, h.id DESC \
@@ -183,9 +192,13 @@ impl PgTagRepository {
                 HighlightRow,
                 "SELECT ht.added_at AS link_added_at, \
                  h.id, h.document_id AS \"document_id!\", h.user_id, h.color, h.text_content, \
-                 h.locator, h.source_locator, h.created_at, h.updated_at \
+                 h.locator, h.source_locator, h.created_at, h.updated_at, \
+                 d.title AS item_title, d.domain AS item_domain, \
+                 d.document_type AS item_type, hn.body AS note \
                  FROM highlights h \
                  JOIN highlight_tags ht ON ht.highlight_id = h.id \
+                 JOIN documents d ON d.id = h.document_id AND d.user_id = h.user_id \
+                 LEFT JOIN highlight_notes hn ON hn.highlight_id = h.id \
                  WHERE ht.tag_id = $1 AND h.user_id = $2 AND h.document_id IS NOT NULL \
                  ORDER BY ht.added_at DESC, h.id DESC \
                  LIMIT $3",
@@ -208,7 +221,7 @@ impl PgTagRepository {
             None
         };
 
-        let items: Vec<ind_domain::Highlight> = rows
+        let items: Vec<TaggedHighlight> = rows
             .into_iter()
             .take(take)
             .map(|r| {
@@ -222,16 +235,22 @@ impl PgTagRepository {
                     .map(serde_json::from_value)
                     .transpose()
                     .map_err(|e| AppError::Repository(Box::new(e)))?;
-                Ok(ind_domain::Highlight {
-                    id: ind_domain::HighlightId::from_uuid(r.id),
-                    document_id: DocumentId::from_uuid(r.document_id),
-                    user_id: UserId::from_uuid(r.user_id),
-                    color: r.color,
-                    text_content: r.text_content,
-                    locator,
-                    source_locator,
-                    created_at: r.created_at,
-                    updated_at: r.updated_at,
+                Ok(TaggedHighlight {
+                    highlight: ind_domain::Highlight {
+                        id: ind_domain::HighlightId::from_uuid(r.id),
+                        document_id: DocumentId::from_uuid(r.document_id),
+                        user_id: UserId::from_uuid(r.user_id),
+                        color: r.color,
+                        text_content: r.text_content,
+                        locator,
+                        source_locator,
+                        created_at: r.created_at,
+                        updated_at: r.updated_at,
+                    },
+                    item_title: r.item_title,
+                    item_domain: r.item_domain,
+                    item_type: r.item_type,
+                    note: r.note,
                 })
             })
             .collect::<Result<Vec<_>, AppError>>()?;

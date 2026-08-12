@@ -741,7 +741,11 @@ export type HighlightResponse = {
 	created_at: string;
 	document_id?: string | null;
 	id: string;
+	item_domain?: string | null;
+	item_title?: string | null;
+	item_type?: string | null;
 	locator?: LocatorSchemaFlat;
+	note?: string | null;
 	source_locator?: null | SourceLocatorSchemaFlat;
 	text_content: string;
 	updated_at: string;

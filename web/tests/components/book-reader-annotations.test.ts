@@ -1,6 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DocumentListEntry, DocumentReaderAssetResponse, HighlightResponse } from '$lib/api';
+import type {
+	DocumentListEntry,
+	DocumentReaderAssetResponse,
+	HighlightResponse,
+	HighlightWithNoteResponse
+} from '$lib/api';
 import type { BookSource } from '$lib/components/reader/book/book-source';
 import { isImageOnlyPdf } from '$lib/components/reader/book/book-reader-model';
 
@@ -85,6 +90,20 @@ function mixedDepthSource(): BookSource {
 	};
 }
 
+function targetHighlight(locator: HighlightWithNoteResponse['locator']): HighlightWithNoteResponse {
+	return {
+		id: 'hl_target',
+		document_id: 'doc_1',
+		color: 'yellow',
+		text_content: 'Target passage',
+		locator,
+		note: null,
+		tags: [],
+		created_at: '2026-08-11T00:00:00Z',
+		updated_at: '2026-08-11T00:00:00Z'
+	};
+}
+
 function item(): DocumentListEntry {
 	return {
 		id: 'doc_1',
@@ -121,6 +140,10 @@ function createdBookmark(): HighlightResponse {
 }
 
 beforeEach(() => {
+	Object.defineProperty(URL, 'createObjectURL', {
+		configurable: true,
+		value: vi.fn(() => 'blob:indelible-test')
+	});
 	mocks.createHighlight.mockReset();
 	mocks.createEpubSource.mockReset().mockResolvedValue(source());
 	mocks.createPdfSource.mockReset().mockResolvedValue(source());
@@ -130,6 +153,117 @@ beforeEach(() => {
 });
 
 describe('BookReader chapter navigation', () => {
+	it('opens an EPUB at the linked highlight chapter instead of saved progress', async () => {
+		mocks.createEpubSource.mockResolvedValue(mixedDepthSource());
+		const savedItem = { ...item(), chapter_locator: 'opening', chapter_offset: 4 };
+		const highlights = [
+			targetHighlight({ type: 'epub', chapter: 'signal', start_offset: 32, end_offset: 45 })
+		];
+
+		render(BookReader, {
+			props: { item: savedItem, assets: [], highlights, targetHighlightId: 'hl_target' }
+		});
+
+		expect(await screen.findByText('Ch. 2: Signal', { selector: '.toolbar-chapter' })).toBeTruthy();
+	});
+
+	it('falls back to saved EPUB progress when the linked highlight chapter no longer exists', async () => {
+		mocks.createEpubSource.mockResolvedValue(mixedDepthSource());
+		const savedItem = { ...item(), chapter_locator: 'closing', chapter_offset: 9 };
+		const highlights = [
+			targetHighlight({ type: 'epub', chapter: 'deleted', start_offset: 32, end_offset: 45 })
+		];
+
+		render(BookReader, {
+			props: { item: savedItem, assets: [], highlights, targetHighlightId: 'hl_target' }
+		});
+
+		expect(
+			await screen.findByText('Ch. 3: Closing', { selector: '.toolbar-chapter' })
+		).toBeTruthy();
+	});
+
+	it('opens a PDF at the linked highlight page instead of saved progress', async () => {
+		const pdfSource = source();
+		pdfSource.metadata = { ...pdfSource.metadata, totalChapters: 5, estimatedPages: 5 };
+		mocks.createPdfSource.mockResolvedValue(pdfSource);
+		const pdfItem = {
+			...item(),
+			item_type: 'pdf',
+			document_type: 'pdf',
+			chapter_locator: 'page:1'
+		} as DocumentListEntry;
+		const assets: DocumentReaderAssetResponse[] = [
+			{
+				id: 'asset_pdf',
+				asset_kind: 'pdf',
+				content_type: 'application/pdf',
+				created_at: '2026-08-12T00:00:00Z',
+				size_bytes: 100,
+				status: 'completed'
+			}
+		];
+		const highlights = [
+			targetHighlight({
+				type: 'pdf',
+				page: 3,
+				x: 0,
+				y: 0,
+				width: 0.2,
+				height: 0.1,
+				text_snapshot: 'Target passage'
+			})
+		];
+
+		render(BookReader, {
+			props: { item: pdfItem, assets, highlights, targetHighlightId: 'hl_target' }
+		});
+
+		expect(await screen.findByText('Page 3', { selector: '.toolbar-chapter' })).toBeTruthy();
+	});
+
+	it.each([2.5, 6])(
+		'falls back to saved PDF progress when the linked highlight page %s is invalid',
+		async (targetPage) => {
+			const pdfSource = source();
+			pdfSource.metadata = { ...pdfSource.metadata, totalChapters: 5, estimatedPages: 5 };
+			mocks.createPdfSource.mockResolvedValue(pdfSource);
+			const pdfItem = {
+				...item(),
+				item_type: 'pdf',
+				document_type: 'pdf',
+				chapter_locator: 'page:2'
+			} as DocumentListEntry;
+			const assets: DocumentReaderAssetResponse[] = [
+				{
+					id: 'asset_pdf',
+					asset_kind: 'pdf',
+					content_type: 'application/pdf',
+					created_at: '2026-08-12T00:00:00Z',
+					size_bytes: 100,
+					status: 'completed'
+				}
+			];
+			const highlights = [
+				targetHighlight({
+					type: 'pdf',
+					page: targetPage,
+					x: 0,
+					y: 0,
+					width: 0.2,
+					height: 0.1,
+					text_snapshot: 'Target passage'
+				})
+			];
+
+			render(BookReader, {
+				props: { item: pdfItem, assets, highlights, targetHighlightId: 'hl_target' }
+			});
+
+			expect(await screen.findByText('Page 2', { selector: '.toolbar-chapter' })).toBeTruthy();
+		}
+	);
+
 	it('forwards the representative fragment when moving to the next EPUB spine', async () => {
 		mocks.createEpubSource.mockResolvedValue(mixedDepthSource());
 

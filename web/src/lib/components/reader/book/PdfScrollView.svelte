@@ -18,6 +18,7 @@
 	interface Props {
 		source: BookSource;
 		highlights: HighlightWithNoteResponse[];
+		targetHighlightId?: string | null;
 		initialPage?: number;
 		onPageChange?: (pageIndex: number) => void;
 		onProgress?: (progress: number, pageIndex: number) => void;
@@ -27,6 +28,7 @@
 	let {
 		source,
 		highlights,
+		targetHighlightId = null,
 		initialPage = 0,
 		onPageChange,
 		onProgress,
@@ -52,6 +54,7 @@
 	let containerEl = $state<HTMLDivElement | undefined>(undefined);
 	let currentPage = $state(initialPage);
 	let hasScrolledToInitial = $state(initialPage <= 0);
+	let scrolledTargetId: string | null = null;
 
 	$effect(() => {
 		scrollContainerEl = containerEl;
@@ -265,6 +268,13 @@
 		);
 
 		renderHighlightOverlays(highlightLayer, pdfHighlights, pageIndex + 1);
+		if (!targetHighlightId || scrolledTargetId === targetHighlightId) return;
+		const target = Array.from(
+			highlightLayer.querySelectorAll<HTMLElement>('[data-highlight-id]')
+		).find((overlay) => overlay.dataset.highlightId === targetHighlightId);
+		if (!target) return;
+		target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		scrolledTargetId = targetHighlightId;
 	}
 
 	function handleScroll() {

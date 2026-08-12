@@ -15,7 +15,7 @@ use crate::handlers::extension_save::{
 use crate::repos::Page;
 use crate::{
     AppError, CollectionWithCount, HighlightWithNote, HomeDashboardData, PreferencesSection,
-    TagWithMeta, UpdateSubscriptionInput,
+    TagWithMeta, TaggedHighlight, UpdateSubscriptionInput,
 };
 
 mod article_toc;

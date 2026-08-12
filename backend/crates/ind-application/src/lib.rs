@@ -53,6 +53,7 @@ pub use handlers::smart_list::{CreateSmartListInput, SmartListService, UpdateSma
 pub use handlers::tag::{CreateTagInput, TagService, TagWithMeta, UpdateTagInput};
 pub use ind_domain::{FilterNode, FilterOp};
 pub use repos::mila_config::{ApiKeyUpdate, UpsertMilaConfigInput};
+pub use repos::tag::TaggedHighlight;
 pub use repos::{Cursor, Page};
 pub use search_language::{
     SearchLanguageDecision, SearchTextConfig, classify_search_language, normalize_language_tag,

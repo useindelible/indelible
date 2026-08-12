@@ -297,7 +297,7 @@ pub async fn list_tag_highlights(
     let items = page
         .items
         .into_iter()
-        .map(HighlightResponse::from_domain)
+        .map(HighlightResponse::from_tagged)
         .collect();
     Ok(PaginatedResponse::from(ind_application::Page {
         items,

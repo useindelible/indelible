@@ -4,8 +4,17 @@ use crate::error::AppError;
 use crate::repos::event::MutationSideEffects;
 use crate::repos::{Cursor, Page};
 use ind_domain::{
-    HighlightId, LibraryEntryId, LibraryEntryWithDocument, Tag, TagAlias, TagId, TagSource, UserId,
+    Highlight, HighlightId, LibraryEntryId, LibraryEntryWithDocument, Tag, TagAlias, TagId,
+    TagSource, UserId,
 };
+
+pub struct TaggedHighlight {
+    pub highlight: Highlight,
+    pub item_title: String,
+    pub item_domain: Option<String>,
+    pub item_type: String,
+    pub note: Option<String>,
+}
 
 #[async_trait::async_trait]
 pub trait TagRepository: Send + Sync {
@@ -100,7 +109,7 @@ pub trait TagRepository: Send + Sync {
         user_id: UserId,
         cursor: Option<Cursor>,
         limit: u32,
-    ) -> Result<Page<ind_domain::Highlight>, AppError>;
+    ) -> Result<Page<TaggedHighlight>, AppError>;
     async fn list_aliases_for_tags(
         &self,
         tag_ids: &[TagId],

@@ -34,9 +34,10 @@
 		item: DocumentListEntry;
 		assets: DocumentReaderAssetResponse[];
 		highlights: HighlightWithNoteResponse[];
+		targetHighlightId?: string | null;
 	}
 
-	let { item, assets, highlights: initialHighlights }: Props = $props();
+	let { item, assets, highlights: initialHighlights, targetHighlightId = null }: Props = $props();
 
 	const prefs = getReaderPreferences();
 	const vp = getViewport();
@@ -208,11 +209,19 @@
 		try {
 			let nextSource: BookSource | null = null;
 			let nextIndex = 0;
+			const targetLocator = initialHighlights.find((h) => h.id === targetHighlightId)?.locator;
 
 			if (item.item_type === 'book') {
 				nextSource = await createEpubSource(item.id);
+				const targetEntry =
+					targetLocator?.type === 'epub' && targetLocator.chapter
+						? nextSource.toc.find((entry) => entry.id === targetLocator.chapter)
+						: undefined;
 
-				if (item.chapter_locator) {
+				if (targetEntry) {
+					nextIndex = targetEntry.index;
+					currentCharOffset = targetLocator?.start_offset ?? 0;
+				} else if (item.chapter_locator) {
 					const entry = nextSource.toc.find((e) => e.id === item.chapter_locator);
 					if (entry) {
 						nextIndex = entry.index;
@@ -235,8 +244,16 @@
 				if (!data) throw new Error('Failed to load PDF');
 				const url = URL.createObjectURL(data);
 				nextSource = await createPdfSource(url, { title: item.title, author: item.author });
+				const targetPage = targetLocator?.type === 'pdf' ? targetLocator.page : undefined;
 
-				if (item.chapter_locator?.startsWith('page:')) {
+				if (
+					typeof targetPage === 'number' &&
+					Number.isInteger(targetPage) &&
+					targetPage > 0 &&
+					targetPage <= nextSource.metadata.totalChapters
+				) {
+					nextIndex = targetPage - 1;
+				} else if (item.chapter_locator?.startsWith('page:')) {
 					const pageNum = parseInt(item.chapter_locator.slice(5), 10);
 					if (!isNaN(pageNum) && pageNum > 0) {
 						const maxIndex = Math.max(0, nextSource.metadata.totalChapters - 1);
@@ -686,6 +703,7 @@
 						bind:this={pdfScrollViewRef}
 						{source}
 						{highlights}
+						{targetHighlightId}
 						initialPage={currentIndex}
 						onPageChange={handlePdfPageChange}
 						onProgress={handlePdfProgress}
@@ -723,6 +741,7 @@
 				{:else if !isPdf && epubScrollContainerEl}
 					<HighlightToolbar
 						{highlights}
+						{targetHighlightId}
 						articleBodyEl={epubScrollContainerEl}
 						epubScrollMode
 						onHighlightCreate={handleHighlightCreate}

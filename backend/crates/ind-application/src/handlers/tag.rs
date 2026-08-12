@@ -3,15 +3,14 @@ use std::sync::Arc;
 use chrono::Utc;
 use futures::future::BoxFuture;
 use ind_domain::{
-    DocumentId, DomainError, Highlight, LibraryEntryId, LibraryEntryWithDocument, Tag, TagId,
-    UserId,
+    DocumentId, DomainError, LibraryEntryId, LibraryEntryWithDocument, Tag, TagId, UserId,
 };
 
 use crate::AppError;
 use crate::event_intents::library_entry_tagged;
 use crate::ports::{CreateTagRequest, TagOperations, UpdateTagRequest};
 use crate::repos::event::MutationSideEffects;
-use crate::repos::tag::TagRepository;
+use crate::repos::tag::{TagRepository, TaggedHighlight};
 use crate::repos::{Cursor, Page};
 
 pub struct CreateTagInput {
@@ -252,7 +251,7 @@ impl TagService {
         tag_id: TagId,
         cursor: Option<Cursor>,
         limit: u32,
-    ) -> Result<Page<Highlight>, AppError> {
+    ) -> Result<Page<TaggedHighlight>, AppError> {
         self.tag_repo
             .find_by_id_for_user(tag_id, user_id)
             .await?
@@ -406,7 +405,7 @@ impl TagOperations for TagService {
         tag_id: TagId,
         cursor: Option<String>,
         limit: Option<u32>,
-    ) -> BoxFuture<'_, Result<Page<Highlight>, AppError>> {
+    ) -> BoxFuture<'_, Result<Page<TaggedHighlight>, AppError>> {
         Box::pin(self.list_highlights(user_id, tag_id, cursor.map(Cursor), limit.unwrap_or(50)))
     }
 

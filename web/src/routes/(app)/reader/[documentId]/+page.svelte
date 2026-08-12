@@ -569,7 +569,7 @@
 {:else if error || !item}
 	<ReaderErrorState message={error ?? 'Item not found.'} onBack={handleBack} />
 {:else if isBookItem}
-	<BookReader {item} {assets} {highlights} />
+	<BookReader {item} {assets} {highlights} {targetHighlightId} />
 {:else}
 	{#snippet sidebar()}
 		<LibrarySidebar />

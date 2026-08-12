@@ -285,6 +285,14 @@ pub struct HighlightResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<SourceLocatorSchemaFlat>)]
     pub source_locator: Option<SourceLocatorSchema>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
     #[schema(value_type = String, format = DateTime)]
     pub created_at: DateTime<Utc>,
     #[schema(value_type = String, format = DateTime)]
@@ -300,9 +308,22 @@ impl HighlightResponse {
             text_content: h.text_content,
             locator: h.locator.map(LocatorSchema::from),
             source_locator: h.source_locator.map(SourceLocatorSchema::from),
+            item_title: None,
+            item_domain: None,
+            item_type: None,
+            note: None,
             created_at: h.created_at,
             updated_at: h.updated_at,
         }
+    }
+
+    pub fn from_tagged(h: ind_application::TaggedHighlight) -> Self {
+        let mut response = Self::from_domain(h.highlight);
+        response.item_title = Some(h.item_title);
+        response.item_domain = h.item_domain;
+        response.item_type = Some(h.item_type);
+        response.note = h.note;
+        response
     }
 }
 

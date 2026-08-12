@@ -176,6 +176,29 @@ async fn highlight_lifecycle_persists_notes_tags_and_tenant_boundaries() {
     .await;
     assert_eq!(tags["tags"], json!(["architecture", "rust"]));
 
+    let all_tags = assert_json_response(client.get("/api/v1/tags").await, StatusCode::OK).await;
+    let architecture_tag_id = all_tags["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|tag| tag["name"] == "architecture")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap();
+    let tagged_highlights = assert_json_response(
+        client
+            .get(&format!("/api/v1/tags/{architecture_tag_id}/highlights"))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    let tagged_highlight = &tagged_highlights["data"][0];
+    assert_eq!(tagged_highlight["id"], highlight_id);
+    assert_eq!(tagged_highlight["item_title"], "Reader Save Article");
+    assert_eq!(tagged_highlight["item_domain"], "example.com");
+    assert_eq!(tagged_highlight["item_type"], "article");
+    assert_eq!(tagged_highlight["note"], note["body"]);
+
     let document_highlights = assert_json_response(
         client
             .get(&format!("/api/v1/documents/{document_id}/highlights"))
@@ -196,6 +219,15 @@ async fn highlight_lifecycle_persists_notes_tags_and_tenant_boundaries() {
     assert_eq!(recent["highlights"][0]["id"], highlight_id);
 
     let stranger = scenario.app.create_web_session().await;
+    assert_status(
+        scenario
+            .app
+            .authed_client(&stranger)
+            .get(&format!("/api/v1/tags/{architecture_tag_id}/highlights"))
+            .await,
+        StatusCode::NOT_FOUND,
+    )
+    .await;
     assert_status(
         scenario
             .app

@@ -4,7 +4,7 @@ use sqlx::PgPool;
 
 use ind_application::AppError;
 use ind_application::repos::event::MutationSideEffects;
-use ind_application::repos::tag::TagRepository;
+use ind_application::repos::tag::{TagRepository, TaggedHighlight};
 use ind_application::repos::{Cursor, Page};
 use ind_domain::{
     HighlightId, LibraryEntryId, LibraryEntryWithDocument, Tag, TagAlias, TagId, TagSource, UserId,
@@ -198,7 +198,7 @@ impl TagRepository for PgTagRepository {
         user_id: UserId,
         cursor: Option<Cursor>,
         limit: u32,
-    ) -> Result<Page<ind_domain::Highlight>, AppError> {
+    ) -> Result<Page<TaggedHighlight>, AppError> {
         PgTagRepository::list_tag_highlights_impl(self, tag_id, user_id, cursor, limit).await
     }
 

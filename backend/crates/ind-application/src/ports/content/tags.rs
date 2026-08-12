@@ -51,7 +51,7 @@ pub trait TagOperations: Send + Sync {
         tag_id: TagId,
         cursor: Option<String>,
         limit: Option<u32>,
-    ) -> BoxFuture<'_, Result<Page<Highlight>, AppError>>;
+    ) -> BoxFuture<'_, Result<Page<TaggedHighlight>, AppError>>;
 
     fn set_library_entry_tags(
         &self,

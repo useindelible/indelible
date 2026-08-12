@@ -65,6 +65,42 @@
 	function handleLoadMoreHighlights() {
 		if (tagId) store.loadTagHighlights(tagId);
 	}
+
+	function itemTypeLabel(value?: string | null): string {
+		if (!value) return '';
+		if (value === 'pdf' || value === 'epub') return value.toUpperCase();
+		return value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase());
+	}
+
+	function highlightTitle(highlight: (typeof store.tagHighlights)[number]): string {
+		return (
+			highlight.item_title?.trim() ||
+			highlight.item_domain?.trim() ||
+			itemTypeLabel(highlight.item_type) ||
+			'Saved item'
+		);
+	}
+
+	function highlightLocator(highlight: (typeof store.tagHighlights)[number]): string {
+		const locator = highlight.locator;
+		if (!locator) return 'Text highlight';
+		if (locator.type === 'pdf' && locator.page) return `Page ${locator.page}`;
+		if (locator.type === 'epub' && locator.chapter) return `Chapter ${locator.chapter}`;
+		return 'Text highlight';
+	}
+
+	function highlightDate(value: string): string {
+		return new Date(value).toLocaleDateString('en-GB', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
+		});
+	}
+
+	function highlightHref(documentId: string, highlightId: string): string {
+		const readerHref = resolve('/(app)/reader/[documentId]', { documentId });
+		return `${readerHref}?highlight=${encodeURIComponent(highlightId)}`;
+	}
 </script>
 
 <div class="tag-detail">
@@ -210,17 +246,35 @@
 					</div>
 				{:else}
 					{#each store.tagHighlights as hl (hl.id)}
-						<div class="highlight-card">
-							<div
-								class="hl-color-bar"
-								style="background: {sanitizeColor(hl.color) ?? '#FFD600'}"
-							></div>
-							<div class="hl-body">
-								{#if hl.text_content}
-									<p class="hl-text">{hl.text_content}</p>
-								{/if}
-							</div>
-						</div>
+						{#if hl.document_id}
+							<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- highlightHref resolves the route before appending the query. -->
+							<a class="highlight-card" href={highlightHref(hl.document_id, hl.id)}>
+								<div
+									class="hl-color-bar"
+									style="background: {sanitizeColor(hl.color) ?? '#FFD600'}"
+								></div>
+								<div class="hl-body">
+									<div class="hl-heading">
+										<strong>{highlightTitle(hl)}</strong>
+										<span>{highlightDate(hl.created_at)}</span>
+									</div>
+									<div class="hl-context">
+										{#if hl.item_domain}
+											<span>{hl.item_domain} · {itemTypeLabel(hl.item_type)}</span>
+										{:else if hl.item_type}
+											<span>{itemTypeLabel(hl.item_type)}</span>
+										{/if}
+										<span>{highlightLocator(hl)}</span>
+									</div>
+									{#if hl.text_content}
+										<p class="hl-text">{hl.text_content}</p>
+									{/if}
+									{#if hl.note}
+										<p class="hl-note">{hl.note}</p>
+									{/if}
+								</div>
+							</a>
+						{/if}
 					{/each}
 
 					{#if store.highlightsLoadingMore}
@@ -502,6 +556,19 @@
 		border-radius: 10px;
 		border: 1px solid var(--border-primary);
 		background: var(--bg-secondary);
+		color: inherit;
+		text-decoration: none;
+		transition: border-color 0.12s ease;
+	}
+
+	.highlight-card:hover,
+	.highlight-card:focus-visible {
+		border-color: var(--accent);
+	}
+
+	.highlight-card:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.hl-color-bar {
@@ -518,6 +585,25 @@
 		min-width: 0;
 	}
 
+	.hl-heading,
+	.hl-context {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.hl-heading strong {
+		font-size: 13px;
+		color: var(--text-primary);
+	}
+
+	.hl-heading span,
+	.hl-context {
+		font-size: 12px;
+		color: var(--text-tertiary);
+	}
+
 	.hl-text {
 		font-family: var(--font-sans);
 		font-size: 14px;
@@ -525,6 +611,15 @@
 		color: var(--text-primary);
 		line-height: 1.5;
 		margin: 0;
+	}
+
+	.hl-note {
+		margin: 0;
+		padding-left: 10px;
+		border-left: 2px solid var(--border-primary);
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--text-secondary);
 	}
 
 	/* ---- States ---- */

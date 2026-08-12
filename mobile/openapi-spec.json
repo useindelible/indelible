@@ -2721,8 +2721,32 @@
           "id": {
             "type": "string"
           },
+          "item_domain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "item_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "item_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "locator": {
             "$ref": "#/components/schemas/LocatorSchemaFlat"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "source_locator": {
             "oneOf": [
