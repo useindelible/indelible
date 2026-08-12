@@ -144,7 +144,7 @@ pub fn canonicalize_url(
     Ok(CanonicalUrl(url.to_string()))
 }
 
-/// Extract the stable content identity from supported YouTube watch and `youtu.be` URLs.
+/// Extract the stable content identity from supported YouTube watch, Shorts, and `youtu.be` URLs.
 pub fn youtube_video_id(raw: &str) -> Option<String> {
     let url = Url::parse(raw).ok()?;
     if !matches!(url.scheme(), "http" | "https") {
@@ -160,6 +160,20 @@ pub fn youtube_video_id(raw: &str) -> Option<String> {
             .query_pairs()
             .find(|(key, _)| key == "v")
             .map(|(_, value)| value.into_owned()),
+        "youtube.com" => {
+            let mut segments = url.path_segments()?;
+            match (
+                segments.next(),
+                segments.next(),
+                segments.next(),
+                segments.next(),
+            ) {
+                (Some("shorts"), Some(video_id), None | Some(""), None) if !video_id.is_empty() => {
+                    Some(video_id.to_string())
+                }
+                _ => None,
+            }
+        }
         "youtu.be" => {
             let path = url.path().trim_matches('/');
             (!path.is_empty() && !path.contains('/')).then(|| path.to_string())
@@ -198,6 +212,14 @@ mod tests {
                 "https://music.youtube.com/watch?v=abc&list=playlist",
                 "https://youtube.com/watch?v=abc",
             ),
+            (
+                "https://youtube.com/shorts/abc?feature=share",
+                "https://youtube.com/watch?v=abc",
+            ),
+            (
+                "https://youtube.com/shorts/abc/?feature=share",
+                "https://youtube.com/watch?v=abc",
+            ),
             ("https://www2.example.com/", "https://www2.example.com/"),
             (
                 "https://example.com/%E2%9C%93",
@@ -221,6 +243,12 @@ mod tests {
             ("https://m.youtube.com/watch?v=abc", Some("abc")),
             ("https://music.youtube.com/watch?v=abc", Some("abc")),
             ("https://youtu.be/abc", Some("abc")),
+            ("https://youtube.com/shorts/abc", Some("abc")),
+            ("https://youtube.com/shorts/abc/", Some("abc")),
+            ("https://youtube.com/shorts/", None),
+            ("https://youtube.com/shorts/abc/extra", None),
+            ("https://m.youtube.com/shorts/abc", None),
+            ("https://music.youtube.com/shorts/abc", None),
             ("https://youtube.com/watch", None),
             ("https://youtube.com/embed/abc", None),
             ("https://youtu.be/abc/extra", None),
