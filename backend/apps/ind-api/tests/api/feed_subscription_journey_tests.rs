@@ -76,6 +76,22 @@ async fn feed_subscription_discovers_updates_searches_imports_and_scopes_real_so
     assert_eq!(created["subscription"]["source"]["source_kind"], "rss");
     assert_eq!(created["subscription"]["source"]["visibility"], "public");
     let subscription_id = created["subscription"]["id"].as_str().unwrap();
+    let existing = response(
+        client
+            .post_json(
+                "/api/v1/feeds/subscriptions",
+                &json!({
+                    "url": site_url,
+                    "title": "My engineering feed",
+                    "poll_interval_override_minutes": 15
+                }),
+            )
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    assert_eq!(existing["is_new"], false);
+    assert_eq!(existing["subscription"]["id"], subscription_id);
 
     let search = response(
         client
