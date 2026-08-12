@@ -6,6 +6,7 @@ type ApiProblem = {
 	detail?: string;
 	error?: string;
 	message?: string;
+	errors?: Array<{ message?: string }>;
 };
 
 export type UploadProgress = {
@@ -22,7 +23,8 @@ function extractMessage(problem: unknown, fallback: string): string {
 		return fallback;
 	}
 	const candidate = problem as ApiProblem;
-	return candidate.detail ?? candidate.message ?? candidate.error ?? fallback;
+	const fieldMessage = candidate.errors?.find((error) => error.message?.trim())?.message;
+	return fieldMessage ?? candidate.detail ?? candidate.message ?? candidate.error ?? fallback;
 }
 
 export function uploadLibraryFile(

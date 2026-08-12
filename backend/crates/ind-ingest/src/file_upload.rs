@@ -9,7 +9,7 @@ use ind_domain::{
 };
 
 use crate::epub_processing::{EpubTocResponse, process_epub};
-use crate::pdf_extraction::extract_pdf_text;
+use crate::pdf_extraction::{PdfExtractionError, extract_pdf_text};
 
 mod cover_image;
 
@@ -78,6 +78,12 @@ async fn process_pdf(
             service: "pdf".into(),
             message: format!("PDF extraction task failed: {err}"),
         })?;
+    if matches!(extracted_text, Err(PdfExtractionError::PasswordProtected)) {
+        return Err(AppError::Domain(DomainError::Validation {
+            field: "file".into(),
+            message: "Password-protected PDFs are not supported.".into(),
+        }));
+    }
     let word_count = extracted_text
         .as_ref()
         .ok()
