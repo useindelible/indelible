@@ -1,4 +1,4 @@
-import { render } from '@testing-library/svelte';
+import { render, screen, waitFor } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
 import BookSidebar from '$lib/components/reader/book/BookSidebar.svelte';
@@ -49,5 +49,29 @@ describe('BookSidebar', () => {
 		expect(thumbnail).toBeInstanceOf(HTMLImageElement);
 		expect(thumbnail?.getAttribute('src')).toBe('/api/v1/assets/thumb.png');
 		expect(cover?.querySelector('svg')).toBeNull();
+	});
+
+	it('omits text search and resets a stale search tab when text is unavailable', async () => {
+		const onTabChange = vi.fn();
+
+		render(BookSidebar, {
+			props: {
+				source: source(),
+				currentIndex: 0,
+				activeEntryId: null,
+				progress: 12,
+				highlights: [],
+				activeTab: 'search',
+				onTabChange,
+				onNavigate: vi.fn(),
+				onBookmarkNavigate: vi.fn(),
+				textAvailable: false
+			}
+		});
+
+		expect(screen.getByRole('button', { name: 'Contents' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Bookmarks' })).toBeTruthy();
+		expect(screen.queryByRole('button', { name: 'Search' })).toBeNull();
+		await waitFor(() => expect(onTabChange).toHaveBeenCalledWith('contents'));
 	});
 });

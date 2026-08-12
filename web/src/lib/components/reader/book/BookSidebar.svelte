@@ -18,6 +18,7 @@
 		onNavigate: (index: number, fragment?: string) => void;
 		onBookmarkNavigate: (chapterId: string, offset: number) => void;
 		thumbnailUrl?: string | null;
+		textAvailable?: boolean;
 	}
 
 	let {
@@ -30,7 +31,8 @@
 		onTabChange,
 		onNavigate,
 		onBookmarkNavigate,
-		thumbnailUrl = null
+		thumbnailUrl = null,
+		textAvailable = true
 	}: Props = $props();
 
 	let thumbnailFailed = $state(false);
@@ -44,11 +46,17 @@
 		}
 	});
 
-	const tabs: { value: SidebarTab; label: string }[] = [
-		{ value: 'contents', label: 'Contents' },
-		{ value: 'bookmarks', label: 'Bookmarks' },
-		{ value: 'search', label: 'Search' }
-	];
+	const tabs = $derived([
+		{ value: 'contents' as const, label: 'Contents' },
+		{ value: 'bookmarks' as const, label: 'Bookmarks' },
+		...(textAvailable ? [{ value: 'search' as const, label: 'Search' }] : [])
+	]);
+
+	$effect(() => {
+		if (!textAvailable && activeTab === 'search') {
+			onTabChange('contents');
+		}
+	});
 </script>
 
 <div class="left-panel">
@@ -113,7 +121,7 @@
 			<BookToc toc={source.toc} {currentIndex} {activeEntryId} {onNavigate} />
 		{:else if activeTab === 'bookmarks'}
 			<BookBookmarks {highlights} toc={source.toc} onNavigate={onBookmarkNavigate} />
-		{:else if activeTab === 'search'}
+		{:else if activeTab === 'search' && textAvailable}
 			<BookSearch {source} {onNavigate} />
 		{/if}
 	</div>

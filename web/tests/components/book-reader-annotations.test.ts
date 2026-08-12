@@ -1,12 +1,15 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DocumentListEntry, HighlightResponse } from '$lib/api';
+import type { DocumentListEntry, DocumentReaderAssetResponse, HighlightResponse } from '$lib/api';
 import type { BookSource } from '$lib/components/reader/book/book-source';
+import { isImageOnlyPdf } from '$lib/components/reader/book/book-reader-model';
 
 const mocks = vi.hoisted(() => ({
 	createHighlight: vi.fn(),
 	createEpubSource: vi.fn(),
+	createPdfSource: vi.fn(),
 	scrollToChapter: vi.fn(),
+	streamAsset: vi.fn(),
 	updateProgress: vi.fn(async () => ({ data: {} }))
 }));
 
@@ -19,6 +22,7 @@ vi.mock('$lib/api', async (importOriginal) => {
 	return {
 		...original,
 		createHighlight: (...args: unknown[]) => mocks.createHighlight(...args),
+		streamAsset: (...args: unknown[]) => mocks.streamAsset(...args),
 		updateProgress: (...args: unknown[]) => mocks.updateProgress(...args)
 	};
 });
@@ -27,7 +31,7 @@ vi.mock('$lib/components/reader/book/book-source', async (importOriginal) => {
 	return {
 		...original,
 		createEpubSource: (...args: unknown[]) => mocks.createEpubSource(...args),
-		createPdfSource: vi.fn()
+		createPdfSource: (...args: unknown[]) => mocks.createPdfSource(...args)
 	};
 });
 vi.mock('$lib/components/reader/book/PdfScrollView.svelte', () => ({
@@ -119,7 +123,9 @@ function createdBookmark(): HighlightResponse {
 beforeEach(() => {
 	mocks.createHighlight.mockReset();
 	mocks.createEpubSource.mockReset().mockResolvedValue(source());
+	mocks.createPdfSource.mockReset().mockResolvedValue(source());
 	mocks.scrollToChapter.mockReset();
+	mocks.streamAsset.mockReset().mockResolvedValue({ data: new Blob(['pdf']) });
 	mocks.updateProgress.mockClear();
 });
 
@@ -131,6 +137,65 @@ describe('BookReader chapter navigation', () => {
 		await fireEvent.click(await screen.findByRole('button', { name: /Ch\. 2: Signal/ }));
 
 		expect(mocks.scrollToChapter).toHaveBeenCalledWith(1, 0, 'signal');
+	});
+});
+
+describe('BookReader image-only PDFs', () => {
+	it('recognizes only the durable image-only PDF extraction failure', () => {
+		const failedExtraction: DocumentReaderAssetResponse = {
+			id: 'asset_text',
+			asset_kind: 'extracted_text',
+			content_type: 'text/plain',
+			created_at: '2026-08-12T00:00:00Z',
+			size_bytes: 0,
+			status: 'failed',
+			failed_reason: 'PDF text extraction produced no text'
+		};
+
+		expect(isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [failedExtraction])).toBe(true);
+		expect(isImageOnlyPdf(item(), [failedExtraction])).toBe(false);
+		expect(
+			isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [
+				{ ...failedExtraction, status: 'completed' }
+			])
+		).toBe(false);
+		expect(
+			isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [
+				{ ...failedExtraction, failed_reason: 'PDF extraction failed' }
+			])
+		).toBe(false);
+	});
+
+	it('explains which reading features remain available without extracted text', () => {
+		const pdfItem = { ...item(), item_type: 'pdf', document_type: 'pdf' } as DocumentListEntry;
+		const assets: DocumentReaderAssetResponse[] = [
+			{
+				id: 'asset_pdf',
+				asset_kind: 'pdf',
+				content_type: 'application/pdf',
+				created_at: '2026-08-12T00:00:00Z',
+				size_bytes: 100,
+				status: 'completed'
+			},
+			{
+				id: 'asset_text',
+				asset_kind: 'extracted_text',
+				content_type: 'text/plain',
+				created_at: '2026-08-12T00:00:00Z',
+				size_bytes: 0,
+				status: 'failed',
+				failed_reason: 'PDF text extraction produced no text'
+			}
+		];
+
+		render(BookReader, { props: { item: pdfItem, assets, highlights: [] } });
+
+		expect(screen.getByText(/This PDF has no searchable text/)).toBeTruthy();
+		expect(
+			screen.getByText(
+				/Visual reading and bookmarks still work.*Mila chat and text actions are unavailable.*OCR is not available in this release/
+			)
+		).toBeTruthy();
 	});
 });
 

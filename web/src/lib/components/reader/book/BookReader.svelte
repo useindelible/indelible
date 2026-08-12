@@ -24,6 +24,7 @@
 	import EpubScrollView from './EpubScrollView.svelte';
 	import BookNavBar from './BookNavBar.svelte';
 	import BookDetailPanel from './BookDetailPanel.svelte';
+	import { isImageOnlyPdf } from './book-reader-model';
 	import { createProgressSaver } from '$lib/components/reader/progress-saver';
 	import { getReaderPreferences } from '$lib/stores/reader-preferences.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
@@ -116,6 +117,7 @@
 	});
 
 	const isPdf = $derived(item.item_type === 'pdf');
+	const textAvailable = $derived(!isImageOnlyPdf(item, assets));
 
 	const toc = $derived(source?.toc ?? []);
 	const metadata = $derived(source?.metadata ?? { totalChapters: 0 });
@@ -605,6 +607,7 @@
 						onNavigate={handleNavigate}
 						onBookmarkNavigate={handleBookmarkNavigate}
 						thumbnailUrl={item.thumbnail_url}
+						{textAvailable}
 					/>
 				</div>
 			{/if}
@@ -622,6 +625,7 @@
 				onNavigate={handleNavigate}
 				onBookmarkNavigate={handleBookmarkNavigate}
 				thumbnailUrl={item.thumbnail_url}
+				{textAvailable}
 			/>
 		{/if}
 
@@ -651,6 +655,15 @@
 					>
 						&times;
 					</button>
+				</div>
+			{/if}
+			{#if !textAvailable}
+				<div class="image-only-pdf-note" role="status">
+					<strong>This PDF has no searchable text.</strong>
+					<span
+						>Visual reading and bookmarks still work. Search, Mila chat and text actions are
+						unavailable. OCR is not available in this release.</span
+					>
 				</div>
 			{/if}
 
@@ -756,19 +769,19 @@
 							</button>
 							<span class="m-dtitle">{item.title}</span>
 						</div>
-						<BookDetailPanel {item} bookMetadata={metadata} {progress} />
+						<BookDetailPanel {item} bookMetadata={metadata} {progress} {textAvailable} />
 					</div>
 				{:else}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div class="detail-scrim" onclick={() => (compactDetailOpen = false)}></div>
 					<div class="detail-overlay">
-						<BookDetailPanel {item} bookMetadata={metadata} {progress} />
+						<BookDetailPanel {item} bookMetadata={metadata} {progress} {textAvailable} />
 					</div>
 				{/if}
 			{/if}
 		{:else if detailPanelOpen && !hideDetailPanel && source}
-			<BookDetailPanel {item} bookMetadata={metadata} {progress} />
+			<BookDetailPanel {item} bookMetadata={metadata} {progress} {textAvailable} />
 		{/if}
 	{/if}
 </div>
@@ -817,6 +830,27 @@
 		font-size: 18px;
 		line-height: 1;
 		cursor: pointer;
+	}
+
+	.image-only-pdf-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 8px;
+		padding: 8px 14px;
+		border-bottom: 1px solid var(--border-primary);
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
+		font-size: 12px;
+		font-family: var(--font-sans);
+		line-height: 1.4;
+		flex-shrink: 0;
+	}
+
+	.image-only-pdf-note strong {
+		color: var(--text-primary);
+		font-weight: 600;
+		white-space: nowrap;
 	}
 
 	.reading-progress-bar {

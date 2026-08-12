@@ -12,17 +12,24 @@
 		item: DocumentListEntry;
 		bookMetadata: BookMetadata;
 		progress: number;
+		textAvailable?: boolean;
 	}
 
-	let { item, bookMetadata, progress }: Props = $props();
+	let { item, bookMetadata, progress, textAvailable = true }: Props = $props();
 
 	let activeTab = $state<DetailTab>('info');
 
-	const tabOptions = [
+	const tabOptions = $derived([
 		{ value: 'info', label: 'Info' },
 		{ value: 'notebook', label: 'Notebook' },
-		{ value: 'chat', label: 'Chat' }
-	];
+		...(textAvailable ? [{ value: 'chat', label: 'Chat' }] : [])
+	]);
+
+	$effect(() => {
+		if (!textAvailable && activeTab === 'chat') {
+			activeTab = 'info';
+		}
+	});
 
 	function onTabChange(value: string) {
 		activeTab = value as DetailTab;
@@ -40,7 +47,7 @@
 		</div>
 	{:else if activeTab === 'notebook'}
 		<NotebookTab {item} />
-	{:else if activeTab === 'chat'}
+	{:else if activeTab === 'chat' && textAvailable}
 		<ChatTab scope={{ type: 'single_document', documentId: item.id }} label={item.title} />
 	{/if}
 </div>
