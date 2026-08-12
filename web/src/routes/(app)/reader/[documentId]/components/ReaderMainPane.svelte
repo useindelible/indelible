@@ -292,7 +292,7 @@
 		{onFocusExit}
 	/>
 
-	<div class="content-area">
+	<div class="content-area" class:with-toc={showToc}>
 		{#if activeTab === 'reader' && !readableReady}
 			<div class="content-loading" data-testid="preparing-reader">
 				<span class="loading-text">
@@ -441,6 +441,10 @@
 		flex-direction: column;
 		overflow: hidden;
 		position: relative;
+	}
+
+	.content-area.with-toc :global(.reader-scroll) {
+		padding-inline: 56px;
 	}
 
 	.content-loading {

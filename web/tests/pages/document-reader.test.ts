@@ -15,6 +15,7 @@ const mockCreateDocumentEntry = vi.fn();
 const mockListDocumentEntities = vi.fn();
 const mockReprocessDocument = vi.fn();
 const mockRetryMilaDocumentAction = vi.fn();
+const mockGetArticleToc = vi.fn();
 let readerRealtimeCallbacks:
 	| {
 			onAiCompleted: (completion: { action: string; aiRunId: string }) => void;
@@ -51,7 +52,8 @@ vi.mock('$lib/api', () => ({
 	deleteHighlight: vi.fn(),
 	patchHighlight: vi.fn(),
 	setHighlightTags: vi.fn(),
-	retryMilaDocumentAction: (...a: unknown[]) => mockRetryMilaDocumentAction(...a)
+	retryMilaDocumentAction: (...a: unknown[]) => mockRetryMilaDocumentAction(...a),
+	getArticleToc: (...a: unknown[]) => mockGetArticleToc(...a)
 }));
 vi.mock('../../src/routes/(app)/reader/[documentId]/reader-realtime', () => ({
 	subscribeReaderRealtime: (_documentId: string, callbacks: typeof readerRealtimeCallbacks) => {
@@ -138,6 +140,9 @@ beforeEach(() => {
 		data: { queued: true, job_type: 'document.reprocess' }
 	});
 	mockRetryMilaDocumentAction.mockResolvedValue({ data: { queued: true, action: 'summary' } });
+	mockGetArticleToc.mockResolvedValue({
+		data: { status: 'none', truncated: false, entries: [] }
+	});
 });
 
 afterEach(() => {
@@ -145,6 +150,45 @@ afterEach(() => {
 });
 
 describe('document reader page', () => {
+	it('reserves a safe reader gutter when the table of contents rail is visible', async () => {
+		mockGetArticleToc.mockResolvedValue({
+			data: {
+				status: 'ready',
+				truncated: false,
+				entries: [
+					{
+						id: 'introduction',
+						title: 'Introduction',
+						depth: 0,
+						source_heading_index: 0,
+						word_count: 120
+					}
+				]
+			}
+		});
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+
+		const { container } = render(DocumentReaderPage);
+
+		await waitFor(() =>
+			expect(mockGetArticleToc).toHaveBeenCalledWith({ path: { document_id: 'doc_1' } })
+		);
+		await waitFor(() =>
+			expect(container.querySelector('.content-area')?.classList.contains('with-toc')).toBe(true)
+		);
+	});
+
+	it('keeps the standard reader gutter when the table of contents is unavailable', async () => {
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+
+		const { container } = render(DocumentReaderPage);
+
+		await waitFor(() =>
+			expect(mockGetArticleToc).toHaveBeenCalledWith({ path: { document_id: 'doc_1' } })
+		);
+		expect(container.querySelector('.content-area')?.classList.contains('with-toc')).toBe(false);
+	});
+
 	it('clears a Mila failure when the reader navigates to another document', async () => {
 		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
 		render(DocumentReaderPage);
