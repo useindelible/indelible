@@ -218,7 +218,7 @@ describe('Login page', () => {
 
 	it('shows error on failed login', async () => {
 		mockLogin.mockResolvedValue({ success: false });
-		mockAuthError = 'Invalid credentials';
+		mockAuthError = 'Email or password is incorrect.';
 		render(LoginPage);
 
 		const emailInput = screen.getByLabelText('Email');
@@ -231,6 +231,7 @@ describe('Login page', () => {
 		await waitFor(() => {
 			expect(mockLogin).toHaveBeenCalled();
 		});
+		expect(screen.getByRole('alert').textContent).toBe('Email or password is incorrect.');
 	});
 
 	it('shows cooldown after 5 failed attempts', async () => {

@@ -95,7 +95,7 @@ describe('auth store', () => {
 		expect(auth.user?.email).toBe('test@example.com');
 	});
 
-	it('handles login failure', async () => {
+	it('replaces invalid-credential details with user-facing login copy', async () => {
 		const { getAuth, mockPOST } = await load();
 
 		mockPOST.mockResolvedValueOnce({
@@ -110,7 +110,44 @@ describe('auth store', () => {
 
 		expect(result.success).toBe(false);
 		expect(auth.isAuthenticated).toBe(false);
-		expect(auth.error).toBe('Invalid credentials');
+		expect(auth.error).toBe('Email or password is incorrect.');
+	});
+
+	it('preserves non-credential login problem details', async () => {
+		const { getAuth, mockPOST } = await load();
+
+		mockPOST.mockResolvedValueOnce({
+			data: undefined,
+			error: { detail: 'Account disabled' },
+			response: new Response(null, { status: 403 })
+		} as never);
+
+		const auth = getAuth();
+		const result = await auth.login('test@example.com', 'password123');
+		flushSync();
+
+		expect(result.success).toBe(false);
+		expect(auth.error).toBe('Account disabled');
+	});
+
+	it('preserves rate-limit cooldown metadata and copy', async () => {
+		const { getAuth, mockPOST } = await load();
+
+		mockPOST.mockResolvedValueOnce({
+			data: undefined,
+			error: { detail: 'rate limited' },
+			response: new Response(null, {
+				status: 429,
+				headers: { 'Retry-After': '45' }
+			})
+		} as never);
+
+		const auth = getAuth();
+		const result = await auth.login('test@example.com', 'password123');
+		flushSync();
+
+		expect(result).toEqual({ success: false, rateLimited: true, retryAfter: 45 });
+		expect(auth.error).toBe('Too many login attempts. Please try again later.');
 	});
 
 	it('handles register success', async () => {

@@ -256,7 +256,10 @@ async function login(
 			error = 'Too many login attempts. Please try again later.';
 			return { success: false, rateLimited: true, retryAfter };
 		}
-		error = getProblemMessage(apiError, 'Login failed');
+		error =
+			response?.status === 401
+				? 'Email or password is incorrect.'
+				: getProblemMessage(apiError, 'Login failed');
 		return { success: false };
 	} catch {
 		error = 'An unexpected error occurred';
