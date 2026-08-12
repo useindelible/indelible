@@ -67,6 +67,11 @@ describe('NotionStatusPanel', () => {
 		const panel = screen.getByTestId('notion-status-panel');
 		expect(panel.dataset.state).toBe('empty');
 		expect(screen.getByText('Connect Notion')).toBeTruthy();
+		expect(
+			screen.getByText(/authorization page grants access; it does not choose a destination/i)
+		).toBeTruthy();
+		expect(screen.getByText(/creates the managed database in Notion Private/i)).toBeTruthy();
+		expect(screen.getByText(/move it afterward/i)).toBeTruthy();
 	});
 
 	it('renders the workspace name and database id when connected', () => {

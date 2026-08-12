@@ -52,5 +52,9 @@ describe('Notion connect availability gating', () => {
 		}) as HTMLButtonElement;
 		expect(connect.disabled).toBe(false);
 		expect(screen.queryByText(/not configured on this server/i)).toBeNull();
+		expect(
+			screen.getByText(/authorization page grants access; it does not choose a destination/i)
+		).toBeTruthy();
+		expect(screen.getByText(/creates its managed database in Notion Private/i)).toBeTruthy();
 	});
 });

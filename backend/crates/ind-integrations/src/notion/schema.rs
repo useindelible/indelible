@@ -114,6 +114,10 @@ mod tests {
     #[test]
     fn managed_schema_contains_and_extracts_every_required_property() {
         let body = managed_database_create_body();
+        assert_eq!(
+            body["parent"],
+            serde_json::json!({"type": "workspace", "workspace": true})
+        );
         let mut properties = body["initial_data_source"]["properties"].clone();
         for (name, property) in properties.as_object_mut().unwrap() {
             property["id"] = format!("id_{}", name.replace(' ', "_")).into();

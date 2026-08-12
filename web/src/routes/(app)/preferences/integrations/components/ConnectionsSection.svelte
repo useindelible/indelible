@@ -177,7 +177,9 @@
 								{/if}
 							{:else if notionAvailable}
 								<div class="moment-muted">
-									Connect Notion to mirror saved documents into your workspace.
+									Notion's authorization page grants access; it does not choose a destination.
+									Indelible creates its managed database in Notion Private on the first export. You
+									can move it afterward.
 								</div>
 							{:else}
 								<div class="moment-muted">

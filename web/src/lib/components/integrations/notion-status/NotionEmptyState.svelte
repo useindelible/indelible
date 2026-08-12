@@ -18,7 +18,9 @@
 			<div class="empty-text">
 				<div class="empty-title">Notion is not connected</div>
 				<div class="empty-hint">
-					Indelible will provision a managed database in your workspace on the first export.
+					Notion's authorization page grants access; it does not choose a destination. Indelible
+					creates the managed database in Notion Private on the first export, and you can move it
+					afterward.
 				</div>
 			</div>
 			<button class="btn primary" type="button" onclick={onReauthorize}>Connect Notion</button>

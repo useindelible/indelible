@@ -11,9 +11,15 @@ does not read your Notion workspace back.
 ## Connect (cloud)
 
 1. Open **Settings → Integrations → Notion**.
-2. Click **Connect Notion** and approve the OAuth request in your Notion workspace.
+2. Click **Connect Notion** and approve the OAuth request in your Notion workspace. The
+   pages you select grant the integration access; they do not choose where Indelible's
+   database is created.
 3. Choose whether to export automatically and how highlights are laid out, or trigger
    an export manually. New saves export in the background once connected.
+
+On the first export, Indelible creates its managed database in **Notion Private**. You
+can move the database elsewhere in your workspace afterward without changing the
+connection.
 
 ## Self-hosting: register a Notion app
 
@@ -21,12 +27,12 @@ The hosted service ships with its own Notion app. Self-hosters must register one
 configure these variables. The three Notion OAuth variables are read by `ind-api` only;
 `AUTH_CREDENTIAL_KEY` must be set identically on both `ind-api` and `ind-worker`:
 
-| Variable | Set on | Value |
-| --- | --- | --- |
-| `NOTION_CLIENT_ID` | `ind-api` | From your Notion integration (OAuth) |
-| `NOTION_CLIENT_SECRET` | `ind-api` | From your Notion integration |
-| `NOTION_REDIRECT_URL` | `ind-api` | `https://your-instance/api/v1/integrations/notion/callback` |
-| `AUTH_CREDENTIAL_KEY` | `ind-api` + `ind-worker` | 32-byte base64 key that encrypts stored Notion tokens (required in production) |
+| Variable               | Set on                   | Value                                                                          |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `NOTION_CLIENT_ID`     | `ind-api`                | From your Notion integration (OAuth)                                           |
+| `NOTION_CLIENT_SECRET` | `ind-api`                | From your Notion integration                                                   |
+| `NOTION_REDIRECT_URL`  | `ind-api`                | `https://your-instance/api/v1/integrations/notion/callback`                    |
+| `AUTH_CREDENTIAL_KEY`  | `ind-api` + `ind-worker` | 32-byte base64 key that encrypts stored Notion tokens (required in production) |
 
 Create the integration at [notion.so/my-integrations](https://www.notion.so/my-integrations),
 set its redirect URI to the value above, then restart your instance. The Notion
