@@ -41,7 +41,7 @@ pub fn process_epub(data: &[u8]) -> Result<ProcessedEpub, EpubError> {
     let mut budget = ArchiveReadBudget::new(ArchiveLimits::EPUB);
 
     let container_xml = read_zip_text(&mut archive, "META-INF/container.xml", &mut budget)
-        .ok_or_else(|| EpubError::Invalid("missing container.xml".into()))?;
+        .ok_or_else(|| EpubError::Invalid("missing META-INF/container.xml".into()))?;
 
     let rootfile_path = parse_rootfile_path(&container_xml)
         .ok_or_else(|| EpubError::Invalid("missing rootfile in container.xml".into()))?;

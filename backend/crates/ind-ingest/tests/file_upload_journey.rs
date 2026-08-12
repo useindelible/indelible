@@ -6,6 +6,7 @@ use ind_application::ports::{FileUploadProcessor, UploadFileProcessRequest};
 use ind_domain::{ArchiveAssetKind, DocumentType, DomainError};
 use ind_ingest::{DocumentFileUploadProcessor, PdfExtractionError, extract_pdf_text};
 use pdf_oxide::writer::{DocumentBuilder, PageSize};
+use std::io::{Cursor, Write};
 
 fn request(
     filename: &str,
@@ -43,6 +44,58 @@ fn generated_pdf(text: Option<&str>) -> Vec<u8> {
         page.done();
     }
     builder.build().unwrap()
+}
+
+fn epub_archive(include_container: bool) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    {
+        let mut archive = zip::ZipWriter::new(Cursor::new(&mut bytes));
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Stored);
+
+        archive.start_file("mimetype", options).unwrap();
+        archive.write_all(b"application/epub+zip").unwrap();
+
+        if include_container {
+            archive
+                .start_file("META-INF/container.xml", options)
+                .unwrap();
+            archive
+                .write_all(
+                    br#"<?xml version="1.0"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>"#,
+                )
+                .unwrap();
+        }
+
+        archive.start_file("OEBPS/content.opf", options).unwrap();
+        archive
+            .write_all(
+                br#"<?xml version="1.0"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Fixture Book</dc:title>
+    <dc:creator>Fixture Author</dc:creator>
+  </metadata>
+  <manifest>
+    <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine><itemref idref="chapter"/></spine>
+</package>"#,
+            )
+            .unwrap();
+
+        archive.start_file("OEBPS/chapter.xhtml", options).unwrap();
+        archive
+            .write_all(b"<html><body><p>A readable EPUB chapter.</p></body></html>")
+            .unwrap();
+        archive.finish().unwrap();
+    }
+    bytes
 }
 
 fn without_eof(mut pdf: Vec<u8>) -> Vec<u8> {
@@ -239,6 +292,51 @@ async fn blank_pdf_upload_remains_supported_when_text_extraction_has_no_text() {
     assert!(processed.assets.iter().any(|asset| {
         asset.asset_kind == Some(ArchiveAssetKind::ExtractedText)
             && asset.status == ind_domain::ArchiveAssetStatus::Failed
+    }));
+}
+
+#[tokio::test]
+async fn epub_without_container_is_rejected_as_invalid_file() {
+    let processor = DocumentFileUploadProcessor;
+
+    let error = processor
+        .process_upload(request(
+            "missing-container.epub",
+            "application/epub+zip",
+            epub_archive(false),
+            1024 * 1024,
+        ))
+        .await
+        .unwrap_err();
+
+    assert!(matches!(
+        error,
+        AppError::Domain(DomainError::Validation { field, message })
+            if field == "file"
+                && message
+                    == "This file is not a valid EPUB: missing META-INF/container.xml. Choose another EPUB file and try again."
+    ));
+}
+
+#[tokio::test]
+async fn valid_epub_upload_remains_supported() {
+    let processor = DocumentFileUploadProcessor;
+
+    let processed = processor
+        .process_upload(request(
+            "fixture.epub",
+            "application/epub+zip",
+            epub_archive(true),
+            1024 * 1024,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(processed.document_type, DocumentType::Book);
+    assert_eq!(processed.title, "Fixture Book");
+    assert!(processed.assets.iter().any(|asset| {
+        asset.asset_kind == Some(ArchiveAssetKind::Epub)
+            && asset.status == ind_domain::ArchiveAssetStatus::Completed
     }));
 }
 

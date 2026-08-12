@@ -8,7 +8,7 @@ use ind_domain::{
     reading_time_minutes_from_words,
 };
 
-use crate::epub_processing::{EpubTocResponse, process_epub};
+use crate::epub_processing::{EpubError, EpubTocResponse, process_epub};
 use crate::pdf_extraction::{PdfExtractionError, extract_pdf_text};
 
 mod cover_image;
@@ -167,9 +167,18 @@ async fn process_epub_upload(
             service: "epub".into(),
             message: format!("epub processing task failed: {err}"),
         })?
-        .map_err(|err| AppError::ExternalService {
-            service: "epub".into(),
-            message: format!("epub processing failed: {err}"),
+        .map_err(|err| {
+            AppError::Domain(DomainError::Validation {
+                field: "file".into(),
+                message: format!(
+                    "This file is not a valid EPUB: {}. Choose another EPUB file and try again.",
+                    match err {
+                        EpubError::Invalid(reason) => reason,
+                        EpubError::Zip(_) | EpubError::Io(_) =>
+                            "the archive could not be read".into(),
+                    }
+                ),
+            })
         })?;
 
     let toc_response = EpubTocResponse {
