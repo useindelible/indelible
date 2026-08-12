@@ -567,6 +567,10 @@
 	--mila-status-test-text: #0071e3;
 	--mila-status-idle-bg: rgba(0, 0, 0, 0.04);
 	--mila-status-idle-text: #6e6e73;
+	--mila-status-warn-bg: rgba(255, 159, 10, 0.14);
+	--mila-status-warn-text: #b25e09;
+	--mila-meter-empty: rgba(0, 0, 0, 0.07);
+	--mila-meter-sheen: rgba(255, 255, 255, 0.8);
 	--mila-code-bg: rgba(0, 0, 0, 0.04);
 	--mila-code-text: #4a4a4d;
 	--mila-edit-form-shadow:
@@ -1110,6 +1114,10 @@
 	--mila-status-test-text: #5ab0ff;
 	--mila-status-idle-bg: rgba(255, 255, 255, 0.06);
 	--mila-status-idle-text: #98989d;
+	--mila-status-warn-bg: rgba(255, 159, 10, 0.16);
+	--mila-status-warn-text: #ffb143;
+	--mila-meter-empty: rgba(255, 255, 255, 0.1);
+	--mila-meter-sheen: rgba(255, 255, 255, 0.3);
 	--mila-code-bg: rgba(255, 255, 255, 0.05);
 	--mila-code-text: #c0c0c5;
 	--mila-edit-form-shadow:

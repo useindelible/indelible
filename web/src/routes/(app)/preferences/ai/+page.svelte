@@ -57,6 +57,7 @@
 	let indexingStatusError = $state('');
 
 	const isDirty = $derived(milaConfigSnapshot(draft) !== savedSnapshot);
+	const willReindex = $derived(milaEmbeddingIdentityChanged(config, draft));
 
 	onMount(() => {
 		loadAll();
@@ -90,7 +91,7 @@
 			indexingStatus = data;
 			indexingStatusError = '';
 		} catch {
-			indexingStatusError = 'Mila indexing status is unavailable. Try again.';
+			indexingStatusError = 'The status service did not respond.';
 		}
 	}
 
@@ -142,15 +143,9 @@
 		saveError = '';
 		try {
 			const body = buildMilaSaveBody(draft);
-			const needsReindex = milaEmbeddingIdentityChanged(config, draft);
-			if (
-				needsReindex &&
-				!window.confirm(
-					'Changing the embedding endpoint or model will rebuild Mila embeddings for saved items.'
-				)
-			) {
-				return;
-			}
+			// The rebuild cost is disclosed inline before saving, so the save itself
+			// does not stop for a confirm dialog.
+			const needsReindex = willReindex;
 			const { data } = needsReindex ? await reindexConfig({ body }) : await upsertConfig({ body });
 			if (data) {
 				config = data;
@@ -270,16 +265,15 @@
 				onTestConnection={testConnection}
 			/>
 
-			{#if indexingStatus}
+			{#if indexingStatus || indexingStatusError}
 				<MilaIndexingStatus
 					status={indexingStatus}
+					error={indexingStatusError}
 					embeddingModel={config?.embedding_model ?? draft.embeddingModel}
 					retrying={indexingRetrying}
 					onRetry={retryIndexing}
+					onRefresh={refreshIndexingStatus}
 				/>
-			{/if}
-			{#if indexingStatusError}
-				<p class="save-error" role="alert">{indexingStatusError}</p>
 			{/if}
 
 			<PromptPresetSection
@@ -299,6 +293,24 @@
 
 			{#if saveError}
 				<p class="save-error">{saveError}</p>
+			{/if}
+
+			{#if willReindex}
+				<div class="reindex-notice" role="status">
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M12 9v4" />
+						<path
+							d="M10.3 3.9L2.6 17.3A1.6 1.6 0 0 0 4 19.7h16a1.6 1.6 0 0 0 1.4-2.4L13.7 3.9a1.6 1.6 0 0 0-2.8 0z"
+						/>
+						<circle cx="12" cy="16.6" r="0.6" />
+					</svg>
+					<span>
+						Saving rebuilds embeddings for
+						{#if indexingStatus}<strong>{indexingStatus.eligible_items} items</strong>{:else}every
+							saved item{/if}. Mila keeps answering from the current index until the new one
+						finishes.
+					</span>
+				</div>
 			{/if}
 
 			<SavePill {isDirty} {saving} {showSaved} onSave={save} onDiscard={discard} />
@@ -333,6 +345,35 @@
 		font-size: 13px;
 		color: var(--destructive);
 		margin: 0;
+	}
+	/* Shown before saving rather than as a confirm dialog, so the cost of the
+	   rebuild is visible while the endpoint is still being edited. */
+	.reindex-notice {
+		display: flex;
+		align-items: flex-start;
+		gap: 9px;
+		padding: 12px 14px;
+		border-radius: 12px;
+		background: var(--mila-status-warn-bg);
+		box-shadow: inset 0 0 0 0.5px var(--mila-status-warn-bg);
+		color: var(--mila-status-warn-text);
+		font-size: 12.5px;
+		line-height: 1.45;
+		letter-spacing: -0.005em;
+	}
+	.reindex-notice svg {
+		width: 14px;
+		height: 14px;
+		flex-shrink: 0;
+		margin-top: 1px;
+		stroke: currentColor;
+		fill: none;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.reindex-notice strong {
+		font-weight: 600;
 	}
 	@media (max-width: 720px) {
 		.body-area {

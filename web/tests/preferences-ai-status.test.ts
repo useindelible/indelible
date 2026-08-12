@@ -61,7 +61,7 @@ describe('Mila indexing status', () => {
 		render(AiPreferencesPage);
 
 		const region = await screen.findByRole('status', { name: 'Mila indexing status' });
-		expect(region.textContent).toContain('Indexing Mila library');
+		expect(region.textContent).toContain('Indexing your library');
 		expect(region.textContent).toContain('6 of 8 items indexed');
 		expect(region.textContent).toContain('75%');
 		expect(region.textContent).toContain('2 stale');
@@ -87,8 +87,12 @@ describe('Mila indexing status', () => {
 
 		await waitFor(() => expect(api.reindexConfig).toHaveBeenCalledOnce());
 		expect(api.reindexConfig.mock.calls[0][0].body.embedding_model).toBe('qa-embed');
-		await waitFor(() => expect(screen.getByText('8 of 8 items indexed')).toBeTruthy());
-		expect(screen.getByText('Mila library is ready')).toBeTruthy();
+		await waitFor(() =>
+			expect(screen.getByRole('status', { name: 'Mila indexing status' }).textContent).toContain(
+				'8 of 8 items indexed'
+			)
+		);
+		expect(screen.getByText('Your library is ready')).toBeTruthy();
 	});
 
 	it('polls while indexing and stops after completion', async () => {
@@ -101,7 +105,7 @@ describe('Mila indexing status', () => {
 		await vi.runAllTicks();
 
 		expect(api.getStatus).toHaveBeenCalledTimes(2);
-		expect(screen.getByText('Mila library is ready')).toBeTruthy();
+		expect(screen.getByText('Your library is ready')).toBeTruthy();
 		await vi.advanceTimersByTimeAsync(4000);
 		expect(api.getStatus).toHaveBeenCalledTimes(2);
 		vi.useRealTimers();
@@ -112,9 +116,10 @@ describe('Mila indexing status', () => {
 		render(AiPreferencesPage);
 
 		expect(await screen.findByText('Use my own AI provider')).toBeTruthy();
-		expect(screen.getByRole('alert').textContent).toBe(
-			'Mila indexing status is unavailable. Try again.'
-		);
+		const alert = screen.getByRole('alert');
+		expect(alert.textContent).toContain('Can’t reach the index');
+		expect(alert.textContent).toContain('The status service did not respond.');
+		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
 	});
 
 	it('explains reasoning compatibility without inventing an effort level', async () => {
@@ -142,7 +147,7 @@ describe('Mila indexing status', () => {
 		});
 		render(AiPreferencesPage);
 
-		expect(await screen.findByText('Mila indexing is paused')).toBeTruthy();
+		expect(await screen.findByText('Indexing is paused')).toBeTruthy();
 		expect(screen.queryByRole('button', { name: 'Retry indexing' })).toBeNull();
 	});
 });

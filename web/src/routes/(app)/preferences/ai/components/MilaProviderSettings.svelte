@@ -2,6 +2,10 @@
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
 	import type { MilaConfigResponse } from '$lib/api';
 	import type { MilaConfigDraft, TestState } from '../mila-settings-model';
+	import ApiKeyField from './ApiKeyField.svelte';
+	import CheckRow from './CheckRow.svelte';
+	import ProviderChatBudget from './ProviderChatBudget.svelte';
+	import ProviderConnectionCard from './ProviderConnectionCard.svelte';
 
 	interface Props {
 		config: MilaConfigResponse | null;
@@ -13,12 +17,25 @@
 	}
 
 	let { config, draft, testMessage, testState, onChange, onTestConnection }: Props = $props();
+
+	const uid = $props.id();
+	const chatBaseId = `${uid}-chat-base`;
+	const chatModelId = `${uid}-chat-model`;
+	const embeddingBaseId = `${uid}-embedding-base`;
+	const embeddingModelId = `${uid}-embedding-model`;
+
+	const REASONING_HELP = {
+		on: 'On — standard sampling controls are omitted. No reasoning_effort value is sent; the provider uses its default reasoning level.',
+		off: 'Off — Indelible sends its normal per-task sampling controls; chat includes temperature and top_p. For LM Studio reasoning models, compatibility requires LM Studio 0.4.8 or newer.'
+	};
+
+	const testDisabled = $derived(!draft.chatApiBase.trim() || !draft.embeddingApiBase.trim());
 </script>
 
 <SettingsGroup
 	title="Provider"
 	meta={draft.byoOn
-		? 'BYO endpoint · OpenAI-compatible'
+		? 'Bring your own OpenAI-compatible endpoint'
 		: 'Powered by Indelible — included in your plan'}
 >
 	<div class="byo-shell" class:expanded={draft.byoOn}>
@@ -44,12 +61,15 @@
 		{#if draft.byoOn}
 			<div class="byo-divider"></div>
 			<div class="provider-card">
-				<div class="provider-section">
-					<div class="provider-section-title">Chat provider</div>
+				<!-- Chat and embeddings are separate endpoints: a hosted chat model
+				     alongside local embeddings is the common setup. -->
+				<div class="section chat">
+					<div class="section-title">Chat provider</div>
+
 					<div class="form-group">
-						<label class="form-label" for="chat-api-base">Chat API Base URL</label>
+						<label class="form-label" for={chatBaseId}>Chat API base URL</label>
 						<input
-							id="chat-api-base"
+							id={chatBaseId}
 							class="form-input"
 							type="url"
 							value={draft.chatApiBase}
@@ -58,81 +78,56 @@
 						/>
 					</div>
 
-					<div class="form-group">
-						<label class="form-label" for="chat-api-key">
-							Chat API Key
-							<span class="hint">
-								{config?.has_chat_api_key ? 'Already configured · enter to replace' : 'Required'}
-							</span>
-						</label>
-						<div class="password-input-wrap">
-							<input
-								id="chat-api-key"
-								class="form-input"
-								type={draft.showChatApiKey ? 'text' : 'password'}
-								value={draft.chatApiKey}
-								placeholder="sk-..."
-								oninput={(event) => onChange({ chatApiKey: event.currentTarget.value })}
-							/>
-							<button
-								type="button"
-								class="eye-btn"
-								aria-label={draft.showChatApiKey ? 'Hide chat API key' : 'Show chat API key'}
-								onclick={() => onChange({ showChatApiKey: !draft.showChatApiKey })}
-							>
-								{draft.showChatApiKey ? 'Hide' : 'Show'}
-							</button>
-						</div>
-						{#if config?.has_chat_api_key && !draft.chatApiKey.trim()}
-							<label class="checkbox-row">
-								<input
-									type="checkbox"
-									checked={draft.clearChatApiKey}
-									onchange={(event) => onChange({ clearChatApiKey: event.currentTarget.checked })}
-								/>
-								<span class="hint-inline">Remove saved chat key on next save</span>
-							</label>
-						{/if}
-					</div>
+					<ApiKeyField
+						label="Chat API key"
+						value={draft.chatApiKey}
+						show={draft.showChatApiKey}
+						hasStoredKey={Boolean(config?.has_chat_api_key)}
+						emptyHint="Required"
+						clearLabel="Remove the saved chat key when I save"
+						clear={draft.clearChatApiKey}
+						onValueChange={(value) =>
+							onChange({
+								chatApiKey: value,
+								clearChatApiKey: value.trim() ? false : draft.clearChatApiKey
+							})}
+						onToggleShow={() => onChange({ showChatApiKey: !draft.showChatApiKey })}
+						onClearChange={(clear) => onChange({ clearChatApiKey: clear })}
+					/>
 
 					<div class="form-group">
-						<label class="form-label" for="model-id">Chat model ID</label>
+						<label class="form-label" for={chatModelId}>Chat model ID</label>
 						<input
-							id="model-id"
+							id={chatModelId}
 							class="form-input"
 							type="text"
 							value={draft.chatModel}
 							placeholder="gpt-4.1-mini"
 							oninput={(event) => onChange({ chatModel: event.currentTarget.value })}
 						/>
+						<span class="field-hint">
+							Whatever your provider exposes — including OpenRouter model slugs.
+						</span>
 					</div>
 
-					<label class="checkbox-row reasoning-capability">
-						<input
-							type="checkbox"
-							aria-label="Reasoning model compatibility"
-							aria-describedby="reasoning-compatibility-help"
-							checked={draft.supportsReasoningEffort}
-							onchange={(event) =>
-								onChange({ supportsReasoningEffort: event.currentTarget.checked })}
-						/>
-						<span>
-							<span class="hint-inline">Reasoning model compatibility</span>
-							<span id="reasoning-compatibility-help" class="hint reasoning-help">
-								{draft.supportsReasoningEffort
-									? 'On — standard sampling controls are omitted. No reasoning_effort value is sent; the provider uses its default reasoning level.'
-									: 'Off — Indelible sends its normal per-task sampling controls; chat includes temperature and top_p. For LM Studio reasoning models, compatibility requires LM Studio 0.4.8 or newer.'}
-							</span>
-						</span>
-					</label>
+					<CheckRow
+						checked={draft.supportsReasoningEffort}
+						label="Reasoning model compatibility"
+						onChange={(checked) => onChange({ supportsReasoningEffort: checked })}
+					>
+						{#snippet help()}
+							{draft.supportsReasoningEffort ? REASONING_HELP.on : REASONING_HELP.off}
+						{/snippet}
+					</CheckRow>
 				</div>
 
-				<div class="provider-section">
-					<div class="provider-section-title">Embedding provider</div>
+				<div class="section embed">
+					<div class="section-title">Embedding provider</div>
+
 					<div class="form-group">
-						<label class="form-label" for="embedding-api-base">Embedding API Base URL</label>
+						<label class="form-label" for={embeddingBaseId}>Embedding API base URL</label>
 						<input
-							id="embedding-api-base"
+							id={embeddingBaseId}
 							class="form-input"
 							type="url"
 							value={draft.embeddingApiBase}
@@ -141,123 +136,53 @@
 						/>
 					</div>
 
-					<div class="form-group">
-						<label class="form-label" for="embedding-api-key">
-							Embedding API Key
-							<span class="hint">
-								{config?.has_embedding_api_key
-									? 'Already configured · enter to replace'
-									: 'Optional for local providers'}
-							</span>
-						</label>
-						<div class="password-input-wrap">
-							<input
-								id="embedding-api-key"
-								class="form-input"
-								type={draft.showEmbeddingApiKey ? 'text' : 'password'}
-								value={draft.embeddingApiKey}
-								placeholder="sk-..."
-								oninput={(event) => onChange({ embeddingApiKey: event.currentTarget.value })}
-							/>
-							<button
-								type="button"
-								class="eye-btn"
-								aria-label={draft.showEmbeddingApiKey
-									? 'Hide embedding API key'
-									: 'Show embedding API key'}
-								onclick={() => onChange({ showEmbeddingApiKey: !draft.showEmbeddingApiKey })}
-							>
-								{draft.showEmbeddingApiKey ? 'Hide' : 'Show'}
-							</button>
-						</div>
-						{#if config?.has_embedding_api_key && !draft.embeddingApiKey.trim()}
-							<label class="checkbox-row">
-								<input
-									type="checkbox"
-									checked={draft.clearEmbeddingApiKey}
-									onchange={(event) =>
-										onChange({ clearEmbeddingApiKey: event.currentTarget.checked })}
-								/>
-								<span class="hint-inline">Remove saved embedding key on next save</span>
-							</label>
-						{/if}
-					</div>
+					<ApiKeyField
+						label="Embedding API key"
+						value={draft.embeddingApiKey}
+						show={draft.showEmbeddingApiKey}
+						hasStoredKey={Boolean(config?.has_embedding_api_key)}
+						emptyHint="Optional for local providers"
+						clearLabel="Remove the saved embedding key when I save"
+						clear={draft.clearEmbeddingApiKey}
+						onValueChange={(value) =>
+							onChange({
+								embeddingApiKey: value,
+								clearEmbeddingApiKey: value.trim() ? false : draft.clearEmbeddingApiKey
+							})}
+						onToggleShow={() => onChange({ showEmbeddingApiKey: !draft.showEmbeddingApiKey })}
+						onClearChange={(clear) => onChange({ clearEmbeddingApiKey: clear })}
+					/>
 
 					<div class="form-group">
-						<label class="form-label" for="embedding-model-id">Embedding model ID</label>
+						<label class="form-label" for={embeddingModelId}>Embedding model ID</label>
 						<input
-							id="embedding-model-id"
+							id={embeddingModelId}
 							class="form-input"
 							type="text"
 							value={draft.embeddingModel}
 							placeholder="nomic-embed-text"
 							oninput={(event) => onChange({ embeddingModel: event.currentTarget.value })}
 						/>
-						<span class="hint"
-							>Must return 768-dimensional vectors. Changing endpoint or model triggers a Mila
-							reindex when saved.</span
-						>
+						<span class="field-hint">
+							Must return <strong>{draft.embeddingDim}-dimensional</strong> vectors. Changing the endpoint
+							or model rebuilds every embedding when you save.
+						</span>
 					</div>
 				</div>
 
-				<div class="test-card">
-					<div class="test-card-label">Connection</div>
-					<div class="test-state-row" data-state={testState}>
-						<span class="test-state-msg">{testMessage}</span>
-					</div>
-					<div class="test-meta">
-						We send a small embedding probe to the embedding provider and a short chat completion to
-						the chat provider.
-					</div>
-					<button
-						type="button"
-						class="btn violet-soft"
-						onclick={onTestConnection}
-						disabled={testState === 'testing' ||
-							!draft.chatApiBase.trim() ||
-							!draft.embeddingApiBase.trim()}
-					>
-						Test connection
-					</button>
-				</div>
+				<ProviderConnectionCard
+					{testState}
+					{testMessage}
+					disabled={testDisabled}
+					onTest={onTestConnection}
+				/>
 
-				<div class="provider-section tuning-section">
-					<div class="provider-section-title">Chat budget</div>
-					<div class="form-group">
-						<label class="form-label" for="model-ctx-window">Model context window</label>
-						<input
-							id="model-ctx-window"
-							class="form-input"
-							type="number"
-							min="1"
-							required
-							value={draft.modelContextWindow}
-							placeholder="16000"
-							oninput={(event) =>
-								onChange({ modelContextWindow: Number(event.currentTarget.value) })}
-						/>
-						<span class="hint"
-							>Total token window of your chat model. Sizes summary, tag, and entity inputs.</span
-						>
-					</div>
-
-					<div class="form-group">
-						<label class="form-label" for="chat-ctx-pct">Chat inline context (% of window)</label>
-						<input
-							id="chat-ctx-pct"
-							class="form-input"
-							type="number"
-							min="1"
-							max="100"
-							value={draft.chatContextPct}
-							oninput={(event) => onChange({ chatContextPct: Number(event.currentTarget.value) })}
-						/>
-						<span class="hint"
-							>Sent inline to chat until the document fills this % of the window; larger items use
-							retrieval.</span
-						>
-					</div>
-				</div>
+				<ProviderChatBudget
+					modelContextWindow={draft.modelContextWindow}
+					chatContextPct={draft.chatContextPct}
+					onWindowChange={(value) => onChange({ modelContextWindow: value })}
+					onPctChange={(value) => onChange({ chatContextPct: value })}
+				/>
 			</div>
 		{/if}
 	</div>
@@ -269,12 +194,12 @@
 	.byo-shell {
 		background: var(--bg-elevated);
 		border-radius: 16px;
-		box-shadow: var(--shadow-1);
+		box-shadow: var(--mila-card-shadow);
 		transition: box-shadow 200ms;
 	}
 	.byo-shell.expanded {
 		box-shadow:
-			var(--shadow-1),
+			var(--mila-card-shadow),
 			0 0 0 1px var(--mila-violet-soft);
 	}
 	.byo-toggle-row {
@@ -295,31 +220,64 @@
 	.byo-toggle-title {
 		font-size: 13.5px;
 		font-weight: 600;
+		letter-spacing: -0.01em;
 		color: var(--text-primary);
 	}
-	.byo-toggle-sub,
-	.hint,
-	.hint-inline,
-	.test-meta {
+	.byo-toggle-sub {
 		font-size: 11.5px;
+		letter-spacing: -0.005em;
 		color: var(--text-secondary);
 	}
+
 	.provider-card {
 		padding: 16px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		align-items: start;
+		gap: 24px 26px;
+	}
+	.section {
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 22px;
+		gap: 14px;
+		min-width: 0;
 	}
-	.provider-section {
+	/* Column rule: the two endpoint blocks are rarely the same height, and the
+	   hairline keeps the shorter one from reading as an unfinished column. */
+	.section.chat::after {
+		content: '';
+		position: absolute;
+		top: 2px;
+		bottom: 2px;
+		right: -13px;
+		width: 0.5px;
+		background: var(--border-primary);
+	}
+	.section-title {
 		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-	.provider-section-title {
-		font-size: 12px;
+		align-items: center;
+		gap: 8px;
+		font-size: 11px;
 		font-weight: 700;
-		color: var(--text-primary);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-secondary);
 	}
+	.section-title::before {
+		content: '';
+		width: 2px;
+		height: 12px;
+		border-radius: 2px;
+		flex-shrink: 0;
+	}
+	.section.chat .section-title::before {
+		background: var(--mila-action-chat);
+	}
+	.section.embed .section-title::before {
+		background: var(--mila-action-summary);
+	}
+
 	.form-group {
 		display: flex;
 		flex-direction: column;
@@ -329,13 +287,9 @@
 	.form-label {
 		font-size: 11px;
 		font-weight: 600;
-		letter-spacing: 0;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--text-tertiary);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
 	}
 	.form-input {
 		width: 100%;
@@ -346,93 +300,30 @@
 		box-shadow: var(--mila-input-shadow);
 		border: 0;
 		font-size: 13.5px;
+		letter-spacing: -0.005em;
 		color: var(--text-primary);
 		outline: none;
+		transition: box-shadow 150ms;
 	}
-	.password-input-wrap {
-		position: relative;
-		display: flex;
-		align-items: center;
+	.form-input:focus {
+		box-shadow:
+			inset 0 0 0 1.5px var(--mila-violet),
+			0 0 0 4px var(--mila-violet-soft);
 	}
-	.password-input-wrap .form-input {
-		padding-right: 56px;
-	}
-	.eye-btn {
-		position: absolute;
-		right: 6px;
-		border: 0;
-		border-radius: 8px;
-		background: transparent;
+	.form-input::placeholder {
 		color: var(--text-tertiary);
-		font-size: 11px;
-		cursor: pointer;
-		padding: 6px;
 	}
-	.checkbox-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
+	.field-hint {
+		font-size: 11.5px;
+		line-height: 1.4;
+		letter-spacing: -0.005em;
+		color: var(--text-tertiary);
 	}
-	.reasoning-capability {
-		align-items: flex-start;
-	}
-	.reasoning-help {
-		display: block;
-		margin-top: 3px;
-		line-height: 1.45;
-	}
-	/* The lone inset callout, matching the prototype's test card. */
-	.test-card {
-		background: var(--bg-secondary);
-		border-radius: 12px;
-		box-shadow: inset 0 0 0 0.5px var(--border-primary);
-		padding: 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-	.test-card-label {
-		font-size: 10.5px;
+	.field-hint strong {
 		font-weight: 600;
-		letter-spacing: 0;
-		text-transform: uppercase;
-		color: var(--text-tertiary);
+		color: var(--text-secondary);
 	}
-	.test-state-row {
-		padding: 9px 11px;
-		border-radius: 10px;
-		font-size: 12.5px;
-		background: var(--mila-status-idle-bg);
-		color: var(--mila-status-idle-text);
-	}
-	.test-state-row[data-state='success'] {
-		background: var(--mila-status-ok-bg);
-		color: var(--mila-status-ok-text);
-	}
-	.test-state-row[data-state='error'] {
-		background: var(--mila-status-err-bg);
-		color: var(--mila-status-err-text);
-	}
-	.test-state-row[data-state='testing'] {
-		background: var(--mila-status-test-bg);
-		color: var(--mila-status-test-text);
-	}
-	.btn {
-		border: 0;
-		border-radius: 9px;
-		font-size: 12.5px;
-		font-weight: 500;
-		cursor: pointer;
-		padding: 7px 13px;
-	}
-	.btn.violet-soft {
-		background: var(--mila-violet-soft);
-		color: var(--mila-violet);
-	}
-	.btn:disabled {
-		opacity: 0.45;
-		cursor: default;
-	}
+
 	.toggle {
 		border: 0;
 		background: transparent;
@@ -446,6 +337,7 @@
 		background: var(--mila-status-idle-bg);
 		position: relative;
 		display: block;
+		transition: background 160ms;
 	}
 	.toggle-track::after {
 		content: '';
@@ -455,12 +347,23 @@
 		width: 17px;
 		height: 17px;
 		border-radius: 50%;
-		background: var(--bg-primary);
+		background: var(--switch-thumb);
+		transition: left 180ms;
 	}
 	.toggle.on .toggle-track {
 		background: var(--mila-violet);
 	}
 	.toggle.on .toggle-track::after {
 		left: 17px;
+	}
+
+	@media (max-width: 900px) {
+		.provider-card {
+			grid-template-columns: 1fr;
+			gap: 22px;
+		}
+		.section.chat::after {
+			display: none;
+		}
 	}
 </style>
