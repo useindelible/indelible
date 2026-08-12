@@ -68,8 +68,10 @@ pub struct HealthResponse {
 #[derive(Debug, Deserialize)]
 pub struct JsDefuddleArticle {
     pub title: Option<String>,
+    pub editorial_title: Option<String>,
     pub content: Option<String>,
     pub author: Option<String>,
+    pub editorial_author: Option<String>,
     pub description: Option<String>,
     pub image: Option<String>,
     pub error: Option<String>,

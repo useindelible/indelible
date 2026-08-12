@@ -37,10 +37,23 @@ pub(super) async fn extract_defuddle(
                 if (!DefuddleClass) throw new Error('Defuddle not loaded');
                 const documentClone = document.cloneNode(true);
                 globalThis.IndelibleDomPreprocessor.preprocessDocumentForReadableExtraction(documentClone);
-                return new DefuddleClass(documentClone, {
+                const article = new DefuddleClass(documentClone, {
                     url: document.location.href,
                     useAsync: false,
                 }).parse();
+                const editorialTitle = documentClone.querySelector('article h1, main h1, h1')
+                    ?.textContent?.trim();
+                const authorLink = documentClone.querySelector(
+                    'article [rel~="author"], main [rel~="author"], article a[href*="/author/"], main a[href*="/author/"]'
+                );
+                const editorialAuthor = authorLink?.textContent?.trim();
+                return {
+                    ...article,
+                    editorial_title: editorialTitle || undefined,
+                    editorial_author: editorialAuthor && !editorialAuthor.includes('@')
+                        ? editorialAuthor
+                        : undefined,
+                };
             } catch(e) { return { error: String(e) }; }
         })()
     "#;
@@ -116,7 +129,16 @@ pub(crate) fn defuddle_article_to_output(
         ));
     }
 
-    let title = non_empty(article.title).unwrap_or_else(|| "Untitled".to_string());
+    let title = non_empty(article.editorial_title)
+        .or_else(|| non_empty(article.title))
+        .unwrap_or_else(|| "Untitled".to_string());
+    let extracted_author = non_empty(article.author);
+    let editorial_author = non_empty(article.editorial_author);
+    let byline = if extracted_author.as_deref().is_none_or(is_email_address) {
+        editorial_author.or(extracted_author)
+    } else {
+        extracted_author
+    };
 
     let html = format!(
         "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body>{content}</body></html>"
@@ -124,7 +146,7 @@ pub(crate) fn defuddle_article_to_output(
 
     let metadata = ArtifactMetadata {
         title: Some(title),
-        byline: non_empty(article.author),
+        byline,
         excerpt: non_empty(article.description),
         word_count: (word_count > 0).then_some(word_count),
         reading_time_minutes: (word_count > 0)
@@ -140,6 +162,13 @@ fn non_empty(value: Option<String>) -> Option<String> {
     value
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
+}
+
+fn is_email_address(value: &str) -> bool {
+    let Some((local, domain)) = value.split_once('@') else {
+        return false;
+    };
+    !local.is_empty() && domain.contains('.') && !domain.ends_with('.')
 }
 
 fn source_domain(source_url: Option<&str>) -> Option<String> {
@@ -167,8 +196,10 @@ mod tests {
     fn article(content: &str) -> JsDefuddleArticle {
         JsDefuddleArticle {
             title: Some("Title".into()),
+            editorial_title: None,
             content: Some(content.into()),
             author: None,
+            editorial_author: None,
             description: None,
             image: None,
             error: None,
@@ -230,5 +261,41 @@ mod tests {
         .expect("20 visible words meet the readable content floor");
 
         assert_eq!(metadata.word_count, Some(20));
+    }
+
+    #[test]
+    fn defuddle_output_prefers_editorial_title_and_creator_over_seo_metadata() {
+        let article: JsDefuddleArticle = serde_json::from_value(serde_json::json!({
+            "title": "Our Mutual Friend by Charles Dickens – Read Free Online",
+            "content": "<p>Careful editorial extraction preserves the actual title and creator while rejecting site operator metadata that belongs to publishing infrastructure rather than the work being read today.</p>",
+            "author": "pim@example.com",
+            "editorial_title": "Our Mutual Friend",
+            "editorial_author": "Charles Dickens"
+        }))
+        .expect("renderer payload deserializes");
+
+        let (_, metadata) =
+            defuddle_article_to_output(article, Some("https://example.com/novels/book"))
+                .expect("output builds");
+
+        assert_eq!(metadata.title.as_deref(), Some("Our Mutual Friend"));
+        assert_eq!(metadata.byline.as_deref(), Some("Charles Dickens"));
+    }
+
+    #[test]
+    fn defuddle_output_preserves_a_non_email_article_author() {
+        let article: JsDefuddleArticle = serde_json::from_value(serde_json::json!({
+            "title": "A considered essay",
+            "content": "<p>Careful editorial extraction preserves the author already identified by the readable-content parser when a secondary profile link names another person on the same page.</p>",
+            "author": "Ursula Le Guin",
+            "editorial_author": "Profile Curator"
+        }))
+        .expect("renderer payload deserializes");
+
+        let (_, metadata) = defuddle_article_to_output(article, Some("https://example.com/essay"))
+            .expect("output builds");
+
+        assert_eq!(metadata.title.as_deref(), Some("A considered essay"));
+        assert_eq!(metadata.byline.as_deref(), Some("Ursula Le Guin"));
     }
 }
