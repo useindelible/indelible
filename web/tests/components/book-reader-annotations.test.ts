@@ -141,7 +141,7 @@ describe('BookReader chapter navigation', () => {
 });
 
 describe('BookReader image-only PDFs', () => {
-	it('recognizes only the durable image-only PDF extraction failure', () => {
+	it('recognizes only the controlled image-only PDF extraction failures', () => {
 		const failedExtraction: DocumentReaderAssetResponse = {
 			id: 'asset_text',
 			asset_kind: 'extracted_text',
@@ -153,6 +153,15 @@ describe('BookReader image-only PDFs', () => {
 		};
 
 		expect(isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [failedExtraction])).toBe(true);
+		expect(
+			isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [
+				{
+					...failedExtraction,
+					failed_reason:
+						'PDF text extraction failed: failed to extract text from PDF: no extractable text'
+				}
+			])
+		).toBe(true);
 		expect(isImageOnlyPdf(item(), [failedExtraction])).toBe(false);
 		expect(
 			isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [
@@ -162,6 +171,15 @@ describe('BookReader image-only PDFs', () => {
 		expect(
 			isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [
 				{ ...failedExtraction, failed_reason: 'PDF extraction failed' }
+			])
+		).toBe(false);
+		expect(
+			isImageOnlyPdf({ ...item(), item_type: 'pdf' }, [
+				{
+					...failedExtraction,
+					failed_reason:
+						'PDF text extraction failed: failed to extract text from PDF: malformed content'
+				}
 			])
 		).toBe(false);
 	});

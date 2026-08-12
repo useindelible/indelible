@@ -1,6 +1,9 @@
 import type { DocumentListEntry, DocumentReaderAssetResponse } from '$lib/api';
 
-const IMAGE_ONLY_PDF_REASON = 'PDF text extraction produced no text';
+const IMAGE_ONLY_PDF_REASONS = [
+	'PDF text extraction produced no text',
+	'PDF text extraction failed: failed to extract text from PDF: no extractable text'
+];
 
 export function isImageOnlyPdf(
 	item: DocumentListEntry,
@@ -12,7 +15,7 @@ export function isImageOnlyPdf(
 			(asset) =>
 				asset.asset_kind === 'extracted_text' &&
 				asset.status === 'failed' &&
-				asset.failed_reason === IMAGE_ONLY_PDF_REASON
+				IMAGE_ONLY_PDF_REASONS.includes(asset.failed_reason ?? '')
 		)
 	);
 }
