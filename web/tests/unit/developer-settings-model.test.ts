@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { WebhookDelivery, WebhookEndpoint } from '$lib/api/webhooks';
+import type { WebhookEndpoint } from '$lib/api/webhooks';
 import {
-	countRecentDeliveries,
-	deliveryRatePercent,
 	formatDate,
 	formatRelative,
 	formatTime,
@@ -38,23 +36,6 @@ function endpoint(overrides: Partial<WebhookEndpoint> = {}): WebhookEndpoint {
 	};
 }
 
-function delivery(overrides: Partial<WebhookDelivery> = {}): WebhookDelivery {
-	return {
-		id: 'del_1',
-		endpoint_id: 'wh_1',
-		event: 'library_entry.saved',
-		target: 'Automation',
-		outcome: 'delivered',
-		error: null,
-		status_code: 200,
-		latency_ms: 42,
-		attempt: 1,
-		attempted_at: '2026-06-10T13:59:00Z',
-		delivered_at: '2026-06-10T13:59:00Z',
-		...overrides
-	} as WebhookDelivery;
-}
-
 describe('developer settings model', () => {
 	it('formats permissions, dates, times, and relative timestamps', () => {
 		vi.setSystemTime(new Date('2026-06-10T14:00:00Z'));
@@ -75,27 +56,8 @@ describe('developer settings model', () => {
 		expect(lastStatusLabel(endpoint({ last_status: 'failing' }))).toBe('Failing');
 	});
 
-	it('calculates delivery metrics and selected event counts from attempt time', () => {
-		vi.setSystemTime(new Date('2026-06-10T14:00:00Z'));
-		const deliveries = [
-			delivery({ delivered_at: null }),
-			delivery({
-				id: 'del_2',
-				outcome: 'failed',
-				status_code: 500,
-				attempted_at: '2026-06-10T13:58:00Z',
-				delivered_at: null
-			}),
-			delivery({
-				id: 'del_3',
-				attempted_at: '2026-06-08T12:00:00Z',
-				delivered_at: '2026-06-10T13:57:00Z'
-			})
-		];
-		expect(countRecentDeliveries(deliveries)).toBe(2);
-		expect(deliveryRatePercent(deliveries)).toBe('66.7');
+	it('counts selected webhook events', () => {
 		expect(groupCount(['a', 'b', 'c'], new Set(['a', 'c']))).toBe(2);
-		vi.useRealTimers();
 	});
 
 	it('compares sets by value', () => {

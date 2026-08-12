@@ -401,19 +401,7 @@
 	--dev-accent-glow: rgba(60, 150, 235, 0.28);
 	--dev-pill-shadow: 0 2px 12px rgba(0, 40, 80, 0.08), 0 0 0 0.5px rgba(0, 40, 80, 0.06);
 
-	/* Developer terminal */
-	--dev-term-bg: rgba(255, 255, 255, 0.74);
-	--dev-term-bg-strong: #ffffff;
-	--dev-term-border: rgba(0, 60, 120, 0.18);
-	--dev-term-shadow: 0 18px 40px -16px rgba(0, 40, 90, 0.3), 0 0 0 0.5px rgba(0, 60, 120, 0.16);
-	--dev-term-bar: rgba(15, 30, 55, 0.04);
-	--dev-term-divider: rgba(0, 60, 120, 0.1);
-	--dev-term-text: #0e1827;
-	--dev-term-dim: #607089;
-	--dev-term-accent: #0058b6;
-	--dev-term-method-get: #1b6e32;
-	--dev-term-method-post: #0058b6;
-	--dev-term-method-delete: #b40015;
+	/* Developer webhook delivery status */
 	--dev-term-status-2xx: #1f7a3a;
 	--dev-term-status-4xx: #b25e09;
 	--dev-term-status-5xx: #c70015;
@@ -962,20 +950,6 @@
 	--dev-accent-glow: rgba(60, 180, 255, 0.32);
 	--dev-pill-shadow: 0 2px 16px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(180, 210, 255, 0.08);
 
-	--dev-term-bg: rgba(10, 18, 30, 0.9);
-	--dev-term-bg-strong: #0e141f;
-	--dev-term-border: rgba(90, 200, 255, 0.22);
-	--dev-term-shadow:
-		0 24px 50px -16px rgba(0, 0, 0, 0.7), 0 0 0 0.5px rgba(90, 200, 255, 0.14),
-		inset 0 0 0 0.5px rgba(90, 200, 255, 0.08);
-	--dev-term-bar: rgba(180, 210, 255, 0.04);
-	--dev-term-divider: rgba(90, 200, 255, 0.1);
-	--dev-term-text: #ecf1f8;
-	--dev-term-dim: #768298;
-	--dev-term-accent: #5ac8ff;
-	--dev-term-method-get: #58d178;
-	--dev-term-method-post: #5ac8ff;
-	--dev-term-method-delete: #ff5a4a;
 	--dev-term-status-2xx: #58d178;
 	--dev-term-status-4xx: #ffb23a;
 	--dev-term-status-5xx: #ff5a4a;

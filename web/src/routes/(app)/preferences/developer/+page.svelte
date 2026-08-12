@@ -21,8 +21,6 @@
 	import WebhookPanel from './components/WebhookPanel.svelte';
 	import {
 		allPermissionsSelected,
-		countRecentDeliveries,
-		deliveryRatePercent,
 		issuePresetFromSearchParams,
 		ISSUE_DEFAULTS,
 		nextIssuePermissions,
@@ -76,11 +74,8 @@
 			!addActive
 	);
 
-	const activeTokens = $derived(tokens.length);
+	const tokenCount = $derived(tokens.length);
 	const endpointCount = $derived(endpoints.length);
-	const loadedDeliveries = $derived(Object.values(deliveriesByEndpoint).flat());
-	const eventsLast24 = $derived(countRecentDeliveries(loadedDeliveries));
-	const deliveryRate = $derived(deliveryRatePercent(loadedDeliveries));
 
 	onMount(() => {
 		void refreshTokens();
@@ -308,14 +303,14 @@
 </script>
 
 <div class="page">
-	<DeveloperHero {activeTokens} {endpointCount} {eventsLast24} {deliveryRate} />
+	<DeveloperHero {tokenCount} {endpointCount} />
 
 	<div class="settings-body">
 		<ApiTokenPanel
 			{tokens}
 			loading={tokensLoading}
 			error={tokensError}
-			{activeTokens}
+			{tokenCount}
 			{issueOpen}
 			{issueName}
 			{issuePermissions}

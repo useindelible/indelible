@@ -1,4 +1,4 @@
-import type { WebhookDelivery, WebhookEndpoint } from '$lib/api/webhooks';
+import type { WebhookEndpoint } from '$lib/api/webhooks';
 import type { ApiPermissionDto, CreateApiTokenRequest } from '$lib/api/generated/types.gen';
 
 export type PermissionKey = ApiPermissionDto;
@@ -18,16 +18,6 @@ export interface IndependentPermissionDef {
 	key: PermissionKey;
 	label: string;
 	desc: string;
-}
-
-export interface TerminalLine {
-	ts: string;
-	method: 'GET' | 'POST' | 'DEL' | 'HOOK';
-	methodClass: 'get' | 'post' | 'delete' | 'hook';
-	path: string;
-	target?: string;
-	status: string;
-	statusClass: 's2xx' | 's4xx' | 's5xx';
 }
 
 export interface WebhookEventGroup {
@@ -113,68 +103,6 @@ const WRITE_READ_PAIRS: ReadonlyArray<readonly [PermissionKey, PermissionKey]> =
 	['integrations:write', 'integrations:read'],
 	['webhooks:write', 'webhooks:read'],
 	['ai:write', 'ai:read']
-];
-
-export const TERMINAL_LINES: TerminalLine[] = [
-	{
-		ts: '12:42:18',
-		method: 'POST',
-		methodClass: 'post',
-		path: '/v1/items',
-		status: '200 · 142ms',
-		statusClass: 's2xx'
-	},
-	{
-		ts: '12:41:55',
-		method: 'HOOK',
-		methodClass: 'hook',
-		path: 'library_entry.saved',
-		target: 'n8n',
-		status: '200',
-		statusClass: 's2xx'
-	},
-	{
-		ts: '12:39:11',
-		method: 'POST',
-		methodClass: 'post',
-		path: '/v1/highlights',
-		status: '200 · 88ms',
-		statusClass: 's2xx'
-	},
-	{
-		ts: '12:36:02',
-		method: 'GET',
-		methodClass: 'get',
-		path: '/v1/items?since=…',
-		status: '200 · 36ms',
-		statusClass: 's2xx'
-	},
-	{
-		ts: '12:35:48',
-		method: 'HOOK',
-		methodClass: 'hook',
-		path: 'library_entry.archived',
-		target: 'obsidian',
-		status: '200',
-		statusClass: 's2xx'
-	},
-	{
-		ts: '12:33:09',
-		method: 'HOOK',
-		methodClass: 'hook',
-		path: 'feed.poll_failed',
-		target: 'monitoring',
-		status: '503 · retry',
-		statusClass: 's5xx'
-	},
-	{
-		ts: '12:31:44',
-		method: 'GET',
-		methodClass: 'get',
-		path: '/v1/documents/doc_8c7Z…',
-		status: '200',
-		statusClass: 's2xx'
-	}
 ];
 
 export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
@@ -321,23 +249,6 @@ export function lastStatusLabel(endpoint: WebhookEndpoint): string {
 	if (!endpoint.is_active) return 'Paused';
 	if (endpoint.last_status === 'failing') return 'Failing';
 	return 'Healthy';
-}
-
-export function countRecentDeliveries(deliveries: WebhookDelivery[]): number {
-	return deliveries.filter(
-		(delivery) => Date.now() - new Date(delivery.attempted_at).getTime() < 86_400_000
-	).length;
-}
-
-export function deliveryRatePercent(deliveries: WebhookDelivery[]): string {
-	if (deliveries.length === 0) return '100.0';
-	const successes = deliveries.filter(
-		(delivery) =>
-			typeof delivery.status_code === 'number' &&
-			delivery.status_code >= 200 &&
-			delivery.status_code < 300
-	).length;
-	return ((successes / deliveries.length) * 100).toFixed(1);
 }
 
 export function groupCount(events: string[], selected: Set<string>): number {

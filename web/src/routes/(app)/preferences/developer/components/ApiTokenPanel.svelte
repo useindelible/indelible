@@ -14,7 +14,7 @@
 		tokens: ApiTokenResponse[];
 		loading: boolean;
 		error: string | null;
-		activeTokens: number;
+		tokenCount: number;
 		issueOpen: boolean;
 		issueName: string;
 		issuePermissions: Set<PermissionKey>;
@@ -41,7 +41,7 @@
 		tokens,
 		loading,
 		error,
-		activeTokens,
+		tokenCount,
 		issueOpen,
 		issueName,
 		issuePermissions,
@@ -81,8 +81,8 @@
 
 	<div class="group">
 		<div class="group-label">
-			<span>Active tokens</span>
-			<span class="meta">{activeTokens} active</span>
+			<span>Tokens</span>
+			<span class="meta">{tokenCount} total</span>
 		</div>
 
 		<div class="group-card">

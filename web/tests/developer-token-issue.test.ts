@@ -64,6 +64,34 @@ function expectDefaultTokenDraft() {
 	expect(form.queryByRole('alert')).toBeNull();
 }
 
+function token(id: string, expiresAt: string | null) {
+	return {
+		id,
+		object: 'api_token',
+		name: `Token ${id}`,
+		prefix: `ind_${id}`,
+		permissions: ['library:read'],
+		created_at: '2026-08-01T00:00:00Z',
+		last_used_at: null,
+		expires_at: expiresAt
+	};
+}
+
+function endpoint(id: string) {
+	return {
+		id,
+		name: `Endpoint ${id}`,
+		url: `https://example.com/${id}`,
+		events: ['library_entry.saved'],
+		is_active: true,
+		last_status: 'healthy',
+		delivery_history: [],
+		secret_preview: 'whsec_abc...',
+		created_at: '2026-08-01T00:00:00Z',
+		updated_at: '2026-08-01T00:00:00Z'
+	};
+}
+
 describe('developer token issue form', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -96,5 +124,31 @@ describe('developer token issue form', () => {
 			'true'
 		);
 		expect(form.getByRole('button', { name: /AI use/ }).getAttribute('aria-pressed')).toBe('false');
+	});
+
+	it('shows only authoritative hero counts and no fabricated activity', async () => {
+		tokenApi.loadApiTokens.mockResolvedValue({
+			success: true,
+			data: [token('current', '2027-08-01T00:00:00Z'), token('expired', '2026-01-01T00:00:00Z')]
+		});
+		webhookApi.listWebhookEndpoints.mockResolvedValue([
+			endpoint('one'),
+			endpoint('two'),
+			endpoint('three')
+		]);
+		await renderDeveloperPage();
+
+		const hero = screen.getByText('Developer · Tokens & Webhooks').closest('.hero')!;
+		const tokenStat = within(hero).getByText('Tokens').closest('.hero-stat')!;
+		const endpointStat = within(hero).getByText('Endpoints').closest('.hero-stat')!;
+		expect(within(tokenStat).getByText('2', { selector: '.num' })).toBeTruthy();
+		expect(within(endpointStat).getByText('3', { selector: '.num' })).toBeTruthy();
+		expect(within(hero).queryByText('Events · 24h')).toBeNull();
+		expect(within(hero).queryByText('Delivery')).toBeNull();
+		expect(within(hero).queryByText('activity.log')).toBeNull();
+		expect(within(hero).queryByText('Live')).toBeNull();
+		expect(within(hero).queryByText('tail -f /var/log/indelible/api')).toBeNull();
+		expect(hero.textContent).not.toContain('/v1/items');
+		expect(hero.textContent).not.toContain('/v1/highlights');
 	});
 });
