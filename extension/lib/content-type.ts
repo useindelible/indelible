@@ -46,10 +46,13 @@ export function classifyExtensionUrl(rawUrl: string): ClassifiedUrl {
   return { itemType: 'article' }
 }
 
-export function canExtensionSaveUrl(rawUrl: string): boolean {
+export function canExtensionSaveUrl(rawUrl: string, configuredServerUrl: string): boolean {
   try {
     const url = new URL(rawUrl)
-    return url.protocol === 'http:' || url.protocol === 'https:'
+    const serverUrl = new URL(configuredServerUrl)
+    return (
+      (url.protocol === 'http:' || url.protocol === 'https:') && url.origin !== serverUrl.origin
+    )
   } catch {
     return false
   }

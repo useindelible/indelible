@@ -196,6 +196,122 @@ describe('background message handler', () => {
     })
   })
 
+  describe('capture admission', () => {
+    it('continues into capture for an external web origin', async () => {
+      mockStorage['ind_server_url'] = 'http://localhost:38473'
+      ;(browser.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+        {
+          id: 42,
+          url: 'https://example.com/article',
+          title: 'Example article',
+        },
+      ])
+      ;(browser.tabs.sendMessage as ReturnType<typeof vi.fn>).mockImplementation(
+        async (_tabId: number, message: { action: string }) => {
+          if (message.action === 'indelible:ping' || message.action === 'toolbar:render') {
+            return { success: true }
+          }
+          if (message.action === 'capture:run') {
+            return { action: 'capture:error', message: 'controlled-stop' }
+          }
+          return undefined
+        },
+      )
+
+      const response = await sendMessage({ action: 'toolbar:save' }, { id: EXTENSION_ID })
+
+      expect(response).toEqual({ success: false, error: 'controlled-stop' })
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, { action: 'capture:run' })
+    })
+
+    it('rejects a configured-origin document returned after external-tab admission', async () => {
+      mockStorage['ind_server_url'] = 'http://localhost:38473'
+      setAccessTokenMemory('jwt_token', FUTURE_EXPIRY)
+      ;(browser.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+        {
+          id: 42,
+          url: 'https://example.com/article',
+          title: 'Example article',
+        },
+      ])
+      ;(browser.tabs.sendMessage as ReturnType<typeof vi.fn>).mockImplementation(
+        async (_tabId: number, message: { action: string }) => {
+          if (message.action === 'indelible:ping' || message.action === 'toolbar:render') {
+            return { success: true }
+          }
+          if (message.action === 'capture:run') {
+            mockStorage['ind_server_url'] = 'https://new-indelible.example.com'
+            return {
+              action: 'capture:result',
+              payload: {
+                url: 'https://new-indelible.example.com/library',
+                title: 'Indelible library',
+                readerHtml: '<main>Library</main>',
+                htmlBase64: 'PG1haW4+TGlicmFyeTwvbWFpbj4=',
+              },
+            }
+          }
+          return undefined
+        },
+      )
+      fetchMock.mockResolvedValue(new Response('unexpected write', { status: 500 }))
+
+      const response = await sendMessage({ action: 'toolbar:save' }, { id: EXTENSION_ID })
+
+      expect(response).toEqual({ success: false, error: 'This page cannot be saved' })
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('uses returned document metadata for direct reader fallback', async () => {
+      let readerSaveBody: unknown
+
+      mockStorage['ind_server_url'] = 'http://localhost:38473'
+      setAccessTokenMemory('jwt_token', FUTURE_EXPIRY)
+      ;(browser.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+        {
+          id: 42,
+          url: 'https://example.com/article-a',
+          title: 'Article A',
+        },
+      ])
+      ;(browser.tabs.sendMessage as ReturnType<typeof vi.fn>).mockImplementation(
+        async (_tabId: number, message: { action: string }) => {
+          if (message.action === 'indelible:ping' || message.action === 'toolbar:render') {
+            return { success: true }
+          }
+          if (message.action === 'capture:run') {
+            return {
+              action: 'capture:error',
+              message: 'singlefile-failed',
+              payload: {
+                url: 'https://example.net/article-b',
+                title: 'Article B',
+                readerHtml: '<main>Article B</main>',
+                htmlBase64: '',
+              },
+            }
+          }
+          return undefined
+        },
+      )
+      fetchMock.mockImplementation(async (input: Request | string | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(input, init)
+        if (request.url.endsWith('/api/v1/extension/reader-save')) {
+          readerSaveBody = JSON.parse(await request.text())
+        }
+        return new Response('controlled-stop', { status: 500 })
+      })
+
+      await sendMessage({ action: 'toolbar:save' }, { id: EXTENSION_ID })
+
+      expect(readerSaveBody).toMatchObject({
+        url: 'https://example.net/article-b',
+        title: 'Article B',
+      })
+      expect(fetchMock).toHaveBeenCalledOnce()
+    })
+  })
+
   it('rejects messages from untrusted senders', async () => {
     const response = await sendMessage({ action: 'auth:status' }, { id: 'some-other-extension-id' })
     expect(response.success).toBe(false)
@@ -396,6 +512,67 @@ describe('background message handler', () => {
   })
 
   describe('toolbar:highlight-selection', () => {
+    it('does not write a highlight for a configured-origin selection returned after admission', async () => {
+      const tab = {
+        id: 42,
+        url: 'https://example.com/article',
+        title: 'Example article',
+      }
+      let highlightWriteAttempted = false
+      let checkedUrl: string | null = null
+
+      mockStorage['ind_server_url'] = 'http://localhost:38473'
+      setAccessTokenMemory('jwt_token', FUTURE_EXPIRY)
+      ;(browser.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([tab])
+      ;(browser.tabs.sendMessage as ReturnType<typeof vi.fn>).mockImplementation(
+        async (_tabId: number, message: { action: string }) => {
+          if (message.action === 'indelible:ping') return { success: true }
+          if (message.action === 'selection:capture') {
+            return {
+              action: 'selection:result',
+              payload: {
+                text: 'Library',
+                sourceLocator: {
+                  type: 'web_page_dom_range',
+                  url: 'https://new-indelible.example.com/library',
+                  location: 'body > main:0,body > main:7',
+                  text_content: 'Library',
+                },
+              },
+            }
+          }
+          return undefined
+        },
+      )
+      fetchMock.mockImplementation(async (input: Request | string | URL) => {
+        const request = input instanceof Request ? input : new Request(input)
+        if (request.url.includes('/api/v1/extension/check-url')) {
+          checkedUrl = new URL(request.url).searchParams.get('url')
+          mockStorage['ind_server_url'] = 'https://new-indelible.example.com'
+          return new Response(
+            JSON.stringify({
+              exists: true,
+              library_entry_id: 'lib_018f2f1a-1111-7222-8333-111111111111',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
+        if (request.url.includes('/assets/readable_html')) {
+          return new Response('', { status: 404 })
+        }
+        if (request.method === 'POST' && request.url.includes('/highlights')) {
+          highlightWriteAttempted = true
+          return new Response('unexpected write', { status: 500 })
+        }
+        return new Response('unexpected request', { status: 500 })
+      })
+
+      await sendMessage({ action: 'toolbar:highlight-selection' }, { id: EXTENSION_ID })
+
+      expect(checkedUrl).toBe('https://new-indelible.example.com/library')
+      expect(highlightWriteAttempted).toBe(false)
+    })
+
     it('uses flattened document asset responses to build reader locators', async () => {
       const libraryEntryId = 'lib_018f2f1a-1111-7222-8333-111111111111'
       const tab = {

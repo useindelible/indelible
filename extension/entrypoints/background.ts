@@ -270,7 +270,7 @@ async function resumeToolbarAfterAuth(tabId: number): Promise<void> {
     return
   }
 
-  if (!tab.url || !canExtensionSaveUrl(tab.url)) {
+  if (!tab.url || !canExtensionSaveUrl(tab.url, auth.serverUrl)) {
     await setActionIdle(tab.id)
     await renderToolbar(tab.id, {
       view: 'unsupported',
@@ -324,7 +324,7 @@ async function handleActionClick(tab: Browser.tabs.Tab): Promise<void> {
     return
   }
 
-  if (!tab.url || !canExtensionSaveUrl(tab.url)) {
+  if (!tab.url || !canExtensionSaveUrl(tab.url, auth.serverUrl)) {
     await setActionIdle(tabId)
     await renderToolbar(tabId, {
       view: 'unsupported',
@@ -504,15 +504,14 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
   if (!tab?.id || !tab.url || !tab.title) {
     return { success: false, error: 'No active tab found' }
   }
-  if (!canExtensionSaveUrl(tab.url)) {
+  const serverUrl = await getServerUrl()
+  if (!canExtensionSaveUrl(tab.url, serverUrl)) {
     await setActionIdle(tab.id)
     return { success: false, error: 'This page cannot be saved' }
   }
 
   const tabId = tab.id
   const tabUrl = tab.url
-  const tabTitle = tab.title
-  const serverUrl = await getServerUrl()
 
   let captureResult: CaptureMessage
   try {
@@ -540,11 +539,21 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
         captureResult.message === 'monolith-too-large') &&
       captureResult.payload?.readerHtml
     ) {
+      const fallbackServerUrl = await getServerUrl()
+      if (!canExtensionSaveUrl(captureResult.payload.url, fallbackServerUrl)) {
+        await setActionIdle(tabId)
+        await renderToolbar(tabId, {
+          view: 'unsupported',
+          serverUrl: fallbackServerUrl,
+          url: captureResult.payload.url,
+        })
+        return { success: false, error: 'This page cannot be saved' }
+      }
       try {
         const body = buildReaderSaveFallbackBody(
-          tabUrl,
+          captureResult.payload.url,
           captureResult.payload.canonicalUrl,
-          tabTitle,
+          captureResult.payload.title,
           captureResult.payload.readerHtml,
           captureResult.payload.leadImageUrl,
           captureResult.payload.excerpt,
@@ -553,7 +562,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
         )
         const data = await saveExtensionReaderArchive(body)
         await setActionSaved(tabId)
-        await loadToolbarPanel(tabId, serverUrl, data.library_entry_id)
+        await loadToolbarPanel(tabId, fallbackServerUrl, data.library_entry_id)
         return {
           success: true,
           data: {
@@ -585,9 +594,24 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
   }
 
   const payload: CapturePayload = captureResult.payload
+  const uploadServerUrl = await getServerUrl()
+  if (!canExtensionSaveUrl(payload.url, uploadServerUrl)) {
+    await setActionIdle(tabId)
+    await renderToolbar(tabId, {
+      view: 'unsupported',
+      serverUrl: uploadServerUrl,
+      url: payload.url,
+    })
+    return { success: false, error: 'This page cannot be saved' }
+  }
 
   setActionSaving(tabId, 'uploading')
-  await renderToolbar(tabId, { view: 'saving', serverUrl, url: tabUrl, step: 'uploading' })
+  await renderToolbar(tabId, {
+    view: 'saving',
+    serverUrl: uploadServerUrl,
+    url: payload.url,
+    step: 'uploading',
+  })
 
   try {
     const body = buildFullArchiveBody(
@@ -605,7 +629,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
     )
     const data = await saveExtensionFullArchive(body)
     await setActionSaved(tabId)
-    await loadToolbarPanel(tabId, serverUrl, data.library_entry_id)
+    await loadToolbarPanel(tabId, uploadServerUrl, data.library_entry_id)
     return {
       success: true,
       data: {
@@ -615,6 +639,16 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
       },
     }
   } catch (err) {
+    const fallbackServerUrl = await getServerUrl()
+    if (!canExtensionSaveUrl(payload.url, fallbackServerUrl)) {
+      await setActionIdle(tabId)
+      await renderToolbar(tabId, {
+        view: 'unsupported',
+        serverUrl: fallbackServerUrl,
+        url: payload.url,
+      })
+      return { success: false, error: 'This page cannot be saved' }
+    }
     try {
       const fallback = buildReaderSaveFallbackBody(
         payload.url,
@@ -628,7 +662,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
       )
       const data = await saveExtensionReaderArchive(fallback)
       await setActionSaved(tabId)
-      await loadToolbarPanel(tabId, serverUrl, data.library_entry_id)
+      await loadToolbarPanel(tabId, fallbackServerUrl, data.library_entry_id)
       return {
         success: true,
         data: {
@@ -651,7 +685,8 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
     ? [tab]
     : await browser.tabs.query({ active: true, currentWindow: true })
   if (!activeTab?.id || !activeTab.url) return
-  if (!canExtensionSaveUrl(activeTab.url)) {
+  let serverUrl = await getServerUrl()
+  if (!canExtensionSaveUrl(activeTab.url, serverUrl)) {
     await setActionIdle(activeTab.id)
     return
   }
@@ -673,7 +708,12 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
   }
 
   const selection = selectionResult.payload
-  let libraryEntryId = await findSavedEntryForUrl(activeTab.url)
+  serverUrl = await getServerUrl()
+  if (!canExtensionSaveUrl(selection.sourceLocator.url, serverUrl)) {
+    await setActionIdle(activeTab.id)
+    return
+  }
+  let libraryEntryId = await findSavedEntryForUrl(selection.sourceLocator.url)
   if (!libraryEntryId) {
     const saved = await handleCaptureStart(activeTab)
     libraryEntryId = saved.data?.libraryEntryId
@@ -684,6 +724,11 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
   }
 
   const locator = await buildReaderLocator(libraryEntryId, selection)
+  serverUrl = await getServerUrl()
+  if (!canExtensionSaveUrl(selection.sourceLocator.url, serverUrl)) {
+    await setActionIdle(activeTab.id)
+    return
+  }
   await createExtensionHighlight(libraryEntryId, {
     color: 'yellow',
     text_content: selection.text,
@@ -691,7 +736,7 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
     source_locator: selection.sourceLocator,
   })
   await setActionSaved(activeTab.id)
-  await loadToolbarPanel(activeTab.id, await getServerUrl(), libraryEntryId)
+  await loadToolbarPanel(activeTab.id, serverUrl, libraryEntryId)
 }
 
 async function findSavedEntryForUrl(url: string): Promise<string | undefined> {

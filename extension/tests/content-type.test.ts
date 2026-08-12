@@ -21,8 +21,22 @@ describe('content type classifier', () => {
     expect(classifyExtensionUrl('https://www.twitch.tv/videos/12345').itemType).toBe('video')
   })
 
-  it('only allows web URLs for saving', () => {
-    expect(canExtensionSaveUrl('https://example.com')).toBe(true)
-    expect(canExtensionSaveUrl('chrome://settings')).toBe(false)
+  it('rejects application routes on the configured server origin', () => {
+    const serverUrl = 'http://localhost:38473'
+
+    expect(canExtensionSaveUrl('http://localhost:38473/', serverUrl)).toBe(false)
+    expect(canExtensionSaveUrl('http://localhost:38473/login', serverUrl)).toBe(false)
+    expect(canExtensionSaveUrl('http://localhost:38473/reader/doc_123', serverUrl)).toBe(false)
+    expect(canExtensionSaveUrl('http://localhost:38473/preferences/account', serverUrl)).toBe(false)
+    expect(canExtensionSaveUrl('http://localhost:38473/library', serverUrl)).toBe(false)
+  })
+
+  it('allows external web origins and rejects unsupported URLs', () => {
+    const serverUrl = 'http://localhost:38473'
+
+    expect(canExtensionSaveUrl('https://example.com', serverUrl)).toBe(true)
+    expect(canExtensionSaveUrl('http://localhost:38474/article', serverUrl)).toBe(true)
+    expect(canExtensionSaveUrl('chrome://settings', serverUrl)).toBe(false)
+    expect(canExtensionSaveUrl('not-a-url', serverUrl)).toBe(false)
   })
 })
