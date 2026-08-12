@@ -78,6 +78,14 @@
 		onCopyWebhookSecret,
 		onDismissWebhookSecret
 	}: Props = $props();
+
+	let addOpener: HTMLButtonElement | null = null;
+
+	function closeAdd() {
+		onCloseAdd();
+		addOpener?.focus();
+		addOpener = null;
+	}
 </script>
 
 <section class="zone">
@@ -90,7 +98,14 @@
 			</div>
 		</div>
 		<div class="zone-actions">
-			<button type="button" class="btn primary" onclick={onOpenAdd}>Add endpoint</button>
+			<button
+				type="button"
+				class="btn primary"
+				onclick={(event) => {
+					addOpener = event.currentTarget;
+					onOpenAdd();
+				}}>Add endpoint</button
+			>
 		</div>
 	</div>
 
@@ -139,7 +154,7 @@
 			creating={creatingEndpoint}
 			error={addError}
 			eventGroups={WEBHOOK_EVENT_GROUPS}
-			onClose={onCloseAdd}
+			onClose={closeAdd}
 			onName={onAddName}
 			onUrl={onAddUrl}
 			{onToggleEvent}

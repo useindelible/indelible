@@ -10,7 +10,7 @@
 		primary: EmailAliasResponse | null;
 		copied: boolean;
 		onCopy: (key: string, text: string) => void;
-		onOpenComposer: (destination: AliasDestinationDto) => void;
+		onOpenComposer: (destination: AliasDestinationDto, opener: HTMLButtonElement) => void;
 	}
 
 	let { dest, label, headline, address, primary, copied, onCopy, onOpenComposer }: Props = $props();
@@ -59,7 +59,7 @@
 					class="envelope-rotate"
 					type="button"
 					aria-label="Create a new {dest} address"
-					onclick={() => onOpenComposer(dest)}
+					onclick={(event) => onOpenComposer(dest, event.currentTarget)}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 5v14M5 12h14" />

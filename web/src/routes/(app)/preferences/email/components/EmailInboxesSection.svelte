@@ -42,6 +42,19 @@
 		onCloseComposer,
 		onCreateAlias
 	}: Props = $props();
+
+	let composerOpener: HTMLButtonElement | null = null;
+
+	function openComposer(destination: AliasDestinationDto, opener: HTMLButtonElement) {
+		composerOpener = opener;
+		onOpenComposer(destination);
+	}
+
+	function closeComposer() {
+		onCloseComposer();
+		composerOpener?.focus();
+		composerOpener = null;
+	}
 </script>
 
 <section class="page-section" aria-labelledby="inboxes-heading">
@@ -66,7 +79,7 @@
 			primary={feedPrimary}
 			copied={copied === 'primary-feed'}
 			{onCopy}
-			{onOpenComposer}
+			onOpenComposer={openComposer}
 		/>
 		<EmailEnvelopeCard
 			dest="library"
@@ -76,7 +89,7 @@
 			primary={libraryPrimary}
 			copied={copied === 'primary-library'}
 			{onCopy}
-			{onOpenComposer}
+			onOpenComposer={openComposer}
 		/>
 	</div>
 
@@ -89,7 +102,7 @@
 		error={createError}
 		onDestination={onComposerDestination}
 		{onLocalPart}
-		onClose={onCloseComposer}
+		onClose={closeComposer}
 		onCreate={onCreateAlias}
 	/>
 </section>

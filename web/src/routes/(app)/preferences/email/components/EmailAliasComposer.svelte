@@ -32,7 +32,7 @@
 </script>
 
 <div class="draft-shell">
-	<div class="draft-composer" class:open aria-hidden={!open}>
+	<div class="draft-composer" class:open inert={!open} aria-hidden={!open}>
 		<div class="draft-inner">
 			<div class="draft-head">
 				<div>

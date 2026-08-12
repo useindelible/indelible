@@ -44,7 +44,7 @@
 	}: Props = $props();
 </script>
 
-<div class="issue-form" class:open>
+<div class="issue-form" class:open inert={!open} aria-hidden={!open}>
 	<div class="issue-form-inner">
 		<div class="issue-form-head">
 			<div class="ifh-title">Issue a new token</div>

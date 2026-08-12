@@ -221,4 +221,34 @@ describe('Email preferences page (rebuilt)', () => {
 			);
 		});
 	});
+
+	it('keeps the collapsed alias composer inert', async () => {
+		render(EmailPage);
+		await waitFor(() => {
+			expect(screen.getByText(/Feed inbox/i)).toBeTruthy();
+		});
+
+		const composer = screen
+			.getByPlaceholderText('local-part')
+			.closest('.draft-composer')! as HTMLElement & {
+			inert: boolean;
+		};
+		expect(composer.inert).toBe(true);
+		expect(screen.queryByRole('button', { name: /Make it primary/i })).toBeNull();
+	});
+
+	it('returns focus to the address trigger after cancellation', async () => {
+		render(EmailPage);
+		await waitFor(() => {
+			expect(screen.getByText(/Feed inbox/i)).toBeTruthy();
+		});
+		const trigger = screen.getByRole('button', { name: /Create a new feed address/i });
+
+		await fireEvent.click(trigger);
+		const input = screen.getByPlaceholderText('local-part');
+		input.focus();
+		await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+		expect(document.activeElement).toBe(trigger);
+	});
 });

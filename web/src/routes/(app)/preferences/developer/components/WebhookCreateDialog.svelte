@@ -38,7 +38,7 @@
 	}: Props = $props();
 </script>
 
-<div class="add-form" class:open>
+<div class="add-form" class:open inert={!open} aria-hidden={!open}>
 	<div class="add-form-inner">
 		<div class="form-head">
 			<div class="form-title">Add a webhook endpoint</div>

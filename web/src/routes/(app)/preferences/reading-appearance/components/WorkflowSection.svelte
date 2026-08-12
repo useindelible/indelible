@@ -68,12 +68,13 @@
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Auto-advance</div>
+				<div class="label" id="auto-advance-label">Auto-advance</div>
 				<div class="hint">After archiving an item, automatically open the next one.</div>
 			</div>
 			<label class="toggle">
 				<input
 					type="checkbox"
+					aria-labelledby="auto-advance-label"
 					checked={autoAdvance}
 					onchange={(event) => onAutoAdvanceChange(event.currentTarget.checked)}
 				/>

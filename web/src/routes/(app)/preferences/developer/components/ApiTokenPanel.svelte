@@ -63,6 +63,14 @@
 		onDismissToken,
 		onRevokeToken
 	}: Props = $props();
+
+	let issueOpener: HTMLButtonElement | null = null;
+
+	function closeIssue() {
+		onCloseIssue();
+		issueOpener?.focus();
+		issueOpener = null;
+	}
 </script>
 
 <section class="zone">
@@ -75,7 +83,14 @@
 			</div>
 		</div>
 		<div class="zone-actions">
-			<button type="button" class="btn primary" onclick={onOpenIssue}>Issue token</button>
+			<button
+				type="button"
+				class="btn primary"
+				onclick={(event) => {
+					issueOpener = event.currentTarget;
+					onOpenIssue();
+				}}>Issue token</button
+			>
 		</div>
 	</div>
 
@@ -165,7 +180,7 @@
 			{allPermissionsSelected}
 			creating={creatingToken}
 			error={issueError}
-			onClose={onCloseIssue}
+			onClose={closeIssue}
 			onName={onIssueName}
 			onSetResourceAccess={onSetIssueResourceAccess}
 			onTogglePermission={onToggleIssuePermission}

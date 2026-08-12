@@ -112,6 +112,46 @@ describe('developer token issue form', () => {
 		expectDefaultTokenDraft();
 	});
 
+	it('keeps collapsed forms out of the accessibility tree', async () => {
+		await renderDeveloperPage();
+		const tokenForm = screen
+			.getByPlaceholderText('e.g. Personal MacBook')
+			.closest('.issue-form')! as HTMLElement & { inert: boolean };
+		const webhookForm = screen
+			.getByPlaceholderText('e.g. Internal Slack inbox')
+			.closest('.add-form')! as HTMLElement & { inert: boolean };
+
+		expect(tokenForm.inert).toBe(true);
+		expect(webhookForm.inert).toBe(true);
+		expect(screen.queryByRole('button', { name: 'Create token' })).toBeNull();
+		expect(screen.queryByRole('button', { name: 'Create endpoint' })).toBeNull();
+	});
+
+	it('returns focus to the token trigger after cancellation', async () => {
+		await renderDeveloperPage();
+		const trigger = screen.getByRole('button', { name: 'Issue token' });
+
+		await fireEvent.click(trigger);
+		const form = tokenIssueForm();
+		(form.getByPlaceholderText('e.g. Personal MacBook') as HTMLInputElement).focus();
+		await fireEvent.click(form.getByRole('button', { name: 'Cancel' }));
+
+		expect(document.activeElement).toBe(trigger);
+	});
+
+	it('returns focus to the webhook trigger after cancellation', async () => {
+		await renderDeveloperPage();
+		const trigger = screen.getByRole('button', { name: 'Add endpoint' });
+
+		await fireEvent.click(trigger);
+		const input = screen.getByPlaceholderText('e.g. Internal Slack inbox');
+		const form = within(input.closest('.add-form')!);
+		input.focus();
+		await fireEvent.click(form.getByRole('button', { name: 'Cancel' }));
+
+		expect(document.activeElement).toBe(trigger);
+	});
+
 	it('initializes the Obsidian deep link with only Obsidian sync', async () => {
 		await renderDeveloperPage('http://localhost/preferences/developer?permission=obsidian%3Async');
 		const form = tokenIssueForm();
