@@ -68,6 +68,41 @@ describe('readable extraction', () => {
     expect(result.readerHtml).not.toContain('Cookie preferences')
     expect(result.readerHtml).not.toContain('Google Analytics')
   })
+
+  it('prefers a person contributor when structured author metadata names the site', () => {
+    const doc = parseHtml(
+      `<!doctype html>
+      <html>
+        <head>
+          <title>Workshop Project - Example Maker Site</title>
+          <meta property="og:site_name" content="Example Maker Site">
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Article",
+              "headline": "Workshop Project",
+              "author": { "@type": "Organization", "name": "Example Maker Site" },
+              "publisher": { "@type": "Organization", "name": "Example Maker Site" },
+              "contributor": { "@type": "Person", "name": "AahanSharma" }
+            }
+          </script>
+        </head>
+        <body>
+          <main>
+            <article>
+              <h1>Workshop Project</h1>
+              <div class="article-byline">By AahanSharma</div>
+              <p>${articleParagraph.repeat(24)}</p>
+            </article>
+          </main>
+        </body>
+      </html>`,
+    )
+
+    const result = extractReadableContent(doc)
+
+    expect(result.author).toBe('AahanSharma')
+  })
 })
 
 const articleParagraph =
