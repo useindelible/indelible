@@ -169,7 +169,7 @@ impl PgTagRepository {
                  h.id, h.document_id AS \"document_id!\", h.user_id, h.color, h.text_content, \
                  h.locator, h.source_locator, h.created_at, h.updated_at, \
                  d.title AS item_title, d.domain AS item_domain, \
-                 d.document_type AS item_type, hn.body AS note \
+                 d.document_type AS item_type, hn.body AS \"note?\" \
                  FROM highlights h \
                  JOIN highlight_tags ht ON ht.highlight_id = h.id \
                  JOIN documents d ON d.id = h.document_id AND d.user_id = h.user_id \
@@ -194,7 +194,7 @@ impl PgTagRepository {
                  h.id, h.document_id AS \"document_id!\", h.user_id, h.color, h.text_content, \
                  h.locator, h.source_locator, h.created_at, h.updated_at, \
                  d.title AS item_title, d.domain AS item_domain, \
-                 d.document_type AS item_type, hn.body AS note \
+                 d.document_type AS item_type, hn.body AS \"note?\" \
                  FROM highlights h \
                  JOIN highlight_tags ht ON ht.highlight_id = h.id \
                  JOIN documents d ON d.id = h.document_id AND d.user_id = h.user_id \

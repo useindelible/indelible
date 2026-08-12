@@ -176,6 +176,32 @@ async fn highlight_lifecycle_persists_notes_tags_and_tenant_boundaries() {
     .await;
     assert_eq!(tags["tags"], json!(["architecture", "rust"]));
 
+    let without_note = assert_json_response(
+        client
+            .post_json(
+                &format!("/api/v1/documents/{document_id}/highlights"),
+                &json!({
+                    "color": "green",
+                    "text_content": "A highlight without a note",
+                    "locator": {"type": "html", "start_offset": 19, "end_offset": 45}
+                }),
+            )
+            .await,
+        StatusCode::CREATED,
+    )
+    .await;
+    let without_note_id = without_note["id"].as_str().unwrap();
+    assert_json_response(
+        client
+            .put_json(
+                &format!("/api/v1/highlights/{without_note_id}/tags"),
+                &json!({"tags": ["Architecture"]}),
+            )
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+
     let all_tags = assert_json_response(client.get("/api/v1/tags").await, StatusCode::OK).await;
     let architecture_tag_id = all_tags["data"]
         .as_array()
@@ -192,12 +218,25 @@ async fn highlight_lifecycle_persists_notes_tags_and_tenant_boundaries() {
         StatusCode::OK,
     )
     .await;
-    let tagged_highlight = &tagged_highlights["data"][0];
+    assert_eq!(tagged_highlights["data"].as_array().unwrap().len(), 2);
+    let tagged_highlight = tagged_highlights["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|highlight| highlight["id"] == highlight_id)
+        .unwrap();
     assert_eq!(tagged_highlight["id"], highlight_id);
     assert_eq!(tagged_highlight["item_title"], "Reader Save Article");
     assert_eq!(tagged_highlight["item_domain"], "example.com");
     assert_eq!(tagged_highlight["item_type"], "article");
     assert_eq!(tagged_highlight["note"], note["body"]);
+    let tagged_without_note = tagged_highlights["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|highlight| highlight["id"] == without_note_id)
+        .unwrap();
+    assert!(tagged_without_note["note"].is_null());
 
     let document_highlights = assert_json_response(
         client
@@ -206,7 +245,7 @@ async fn highlight_lifecycle_persists_notes_tags_and_tenant_boundaries() {
         StatusCode::OK,
     )
     .await;
-    assert_eq!(document_highlights["count"], 1);
+    assert_eq!(document_highlights["count"], 2);
     assert_eq!(
         document_highlights["highlights"][0]["note"]["body"],
         note["body"]
@@ -216,7 +255,7 @@ async fn highlight_lifecycle_persists_notes_tags_and_tenant_boundaries() {
         StatusCode::OK,
     )
     .await;
-    assert_eq!(recent["highlights"][0]["id"], highlight_id);
+    assert_eq!(recent["highlights"][0]["id"], without_note_id);
 
     let stranger = scenario.app.create_web_session().await;
     assert_status(

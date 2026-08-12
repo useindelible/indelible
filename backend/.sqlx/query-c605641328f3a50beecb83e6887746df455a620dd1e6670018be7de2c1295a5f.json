@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT ht.added_at AS link_added_at, h.id, h.document_id AS \"document_id!\", h.user_id, h.color, h.text_content, h.locator, h.source_locator, h.created_at, h.updated_at, d.title AS item_title, d.domain AS item_domain, d.document_type AS item_type, hn.body AS note FROM highlights h JOIN highlight_tags ht ON ht.highlight_id = h.id JOIN documents d ON d.id = h.document_id AND d.user_id = h.user_id LEFT JOIN highlight_notes hn ON hn.highlight_id = h.id WHERE ht.tag_id = $1 AND h.user_id = $2 AND h.document_id IS NOT NULL ORDER BY ht.added_at DESC, h.id DESC LIMIT $3",
+  "query": "SELECT ht.added_at AS link_added_at, h.id, h.document_id AS \"document_id!\", h.user_id, h.color, h.text_content, h.locator, h.source_locator, h.created_at, h.updated_at, d.title AS item_title, d.domain AS item_domain, d.document_type AS item_type, hn.body AS \"note?\" FROM highlights h JOIN highlight_tags ht ON ht.highlight_id = h.id JOIN documents d ON d.id = h.document_id AND d.user_id = h.user_id LEFT JOIN highlight_notes hn ON hn.highlight_id = h.id WHERE ht.tag_id = $1 AND h.user_id = $2 AND h.document_id IS NOT NULL ORDER BY ht.added_at DESC, h.id DESC LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -70,7 +70,7 @@
       },
       {
         "ordinal": 13,
-        "name": "note",
+        "name": "note?",
         "type_info": "Text"
       }
     ],
@@ -98,5 +98,5 @@
       false
     ]
   },
-  "hash": "5d48e0cb1784bdf2100e80b8f771796ed32e794f26c1420db05f63cf9f316253"
+  "hash": "c605641328f3a50beecb83e6887746df455a620dd1e6670018be7de2c1295a5f"
 }
