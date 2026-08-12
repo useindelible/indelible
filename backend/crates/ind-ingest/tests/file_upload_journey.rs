@@ -34,6 +34,26 @@ fn encrypted_pdf(user_password: &str) -> Vec<u8> {
         .unwrap()
 }
 
+fn generated_pdf(text: Option<&str>) -> Vec<u8> {
+    let mut builder = DocumentBuilder::new();
+    let page = builder.page(PageSize::Letter);
+    if let Some(text) = text {
+        page.at(72.0, 720.0).text(text).done();
+    } else {
+        page.done();
+    }
+    builder.build().unwrap()
+}
+
+fn without_eof(mut pdf: Vec<u8>) -> Vec<u8> {
+    let eof = pdf
+        .windows(b"%%EOF".len())
+        .rposition(|window| window == b"%%EOF")
+        .unwrap();
+    pdf.truncate(eof);
+    pdf
+}
+
 fn pdf_with_unsupported_encryption_version() -> Vec<u8> {
     let mut pdf = encrypted_pdf("open-secret");
     let version = b"/V 5";
@@ -161,6 +181,64 @@ async fn permission_only_encrypted_pdf_upload_remains_supported() {
         asset.asset_kind == Some(ArchiveAssetKind::OriginalUpload)
             && !asset.bytes.is_empty()
             && asset.status == ind_domain::ArchiveAssetStatus::Completed
+    }));
+}
+
+#[test]
+fn eof_truncated_pdf_is_classified_as_parse_failure() {
+    let error = extract_pdf_text(&without_eof(generated_pdf(Some("Truncated tail")))).unwrap_err();
+
+    assert!(
+        matches!(error, PdfExtractionError::Parse(_)),
+        "unexpected error: {error:?}"
+    );
+}
+
+#[tokio::test]
+async fn eof_truncated_pdf_upload_is_rejected_as_corrupted() {
+    let processor = DocumentFileUploadProcessor;
+
+    let error = processor
+        .process_upload(request(
+            "truncated.pdf",
+            "application/pdf",
+            without_eof(generated_pdf(Some("Truncated tail"))),
+            1024 * 1024,
+        ))
+        .await
+        .unwrap_err();
+
+    assert!(matches!(
+        error,
+        AppError::Domain(DomainError::Validation { field, message })
+            if field == "file"
+                && message
+                    == "This PDF is incomplete or corrupted. Choose a valid PDF and try again."
+    ));
+}
+
+#[tokio::test]
+async fn blank_pdf_upload_remains_supported_when_text_extraction_has_no_text() {
+    let processor = DocumentFileUploadProcessor;
+
+    let processed = processor
+        .process_upload(request(
+            "blank.pdf",
+            "application/pdf",
+            generated_pdf(None),
+            1024 * 1024,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(processed.document_type, DocumentType::Pdf);
+    assert!(processed.assets.iter().any(|asset| {
+        asset.asset_kind == Some(ArchiveAssetKind::OriginalUpload)
+            && asset.status == ind_domain::ArchiveAssetStatus::Completed
+    }));
+    assert!(processed.assets.iter().any(|asset| {
+        asset.asset_kind == Some(ArchiveAssetKind::ExtractedText)
+            && asset.status == ind_domain::ArchiveAssetStatus::Failed
     }));
 }
 

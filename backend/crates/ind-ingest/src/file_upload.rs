@@ -84,6 +84,13 @@ async fn process_pdf(
             message: "Password-protected PDFs are not supported.".into(),
         }));
     }
+    if matches!(extracted_text, Err(PdfExtractionError::Parse(_))) {
+        return Err(AppError::Domain(DomainError::Validation {
+            field: "file".into(),
+            message: "This PDF is incomplete or corrupted. Choose a valid PDF and try again."
+                .into(),
+        }));
+    }
     let word_count = extracted_text
         .as_ref()
         .ok()

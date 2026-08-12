@@ -13,6 +13,9 @@ use reqwest::multipart::{Form, Part};
 
 use super::common::{assert_json_response, build_worker_context};
 
+const CORRUPT_PDF_MESSAGE: &str =
+    "This PDF is incomplete or corrupted. Choose a valid PDF and try again.";
+
 #[tokio::test]
 async fn pdf_upload_and_readwise_import_cross_http_storage_and_persistence() {
     let app = spawn_app().await;
@@ -85,6 +88,69 @@ async fn pdf_upload_and_readwise_import_cross_http_storage_and_persistence() {
     let recent =
         assert_json_response(client.get("/api/v1/imports?limit=1").await, StatusCode::OK).await;
     assert_eq!(recent["jobs"][0]["id"], import_id);
+}
+
+#[tokio::test]
+async fn corrupt_pdf_upload_is_rejected_atomically() {
+    let app = spawn_app().await;
+    let session = app.create_web_session().await;
+    let client = app.authed_client(&session);
+    let user_id = session.user.id.into_uuid();
+    let storage_prefix = format!("documents/uploads/{}/", session.user.id);
+    let storage = app.storage().await;
+    let documents_before: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM documents WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(app.pool())
+            .await
+            .unwrap();
+    let library_entries_before: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM library_entries WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(app.pool())
+            .await
+            .unwrap();
+    let storage_before = storage.list_keys(&storage_prefix).await.unwrap();
+    let mut pdf = build_minimal_pdf("Incomplete upload");
+    let eof = pdf
+        .windows(b"%%EOF".len())
+        .rposition(|window| window == b"%%EOF")
+        .unwrap();
+    pdf.truncate(eof);
+    let form = Form::new().part(
+        "file",
+        Part::bytes(pdf)
+            .file_name("incomplete.pdf")
+            .mime_str("application/pdf")
+            .expect("valid PDF MIME type"),
+    );
+
+    let body = assert_json_response(
+        client.post_multipart("/api/v1/library/uploads", form).await,
+        StatusCode::UNPROCESSABLE_ENTITY,
+    )
+    .await;
+
+    assert_eq!(body["errors"][0]["field"], "file");
+    assert_eq!(body["errors"][0]["message"], CORRUPT_PDF_MESSAGE);
+    let documents_after: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM documents WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(app.pool())
+            .await
+            .unwrap();
+    let library_entries_after: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM library_entries WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(app.pool())
+            .await
+            .unwrap();
+    assert_eq!(documents_after, documents_before);
+    assert_eq!(library_entries_after, library_entries_before);
+    assert_eq!(
+        storage.list_keys(&storage_prefix).await.unwrap(),
+        storage_before
+    );
 }
 
 #[tokio::test]
