@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT fd.id, fd.user_id, fd.subscription_id, fd.source_id, fd.source_entry_id, fd.document_id, fd.delivered_at, fd.seen_at, fd.dismissed_at, fd.hidden_at, fd.created_at, fd.updated_at FROM feed_deliveries fd JOIN feed_source_entries fse ON fse.id = fd.source_entry_id JOIN feed_subscriptions s ON s.id = fd.subscription_id LEFT JOIN archive_assets aa ON aa.document_id = fd.document_id AND aa.asset_kind = 'readable_html' AND aa.status = 'completed' WHERE fd.user_id = $1 AND fd.seen_at IS NULL AND fd.dismissed_at IS NULL AND fd.hidden_at IS NULL AND fse.canonical_url IS NOT NULL AND s.status = 'active' AND aa.id IS NULL AND ($2::uuid IS NULL OR fd.subscription_id = $2) AND ($2::uuid IS NOT NULL OR EXISTS ( SELECT 1 FROM feed_deliveries fd2 WHERE fd2.user_id = fd.user_id AND fd2.subscription_id = fd.subscription_id AND fd2.seen_at >= now() - make_interval(days => $3) )) ORDER BY fd.delivered_at DESC, fd.id DESC LIMIT $4",
+  "query": "SELECT fd.id, fd.user_id, fd.subscription_id, fd.source_id, fd.source_entry_id, fd.document_id, fd.delivered_at, fd.seen_at, fd.dismissed_at, fd.hidden_at, fd.created_at, fd.updated_at FROM feed_deliveries fd JOIN feed_source_entries fse ON fse.id = fd.source_entry_id JOIN feed_subscriptions s ON s.id = fd.subscription_id LEFT JOIN archive_assets aa ON aa.document_id = fd.document_id AND aa.asset_kind = 'readable_html' AND aa.status = 'completed' WHERE fd.user_id = $1 AND fd.seen_at IS NULL AND fd.dismissed_at IS NULL AND fd.hidden_at IS NULL AND fse.canonical_url IS NOT NULL AND s.status = 'active' AND aa.id IS NULL AND ($2::uuid IS NULL OR fd.subscription_id = $2) AND ($2::uuid IS NOT NULL OR EXISTS ( SELECT 1 FROM feed_deliveries fd2 WHERE fd2.user_id = fd.user_id AND fd2.subscription_id = fd.subscription_id AND fd2.seen_at >= now() - make_interval(days => $3) )) ORDER BY COALESCE(fse.published_at, fd.delivered_at) DESC, fd.id DESC LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -87,5 +87,5 @@
       false
     ]
   },
-  "hash": "d31eeb6f9ebdf1f19e7c121c91ef22b8f5e56643d277cdfa6f971f61558e0a70"
+  "hash": "ac75482f11bbf205e1e8b85626521a25f26c99ec4397aec5156cbac31d4caf31"
 }

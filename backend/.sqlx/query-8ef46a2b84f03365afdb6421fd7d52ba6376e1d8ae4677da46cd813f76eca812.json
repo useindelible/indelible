@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT fd.id, fd.user_id, fd.subscription_id, fd.source_id, fd.source_entry_id, fd.document_id, fd.delivered_at, fd.seen_at, fd.dismissed_at, fd.hidden_at, fd.created_at, fd.updated_at, fse.title AS entry_title, fse.url AS entry_url, fse.author AS entry_author, fse.excerpt AS entry_excerpt, fse.published_at AS entry_published_at, fse.lead_image_url AS entry_lead_image_url, d.document_type AS \"doc_document_type?\", d.title AS \"doc_title?\", d.canonical_url AS \"doc_canonical_url?\", d.author AS \"doc_author?\", d.excerpt AS \"doc_excerpt?\", d.lead_image_url AS \"doc_lead_image_url?\", d.thumbnail_url AS \"doc_thumbnail_url?\", (le.id IS NOT NULL) AS \"saved!\" FROM feed_deliveries fd JOIN feed_source_entries fse ON fse.id = fd.source_entry_id LEFT JOIN documents d ON d.id = fd.document_id AND d.user_id = fd.user_id LEFT JOIN library_entries le ON le.user_id = fd.user_id AND le.document_id = d.id AND le.deleted_at IS NULL WHERE fd.user_id = $1 AND fd.seen_at IS NULL AND fd.dismissed_at IS NULL AND fd.hidden_at IS NULL AND le.id IS NULL AND ($2::uuid IS NULL OR fd.subscription_id = $2) AND ($3::timestamptz IS NULL OR (fd.delivered_at, fd.id) < ($3, $4)) ORDER BY fd.delivered_at DESC, fd.id DESC LIMIT $5",
+  "query": "SELECT fd.id, fd.user_id, fd.subscription_id, fd.source_id, fd.source_entry_id, fd.document_id, fd.delivered_at, fd.seen_at, fd.dismissed_at, fd.hidden_at, fd.created_at, fd.updated_at, fse.title AS entry_title, fse.url AS entry_url, fse.author AS entry_author, fse.excerpt AS entry_excerpt, fse.published_at AS entry_published_at, fse.lead_image_url AS entry_lead_image_url, d.document_type AS \"doc_document_type?\", d.title AS \"doc_title?\", d.canonical_url AS \"doc_canonical_url?\", d.author AS \"doc_author?\", d.excerpt AS \"doc_excerpt?\", d.lead_image_url AS \"doc_lead_image_url?\", d.thumbnail_url AS \"doc_thumbnail_url?\", (le.id IS NOT NULL) AS \"saved!\" FROM feed_deliveries fd JOIN feed_source_entries fse ON fse.id = fd.source_entry_id LEFT JOIN documents d ON d.id = fd.document_id AND d.user_id = fd.user_id LEFT JOIN library_entries le ON le.user_id = fd.user_id AND le.document_id = d.id AND le.deleted_at IS NULL WHERE fd.user_id = $1 AND fd.seen_at IS NULL AND fd.dismissed_at IS NULL AND fd.hidden_at IS NULL AND le.id IS NULL AND ($2::uuid IS NULL OR fd.subscription_id = $2) AND ($3::timestamptz IS NULL OR (COALESCE(fse.published_at, fd.delivered_at), fd.id) < ($3, $4)) ORDER BY COALESCE(fse.published_at, fd.delivered_at) DESC, fd.id DESC LIMIT $5",
   "describe": {
     "columns": [
       {
@@ -172,5 +172,5 @@
       null
     ]
   },
-  "hash": "82f0e47dc9b926780d640c82ec6bd64104e67f37334896c3a47af384143beaef"
+  "hash": "8ef46a2b84f03365afdb6421fd7d52ba6376e1d8ae4677da46cd813f76eca812"
 }

@@ -193,8 +193,8 @@ impl PgFeedDeliveryRepository {
     /// Feed). Source-entry first via the `JOIN feed_source_entries`; documents are a left join
     /// because most deliveries are never prepared. The `library_entries` left join plus
     /// `le.id IS NULL` hides saved documents (AC #5). Subscription filter and keyset cursor are
-    /// folded into SQL predicates so each state needs a single query. Unseen sorts by
-    /// `delivered_at`; Seen sorts by `seen_at`.
+    /// folded into SQL predicates so each state needs a single query. Unseen sorts by the source
+    /// entry's publication time, falling back to `delivered_at`; Seen sorts by `seen_at`.
     pub(super) async fn list_deliveries_impl(
         &self,
         user_id: UserId,
@@ -235,8 +235,9 @@ impl PgFeedDeliveryRepository {
                  WHERE fd.user_id = $1 AND fd.seen_at IS NULL AND fd.dismissed_at IS NULL \
                    AND fd.hidden_at IS NULL AND le.id IS NULL \
                    AND ($2::uuid IS NULL OR fd.subscription_id = $2) \
-                   AND ($3::timestamptz IS NULL OR (fd.delivered_at, fd.id) < ($3, $4)) \
-                 ORDER BY fd.delivered_at DESC, fd.id DESC \
+                   AND ($3::timestamptz IS NULL OR \
+                        (COALESCE(fse.published_at, fd.delivered_at), fd.id) < ($3, $4)) \
+                 ORDER BY COALESCE(fse.published_at, fd.delivered_at) DESC, fd.id DESC \
                  LIMIT $5",
                 user_id.into_uuid(),
                 subscription,
@@ -291,7 +292,9 @@ impl PgFeedDeliveryRepository {
             items.last().map(|d| {
                 // Cursor column matches the ORDER BY column for the requested state.
                 let ts = match state {
-                    FeedDeliveryState::Unseen => d.delivery.delivered_at,
+                    FeedDeliveryState::Unseen => {
+                        d.entry_published_at.unwrap_or(d.delivery.delivered_at)
+                    }
                     FeedDeliveryState::Seen => {
                         d.delivery.seen_at.unwrap_or(d.delivery.delivered_at)
                     }
@@ -400,7 +403,7 @@ impl PgFeedDeliveryRepository {
                          AND fd2.subscription_id = fd.subscription_id \
                          AND fd2.seen_at >= now() - make_interval(days => $3) \
                    )) \
-             ORDER BY fd.delivered_at DESC, fd.id DESC \
+             ORDER BY COALESCE(fse.published_at, fd.delivered_at) DESC, fd.id DESC \
              LIMIT $4",
             user_id.into_uuid(),
             subscription,

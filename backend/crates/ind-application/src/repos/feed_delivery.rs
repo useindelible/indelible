@@ -43,7 +43,8 @@ pub trait FeedDeliveryRepository: Send + Sync {
     ) -> Result<Option<FeedDelivery>, AppError>;
 
     /// Unseen/Seen Feed list. Excludes dismissed, hidden, and saved (active `library_entries`)
-    /// deliveries. Unseen orders by `delivered_at DESC`; Seen orders by `seen_at DESC`.
+    /// deliveries. Unseen orders by source-entry publication time, falling back to
+    /// `delivered_at`; Seen orders by `seen_at DESC`.
     async fn list_deliveries(
         &self,
         user_id: UserId,
@@ -83,7 +84,8 @@ pub trait FeedDeliveryRepository: Send + Sync {
     /// Count of unseen, non-dismissed, non-hidden, non-saved deliveries for the Feed badge.
     async fn count_unseen(&self, user_id: UserId) -> Result<i64, AppError>;
 
-    /// Newest eligible deliveries for read-ahead preparation, ordered by `delivered_at DESC`.
+    /// Newest eligible deliveries for read-ahead preparation, ordered by source-entry
+    /// publication time with `delivered_at` as the fallback.
     /// Eligibility (docs/document-feed-library-architecture.md, Readable Content Preparation
     /// Policy): subscription `status='active'`; unread, not hidden/dismissed; the source entry
     /// has a `canonical_url` (URL-backed); the linked/materialized document has no `completed`
