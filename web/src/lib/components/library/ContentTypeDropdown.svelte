@@ -31,8 +31,7 @@
 		{ label: 'Emails', type: 'emails', href: '/library/emails' },
 		{ label: 'PDFs', type: 'pdfs', href: '/library/pdfs' },
 		{ label: 'Tweets', type: 'tweets', href: '/library/tweets' },
-		{ label: 'Videos', type: 'videos', href: '/library/videos' },
-		{ label: 'Podcasts', type: 'podcasts', href: '/library/podcasts' }
+		{ label: 'Videos', type: 'videos', href: '/library/videos' }
 	];
 
 	const currentLabel = $derived(options.find((o) => o.type === lib.activeType)?.label ?? 'Library');

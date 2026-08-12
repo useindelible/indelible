@@ -4,6 +4,7 @@ import app.indelible.core.model.LibraryCounts
 import app.indelible.library.viewmodel.ContentTypeFilter
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class ContentTypeFilterRowTest {
     private val counts =
@@ -39,7 +40,7 @@ class ContentTypeFilterRowTest {
     @Test
     fun visible_filters_show_every_type_until_counts_load() {
         assertEquals(
-            ContentTypeFilter.entries,
+            ContentTypeFilter.entries.filterNot { it == ContentTypeFilter.PODCASTS },
             visibleContentTypeFilters(ContentTypeFilter.ALL, counts = null),
         )
     }
@@ -56,8 +57,25 @@ class ContentTypeFilterRowTest {
             )
 
         assertEquals(
-            ContentTypeFilter.entries,
+            ContentTypeFilter.entries.filterNot { it == ContentTypeFilter.PODCASTS },
             visibleContentTypeFilters(ContentTypeFilter.ALL, emptyCounts),
+        )
+    }
+
+    @Test
+    fun visible_filters_never_advertise_podcasts_at_launch() {
+        val podcastCounts =
+            LibraryCounts(
+                total = 3,
+                unread = 3,
+                reading = 0,
+                done = 0,
+                byItemType = mapOf("podcast" to 3),
+            )
+
+        assertFalse(
+            visibleContentTypeFilters(ContentTypeFilter.PODCASTS, podcastCounts)
+                .contains(ContentTypeFilter.PODCASTS),
         )
     }
 

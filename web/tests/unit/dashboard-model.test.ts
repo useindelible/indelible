@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { HomeItemResponse } from '$lib/api';
 import {
+	DEFAULT_CONFIG_TYPES,
 	coverColor,
 	domainInitial,
 	greetingLine,
@@ -55,5 +56,9 @@ describe('dashboard model', () => {
 			'long',
 			'longer'
 		]);
+	});
+
+	it('does not advertise podcasts in launch dashboard content settings', () => {
+		expect(DEFAULT_CONFIG_TYPES.map((item) => item.id)).not.toContain('podcasts');
 	});
 });

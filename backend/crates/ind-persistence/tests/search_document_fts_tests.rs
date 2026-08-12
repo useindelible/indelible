@@ -3,15 +3,20 @@
 use ind_application::repos::content_vector::{ContentVectorRepository, SingleDocumentFtsQuery};
 use ind_application::repos::document::DocumentRepository;
 use ind_application::repos::email_sender::EmailSenderRepository;
+use ind_application::repos::feed::FeedRepository;
 use ind_application::repos::search::{SearchFtsQuery, SearchRepository};
 use ind_domain::{
-    CanonicalAddress, SearchDocument, SearchDocumentId, SearchDocumentKind, SearchDocumentSource,
-    UserId,
+    CanonicalAddress, FeedSourceEntry, FeedSourceEntryId, ItemType, SearchDocument,
+    SearchDocumentId, SearchDocumentKind, SearchDocumentSource, UserId,
 };
 use ind_persistence::repos::{
-    PgContentVectorRepository, PgDocumentRepository, PgEmailSenderRepository, PgSearchRepository,
+    PgContentVectorRepository, PgDocumentRepository, PgEmailSenderRepository, PgFeedRepository,
+    PgSearchRepository,
 };
-use ind_test_support::{DocumentFactory, LibraryEntryFactory, TestDb, UserFactory};
+use ind_test_support::{
+    DocumentFactory, FeedDeliveryFactory, FeedSourceFactory, FeedSubscriptionFactory,
+    LibraryEntryFactory, TestDb, UserFactory,
+};
 
 fn query(user_id: UserId, text: &str) -> SearchFtsQuery {
     SearchFtsQuery {
@@ -299,6 +304,66 @@ async fn adaptive_vectors_support_english_morphology_simple_tokens_mila_and_gin(
             .contains("idx_feed_source_entries_search_tsv"),
         "{}",
         feed_plan.join("\n")
+    );
+}
+
+#[tokio::test]
+async fn podcast_feed_previews_search_as_articles() {
+    let db = TestDb::new().await;
+    let pool = db.pool().clone();
+    let user = UserFactory::default().insert(&pool).await;
+    let source = FeedSourceFactory.insert(&pool).await;
+    sqlx::query("UPDATE feed_sources SET feed_type = 'podcast' WHERE id = $1")
+        .bind(source.id.into_uuid())
+        .execute(&pool)
+        .await
+        .unwrap();
+    let subscription = FeedSubscriptionFactory::new(user.id)
+        .with_source(source.clone())
+        .insert(&pool)
+        .await;
+    let entry = PgFeedRepository::new(pool.clone())
+        .create_source_entry(FeedSourceEntry {
+            id: FeedSourceEntryId::new(),
+            source_id: source.id,
+            guid: "podcast-preview-guid".into(),
+            title: "Podcast preview sentinel".into(),
+            url: Some("https://example.com/episode".into()),
+            canonical_url: Some("https://example.com/episode".into()),
+            author: None,
+            excerpt: Some("Ordinary show notes".into()),
+            content_html: None,
+            language: None,
+            lead_image_url: None,
+            published_at: None,
+            discovered_at: chrono::Utc::now(),
+        })
+        .await
+        .unwrap();
+    FeedDeliveryFactory::new(user.id, subscription.id, source.id, entry.id)
+        .insert(&pool)
+        .await;
+    let repo = PgSearchRepository::new(pool);
+
+    let hits = repo.search_fts(&query(user.id, "sentinel")).await.unwrap();
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].content_type, ItemType::Article);
+
+    let mut article_query = query(user.id, "sentinel");
+    article_query.type_values = vec!["article".into()];
+    assert_eq!(repo.search_fts(&article_query).await.unwrap().len(), 1);
+
+    let mut podcast_query = query(user.id, "sentinel");
+    podcast_query.type_values = vec!["podcast".into()];
+    assert!(repo.search_fts(&podcast_query).await.unwrap().is_empty());
+
+    let mut negated_article_query = query(user.id, "sentinel");
+    negated_article_query.negated_type_values = vec!["article".into()];
+    assert!(
+        repo.search_fts(&negated_article_query)
+            .await
+            .unwrap()
+            .is_empty()
     );
 }
 

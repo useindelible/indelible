@@ -85,6 +85,7 @@ describe('obsidian settings model', () => {
 		expect(body.properties_template).toBeNull();
 		expect(body.file_name_template).toBeNull();
 		expect(body.category_folder_templates.books).toBe('books');
+		expect(body.category_folder_templates.podcasts).toBe('podcasts');
 	});
 
 	it('derives hero state and last-sync labels', () => {

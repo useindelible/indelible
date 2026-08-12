@@ -95,7 +95,7 @@ fun IntegrationsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsRow(
                     label = "Add RSS Feed",
-                    sublabel = "Subscribe to blogs, podcasts, newsletters",
+                    sublabel = "Subscribe to blogs and newsletters",
                     onClick = onNavigateToAddFeed,
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

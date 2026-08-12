@@ -132,7 +132,6 @@ private val ContentTypeEntries =
         Triple("PDFs", "pdf", IndelibleIcons.Pdf),
         Triple("Tweets", "tweet", IndelibleIcons.Tweet),
         Triple("Videos", "video", IndelibleIcons.Video),
-        Triple("Podcasts", "podcast", IndelibleIcons.Podcast),
     )
 
 private fun sampleCollections() =

@@ -24,7 +24,6 @@ export const DEFAULT_CONFIG_TYPES: DashboardConfigItem[] = [
 	{ id: 'pdfs', label: 'PDFs', on: true },
 	{ id: 'tweets', label: 'Tweets', on: true },
 	{ id: 'videos', label: 'Videos', on: true },
-	{ id: 'podcasts', label: 'Podcasts', on: true },
 	{ id: 'feeds', label: 'Feeds', on: true }
 ];
 

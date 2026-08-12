@@ -37,8 +37,7 @@ const LIBRARY_FILTER_FIELDS: LibraryFilterFieldDef[] = [
 			{ value: 'email', label: 'Email' },
 			{ value: 'pdf', label: 'PDF' },
 			{ value: 'tweet', label: 'Tweet' },
-			{ value: 'video', label: 'Video' },
-			{ value: 'podcast', label: 'Podcast' }
+			{ value: 'video', label: 'Video' }
 		]
 	},
 	{

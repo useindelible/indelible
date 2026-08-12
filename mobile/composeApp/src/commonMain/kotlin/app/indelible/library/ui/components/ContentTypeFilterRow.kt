@@ -32,7 +32,7 @@ private const val CHIP_COUNT_ALPHA = 0.72f
 /**
  * Content-type filter chips (prototype `.filters`): All plus every type the scope
  * actually holds, each carrying its count. Types with nothing saved are omitted so the
- * row reflects the library rather than the enum, but the active filter always stays
+ * row reflects the library rather than the enum, but an active selectable filter stays
  * visible — otherwise selecting a type would make its own chip disappear.
  */
 @Composable
@@ -61,16 +61,17 @@ fun ContentTypeFilterRow(
 }
 
 /**
- * All + the types present in [counts], preserving enum order. With no counts loaded the
- * full set shows, matching the pre-counts behaviour rather than collapsing to a lone chip.
+ * All + the selectable types present in [counts], preserving enum order. With no counts
+ * loaded the selectable set shows rather than collapsing to a lone chip.
  */
 internal fun visibleContentTypeFilters(
     selected: ContentTypeFilter,
     counts: LibraryCounts?,
 ): List<ContentTypeFilter> {
-    if (counts == null) return ContentTypeFilter.entries
-    if (counts.total == 0) return ContentTypeFilter.entries
-    return ContentTypeFilter.entries.filter { filter ->
+    val selectableFilters = ContentTypeFilter.entries.filterNot { it == ContentTypeFilter.PODCASTS }
+    if (counts == null) return selectableFilters
+    if (counts.total == 0) return selectableFilters
+    return selectableFilters.filter { filter ->
         filter == ContentTypeFilter.ALL || filter == selected || counts.countFor(filter) > 0
     }
 }

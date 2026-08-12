@@ -16,10 +16,11 @@ there are no surprises.
   For a YouTube or other video page, Indelible captures the transcript (where one is
   available) and details like title and channel; it does not download or host the
   video itself.
-- **Tweets and podcasts** are captured as their text/show-notes and enclosure
-  metadata, not as archived media.
-- **Podcast transcripts from Spotify and Apple Podcasts are not supported yet.**
-  Indelible does not extract transcripts from Spotify or Apple Podcasts at this time.
+- **Podcasts are not a first-class content type at launch.** Podcast RSS entries can
+  still arrive through the ordinary feed reader, where their show notes are treated
+  like articles. Indelible does not persist or play enclosure audio.
+- **Podcast transcripts from Spotify and Apple Podcasts are not supported.**
+  Indelible does not extract transcripts from either service at this time.
 
 ## Hosting
 

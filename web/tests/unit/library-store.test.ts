@@ -143,4 +143,21 @@ describe('buildLibraryItemsQueryBody', () => {
 			limit: 50
 		});
 	});
+
+	it('passes a saved legacy podcast filter through verbatim', () => {
+		const savedExpression: FilterExpression = {
+			type: 'condition',
+			field: 'item_type',
+			op: 'eq',
+			value: 'podcast'
+		};
+
+		expect(
+			buildSmartListItemsQueryBody({
+				filterExpression: savedExpression,
+				cursor: undefined,
+				limit: 50
+			}).filter_expression
+		).toEqual(savedExpression);
+	});
 });

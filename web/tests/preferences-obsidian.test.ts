@@ -100,6 +100,8 @@ describe('Obsidian preferences validation', () => {
 
 	it('keeps Save disabled until the current corrected draft has a successful preview', async () => {
 		await renderLoadedPage();
+		expect(screen.getByText('3 folder groups')).toBeTruthy();
+		expect(screen.queryByLabelText('Podcasts')).toBeNull();
 
 		await fireEvent.input(fileNameInput(), { target: { value: '{{ title' } });
 		expect(saveButton().disabled).toBe(true);

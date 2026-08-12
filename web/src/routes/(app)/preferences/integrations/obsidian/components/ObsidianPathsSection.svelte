@@ -12,8 +12,7 @@
 	const folders = [
 		{ key: 'books', label: 'Books', fallback: 'books' },
 		{ key: 'articles', label: 'Articles', fallback: 'articles' },
-		{ key: 'tweets', label: 'Tweets', fallback: 'tweets' },
-		{ key: 'podcasts', label: 'Podcasts', fallback: 'podcasts' }
+		{ key: 'tweets', label: 'Tweets', fallback: 'tweets' }
 	];
 </script>
 
@@ -44,7 +43,7 @@
 		<div class="row-block">
 			<div class="row-block-head">
 				<p class="row-title">Category folders</p>
-				<span class="row-count">4 folder groups</span>
+				<span class="row-count">3 folder groups</span>
 			</div>
 			<p class="row-sub-inline">
 				Folder group, relative to <code>Indelible/</code>. Each is a MiniJinja template; the live

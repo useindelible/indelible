@@ -37,7 +37,6 @@
 		{ href: '/library/pdfs', label: 'PDFs', icon: 'pdfs', countKey: 'pdf' },
 		{ href: '/library/tweets', label: 'Tweets', icon: 'tweets', countKey: 'tweet' },
 		{ href: '/library/videos', label: 'Videos', icon: 'videos', countKey: 'video' },
-		{ href: '/library/podcasts', label: 'Podcasts', icon: 'podcasts', countKey: 'podcast' },
 		{ href: '/tags', label: 'Tags', icon: 'tags' },
 		{ href: '/feed', label: 'Feed', icon: 'feed' }
 	];

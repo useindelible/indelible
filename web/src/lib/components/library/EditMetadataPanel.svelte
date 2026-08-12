@@ -175,7 +175,9 @@
 				<option value="book" selected={item.item_type === 'book'}>Book</option>
 				<option value="pdf" selected={item.item_type === 'pdf'}>PDF</option>
 				<option value="video" selected={item.item_type === 'video'}>Video</option>
-				<option value="podcast" selected={item.item_type === 'podcast'}>Podcast</option>
+				{#if item.item_type === 'podcast'}
+					<option value="podcast" selected>Podcast</option>
+				{/if}
 				<option value="tweet" selected={item.item_type === 'tweet'}>Tweet</option>
 				<option value="email" selected={item.item_type === 'email'}>Email</option>
 			</select>

@@ -461,7 +461,7 @@ impl PgSearchRepository {
                     ) AS final_score,
                     CASE fs.feed_type
                         WHEN 'youtube' THEN 'video'
-                        WHEN 'podcast' THEN 'podcast'
+                        WHEN 'podcast' THEN 'article'
                         WHEN 'twitter' THEN 'tweet'
                         ELSE 'article'
                     END AS item_type,
@@ -496,7 +496,7 @@ impl PgSearchRepository {
                         cardinality($7::text[]) = 0
                         OR CASE fs.feed_type
                             WHEN 'youtube' THEN 'video'
-                            WHEN 'podcast' THEN 'podcast'
+                            WHEN 'podcast' THEN 'article'
                             WHEN 'twitter' THEN 'tweet'
                             ELSE 'article'
                         END = ANY($7::text[])
@@ -505,7 +505,7 @@ impl PgSearchRepository {
                         cardinality($8::text[]) = 0
                         OR CASE fs.feed_type
                             WHEN 'youtube' THEN 'video'
-                            WHEN 'podcast' THEN 'podcast'
+                            WHEN 'podcast' THEN 'article'
                             WHEN 'twitter' THEN 'tweet'
                             ELSE 'article'
                         END <> ALL($8::text[])
