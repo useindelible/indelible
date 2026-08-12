@@ -43,8 +43,8 @@ impl Default for CanonicalizationConfig {
                 // Transient challenge/UI params; these do not identify different content.
                 "captcha",
                 "__readwiseLocation",
-                // YouTube junk params — strip for dedup while preserving `v` (video ID)
-                // and `t` (start time, intentionally kept).
+                // YouTube presentation parameters. Supported video URLs canonicalize by their
+                // stable video ID before generic query filtering.
                 "list",
                 "si",
                 "pp",
@@ -77,6 +77,13 @@ pub fn canonicalize_url(
         return Err(CanonicalizeError::TooLong {
             max: config.max_url_length,
         });
+    }
+
+    if let Some(video_id) = youtube_video_id(raw) {
+        let query = url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("v", &video_id)
+            .finish();
+        return Ok(CanonicalUrl(format!("https://youtube.com/watch?{query}")));
     }
 
     let mut url = Url::parse(raw)?;
@@ -137,6 +144,32 @@ pub fn canonicalize_url(
     Ok(CanonicalUrl(url.to_string()))
 }
 
+/// Extract the stable content identity from supported YouTube watch and `youtu.be` URLs.
+pub fn youtube_video_id(raw: &str) -> Option<String> {
+    let url = Url::parse(raw).ok()?;
+    if !matches!(url.scheme(), "http" | "https") {
+        return None;
+    }
+
+    let host = url
+        .host_str()?
+        .trim_start_matches("www.")
+        .to_ascii_lowercase();
+    let video_id = match host.as_str() {
+        "youtube.com" | "m.youtube.com" | "music.youtube.com" if url.path() == "/watch" => url
+            .query_pairs()
+            .find(|(key, _)| key == "v")
+            .map(|(_, value)| value.into_owned()),
+        "youtu.be" => {
+            let path = url.path().trim_matches('/');
+            (!path.is_empty() && !path.contains('/')).then(|| path.to_string())
+        }
+        _ => None,
+    }?;
+
+    (!video_id.is_empty()).then_some(video_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -151,7 +184,19 @@ mod tests {
             ),
             (
                 "https://youtube.com/watch?v=abc&list=x&si=y&t=4",
-                "https://youtube.com/watch?t=4&v=abc",
+                "https://youtube.com/watch?v=abc",
+            ),
+            (
+                "https://youtu.be/abc?si=share&t=4",
+                "https://youtube.com/watch?v=abc",
+            ),
+            (
+                "https://m.youtube.com/watch?feature=share&v=abc",
+                "https://youtube.com/watch?v=abc",
+            ),
+            (
+                "https://music.youtube.com/watch?v=abc&list=playlist",
+                "https://youtube.com/watch?v=abc",
             ),
             ("https://www2.example.com/", "https://www2.example.com/"),
             (
@@ -166,5 +211,23 @@ mod tests {
             );
         }
         assert!(canonicalize_url("not a url", &config).is_err());
+    }
+
+    #[test]
+    fn youtube_identity_accepts_only_supported_video_urls() {
+        for (raw, expected) in [
+            ("https://youtube.com/watch?v=abc", Some("abc")),
+            ("https://www.youtube.com/watch?v=abc", Some("abc")),
+            ("https://m.youtube.com/watch?v=abc", Some("abc")),
+            ("https://music.youtube.com/watch?v=abc", Some("abc")),
+            ("https://youtu.be/abc", Some("abc")),
+            ("https://youtube.com/watch", None),
+            ("https://youtube.com/embed/abc", None),
+            ("https://youtu.be/abc/extra", None),
+            ("https://youtube.com.evil.example/watch?v=abc", None),
+            ("ftp://youtube.com/watch?v=abc", None),
+        ] {
+            assert_eq!(youtube_video_id(raw).as_deref(), expected, "{raw}");
+        }
     }
 }

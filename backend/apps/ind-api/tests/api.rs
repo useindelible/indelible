@@ -40,4 +40,5 @@ mod api {
     mod search_api_journey_tests;
     mod upload_import_journey_tests;
     mod webhook_route_permission_tests;
+    mod youtube_identity_journey_tests;
 }
