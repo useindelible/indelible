@@ -5,6 +5,8 @@ import type { BookSource } from '$lib/components/reader/book/book-source';
 
 const mocks = vi.hoisted(() => ({
 	createHighlight: vi.fn(),
+	createEpubSource: vi.fn(),
+	scrollToChapter: vi.fn(),
 	updateProgress: vi.fn(async () => ({ data: {} }))
 }));
 
@@ -24,7 +26,7 @@ vi.mock('$lib/components/reader/book/book-source', async (importOriginal) => {
 	const original = await importOriginal<typeof import('$lib/components/reader/book/book-source')>();
 	return {
 		...original,
-		createEpubSource: vi.fn(async () => source()),
+		createEpubSource: (...args: unknown[]) => mocks.createEpubSource(...args),
 		createPdfSource: vi.fn()
 	};
 });
@@ -32,7 +34,7 @@ vi.mock('$lib/components/reader/book/PdfScrollView.svelte', () => ({
 	default: vi.fn(() => ({ c: vi.fn(), m: vi.fn(), p: vi.fn(), d: vi.fn() }))
 }));
 vi.mock('$lib/components/reader/book/EpubScrollView.svelte', () => ({
-	default: vi.fn(() => ({ c: vi.fn(), m: vi.fn(), p: vi.fn(), d: vi.fn() }))
+	default: vi.fn(() => ({ scrollToChapter: mocks.scrollToChapter }))
 }));
 
 import BookReader from '$lib/components/reader/book/BookReader.svelte';
@@ -64,6 +66,18 @@ function source(): BookSource {
 			};
 		},
 		destroy() {}
+	};
+}
+
+function mixedDepthSource(): BookSource {
+	return {
+		...source(),
+		metadata: { title: 'Mixed Depth', author: 'Indelible', totalChapters: 3 },
+		toc: [
+			{ id: 'opening', title: 'Opening', depth: 1, index: 0 },
+			{ id: 'signal', title: 'Signal', depth: 2, index: 1, fragment: 'signal' },
+			{ id: 'closing', title: 'Closing', depth: 1, index: 2 }
+		]
 	};
 }
 
@@ -104,7 +118,20 @@ function createdBookmark(): HighlightResponse {
 
 beforeEach(() => {
 	mocks.createHighlight.mockReset();
+	mocks.createEpubSource.mockReset().mockResolvedValue(source());
+	mocks.scrollToChapter.mockReset();
 	mocks.updateProgress.mockClear();
+});
+
+describe('BookReader chapter navigation', () => {
+	it('forwards the representative fragment when moving to the next EPUB spine', async () => {
+		mocks.createEpubSource.mockResolvedValue(mixedDepthSource());
+
+		render(BookReader, { props: { item: item(), assets: [], highlights: [] } });
+		await fireEvent.click(await screen.findByRole('button', { name: /Ch\. 2: Signal/ }));
+
+		expect(mocks.scrollToChapter).toHaveBeenCalledWith(1, 0, 'signal');
+	});
 });
 
 describe('BookReader annotation failures', () => {

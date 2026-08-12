@@ -10,7 +10,12 @@
 		HighlightWithNoteResponse
 	} from '$lib/api';
 	import type { BookSource } from './book-source';
-	import { createEpubSource, createPdfSource, estimatePageNumber } from './book-source';
+	import {
+		createEpubSource,
+		createPdfSource,
+		epubChapterSequence,
+		estimatePageNumber
+	} from './book-source';
 	import ReaderToolbar from '$lib/components/reader/ReaderToolbar.svelte';
 	import TypographyPopover from '$lib/components/reader/TypographyPopover.svelte';
 	import HighlightToolbar from '$lib/components/reader/HighlightToolbar.svelte';
@@ -117,12 +122,7 @@
 	const totalPages = $derived(metadata.estimatedPages ?? metadata.totalChapters);
 
 	const currentTocEntry = $derived(toc.find((e) => e.index === currentIndex));
-	const navigableEntries = $derived(
-		(() => {
-			const deep = toc.filter((e) => e.depth >= 2);
-			return deep.length > 0 ? deep : toc;
-		})()
-	);
+	const navigableEntries = $derived(epubChapterSequence(toc));
 	const currentNavigableEntry = $derived(navigableEntries.find((e) => e.index === currentIndex));
 
 	const currentPageNumber = $derived(
@@ -297,8 +297,7 @@
 			const idx = navigableEntries.findIndex((e) => e.index === currentIndex);
 			const prev = idx > 0 ? navigableEntries[idx - 1] : undefined;
 			if (prev) {
-				currentIndex = prev.index;
-				epubScrollViewRef?.scrollToChapter(prev.index);
+				handleNavigate(prev.index, prev.fragment);
 			}
 		}
 	}
@@ -314,8 +313,7 @@
 			const next =
 				idx >= 0 && idx < navigableEntries.length - 1 ? navigableEntries[idx + 1] : undefined;
 			if (next) {
-				currentIndex = next.index;
-				epubScrollViewRef?.scrollToChapter(next.index);
+				handleNavigate(next.index, next.fragment);
 			}
 		}
 	}

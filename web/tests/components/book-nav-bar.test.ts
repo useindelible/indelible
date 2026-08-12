@@ -5,6 +5,28 @@ import BookNavBar from '$lib/components/reader/book/BookNavBar.svelte';
 import type { TocEntry } from '$lib/components/reader/book/book-source';
 
 describe('BookNavBar', () => {
+	it('keeps every distinct spine in a mixed-depth table of contents', () => {
+		const toc: TocEntry[] = [
+			{ id: 'opening', title: 'Opening', depth: 1, index: 0 },
+			{ id: 'signal', title: 'Signal', depth: 2, index: 1, fragment: 'signal' },
+			{ id: 'closing', title: 'Closing', depth: 1, index: 2 }
+		];
+
+		render(BookNavBar, {
+			props: {
+				toc,
+				currentIndex: 1,
+				totalChapters: 3,
+				onPrev: vi.fn(),
+				onNext: vi.fn()
+			}
+		});
+
+		expect(screen.getByText('2 of 3 chapters')).toBeTruthy();
+		expect(screen.getByText('Ch. 1: Opening')).toBeTruthy();
+		expect(screen.getByText('Ch. 3: Closing')).toBeTruthy();
+	});
+
 	it('uses the navigable chapter number when the active spine starts with a section heading', () => {
 		const toc: TocEntry[] = [
 			{

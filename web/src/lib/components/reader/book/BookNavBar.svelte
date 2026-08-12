@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TocEntry } from './book-source';
+	import { epubChapterSequence, type TocEntry } from './book-source';
 
 	interface Props {
 		toc: TocEntry[];
@@ -12,28 +12,23 @@
 
 	let { toc, currentIndex, totalChapters, onPrev, onNext, isPdf = false }: Props = $props();
 
-	const depth2Entries = $derived(
-		(() => {
-			const deep = toc.filter((e) => e.depth >= 2);
-			return deep.length > 0 ? deep : toc;
-		})()
-	);
-	const currentChapterIndex = $derived(depth2Entries.findIndex((e) => e.index === currentIndex));
+	const chapterEntries = $derived(epubChapterSequence(toc));
+	const currentChapterIndex = $derived(chapterEntries.findIndex((e) => e.index === currentIndex));
 	const currentChapterNum = $derived(
 		currentChapterIndex >= 0 ? currentChapterIndex + 1 : currentIndex + 1
 	);
 
 	const prevEntry = $derived(
 		(() => {
-			const idx = depth2Entries.findIndex((e) => e.index === currentIndex);
-			return idx > 0 ? depth2Entries[idx - 1] : null;
+			const idx = chapterEntries.findIndex((e) => e.index === currentIndex);
+			return idx > 0 ? chapterEntries[idx - 1] : null;
 		})()
 	);
 
 	const nextEntry = $derived(
 		(() => {
-			const idx = depth2Entries.findIndex((e) => e.index === currentIndex);
-			return idx >= 0 && idx < depth2Entries.length - 1 ? depth2Entries[idx + 1] : null;
+			const idx = chapterEntries.findIndex((e) => e.index === currentIndex);
+			return idx >= 0 && idx < chapterEntries.length - 1 ? chapterEntries[idx + 1] : null;
 		})()
 	);
 
@@ -43,20 +38,20 @@
 	function prevLabel(): string {
 		if (isPdf) return `Page ${currentIndex}`;
 		if (!prevEntry) return '';
-		const num = depth2Entries.indexOf(prevEntry) + 1;
+		const num = chapterEntries.indexOf(prevEntry) + 1;
 		return `Ch. ${num}: ${prevEntry.title}`;
 	}
 
 	function nextLabel(): string {
 		if (isPdf) return `Page ${currentIndex + 2}`;
 		if (!nextEntry) return '';
-		const num = depth2Entries.indexOf(nextEntry) + 1;
+		const num = chapterEntries.indexOf(nextEntry) + 1;
 		return `Ch. ${num}: ${nextEntry.title}`;
 	}
 
 	function centerLabel(): string {
 		if (isPdf) return `Page ${currentIndex + 1} of ${totalChapters}`;
-		return `${currentChapterNum} of ${depth2Entries.length} chapters`;
+		return `${currentChapterNum} of ${chapterEntries.length} chapters`;
 	}
 </script>
 

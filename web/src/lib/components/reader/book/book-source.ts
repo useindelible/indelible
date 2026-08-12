@@ -20,6 +20,17 @@ export interface TocEntry {
 	spineHref?: string;
 }
 
+export function epubChapterSequence(toc: TocEntry[]): TocEntry[] {
+	const representatives = new Map<number, TocEntry>();
+	for (const entry of toc) {
+		const current = representatives.get(entry.index);
+		if (!current || entry.depth > current.depth) {
+			representatives.set(entry.index, entry);
+		}
+	}
+	return [...representatives.values()].sort((a, b) => a.index - b.index);
+}
+
 export interface BookMetadata {
 	title?: string;
 	author?: string;
