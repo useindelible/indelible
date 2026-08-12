@@ -133,6 +133,18 @@ describe('auth', () => {
       expect(mockStorage['ind_refresh_token']).toBeUndefined()
     })
 
+    it('returns an error state and retains credentials when the server is unavailable', async () => {
+      mockStorage['ind_refresh_token'] = 'indr_valid_token'
+      mockStorage['ind_server_url'] = 'http://localhost:38481'
+      fetchMock.mockResolvedValueOnce(new Response('Unavailable', { status: 503 }))
+
+      const state = await getAuthState()
+
+      expect(state.status).toBe('error')
+      expect(state.serverUrl).toBe('http://localhost:38481')
+      expect(mockStorage['ind_refresh_token']).toBe('indr_valid_token')
+    })
+
     it('returns disconnected state with default URL when server URL is not set', async () => {
       mockStorage['ind_refresh_token'] = 'indr_valid_token'
 

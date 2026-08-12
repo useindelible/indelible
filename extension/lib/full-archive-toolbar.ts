@@ -26,6 +26,7 @@ export interface ToolbarState {
     | 'saving'
     | 'saved'
     | 'disconnected'
+    | 'unreachable'
     | 'auth-error'
     | 'unsupported'
     | 'error'
@@ -176,6 +177,7 @@ function isToolbarView(value: string): value is ToolbarState['view'] {
     'saving',
     'saved',
     'disconnected',
+    'unreachable',
     'auth-error',
     'unsupported',
     'error',

@@ -264,7 +264,7 @@ async function resumeToolbarAfterAuth(tabId: number): Promise<void> {
   const auth = await getAuthState()
   if (auth.status !== 'connected') {
     await renderToolbar(tab.id, {
-      view: 'disconnected',
+      view: auth.status === 'error' ? 'unreachable' : 'disconnected',
       serverUrl: auth.serverUrl || (await getServerUrl()),
     })
     return
@@ -318,7 +318,7 @@ async function handleActionClick(tab: Browser.tabs.Tab): Promise<void> {
   const auth = await getAuthState()
   if (auth.status !== 'connected') {
     await renderToolbar(tabId, {
-      view: 'disconnected',
+      view: auth.status === 'error' ? 'unreachable' : 'disconnected',
       serverUrl: auth.serverUrl || (await getServerUrl()),
     })
     return

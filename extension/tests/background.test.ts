@@ -194,6 +194,33 @@ describe('background message handler', () => {
         }),
       )
     })
+
+    it('renders a retryable unreachable state while retaining the connected session', async () => {
+      mockStorage['ind_refresh_token'] = 'indr_valid_token'
+      mockStorage['ind_server_url'] = 'http://localhost:38481'
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      ;(browser.tabs.sendMessage as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true })
+
+      getActionClickHandler()({
+        id: 42,
+        url: 'https://example.com/article',
+        title: 'Example article',
+      })
+
+      await vi.waitFor(() =>
+        expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+          42,
+          expect.objectContaining({
+            action: 'toolbar:render',
+            state: expect.objectContaining({
+              view: 'unreachable',
+              serverUrl: 'http://localhost:38481',
+            }),
+          }),
+        ),
+      )
+      expect(mockStorage['ind_refresh_token']).toBe('indr_valid_token')
+    })
   })
 
   describe('capture admission', () => {

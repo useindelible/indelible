@@ -172,6 +172,21 @@ export function toolbarMarkup(state: ToolbarState): string {
         </div>`
       break
 
+    case 'unreachable':
+      barContent = `
+				<div class="left-lockup">
+					${BRAND_MARK}
+					<span class="item-name">Indelible is unreachable</span>
+				</div>
+				<div class="item">
+					<span class="s">Your session is retained · ${escapeHtml(state.serverUrl ?? 'Configured server')}</span>
+				</div>
+				<div class="group">
+					<button class="btn-primary" data-action="refresh">Retry</button>
+					<button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+				</div>`
+      break
+
     case 'connecting':
       barContent = `
         <div class="left-lockup">

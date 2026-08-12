@@ -41,6 +41,7 @@ import {
   syncEntryTags,
   getPipelineStatus,
   reprocessDocument,
+  refreshAccessToken,
   setAccessTokenMemory,
   clearAccessTokenMemory,
 } from '../lib/api'
@@ -63,6 +64,22 @@ describe('api', () => {
   })
 
   describe('authenticatedFetch', () => {
+    it('retains the refresh token and reports an unavailable server on refresh 503', async () => {
+      mockStorage['ind_refresh_token'] = 'indr_valid_token'
+      fetchMock.mockResolvedValueOnce(new Response('Unavailable', { status: 503 }))
+
+      await expect(refreshAccessToken()).rejects.toThrow('server is unavailable')
+      expect(mockStorage['ind_refresh_token']).toBe('indr_valid_token')
+    })
+
+    it('clears a rejected refresh token when the backend returns its current 400 contract', async () => {
+      mockStorage['ind_refresh_token'] = 'indr_expired'
+      fetchMock.mockResolvedValueOnce(new Response('Invalid token', { status: 400 }))
+
+      expect(await refreshAccessToken()).toBe(false)
+      expect(mockStorage['ind_refresh_token']).toBeUndefined()
+    })
+
     it('includes Authorization header with Bearer token', async () => {
       setAccessTokenMemory('jwt_access_token', FUTURE_EXPIRY)
       fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }))

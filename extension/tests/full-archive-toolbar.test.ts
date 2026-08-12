@@ -92,4 +92,14 @@ describe('full archive toolbar', () => {
     expect(toolbarRoot().textContent).toContain('Connecting Indelible')
     await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2))
   })
+
+  it('shows the unreachable endpoint and retries without asking to reconnect', async () => {
+    renderToolbar({ view: 'unreachable', serverUrl: 'http://localhost:38481' })
+
+    expect(toolbarRoot().textContent).toContain('Indelible is unreachable')
+    expect(toolbarRoot().textContent).toContain('http://localhost:38481')
+    expect(toolbarRoot().textContent).not.toContain('Authenticate your workspace')
+    toolbarRoot().querySelector<HTMLButtonElement>('[data-action="refresh"]')?.click()
+    await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledWith({ action: 'toolbar:save' }))
+  })
 })

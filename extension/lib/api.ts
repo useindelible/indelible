@@ -140,10 +140,14 @@ export async function refreshAccessToken(): Promise<boolean> {
       body: JSON.stringify({ refresh_token: refreshToken }),
     })
 
-    if (!response.ok) {
+    if (response.status === 400 || response.status === 401 || response.status === 403) {
       clearAccessTokenMemory()
       await clearRefreshToken()
       return false
+    }
+
+    if (!response.ok) {
+      throw new Error(`Indelible server is unavailable (HTTP ${response.status})`)
     }
 
     const data = (await response.json()) as TokenResponse
@@ -152,8 +156,11 @@ export async function refreshAccessToken(): Promise<boolean> {
       await setRefreshToken(data.refresh_token)
     }
     return true
-  } catch {
-    return false
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Indelible server is unavailable')) {
+      throw error
+    }
+    throw new Error('Indelible server is unreachable')
   }
 }
 
