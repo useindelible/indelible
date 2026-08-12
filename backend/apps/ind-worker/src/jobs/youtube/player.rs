@@ -10,7 +10,24 @@ pub(super) const DEFAULT_YOUTUBE_BASE: &str = "https://www.youtube.com";
 pub(super) struct PlayerResponse {
     #[serde(rename = "videoDetails")]
     pub(super) video_details: Option<VideoDetails>,
+    #[serde(rename = "playabilityStatus")]
+    pub(super) playability_status: Option<PlayabilityStatus>,
     pub(super) captions: Option<Captions>,
+}
+
+impl PlayerResponse {
+    pub(super) fn is_terminally_unavailable(&self) -> bool {
+        self.playability_status
+            .as_ref()
+            .and_then(|value| value.status.as_deref())
+            .is_some_and(|status| matches!(status, "ERROR" | "UNPLAYABLE" | "LOGIN_REQUIRED"))
+    }
+}
+
+#[derive(Deserialize)]
+pub(super) struct PlayabilityStatus {
+    pub(super) status: Option<String>,
+    pub(super) reason: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -85,7 +102,7 @@ pub(super) async fn fetch_player_response(
             "{}/youtubei/v1/player?prettyPrint=false",
             base_url.trim_end_matches('/')
         ))
-        .map_err(|e| AppError::Repository(Box::new(e)))?
+        .map_err(|error| youtube_error(error.to_string()))?
         .header("Content-Type", "application/json")
         .header("X-Youtube-Client-Name", "5")
         .header("X-Youtube-Client-Version", "20.10.4")
@@ -93,22 +110,26 @@ pub(super) async fn fetch_player_response(
         .json(&body)
         .send()
         .await
-        .map_err(|e| AppError::Repository(Box::new(e)))?;
+        .map_err(|error| youtube_error(error.to_string()))?;
 
     if !resp.status().is_success() {
-        return Err(AppError::Repository(
-            format!(
-                "youtube player API returned {} for {}",
-                resp.status(),
-                video_id
-            )
-            .into(),
-        ));
+        return Err(youtube_error(format!(
+            "youtube player API returned {} for {}",
+            resp.status(),
+            video_id
+        )));
     }
 
     resp.json::<PlayerResponse>()
         .await
-        .map_err(|e| AppError::Repository(Box::new(e)))
+        .map_err(|error| youtube_error(error.to_string()))
+}
+
+fn youtube_error(message: String) -> AppError {
+    AppError::ExternalService {
+        service: "youtube".into(),
+        message,
+    }
 }
 
 pub(super) fn pick_largest_thumbnail(mut thumbnails: Vec<ThumbnailEntry>) -> Option<String> {

@@ -66,10 +66,27 @@ pub async fn handle_youtube_ingest_document(
         .as_deref()
         .unwrap_or(DEFAULT_YOUTUBE_BASE);
     let player = fetch_player_response(&http, base_url, &video_id).await?;
+    if player.video_details.is_none() && player.is_terminally_unavailable() {
+        mark_unavailable_video(ctx, job.document_id).await?;
+        return Err(AppError::Domain(DomainError::NotFound {
+            entity: "YouTubeVideo",
+            id: video_id,
+        }));
+    }
     let video_details = player.video_details.ok_or_else(|| {
-        AppError::Repository(
-            format!("youtube_ingest: player response missing videoDetails for {video_id}").into(),
-        )
+        let (status, reason) = player
+            .playability_status
+            .as_ref()
+            .map(|value| (value.status.as_deref(), value.reason.as_deref()))
+            .unwrap_or((None, None));
+        AppError::ExternalService {
+            service: "youtube".into(),
+            message: format!(
+                "player response missing videoDetails for {video_id} (status: {}, reason: {})",
+                status.unwrap_or("unknown"),
+                reason.unwrap_or("unknown")
+            ),
+        }
     })?;
 
     let title = video_details.title.unwrap_or_default();
@@ -189,5 +206,24 @@ pub async fn handle_youtube_ingest_document(
 
     enqueue_search_reindex_document(ctx, job.document_id).await?;
     enqueue_document_embed_if_engaged(ctx, job.user_id, job.document_id).await?;
+    Ok(())
+}
+
+async fn mark_unavailable_video(
+    ctx: &CaptureJobDeps,
+    document_id: ind_domain::DocumentId,
+) -> Result<(), AppError> {
+    ctx.document_asset_repo
+        .upsert_document_asset(NewDocumentAsset {
+            document_id,
+            asset_kind: ArchiveAssetKind::ReadableHtml,
+            s3_key: String::new(),
+            s3_bucket: ctx.feed.s3_bucket.clone(),
+            content_type: "text/html".into(),
+            size_bytes: 0,
+            status: ArchiveAssetStatus::Failed,
+            failed_reason: Some("This YouTube video is unavailable, private, or deleted.".into()),
+        })
+        .await?;
     Ok(())
 }

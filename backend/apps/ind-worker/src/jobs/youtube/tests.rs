@@ -1,8 +1,14 @@
 use super::html::{
     BuildReaderHtmlInput, build_reader_html, format_duration_human, format_view_count,
 };
-use super::player::{CaptionTrack, ThumbnailEntry, pick_caption_track_url, pick_largest_thumbnail};
+use super::player::{
+    CaptionTrack, PlayerResponse, ThumbnailEntry, fetch_player_response, pick_caption_track_url,
+    pick_largest_thumbnail,
+};
 use super::transcript::{TranscriptSegment, parse_json3, parse_xml};
+use ind_application::error::AppError;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[test]
 fn caption_track_selection_prefers_english_then_falls_back() {
@@ -37,6 +43,90 @@ fn pick_largest_thumbnail_returns_widest() {
         },
     ];
     assert_eq!(pick_largest_thumbnail(entries).as_deref(), Some("large"));
+}
+
+#[test]
+fn player_response_classifies_only_explicit_terminal_playability_statuses() {
+    for (status, terminal) in [
+        ("ERROR", true),
+        ("UNPLAYABLE", true),
+        ("LOGIN_REQUIRED", true),
+        ("OK", false),
+        ("LIVE_STREAM_OFFLINE", false),
+    ] {
+        let response: PlayerResponse = serde_json::from_value(serde_json::json!({
+            "playabilityStatus": {
+                "status": status,
+                "reason": "Provider diagnostic"
+            }
+        }))
+        .unwrap();
+
+        assert_eq!(response.is_terminally_unavailable(), terminal, "{status}");
+        assert_eq!(
+            response
+                .playability_status
+                .as_ref()
+                .and_then(|value| value.reason.as_deref()),
+            Some("Provider diagnostic"),
+            "{status}"
+        );
+    }
+
+    let response: PlayerResponse = serde_json::from_value(serde_json::json!({})).unwrap();
+    assert!(!response.is_terminally_unavailable());
+}
+
+#[tokio::test]
+async fn player_provider_failures_remain_retryable_external_service_errors() {
+    let http = ind_egress::build_guarded_client(ind_egress::GuardedClientOptions::new(
+        ind_egress::UrlRules::ingest(),
+        ind_egress::EgressPolicy::permissive(),
+    ))
+    .unwrap();
+
+    let status_server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/youtubei/v1/player"))
+        .respond_with(ResponseTemplate::new(503))
+        .mount(&status_server)
+        .await;
+    assert_youtube_external(
+        fetch_player_response(&http, &status_server.uri(), "status-failure")
+            .await
+            .err()
+            .unwrap(),
+    );
+
+    let json_server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/youtubei/v1/player"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("not-json"))
+        .mount(&json_server)
+        .await;
+    assert_youtube_external(
+        fetch_player_response(&http, &json_server.uri(), "json-failure")
+            .await
+            .err()
+            .unwrap(),
+    );
+
+    let network_server = MockServer::start().await;
+    let unavailable_base = network_server.uri();
+    drop(network_server);
+    assert_youtube_external(
+        fetch_player_response(&http, &unavailable_base, "network-failure")
+            .await
+            .err()
+            .unwrap(),
+    );
+}
+
+fn assert_youtube_external(error: AppError) {
+    assert!(matches!(
+        error,
+        AppError::ExternalService { ref service, .. } if service == "youtube"
+    ));
 }
 
 #[test]

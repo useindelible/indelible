@@ -1,7 +1,8 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use futures::TryStreamExt;
-use ind_domain::{DocumentType, YoutubeIngestDocumentJob};
+use ind_application::error::AppError;
+use ind_domain::{DocumentType, DomainError, YoutubeIngestDocumentJob};
 use ind_test_support::{DocumentFactory, TestDb, UserFactory};
 use ind_worker::jobs::youtube::handle_youtube_ingest_document;
 use wiremock::matchers::{method, path};
@@ -124,4 +125,134 @@ async fn youtube_ingest_enriches_owned_document_assets_metadata_and_index_handof
     .await
     .unwrap();
     assert_eq!(reindex, 1);
+}
+
+#[tokio::test]
+async fn unavailable_youtube_video_records_terminal_readable_failure() {
+    let db = TestDb::new().await;
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/youtubei/v1/player"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "playabilityStatus": {
+                "status": "ERROR",
+                "reason": "Video unavailable"
+            }
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let owner = UserFactory::new().insert(db.pool()).await;
+    let document = DocumentFactory::new(owner.id)
+        .with_document_type(DocumentType::Video)
+        .with_title("Placeholder")
+        .insert(db.pool())
+        .await;
+    let mut worker = common::build_worker_ctx(&db).await;
+    worker.youtube_player_base_url = Some(server.uri());
+
+    let error = handle_youtube_ingest_document(
+        &worker.capture_jobs(),
+        YoutubeIngestDocumentJob {
+            document_id: document.id,
+            user_id: owner.id,
+            url: "https://www.youtube.com/watch?v=deleted123".into(),
+        },
+    )
+    .await
+    .expect_err("unavailable videos must terminate");
+    assert!(matches!(
+        error,
+        AppError::Domain(DomainError::NotFound {
+            entity: "YouTubeVideo",
+            ..
+        })
+    ));
+
+    let assets: Vec<(String, String, String, Option<String>)> = sqlx::query_as(
+        "SELECT asset_kind, status, s3_key, failed_reason FROM archive_assets \
+         WHERE document_id = $1 ORDER BY asset_kind",
+    )
+    .bind(document.id.into_uuid())
+    .fetch_all(db.pool())
+    .await
+    .unwrap();
+    assert_eq!(
+        assets,
+        vec![(
+            "readable_html".into(),
+            "failed".into(),
+            String::new(),
+            Some("This YouTube video is unavailable, private, or deleted.".into()),
+        )]
+    );
+
+    let readable_key = format!(
+        "documents/{}/{}/readable.html",
+        owner.id.into_uuid(),
+        document.id.into_uuid()
+    );
+    assert!(!db.storage().await.exists(&readable_key).await.unwrap());
+    let enrichment: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM document_video_metadata WHERE document_id = $1")
+            .bind(document.id.into_uuid())
+            .fetch_one(db.pool())
+            .await
+            .unwrap();
+    assert_eq!(enrichment, 0);
+    let reindex: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM job_outbox WHERE job_type = 'search.reindex_document' \
+         AND payload->>'document_id' = $1",
+    )
+    .bind(document.id.to_string())
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    assert_eq!(reindex, 0);
+}
+
+#[tokio::test]
+async fn missing_youtube_details_without_terminal_status_remains_retryable() {
+    let db = TestDb::new().await;
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/youtubei/v1/player"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "playabilityStatus": {"status": "OK"}
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let owner = UserFactory::new().insert(db.pool()).await;
+    let document = DocumentFactory::new(owner.id)
+        .with_document_type(DocumentType::Video)
+        .insert(db.pool())
+        .await;
+    let mut worker = common::build_worker_ctx(&db).await;
+    worker.youtube_player_base_url = Some(server.uri());
+
+    let error = handle_youtube_ingest_document(
+        &worker.capture_jobs(),
+        YoutubeIngestDocumentJob {
+            document_id: document.id,
+            user_id: owner.id,
+            url: "https://www.youtube.com/watch?v=transient123".into(),
+        },
+    )
+    .await
+    .expect_err("missing details without a terminal status must retry");
+    assert!(matches!(
+        error,
+        AppError::ExternalService { ref service, .. } if service == "youtube"
+    ));
+
+    let assets: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM archive_assets WHERE document_id = $1")
+            .bind(document.id.into_uuid())
+            .fetch_one(db.pool())
+            .await
+            .unwrap();
+    assert_eq!(assets, 0);
 }
