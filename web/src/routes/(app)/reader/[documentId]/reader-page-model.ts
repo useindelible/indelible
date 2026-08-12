@@ -4,6 +4,93 @@ import type { ViewTab } from '$lib/components/reader/ViewTabs.svelte';
 export const READER_VIEW_TABS: ViewTab[] = ['reader', 'original', 'pdf', 'screenshot'];
 const REPROCESSABLE_ASSET_STATUSES = new Set(['failed', 'degraded']);
 
+export type ReaderFailureKind = 'service' | 'access_or_policy' | 'content' | 'unknown';
+
+export interface ReaderFailurePresentation {
+	kind: ReaderFailureKind;
+	title: string;
+	guidance: string;
+	diagnosticId: string;
+	attemptedAt: string;
+	technicalReason: string | null;
+}
+
+const FAILURE_COPY: Record<
+	ReaderFailureKind,
+	Pick<ReaderFailurePresentation, 'title' | 'guidance'>
+> = {
+	service: {
+		title: 'Rendering service unavailable',
+		guidance:
+			'The rendering service could not prepare this page. Retry when the service is available.'
+	},
+	access_or_policy: {
+		title: 'Capture blocked',
+		guidance: "The page requires access, or this server's capture policy prevented the request."
+	},
+	content: {
+		title: 'No readable article found',
+		guidance: 'Indelible could not find enough article text to create a readable version.'
+	},
+	unknown: {
+		title: 'Readable content unavailable',
+		guidance: 'Preparation failed, but the cause could not be determined.'
+	}
+};
+
+function classifyReaderFailure(reason: string | null | undefined): ReaderFailureKind {
+	const normalized = reason?.toLowerCase() ?? '';
+	if (
+		normalized.includes('page blocked by anti-bot challenge') ||
+		normalized.includes('renderer returned http 401') ||
+		normalized.includes('renderer returned http 403') ||
+		normalized.includes('renderer returned http 451') ||
+		normalized.includes('url host is not allowed') ||
+		normalized.includes('url resolves to a private or internal address')
+	) {
+		return 'access_or_policy';
+	}
+	if (
+		normalized.includes('renderer returned no readable_html artifact') ||
+		normalized.includes('without visible readable text') ||
+		normalized.includes('defuddle produced empty content') ||
+		normalized.includes('defuddle produced too little visible readable content')
+	) {
+		return 'content';
+	}
+	if (
+		normalized.includes('external service error from renderer: error sending request') ||
+		normalized.includes('failed to acquire browser page') ||
+		normalized.includes('readable_html upload:') ||
+		normalized.includes('renderer returned http 502') ||
+		normalized.includes('renderer returned http 503') ||
+		normalized.includes('renderer returned http 504')
+	) {
+		return 'service';
+	}
+	return 'unknown';
+}
+
+export function readerFailurePresentation(
+	assets: DocumentReaderAssetResponse[]
+): ReaderFailurePresentation | null {
+	const asset = assets.find(
+		(candidate) =>
+			candidate.asset_kind === 'readable_html' &&
+			REPROCESSABLE_ASSET_STATUSES.has(candidate.status.toLowerCase())
+	);
+	if (!asset) return null;
+
+	const kind = classifyReaderFailure(asset.failed_reason);
+	return {
+		kind,
+		...FAILURE_COPY[kind],
+		diagnosticId: asset.id,
+		attemptedAt: asset.created_at,
+		technicalReason: asset.failed_reason ?? null
+	};
+}
+
 export function computeAvailableReaderTabs(assets: DocumentReaderAssetResponse[]): ViewTab[] {
 	const tabs: ViewTab[] = [];
 	const kinds = new Map(assets.map((asset) => [asset.asset_kind, asset]));

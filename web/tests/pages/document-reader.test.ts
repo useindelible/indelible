@@ -260,6 +260,267 @@ describe('document reader page', () => {
 		await waitFor(() => expect(screen.getByTestId('preparing-reader')).toBeTruthy());
 	});
 
+	it('explains a rendering outage without blaming the source and exposes diagnostics', async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined);
+		Object.defineProperty(navigator, 'clipboard', {
+			configurable: true,
+			value: { writeText }
+		});
+		const reason = 'external service error from renderer: error sending request for url';
+		mockGetDocumentEntry.mockResolvedValue({
+			data: readModel({ readable_ready: false, available_assets: [] })
+		});
+		mockListAssets.mockResolvedValue({
+			data: {
+				data: assets([
+					{
+						id: 'asset_diagnostic',
+						status: 'failed',
+						failed_reason: reason,
+						created_at: '2026-08-12T05:00:00Z'
+					}
+				]),
+				page: { has_more: false }
+			}
+		});
+
+		render(DocumentReaderPage);
+
+		expect(await screen.findByText('Rendering service unavailable')).toBeTruthy();
+		expect(screen.queryByText('The source may be blocking automated access.')).toBeNull();
+		expect(screen.getByText('asset_diagnostic')).toBeTruthy();
+		const attemptedAt = screen.getByTestId('reader-failure-attempt');
+		expect(attemptedAt.getAttribute('datetime')).toBe('2026-08-12T05:00:00Z');
+		const details = screen.getByText('Technical details').closest('details');
+		expect(details?.open).toBe(false);
+		expect(details?.textContent).toContain(reason);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Copy diagnostic ID' }));
+		expect(writeText).toHaveBeenCalledWith('asset_diagnostic');
+		const copyStatus = screen.getByTestId('reader-diagnostic-copy-status');
+		expect(copyStatus.textContent).toBe('Diagnostic ID copied.');
+		expect(copyStatus.closest('.diagnostic-id')).toBeTruthy();
+		expect(copyStatus.classList.contains('sr-only')).toBe(false);
+	});
+
+	it('copies the diagnostic ID when the Clipboard API is unavailable', async () => {
+		Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+		const execCommand = vi.fn().mockReturnValue(true);
+		Object.defineProperty(document, 'execCommand', { configurable: true, value: execCommand });
+		mockGetDocumentEntry.mockResolvedValue({
+			data: readModel({ readable_ready: false, available_assets: [] })
+		});
+		mockListAssets.mockResolvedValue({
+			data: {
+				data: assets([{ id: 'asset_fallback', status: 'failed', failed_reason: 'unknown' }]),
+				page: { has_more: false }
+			}
+		});
+
+		render(DocumentReaderPage);
+		await fireEvent.click(await screen.findByRole('button', { name: 'Copy diagnostic ID' }));
+
+		expect(execCommand).toHaveBeenCalledWith('copy');
+		expect(screen.getByTestId('reader-diagnostic-copy-status').textContent).toBe(
+			'Diagnostic ID copied.'
+		);
+	});
+
+	it('announces when the diagnostic ID cannot be copied', async () => {
+		Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+		Object.defineProperty(document, 'execCommand', {
+			configurable: true,
+			value: vi.fn().mockReturnValue(false)
+		});
+		mockGetDocumentEntry.mockResolvedValue({
+			data: readModel({ readable_ready: false, available_assets: [] })
+		});
+		mockListAssets.mockResolvedValue({
+			data: {
+				data: assets([{ id: 'asset_copy_failure', status: 'failed', failed_reason: 'unknown' }]),
+				page: { has_more: false }
+			}
+		});
+
+		render(DocumentReaderPage);
+		await fireEvent.click(await screen.findByRole('button', { name: 'Copy diagnostic ID' }));
+
+		const copyStatus = screen.getByTestId('reader-diagnostic-copy-status');
+		expect(copyStatus.textContent).toBe('Could not copy diagnostic ID.');
+		expect(copyStatus.closest('.diagnostic-id')).toBeTruthy();
+		expect(copyStatus.classList.contains('sr-only')).toBe(false);
+	});
+
+	it('uses neutral fallback copy for an unclassified preparation failure', async () => {
+		mockGetDocumentEntry.mockResolvedValue({
+			data: readModel({ readable_ready: false, available_assets: [] })
+		});
+		mockListAssets.mockResolvedValue({
+			data: {
+				data: assets([{ status: 'failed', failed_reason: 'unexpected preparation failure' }]),
+				page: { has_more: false }
+			}
+		});
+
+		render(DocumentReaderPage);
+
+		expect(await screen.findByText('Readable content unavailable')).toBeTruthy();
+		expect(
+			screen.getByText('Preparation failed, but the cause could not be determined.')
+		).toBeTruthy();
+	});
+
+	it('announces completion only after an accepted reader retry becomes ready', async () => {
+		mockGetDocumentEntry
+			.mockResolvedValueOnce({ data: readModel({ readable_ready: false, available_assets: [] }) })
+			.mockResolvedValue({ data: readModel() });
+		mockListAssets
+			.mockResolvedValueOnce({
+				data: {
+					data: assets([
+						{ status: 'failed', failed_reason: 'renderer returned no readable_html artifact' }
+					]),
+					page: { has_more: false }
+				}
+			})
+			.mockResolvedValue({
+				data: {
+					data: assets([{ status: 'completed', failed_reason: null }]),
+					page: { has_more: false }
+				}
+			});
+
+		render(DocumentReaderPage);
+		const outcome = await screen.findByTestId('reader-retry-outcome');
+		expect(outcome.textContent).toBe('');
+		await fireEvent.click(await screen.findByTestId('reader-retry'));
+
+		await waitFor(() => expect(outcome.textContent).toBe('Readable content is ready.'));
+	});
+
+	it('does not announce a queued retry after navigating to another ready document', async () => {
+		mockGetDocumentEntry.mockImplementation(({ path }: { path: { document_id: string } }) =>
+			Promise.resolve({
+				data:
+					path.document_id === 'doc_1'
+						? readModel({ readable_ready: false, available_assets: [] })
+						: readModel({
+								id: 'doc_2',
+								document_id: 'doc_2',
+								title: 'Second article'
+							})
+			})
+		);
+		mockListAssets.mockImplementation(({ path }: { path: { document_id: string } }) =>
+			Promise.resolve({
+				data: {
+					data:
+						path.document_id === 'doc_1'
+							? assets([{ status: 'failed', failed_reason: 'unknown' }])
+							: assets([{ status: 'completed', failed_reason: null }]),
+					page: { has_more: false }
+				}
+			})
+		);
+
+		render(DocumentReaderPage);
+		await screen.findByTestId('reader-retry-outcome');
+		await fireEvent.click(await screen.findByTestId('reader-retry'));
+		await waitFor(() => expect(screen.getByText('Reprocessing queued.')).toBeTruthy());
+
+		mockRouteParams.set('documentId', 'doc_2');
+
+		await waitFor(() =>
+			expect(mockGetDocumentEntry).toHaveBeenCalledWith({ path: { document_id: 'doc_2' } })
+		);
+		expect(screen.getByTestId('reader-retry-outcome').textContent).toBe('');
+	});
+
+	it('discards a stale document load before it can complete the current retry', async () => {
+		let resolveStaleEntry!: (value: { data: DocumentListEntry }) => void;
+		let resolveStaleAssets!: (value: {
+			data: { data: DocumentReaderAssetResponse[]; page: { has_more: boolean } };
+		}) => void;
+		let docOneEntryCalls = 0;
+		let docOneAssetCalls = 0;
+		mockGetDocumentEntry.mockImplementation(({ path }: { path: { document_id: string } }) => {
+			if (path.document_id === 'doc_1' && ++docOneEntryCalls === 2) {
+				return new Promise((resolve) => {
+					resolveStaleEntry = resolve;
+				});
+			}
+			return Promise.resolve({
+				data: readModel({
+					id: path.document_id,
+					document_id: path.document_id,
+					title: path.document_id === 'doc_2' ? 'Second article' : 'First article',
+					readable_ready: false,
+					available_assets: []
+				})
+			});
+		});
+		mockListAssets.mockImplementation(({ path }: { path: { document_id: string } }) => {
+			if (path.document_id === 'doc_1' && ++docOneAssetCalls === 2) {
+				return new Promise((resolve) => {
+					resolveStaleAssets = resolve;
+				});
+			}
+			return Promise.resolve({
+				data: {
+					data: assets([{ status: 'failed', failed_reason: 'unknown' }]),
+					page: { has_more: false }
+				}
+			});
+		});
+
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+		readerRealtimeCallbacks?.onAiCompleted({ action: 'summary', aiRunId: 'airun_1' });
+		await waitFor(() => expect(docOneEntryCalls).toBe(2));
+
+		mockRouteParams.set('documentId', 'doc_2');
+		await waitFor(() =>
+			expect(mockGetDocumentEntry).toHaveBeenCalledWith({ path: { document_id: 'doc_2' } })
+		);
+		expect(screen.getAllByText('Second article').length).toBeGreaterThan(0);
+		await fireEvent.click(await screen.findByTestId('reader-retry'));
+		await waitFor(() => expect(screen.getByText('Reprocessing queued.')).toBeTruthy());
+
+		resolveStaleEntry({ data: readModel() });
+		resolveStaleAssets({
+			data: {
+				data: assets([{ status: 'completed', failed_reason: null }]),
+				page: { has_more: false }
+			}
+		});
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		await tick();
+
+		expect(screen.getAllByText('Second article').length).toBeGreaterThan(0);
+		expect(screen.getByTestId('reader-retry-outcome').textContent).toBe('');
+	});
+
+	it('keeps a newer same-document success when an older load fails later', async () => {
+		let rejectOlderLoad!: (reason: Error) => void;
+		mockGetDocumentEntry
+			.mockReturnValueOnce(
+				new Promise((_resolve, reject) => {
+					rejectOlderLoad = reject;
+				})
+			)
+			.mockResolvedValue({ data: readModel({ title: 'Fresh article' }) });
+
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+		readerRealtimeCallbacks?.onAiCompleted({ action: 'summary', aiRunId: 'airun_newer' });
+		await waitFor(() => expect(mockGetDocumentEntry).toHaveBeenCalledTimes(2));
+
+		rejectOlderLoad(new Error('older request failed'));
+
+		await waitFor(() => expect(screen.getAllByText('Fresh article').length).toBeGreaterThan(0));
+		expect(screen.queryByText('Failed to load item.')).toBeNull();
+	});
+
 	it('offers Save to Library for a prepared-but-unsaved document', async () => {
 		mockGetDocumentEntry.mockResolvedValue({
 			data: readModel({ readable_ready: true, saved: false, library_entry_id: null })

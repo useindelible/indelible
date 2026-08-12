@@ -36,10 +36,10 @@
 		READER_VIEW_TABS,
 		computeArticlePdfInitialPage,
 		computeAvailableReaderTabs,
-		hasFailedReadableAsset,
 		isBookReaderItem,
 		isReaderContentReady,
 		isSavedToLibrary,
+		readerFailurePresentation,
 		shouldReprocessReaderPreparation
 	} from './reader-page-model';
 	import { createReaderPollController } from './reader-poll';
@@ -119,6 +119,7 @@
 	let savingToLibrary = $state(false);
 
 	let highlightReloadTimer: ReturnType<typeof setTimeout> | undefined;
+	let loadEpoch = 0;
 	const readerPoll = createReaderPollController({
 		canPoll: () => browser,
 		onPoll: () => void loadData({ silent: true }),
@@ -132,7 +133,7 @@
 	const hasNext = $derived(currentIndex >= 0 && currentIndex < libItems.length - 1);
 	const isBookItem = $derived(isBookReaderItem(item));
 	const readableReady = $derived(isReaderContentReady(item, assets));
-	const readerPreparationFailed = $derived(hasFailedReadableAsset(assets));
+	const readerFailure = $derived(readerFailurePresentation(assets));
 	const savedToLibrary = $derived(isSavedToLibrary(item));
 	const availableTabs = $derived(computeAvailableReaderTabs(assets));
 	const resolvedActiveTab = $derived(
@@ -191,6 +192,10 @@
 	}
 
 	async function loadData(options: { silent?: boolean } = {}) {
+		const requestedDocumentId = documentId;
+		const requestedLoadEpoch = ++loadEpoch;
+		const isCurrentLoad = () =>
+			requestedDocumentId === documentId && requestedLoadEpoch === loadEpoch;
 		if (!options.silent) {
 			loading = true;
 			readerPoll.reset();
@@ -198,10 +203,11 @@
 		error = null;
 		try {
 			const [itemRes, assetsRes, highlightsRes] = await Promise.all([
-				apiSdk.getDocumentEntry({ path: { document_id: documentId } }),
-				apiSdk.listAssets({ path: { document_id: documentId } }),
-				apiSdk.listHighlights({ path: { document_id: documentId } })
+				apiSdk.getDocumentEntry({ path: { document_id: requestedDocumentId } }),
+				apiSdk.listAssets({ path: { document_id: requestedDocumentId } }),
+				apiSdk.listHighlights({ path: { document_id: requestedDocumentId } })
 			]);
+			if (!isCurrentLoad()) return;
 			if (itemRes.data) {
 				item = itemRes.data;
 				progress = item.progress_percent ?? 0;
@@ -217,6 +223,7 @@
 			readerRetry.onPreparationReady(ready);
 			readerPoll.schedule(ready);
 		} catch {
+			if (!isCurrentLoad()) return;
 			if (options.silent) {
 				// A transient poll failure must not strand the reader on the spinner: keep polling
 				// so it recovers once preparation finishes (or the network blip clears).
@@ -225,7 +232,7 @@
 				error = 'Failed to load item.';
 			}
 		} finally {
-			if (!options.silent) loading = false;
+			if (isCurrentLoad()) loading = false;
 		}
 	}
 
@@ -522,6 +529,7 @@
 			ttsOpen = false;
 			aiFailure = null;
 			aiRetryStatus = 'idle';
+			readerRetry.reset();
 		});
 	});
 
@@ -587,10 +595,11 @@
 				{savedToLibrary}
 				{savingToLibrary}
 				{readableReady}
-				{readerPreparationFailed}
+				{readerFailure}
 				{showReaderRetry}
 				readerRetryError={readerRetry.error}
 				readerRetryStatus={readerRetry.status}
+				readerRetryOutcome={readerRetry.outcome}
 				readerRetryLabel={readerRetry.label}
 				readerRetryDisabled={readerRetry.disabled}
 				{assetUrls}

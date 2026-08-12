@@ -16,6 +16,7 @@
 		resolveEntryTargets
 	} from '$lib/components/reader/toc/active-section';
 	import type { ArticleTocEntry } from '$lib/api';
+	import type { ReaderFailurePresentation } from '../reader-page-model';
 
 	type FocusState = 'idle' | 'selecting' | 'active' | 'paused' | 'completed';
 	type HighlightCreateInput = {
@@ -43,10 +44,11 @@
 		savedToLibrary: boolean;
 		savingToLibrary: boolean;
 		readableReady: boolean;
-		readerPreparationFailed: boolean;
+		readerFailure: ReaderFailurePresentation | null;
 		showReaderRetry: boolean;
 		readerRetryError: string | null;
 		readerRetryStatus: string | null;
+		readerRetryOutcome: string | null;
 		readerRetryLabel: string;
 		readerRetryDisabled: boolean;
 		assetUrls: Partial<Record<ViewTab, string>>;
@@ -104,10 +106,11 @@
 		savedToLibrary,
 		savingToLibrary,
 		readableReady,
-		readerPreparationFailed,
+		readerFailure,
 		showReaderRetry,
 		readerRetryError,
 		readerRetryStatus,
+		readerRetryOutcome,
 		readerRetryLabel,
 		readerRetryDisabled,
 		assetUrls,
@@ -147,7 +150,13 @@
 
 	let readerScrollEl = $state<HTMLDivElement | undefined>(undefined);
 	let tocActiveIndex = $state(-1);
+	let diagnosticCopyStatus = $state<string | null>(null);
 	const showToc = $derived(tocEntries.length > 0 && activeTab === 'reader');
+
+	$effect(() => {
+		void documentId;
+		diagnosticCopyStatus = null;
+	});
 
 	// Active-section tracking: scroll-geometry against the reader's own scroll
 	// container, recomputed per scroll frame. Runs whenever the rail is visible
@@ -187,9 +196,53 @@
 		if (top == null) return;
 		scrollEl.scrollTo({ top: Math.max(0, top - 16), behavior: 'smooth' });
 	}
+
+	async function copyDiagnosticId() {
+		if (!readerFailure) return;
+		try {
+			if (navigator.clipboard?.writeText) {
+				await navigator.clipboard.writeText(readerFailure.diagnosticId);
+			} else {
+				copyWithSelection(readerFailure.diagnosticId);
+			}
+			diagnosticCopyStatus = 'Diagnostic ID copied.';
+		} catch {
+			try {
+				copyWithSelection(readerFailure.diagnosticId);
+				diagnosticCopyStatus = 'Diagnostic ID copied.';
+			} catch {
+				diagnosticCopyStatus = 'Could not copy diagnostic ID.';
+			}
+		}
+	}
+
+	function copyWithSelection(text: string) {
+		const textarea = document.createElement('textarea');
+		textarea.value = text;
+		textarea.setAttribute('readonly', '');
+		textarea.style.position = 'fixed';
+		textarea.style.opacity = '0';
+		document.body.appendChild(textarea);
+		textarea.select();
+		let copied = false;
+		try {
+			copied = document.execCommand('copy');
+		} finally {
+			textarea.remove();
+		}
+		if (!copied) throw new Error('Copy command failed');
+	}
+
+	function formatAttemptTime(value: string): string {
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+	}
 </script>
 
 <div class="reader-main" class:sepia-bg={sepiaActive}>
+	<span class="sr-only" role="status" aria-live="polite" data-testid="reader-retry-outcome"
+		>{readerRetryOutcome ?? ''}</span
+	>
 	<ReaderToolbar
 		{item}
 		{progress}
@@ -243,17 +296,45 @@
 		{#if activeTab === 'reader' && !readableReady}
 			<div class="content-loading" data-testid="preparing-reader">
 				<span class="loading-text">
-					{readerPreparationFailed
-						? 'Readable content could not be prepared.'
-						: 'Preparing readable content...'}
+					{readerFailure ? readerFailure.title : 'Preparing readable content...'}
 				</span>
 				{#if showReaderRetry || readerRetryStatus}
 					{#if showReaderRetry}
 						<p class="loading-hint">
-							{readerPreparationFailed
-								? 'The source may be blocking automated access.'
-								: 'This is taking longer than usual.'}
+							{readerFailure ? readerFailure.guidance : 'This is taking longer than usual.'}
 						</p>
+					{/if}
+					{#if readerFailure}
+						<div class="failure-diagnostics">
+							<div class="failure-meta">
+								<span>
+									Attempted
+									<time datetime={readerFailure.attemptedAt} data-testid="reader-failure-attempt"
+										>{formatAttemptTime(readerFailure.attemptedAt)}</time
+									>
+								</span>
+								<span class="diagnostic-id">
+									Diagnostic ID <code>{readerFailure.diagnosticId}</code>
+									<button type="button" onclick={copyDiagnosticId} aria-label="Copy diagnostic ID"
+										>Copy</button
+									>
+									{#if diagnosticCopyStatus}
+										<span
+											class="diagnostic-copy-status"
+											role="status"
+											aria-live="polite"
+											data-testid="reader-diagnostic-copy-status">{diagnosticCopyStatus}</span
+										>
+									{/if}
+								</span>
+							</div>
+							{#if readerFailure.technicalReason}
+								<details>
+									<summary>Technical details</summary>
+									<code>{readerFailure.technicalReason}</code>
+								</details>
+							{/if}
+						</div>
 					{/if}
 					{#if readerRetryError}
 						<p class="loading-hint retry-error">{readerRetryError}</p>
@@ -364,12 +445,15 @@
 
 	.content-loading {
 		flex: 1;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
+		justify-content: safe center;
 		gap: 16px;
-		height: 100vh;
+		overflow-y: auto;
+		padding-block: 24px;
+		box-sizing: border-box;
 	}
 
 	.loading-text {
@@ -387,6 +471,70 @@
 
 	.retry-error {
 		color: var(--destructive);
+	}
+
+	.failure-diagnostics {
+		width: min(520px, calc(100% - 48px));
+		font-family: var(--font-sans);
+		font-size: 12px;
+		color: var(--text-tertiary);
+	}
+
+	.failure-meta {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px 16px;
+	}
+
+	.failure-meta time,
+	.diagnostic-id code {
+		margin-left: 4px;
+		color: var(--text-secondary);
+	}
+
+	.diagnostic-id button {
+		margin-left: 6px;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--accent);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.diagnostic-copy-status {
+		margin-left: 6px;
+		color: var(--text-secondary);
+	}
+
+	.failure-diagnostics details {
+		margin-top: 10px;
+		text-align: left;
+	}
+
+	.failure-diagnostics summary {
+		cursor: pointer;
+		text-align: center;
+	}
+
+	.failure-diagnostics details code {
+		display: block;
+		margin-top: 8px;
+		overflow-wrap: anywhere;
+		color: var(--text-secondary);
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 
 	.retry-button {
