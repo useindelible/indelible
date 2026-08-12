@@ -7,6 +7,8 @@ import { fetchAllPages } from '$lib/api/pagination';
 export type TagScope = 'all' | 'document' | 'highlight';
 export type TagSort = 'name_asc' | 'name_desc' | 'item_count' | 'date_created';
 
+type CreateTagResult = { ok: true; data: TagResponse } | { ok: false; error: string };
+
 const PAGE_LIMIT = 50;
 
 let allTags = $state<TagResponse[]>([]);
@@ -48,6 +50,11 @@ function sortTags(list: TagResponse[]): TagResponse[] {
 
 const filteredTags = $derived.by(() => {
 	let list = allTags;
+	if (activeScope === 'document') {
+		list = list.filter((tag) => tag.item_count > 0);
+	} else if (activeScope === 'highlight') {
+		list = list.filter((tag) => tag.highlight_count > 0);
+	}
 	if (searchQuery.trim()) {
 		const q = searchQuery.trim().toLowerCase();
 		list = list.filter(
@@ -59,22 +66,24 @@ const filteredTags = $derived.by(() => {
 
 const isEmpty = $derived(!loading && allTags.length === 0);
 
+async function fetchTags(): Promise<TagResponse[]> {
+	return fetchAllPages(async (cursor) => {
+		const resp = await api.listTags({
+			query: { cursor, limit: 100 }
+		});
+		if (!resp.data) return undefined;
+		return {
+			data: resp.data.data as TagResponse[],
+			page: { next_cursor: resp.data.page.next_cursor ?? null }
+		};
+	});
+}
+
 async function loadAllTags(): Promise<void> {
 	loading = true;
 	fetchError = null;
 	try {
-		const scopeParam = activeScope === 'all' ? undefined : activeScope;
-		const results = await fetchAllPages(async (cursor) => {
-			const resp = await api.listTags({
-				query: { cursor, limit: 100, scope: scopeParam }
-			});
-			if (!resp.data) return undefined;
-			return {
-				data: resp.data.data as TagResponse[],
-				page: { next_cursor: resp.data.page.next_cursor ?? null }
-			};
-		});
-		allTags = results;
+		allTags = await fetchTags();
 	} catch {
 		fetchError = 'Failed to load tags';
 	} finally {
@@ -169,22 +178,48 @@ async function loadTagHighlights(tagId: string, reset = false): Promise<void> {
 	}
 }
 
+function createTagError(error: unknown): string {
+	if (!error || typeof error !== 'object') return 'Failed to create tag';
+	const problem = error as Record<string, unknown>;
+	const errors = Array.isArray(problem.errors) ? problem.errors : [];
+	const firstError = errors[0];
+	if (firstError && typeof firstError === 'object') {
+		const message = (firstError as Record<string, unknown>).message;
+		if (typeof message === 'string' && message.trim()) return message;
+	}
+	if (typeof problem.detail === 'string' && problem.detail.trim()) return problem.detail;
+	if (typeof problem.message === 'string' && problem.message.trim()) return problem.message;
+	return 'Failed to create tag';
+}
+
 async function createTag(body: {
 	name: string;
 	color?: string | null;
 	parent_id?: string | null;
-}): Promise<TagResponse | null> {
+}): Promise<CreateTagResult> {
 	try {
 		const resp = await api.createTag({ body });
 		if (resp.data) {
 			const created = resp.data as TagResponse;
 			allTags = [...allTags, created];
-			return created;
+			return { ok: true, data: created };
 		}
-	} catch {
-		fetchError = 'Failed to create tag';
+		return { ok: false, error: createTagError(resp.error) };
+	} catch (error) {
+		return { ok: false, error: createTagError(error) };
 	}
-	return null;
+}
+
+async function findTagByExactName(name: string): Promise<TagResponse | null> {
+	const needle = name.trim().toLowerCase();
+	const loaded = allTags.find((tag) => tag.name.toLowerCase() === needle);
+	if (loaded) return loaded;
+	try {
+		const tags = await fetchTags();
+		return tags.find((tag) => tag.name.toLowerCase() === needle) ?? null;
+	} catch {
+		return null;
+	}
 }
 
 async function updateTag(
@@ -326,7 +361,6 @@ export function getTags() {
 		},
 		setScope(scope: TagScope) {
 			activeScope = scope;
-			loadAllTags();
 		},
 		setSortOrder(order: TagSort) {
 			sortOrder = order;
@@ -342,6 +376,7 @@ export function getTags() {
 		deleteTagItem,
 		loadTagHighlights,
 		createTag,
+		findTagByExactName,
 		updateTag,
 		deleteTag,
 		deleteTags,

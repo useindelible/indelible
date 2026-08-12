@@ -33,6 +33,8 @@
 	let createName = $state('');
 	let createColor = $state<string | null>(null);
 	let createParentId = $state<string | null>(null);
+	let createError = $state<string | null>(null);
+	let createExistingTag = $state<TagResponse | null>(null);
 	let renameTag = $state<TagResponse | null>(null);
 	let renameValue = $state('');
 	let setParentForTag = $state<TagResponse | null>(null);
@@ -95,21 +97,42 @@
 		createName = '';
 		createColor = null;
 		createParentId = parentId;
+		createError = null;
+		createExistingTag = null;
 		showCreateModal = true;
 	}
 
+	function updateCreateName(name: string) {
+		createName = name;
+		createError = null;
+		createExistingTag = null;
+	}
+
 	async function submitCreate() {
-		if (!createName.trim()) return;
-		const created = await store.createTag({
-			name: createName.trim(),
+		const name = createName.trim();
+		if (!name) return;
+		const result = await store.createTag({
+			name,
 			color: createColor,
 			parent_id: createParentId
 		});
-		if (created) {
+		if (result.ok) {
 			showCreateModal = false;
 			await store.loadAllTags();
-			goto(resolve('/(app)/tags/[id]', { id: created.id }));
+			goto(resolve('/(app)/tags/[id]', { id: result.data.id }));
+			return;
 		}
+		createError = result.error;
+		const existingTag = await store.findTagByExactName(name);
+		if (createError === result.error && createName.trim().toLowerCase() === name.toLowerCase()) {
+			createExistingTag = existingTag;
+		}
+	}
+
+	function openExistingTag() {
+		if (!createExistingTag) return;
+		showCreateModal = false;
+		goto(resolve('/(app)/tags/[id]', { id: createExistingTag.id }));
 	}
 
 	function startRename(tag: TagResponse) {
@@ -248,9 +271,12 @@
 		name={createName}
 		color={createColor}
 		parentId={createParentId}
+		error={createError}
+		existingTag={createExistingTag}
 		onClose={() => (showCreateModal = false)}
 		onColorChange={(color) => (createColor = color)}
-		onNameChange={(name) => (createName = name)}
+		onNameChange={updateCreateName}
+		onOpenExisting={openExistingTag}
 		onSubmit={submitCreate}
 	/>
 {/if}

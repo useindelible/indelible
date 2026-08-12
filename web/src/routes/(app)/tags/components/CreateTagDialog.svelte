@@ -6,17 +6,37 @@
 		color: string | null;
 		name: string;
 		parentId: string | null;
+		error: string | null;
+		existingTag: { id: string; name: string } | null;
 		onClose: () => void;
 		onColorChange: (color: string | null) => void;
 		onNameChange: (name: string) => void;
+		onOpenExisting: () => void;
 		onSubmit: () => void;
 	}
 
-	let { color, name, parentId, onClose, onColorChange, onNameChange, onSubmit }: Props = $props();
+	let {
+		color,
+		name,
+		parentId,
+		error,
+		existingTag,
+		onClose,
+		onColorChange,
+		onNameChange,
+		onOpenExisting,
+		onSubmit
+	}: Props = $props();
 	let nameInputEl: HTMLInputElement | undefined = $state();
 
 	onMount(() => {
 		nameInputEl?.focus();
+	});
+
+	$effect(() => {
+		if (!error) return;
+		nameInputEl?.focus();
+		nameInputEl?.select();
 	});
 </script>
 
@@ -57,6 +77,8 @@
 					type="text"
 					value={name}
 					placeholder={parentId ? 'Child tag name…' : 'Tag name…'}
+					aria-invalid={error ? 'true' : undefined}
+					aria-describedby={error ? 'create-tag-error' : undefined}
 					oninput={(event) => onNameChange(event.currentTarget.value)}
 					onkeydown={(event) => {
 						if (event.key === 'Enter' && name.trim()) onSubmit();
@@ -65,6 +87,16 @@
 			</div>
 		</div>
 		<div class="cmd-body">
+			{#if error}
+				<div class="cmd-error" id="create-tag-error" role="alert">
+					<span>{error}</span>
+					{#if existingTag}
+						<button type="button" class="cmd-existing" onclick={onOpenExisting}>
+							Open {existingTag.name}
+						</button>
+					{/if}
+				</div>
+			{/if}
 			<div class="cmd-color-row">
 				<span class="cmd-color-label">Color</span>
 				<TagColorPicker value={color} onChange={onColorChange} />
@@ -111,6 +143,27 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
+	}
+	.cmd-error {
+		margin: 0 8px;
+		padding: 9px 10px;
+		border-radius: 8px;
+		background: color-mix(in oklab, var(--destructive) 9%, transparent);
+		color: var(--destructive);
+		font-size: 12px;
+		line-height: 1.4;
+	}
+	.cmd-existing {
+		display: block;
+		margin-top: 5px;
+		border: 0;
+		padding: 0;
+		background: transparent;
+		color: var(--accent);
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 	.cmd-controls {
 		padding: 10px 16px 14px;

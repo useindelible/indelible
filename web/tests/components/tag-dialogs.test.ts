@@ -11,9 +11,12 @@ describe('tag dialogs', () => {
 				color: null,
 				name: '',
 				parentId: null,
+				error: null,
+				existingTag: null,
 				onClose: vi.fn(),
 				onColorChange: vi.fn(),
 				onNameChange: vi.fn(),
+				onOpenExisting: vi.fn(),
 				onSubmit: vi.fn()
 			}
 		});
