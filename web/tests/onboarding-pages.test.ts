@@ -114,6 +114,9 @@ describe('Add Content page (step 3)', () => {
 describe('Feeds page (step 4)', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockCompleteStep.mockResolvedValue({
+			data: { current_step: 4, completed: false, steps: [] }
+		} as never);
 		mockSubscribe.mockResolvedValue({
 			data: { is_new: true, subscription: {} }
 		} as never);
@@ -128,6 +131,106 @@ describe('Feeds page (step 4)', () => {
 		render(FeedsPage);
 		expect(screen.getByText('Hacker News')).toBeTruthy();
 		expect(screen.getByText('Ars Technica')).toBeTruthy();
+	});
+
+	it('leaves every suggested feed unselected by default', () => {
+		render(FeedsPage);
+
+		const suggestions = screen.getAllByRole('checkbox', { name: /^Subscribe to / });
+		expect(suggestions).toHaveLength(7);
+		for (const suggestion of suggestions) {
+			expect((suggestion as HTMLInputElement).checked).toBe(false);
+		}
+		expect(screen.getByRole('status').textContent).toContain('No suggested feeds selected.');
+	});
+
+	it('continues with no suggested feeds when none are selected', async () => {
+		render(FeedsPage);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+		await waitFor(() =>
+			expect(mockCompleteStep).toHaveBeenCalledWith({
+				path: { step: 3 },
+				body: { data: { feed_urls: [] } }
+			})
+		);
+		expect(mockGoto).toHaveBeenCalledWith('/onboarding/ai');
+	});
+
+	it('does not submit an unconfirmed manual feed when continuing', async () => {
+		render(FeedsPage);
+		await fireEvent.input(screen.getByLabelText('RSS feed URL'), {
+			target: { value: 'https://example.com/draft-feed.xml' }
+		});
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+		await waitFor(() =>
+			expect(mockCompleteStep).toHaveBeenCalledWith({
+				path: { step: 3 },
+				body: { data: { feed_urls: [] } }
+			})
+		);
+		expect(mockSubscribe).not.toHaveBeenCalled();
+		expect(screen.getByRole('status').textContent).toContain('No suggested feeds selected.');
+	});
+
+	it('summarizes and submits only the selected suggested feed', async () => {
+		render(FeedsPage);
+
+		await fireEvent.click(screen.getByRole('checkbox', { name: 'Subscribe to Hacker News' }));
+		expect(screen.getByRole('status').textContent).toContain('1 suggested feed selected.');
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+		await waitFor(() =>
+			expect(mockCompleteStep).toHaveBeenCalledWith({
+				path: { step: 3 },
+				body: { data: { feed_urls: ['https://hnrss.org/frontpage'] } }
+			})
+		);
+	});
+
+	it('shows the pending completion state while the request runs', async () => {
+		let resolveCompletion: (value: unknown) => void = () => undefined;
+		mockCompleteStep.mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					resolveCompletion = resolve;
+				}) as never
+		);
+		render(FeedsPage);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+		expect(screen.getByRole('status').textContent).toContain('Saving your feed choices…');
+		expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(
+			true
+		);
+		expect((screen.getByRole('button', { name: 'Skip' }) as HTMLButtonElement).disabled).toBe(true);
+
+		resolveCompletion({ data: { current_step: 4, completed: false, steps: [] } });
+		await waitFor(() => expect(mockGoto).toHaveBeenCalledWith('/onboarding/ai'));
+	});
+
+	it('restores onboarding actions after completion fails', async () => {
+		mockCompleteStep.mockResolvedValue({
+			error: { detail: 'Could not save feed choices.' },
+			response: new Response(null, { status: 500 })
+		} as never);
+		render(FeedsPage);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+		await waitFor(() => expect(screen.getByText('Could not save feed choices.')).toBeTruthy());
+		expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(
+			false
+		);
+		expect((screen.getByRole('button', { name: 'Skip' }) as HTMLButtonElement).disabled).toBe(
+			false
+		);
+		expect(screen.queryByText('Saving your feed choices…')).toBeNull();
 	});
 
 	it('renders RSS URL input', () => {

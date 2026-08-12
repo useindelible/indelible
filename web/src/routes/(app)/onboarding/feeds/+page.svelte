@@ -15,7 +15,7 @@
 			name: 'TechCrunch',
 			domain: 'techcrunch.com',
 			url: 'https://techcrunch.com/feed/',
-			selected: true
+			selected: false
 		},
 		{
 			initials: 'HN',
@@ -23,7 +23,7 @@
 			name: 'Hacker News',
 			domain: 'news.ycombinator.com',
 			url: 'https://hnrss.org/frontpage',
-			selected: true
+			selected: false
 		},
 		{
 			initials: 'TV',
@@ -47,7 +47,7 @@
 			name: 'Stratechery',
 			domain: 'stratechery.com',
 			url: 'https://stratechery.com/feed/',
-			selected: true
+			selected: false
 		},
 		{
 			initials: 'WD',
@@ -127,9 +127,6 @@
 		submitting = true;
 		try {
 			const urls = [...selectedUrls];
-			if (rssUrl.trim()) {
-				urls.push(rssUrl.trim());
-			}
 			const completed = await onboarding.completeStep(3, { feed_urls: urls });
 			if (completed) {
 				goto(resolve('/onboarding/ai'));
@@ -195,6 +192,15 @@
 				</label>
 			{/each}
 		</div>
+		<p class="selection-summary" role="status" aria-live="polite">
+			{#if submitting}
+				Saving your feed choices…
+			{:else if selectedUrls.length === 0}
+				No suggested feeds selected.
+			{:else}
+				{selectedUrls.length} suggested {selectedUrls.length === 1 ? 'feed' : 'feeds'} selected.
+			{/if}
+		</p>
 
 		<p class="section-label manual-label">Add feed manually</p>
 		<form
@@ -257,6 +263,14 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 2px;
+	}
+
+	.selection-summary {
+		margin: 8px 0 0;
+		font-family: var(--font-sans);
+		font-size: 12px;
+		line-height: 1.4;
+		color: var(--text-secondary);
 	}
 
 	.feed-row {
