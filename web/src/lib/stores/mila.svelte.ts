@@ -49,8 +49,7 @@ export function getMilaConfig() {
 // -- Per-instance chat factory --
 
 export type ChatScope =
-	| { type: 'single_document'; documentId: string }
-	| { type: 'collection'; collectionId: string };
+	{ type: 'single_document'; documentId: string } | { type: 'collection'; collectionId: string };
 
 export interface ChatMessage {
 	id: string;
@@ -60,15 +59,31 @@ export interface ChatMessage {
 	streaming: boolean;
 }
 
+export type ChatResponsePhase = 'idle' | 'preparing' | 'generating';
+
 export function createMilaChat(scope: ChatScope) {
 	let messages = $state<ChatMessage[]>([]);
 	let loading = $state(false);
 	let streaming = $state(false);
+	let phase = $state<ChatResponsePhase>('idle');
+	let elapsedSeconds = $state(0);
 	let error = $state<string | null>(null);
 	let retrievalWarning = $state<string | null>(null);
 	let lastQuestion = $state('');
 	let sessionId = $state<string | null>(null);
 	let abortController: AbortController | null = null;
+	let elapsedTimer: ReturnType<typeof setInterval> | null = null;
+	let canceledByUser = false;
+
+	function stopElapsedTimer() {
+		if (elapsedTimer) clearInterval(elapsedTimer);
+		elapsedTimer = null;
+	}
+
+	function finishCanceledResponse() {
+		error = 'Response canceled.';
+		messages = messages.filter((message) => !message.streaming);
+	}
 
 	async function initialize() {
 		loading = true;
@@ -152,6 +167,14 @@ export function createMilaChat(scope: ChatScope) {
 		};
 		messages = [...messages, userMsg, assistantMsg];
 		streaming = true;
+		phase = 'preparing';
+		elapsedSeconds = 0;
+		canceledByUser = false;
+		const startedAt = Date.now();
+		stopElapsedTimer();
+		elapsedTimer = setInterval(() => {
+			elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+		}, 1000);
 
 		abortController = new AbortController();
 
@@ -190,10 +213,16 @@ export function createMilaChat(scope: ChatScope) {
 						}
 						const last = messages[messages.length - 1];
 						if (last && last.streaming) {
+							if (deltaObj.delta) phase = 'generating';
 							last.content += deltaObj.delta;
 						}
 					}
 				}
+			}
+
+			if (abortController.signal.aborted) {
+				if (canceledByUser) finishCanceledResponse();
+				return;
 			}
 
 			if (streamFailure) {
@@ -203,17 +232,28 @@ export function createMilaChat(scope: ChatScope) {
 			// Reload canonical messages with server IDs and source_refs
 			await loadMessages(sessionId);
 		} catch (e) {
-			if ((e as { name?: string }).name === 'AbortError') return;
+			if ((e as { name?: string }).name === 'AbortError') {
+				if (canceledByUser) finishCanceledResponse();
+				return;
+			}
 			error = e instanceof Error ? e.message : 'Chat failed';
 			// Remove the partial streaming assistant message on error
 			messages = messages.filter((m) => !m.streaming);
 		} finally {
+			stopElapsedTimer();
 			streaming = false;
+			phase = 'idle';
 			const last = messages[messages.length - 1];
 			if (last?.streaming) {
 				last.streaming = false;
 			}
 		}
+	}
+
+	function cancel() {
+		if (!streaming) return;
+		canceledByUser = true;
+		abortController?.abort();
 	}
 
 	function retry() {
@@ -228,6 +268,7 @@ export function createMilaChat(scope: ChatScope) {
 	}
 
 	function destroy() {
+		stopElapsedTimer();
 		abortController?.abort();
 	}
 
@@ -241,6 +282,12 @@ export function createMilaChat(scope: ChatScope) {
 		get streaming() {
 			return streaming;
 		},
+		get phase() {
+			return phase;
+		},
+		get elapsedSeconds() {
+			return elapsedSeconds;
+		},
 		get error() {
 			return error;
 		},
@@ -249,6 +296,7 @@ export function createMilaChat(scope: ChatScope) {
 		},
 		initialize,
 		sendMessage,
+		cancel,
 		retry,
 		destroy
 	};

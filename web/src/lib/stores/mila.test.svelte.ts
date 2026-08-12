@@ -87,4 +87,79 @@ describe('mila chat provider outage handling', () => {
 		expect(userMessages).toHaveLength(1);
 		expect(userMessages[0]?.content).toBe('why is the sky blue?');
 	});
+
+	it('reports preparation time until the first response delta arrives', async () => {
+		vi.useFakeTimers();
+		let release!: () => void;
+		const waiting = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		mocks.streamMilaChat.mockResolvedValue({
+			stream: (async function* () {
+				await waiting;
+				yield { delta: 'First words' };
+			})()
+		});
+		const chat = await initializedChat();
+
+		const sending = chat.sendMessage('Summarize this');
+		await vi.runAllTicks();
+		expect(chat.phase).toBe('preparing');
+		expect(chat.elapsedSeconds).toBe(0);
+		await vi.advanceTimersByTimeAsync(2000);
+		expect(chat.elapsedSeconds).toBe(2);
+
+		release();
+		await sending;
+		expect(chat.phase).toBe('idle');
+		vi.useRealTimers();
+	});
+
+	it('moves to generating on the first non-empty delta', async () => {
+		let release!: () => void;
+		const waiting = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		mocks.streamMilaChat.mockResolvedValue({
+			stream: (async function* () {
+				yield { delta: '' };
+				yield { delta: 'First words' };
+				await waiting;
+			})()
+		});
+		const chat = await initializedChat();
+
+		const sending = chat.sendMessage('Summarize this');
+		await vi.waitFor(() => expect(chat.phase).toBe('generating'));
+		expect(chat.messages.at(-1)?.content).toBe('First words');
+		release();
+		await sending;
+	});
+
+	it('cancels a pending response and keeps the question retryable', async () => {
+		mocks.streamMilaChat.mockImplementation(async (options: { signal: AbortSignal }) => ({
+			stream: (async function* () {
+				await new Promise<void>((resolve) => {
+					options.signal.addEventListener('abort', () => resolve());
+				});
+				yield '[DONE]';
+			})()
+		}));
+		const chat = await initializedChat();
+
+		const sending = chat.sendMessage('Summarize this');
+		await vi.waitFor(() => expect(chat.streaming).toBe(true));
+		chat.cancel();
+		await sending;
+
+		expect(chat.error).toBe('Response canceled.');
+		expect(chat.messages.some((message) => message.role === 'assistant')).toBe(false);
+		mocks.streamMilaChat.mockResolvedValueOnce({
+			stream: (async function* () {
+				yield '[DONE]';
+			})()
+		});
+		await chat.retry();
+		expect(mocks.streamMilaChat).toHaveBeenCalledTimes(2);
+	});
 });

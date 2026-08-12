@@ -58,6 +58,13 @@
 			? 'Ask Mila about this collection…'
 			: 'Ask Mila about this article...'
 	);
+	const responsePhaseLabel = $derived(
+		chat.phase === 'generating'
+			? 'Generating response'
+			: chat.elapsedSeconds >= 30
+				? 'Still preparing — the provider may be starting'
+				: 'Preparing response'
+	);
 </script>
 
 <div class="chat-panel-inner">
@@ -104,6 +111,17 @@
 								<span class="chat-response-dot" aria-hidden="true"></span>
 								Mila
 							</div>
+							{#if assistantMsg.streaming}
+								<div class="chat-response-progress">
+									<span role="status" aria-live="polite">
+										{responsePhaseLabel}
+										<span aria-hidden="true"> · {chat.elapsedSeconds}s</span>
+									</span>
+									<button type="button" onclick={() => chat.cancel()} aria-label="Cancel response"
+										>Cancel</button
+									>
+								</div>
+							{/if}
 							<div class="chat-response-text">
 								<!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown sanitized by DOMPurify -->
 								{@html renderMilaMessageMarkdown(
@@ -326,6 +344,24 @@
 		color: var(--text-secondary);
 		font-family: var(--font-sans);
 		word-break: break-word;
+	}
+
+	.chat-response-progress {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-size: 11px;
+		color: var(--text-tertiary);
+	}
+
+	.chat-response-progress button {
+		border: 0;
+		background: none;
+		color: var(--accent);
+		font: inherit;
+		cursor: pointer;
+		padding: 2px 0;
 	}
 
 	.chat-response-text :global(p) {
