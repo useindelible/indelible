@@ -5,6 +5,7 @@ import type { DocumentListEntry, DocumentReaderAssetResponse } from '$lib/api';
 import {
 	hasFailedReadableAsset,
 	isReaderContentReady,
+	isTranscriptUnavailableVideo,
 	readerFailurePresentation,
 	shouldReprocessReaderPreparation
 } from './reader-page-model';
@@ -38,6 +39,39 @@ describe('shouldReprocessReaderPreparation', () => {
 
 		expect(isReaderContentReady(staleItem, [readableAsset('failed')])).toBe(false);
 		expect(hasFailedReadableAsset([readableAsset('failed')])).toBe(true);
+	});
+});
+
+describe('isTranscriptUnavailableVideo', () => {
+	it('recognizes only the durable YouTube no-transcript asset signal', () => {
+		const video = { item_type: 'video' } as DocumentListEntry;
+		const unavailable = [
+			{
+				asset_kind: 'extracted_text',
+				status: 'failed',
+				failed_reason: 'YouTube transcript unavailable or empty'
+			}
+		] as DocumentReaderAssetResponse[];
+
+		expect(isTranscriptUnavailableVideo(video, unavailable)).toBe(true);
+		expect(
+			isTranscriptUnavailableVideo({ item_type: 'article' } as DocumentListEntry, unavailable)
+		).toBe(false);
+		expect(
+			isTranscriptUnavailableVideo(video, [
+				{ ...unavailable[0], failed_reason: 'PDF text extraction produced no text' }
+			] as DocumentReaderAssetResponse[])
+		).toBe(false);
+		expect(
+			isTranscriptUnavailableVideo(video, [
+				{ ...unavailable[0], status: 'completed' }
+			] as DocumentReaderAssetResponse[])
+		).toBe(false);
+		expect(
+			isTranscriptUnavailableVideo(video, [
+				{ ...unavailable[0], asset_kind: 'readable_html' }
+			] as DocumentReaderAssetResponse[])
+		).toBe(false);
 	});
 });
 

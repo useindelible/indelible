@@ -85,4 +85,33 @@ describe('DetailPanel collection chat scope', () => {
 
 		expect(screen.getByPlaceholderText('Ask Mila about this article...')).toBeTruthy();
 	});
+
+	it('keeps Info and Notebook but removes Chat when document text is unavailable', () => {
+		render(DetailPanel, {
+			props: {
+				item: item('itm_video', 'Metadata-only video'),
+				chatAvailable: false
+			}
+		});
+
+		expect(screen.getByRole('tab', { name: 'Info' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'Notebook' })).toBeTruthy();
+		expect(screen.queryByRole('tab', { name: 'Chat' })).toBeNull();
+	});
+
+	it('returns to Info when text becomes unavailable while Chat is active', async () => {
+		const rendered = render(DetailPanel, {
+			props: { item: item('itm_video', 'Metadata-only video') }
+		});
+		await fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+		expect(screen.getByPlaceholderText('Ask Mila about this article...')).toBeTruthy();
+
+		await rendered.rerender({
+			item: item('itm_video', 'Metadata-only video'),
+			chatAvailable: false
+		});
+
+		expect(screen.queryByRole('tab', { name: 'Chat' })).toBeNull();
+		expect(screen.getByRole('tab', { name: 'Info' }).getAttribute('aria-selected')).toBe('true');
+	});
 });

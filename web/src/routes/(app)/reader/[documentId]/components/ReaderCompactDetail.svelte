@@ -10,10 +10,19 @@
 		isMobile: boolean;
 		compactDetailOpen: boolean;
 		showDetailPanel: boolean;
+		chatAvailable?: boolean;
 		onClose: () => void;
 	}
 
-	let { item, isCompact, isMobile, compactDetailOpen, showDetailPanel, onClose }: Props = $props();
+	let {
+		item,
+		isCompact,
+		isMobile,
+		compactDetailOpen,
+		showDetailPanel,
+		chatAvailable = true,
+		onClose
+	}: Props = $props();
 </script>
 
 {#if isCompact}
@@ -36,19 +45,19 @@
 					</button>
 					<span class="m-dtitle">{item.title}</span>
 				</div>
-				<DetailPanel {item} />
+				<DetailPanel {item} {chatAvailable} />
 			</div>
 		{:else}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="detail-scrim" onclick={onClose}></div>
 			<div class="reader-detail detail-overlay">
-				<DetailPanel {item} />
+				<DetailPanel {item} {chatAvailable} />
 			</div>
 		{/if}
 	{/if}
 {:else if showDetailPanel}
-	<ReaderSidePanel {item} />
+	<ReaderSidePanel {item} {chatAvailable} />
 {/if}
 
 <style>

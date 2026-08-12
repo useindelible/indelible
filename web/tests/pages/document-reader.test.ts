@@ -150,6 +150,84 @@ afterEach(() => {
 });
 
 describe('document reader page', () => {
+	it('explains a transcript-free YouTube save and removes transcript-dependent actions', async () => {
+		mockGetDocumentEntry.mockResolvedValue({
+			data: readModel({
+				item_type: 'video',
+				document_type: 'video',
+				title: 'Metadata-only video'
+			})
+		});
+		mockListAssets.mockResolvedValue({
+			data: {
+				data: assets([
+					{ asset_kind: 'readable_html', status: 'completed' },
+					{
+						asset_kind: 'extracted_text',
+						status: 'failed',
+						failed_reason: 'YouTube transcript unavailable or empty'
+					}
+				]),
+				page: { has_more: false }
+			}
+		});
+
+		render(DocumentReaderPage);
+
+		await waitFor(() => expect(screen.getByText('No transcript available')).toBeTruthy());
+		expect(screen.getByText(/embed, metadata, and description remain available/)).toBeTruthy();
+		expect(screen.queryByRole('button', { name: 'Listen to article' })).toBeNull();
+		expect(screen.queryByRole('tab', { name: 'Chat' })).toBeNull();
+		expect(screen.getByRole('tab', { name: 'Info' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'Notebook' })).toBeTruthy();
+	});
+
+	it('closes active Listen mode when a video becomes transcript-free', async () => {
+		mockGetDocumentEntry.mockResolvedValue({
+			data: readModel({ item_type: 'video', document_type: 'video' })
+		});
+		const transcriptFreeAssets = assets([
+			{ asset_kind: 'readable_html', status: 'completed' },
+			{
+				asset_kind: 'extracted_text',
+				status: 'failed',
+				failed_reason: 'YouTube transcript unavailable or empty'
+			}
+		]);
+		mockListAssets
+			.mockResolvedValueOnce({
+				data: {
+					data: assets([{ asset_kind: 'readable_html', status: 'completed' }]),
+					page: { has_more: false }
+				}
+			})
+			.mockResolvedValueOnce({
+				data: { data: transcriptFreeAssets, page: { has_more: false } }
+			})
+			.mockResolvedValueOnce({
+				data: {
+					data: assets([{ asset_kind: 'readable_html', status: 'completed' }]),
+					page: { has_more: false }
+				}
+			});
+
+		render(DocumentReaderPage);
+		const listen = await screen.findByRole('button', { name: 'Listen to article' });
+		await fireEvent.click(listen);
+		expect(screen.getByRole('button', { name: 'Close listen mode' })).toBeTruthy();
+
+		readerRealtimeCallbacks?.onAiCompleted({ action: 'summary', aiRunId: 'air_video' });
+		await waitFor(() =>
+			expect(screen.queryByRole('button', { name: 'Close listen mode' })).toBeNull()
+		);
+		expect(screen.queryByRole('button', { name: 'Listen to article' })).toBeNull();
+
+		readerRealtimeCallbacks?.onAiCompleted({ action: 'summary', aiRunId: 'air_video_2' });
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Listen to article' })).toBeTruthy()
+		);
+		expect(screen.queryByRole('button', { name: 'Close listen mode' })).toBeNull();
+	});
 	it('reserves a safe reader gutter when the table of contents rail is visible', async () => {
 		mockGetArticleToc.mockResolvedValue({
 			data: {

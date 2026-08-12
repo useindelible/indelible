@@ -3,6 +3,7 @@ import type { ViewTab } from '$lib/components/reader/ViewTabs.svelte';
 
 export const READER_VIEW_TABS: ViewTab[] = ['reader', 'original', 'pdf', 'screenshot'];
 const REPROCESSABLE_ASSET_STATUSES = new Set(['failed', 'degraded']);
+const YOUTUBE_TRANSCRIPT_UNAVAILABLE = 'YouTube transcript unavailable or empty';
 
 export type ReaderFailureKind = 'service' | 'access_or_policy' | 'content' | 'unknown';
 
@@ -103,6 +104,21 @@ export function computeAvailableReaderTabs(assets: DocumentReaderAssetResponse[]
 
 export function isBookReaderItem(item: DocumentListEntry | null): boolean {
 	return item != null && (item.item_type === 'book' || item.item_type === 'pdf');
+}
+
+export function isTranscriptUnavailableVideo(
+	item: DocumentListEntry | null,
+	assets: DocumentReaderAssetResponse[]
+): boolean {
+	return (
+		item?.item_type === 'video' &&
+		assets.some(
+			(asset) =>
+				asset.asset_kind === 'extracted_text' &&
+				asset.status.toLowerCase() === 'failed' &&
+				asset.failed_reason === YOUTUBE_TRANSCRIPT_UNAVAILABLE
+		)
+	);
 }
 
 export function isReadableReady(item: DocumentListEntry | null): boolean {

@@ -10,9 +10,10 @@
 		item: DocumentListEntry | null;
 		collectionId?: string | null;
 		collectionName?: string | null;
+		chatAvailable?: boolean;
 	}
 
-	let { item, collectionId = null, collectionName = null }: Props = $props();
+	let { item, collectionId = null, collectionName = null, chatAvailable = true }: Props = $props();
 
 	const displayItem = $derived(item);
 
@@ -40,13 +41,16 @@
 		if (hasCollectionChat && !displayItem && activeTab === 'info') {
 			activeTab = 'chat';
 		}
+		if (!hasCollectionChat && !chatAvailable && activeTab === 'chat') {
+			activeTab = 'info';
+		}
 	});
 
-	const itemTabOptions: TabOption[] = [
+	const itemTabOptions = $derived<TabOption[]>([
 		{ value: 'info', label: 'Info' },
 		{ value: 'notebook', label: 'Notebook' },
-		{ value: 'chat', label: 'Chat' }
-	];
+		...(chatAvailable ? [{ value: 'chat' as const, label: 'Chat' }] : [])
+	]);
 
 	const collectionTabOptions: TabOption[] = [
 		{ value: 'info', label: 'Info' },

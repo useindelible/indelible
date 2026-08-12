@@ -38,6 +38,7 @@
 		computeAvailableReaderTabs,
 		isBookReaderItem,
 		isReaderContentReady,
+		isTranscriptUnavailableVideo,
 		isSavedToLibrary,
 		readerFailurePresentation,
 		shouldReprocessReaderPreparation
@@ -134,6 +135,10 @@
 	const isBookItem = $derived(isBookReaderItem(item));
 	const readableReady = $derived(isReaderContentReady(item, assets));
 	const readerFailure = $derived(readerFailurePresentation(assets));
+	const transcriptUnavailable = $derived(isTranscriptUnavailableVideo(item, assets));
+	$effect(() => {
+		if (transcriptUnavailable) ttsOpen = false;
+	});
 	const savedToLibrary = $derived(isSavedToLibrary(item));
 	const availableTabs = $derived(computeAvailableReaderTabs(assets));
 	const resolvedActiveTab = $derived(
@@ -602,6 +607,7 @@
 				readerRetryOutcome={readerRetry.outcome}
 				readerRetryLabel={readerRetry.label}
 				readerRetryDisabled={readerRetry.disabled}
+				{transcriptUnavailable}
 				{assetUrls}
 				{readerHtmlContent}
 				{highlights}
@@ -623,7 +629,7 @@
 					void progressSaver?.flush();
 					activeTab = tab;
 				}}
-				onTtsToggle={resolvedActiveTab === 'reader' && readableReady
+				onTtsToggle={resolvedActiveTab === 'reader' && readableReady && !transcriptUnavailable
 					? () => (ttsOpen = !ttsOpen)
 					: undefined}
 				onRetryReader={retryReader}
@@ -648,6 +654,7 @@
 				isMobile={vp.isMobile}
 				compactDetailOpen={readerChrome.compactDetailOpen}
 				showDetailPanel={detailOpen}
+				chatAvailable={!transcriptUnavailable}
 				onClose={() => (readerChrome.compactDetailOpen = false)}
 			/>
 		{/if}
