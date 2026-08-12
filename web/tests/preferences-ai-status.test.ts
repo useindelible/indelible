@@ -117,6 +117,25 @@ describe('Mila indexing status', () => {
 		);
 	});
 
+	it('explains reasoning compatibility without inventing an effort level', async () => {
+		render(AiPreferencesPage);
+
+		const capability = await screen.findByRole('checkbox', {
+			name: 'Reasoning model compatibility'
+		});
+		expect((capability as HTMLInputElement).checked).toBe(false);
+		const helpId = capability.getAttribute('aria-describedby');
+		const help = helpId ? document.getElementById(helpId) : null;
+		expect(help?.textContent).toMatch(/per-task sampling controls.*temperature.*top_p/i);
+		expect(help?.textContent).toContain('LM Studio 0.4.8 or newer');
+		expect(screen.queryByText(/Provider supports reasoning_effort/)).toBeNull();
+
+		await fireEvent.click(capability);
+		expect(help?.textContent).toMatch(
+			/No reasoning_effort value is sent.*provider uses its default reasoning level/i
+		);
+	});
+
 	it('shows indexing as paused without offering retry while Mila is disabled', async () => {
 		api.getStatus.mockResolvedValue({
 			data: status({ enabled: false, is_indexing: false, progress_percent: 75 })

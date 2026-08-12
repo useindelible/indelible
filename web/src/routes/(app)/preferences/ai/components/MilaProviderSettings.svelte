@@ -107,14 +107,23 @@
 						/>
 					</div>
 
-					<label class="checkbox-row">
+					<label class="checkbox-row reasoning-capability">
 						<input
 							type="checkbox"
+							aria-label="Reasoning model compatibility"
+							aria-describedby="reasoning-compatibility-help"
 							checked={draft.supportsReasoningEffort}
 							onchange={(event) =>
 								onChange({ supportsReasoningEffort: event.currentTarget.checked })}
 						/>
-						<span class="hint-inline"> Provider supports reasoning_effort (LM Studio 0.4.8+) </span>
+						<span>
+							<span class="hint-inline">Reasoning model compatibility</span>
+							<span id="reasoning-compatibility-help" class="hint reasoning-help">
+								{draft.supportsReasoningEffort
+									? 'On — standard sampling controls are omitted. No reasoning_effort value is sent; the provider uses its default reasoning level.'
+									: 'Off — Indelible sends its normal per-task sampling controls; chat includes temperature and top_p. For LM Studio reasoning models, compatibility requires LM Studio 0.4.8 or newer.'}
+							</span>
+						</span>
 					</label>
 				</div>
 
@@ -363,6 +372,14 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+	.reasoning-capability {
+		align-items: flex-start;
+	}
+	.reasoning-help {
+		display: block;
+		margin-top: 3px;
+		line-height: 1.45;
 	}
 	/* The lone inset callout, matching the prototype's test card. */
 	.test-card {
