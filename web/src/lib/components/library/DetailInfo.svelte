@@ -51,7 +51,7 @@
 		<AuthorCard name={parsedAuthor.name} handle={parsedAuthor.handle} currentItemId={item.id} />
 	{/if}
 
-	<SummarySection summary={item.summary ?? item.excerpt ?? null} />
+	<SummarySection summary={item.summary} excerpt={item.excerpt} />
 
 	<MetadataTable {item} />
 

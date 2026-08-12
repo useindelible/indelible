@@ -1,19 +1,30 @@
 <script lang="ts">
 	interface Props {
+		excerpt?: string | null;
 		summary?: string | null;
 	}
 
-	let { summary = null }: Props = $props();
+	let { excerpt = null, summary = null }: Props = $props();
+
+	const normalizedExcerpt = $derived(excerpt?.trim() || null);
+	const normalizedSummary = $derived(summary?.trim() || null);
+	const isMilaSummary = $derived(
+		Boolean(normalizedSummary && normalizedSummary !== normalizedExcerpt)
+	);
+	const heading = $derived(isMilaSummary ? 'Summary' : normalizedExcerpt ? 'Excerpt' : 'Summary');
+	const text = $derived(isMilaSummary ? normalizedSummary : normalizedExcerpt);
 </script>
 
 <div class="summary-section">
-	<div class="section-heading">Summary</div>
-	{#if summary}
-		<p class="summary-text">{summary}</p>
+	<div class="section-heading">{heading}</div>
+	{#if text}
+		<p class="summary-text">{text}</p>
 	{:else}
-		<p class="summary-text summary-stub">AI summary not yet available.</p>
+		<p class="summary-text summary-stub">Summary unavailable.</p>
 	{/if}
-	<p class="summary-attribution">Summarized by Mila</p>
+	{#if isMilaSummary}
+		<p class="summary-attribution">Summarized by Mila</p>
+	{/if}
 </div>
 
 <style>

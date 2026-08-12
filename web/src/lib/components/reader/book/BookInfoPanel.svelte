@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
+	import SummarySection from '$lib/components/library/SummarySection.svelte';
 	import type { BookMetadata } from './book-source';
 
 	interface Props {
@@ -76,13 +77,7 @@
 	<div class="detail-title">{item.title}</div>
 	<div class="detail-domain">{item.author ?? bookMetadata.author ?? ''}</div>
 
-	{#if item.summary ?? item.excerpt}
-		<div class="detail-section">
-			<div class="section-heading">Summary</div>
-			<div class="summary-text">{item.summary ?? item.excerpt}</div>
-			<div class="summary-attribution">Summarized by Mila</div>
-		</div>
-	{/if}
+	<SummarySection summary={item.summary} excerpt={item.excerpt} />
 
 	<div class="detail-section">
 		<div class="section-heading">Metadata</div>
@@ -186,21 +181,6 @@
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color: var(--text-tertiary);
-		font-family: var(--font-sans);
-	}
-
-	.summary-text {
-		font-size: 13px;
-		font-weight: 400;
-		color: var(--text-secondary);
-		line-height: 1.55;
-		font-family: var(--font-sans);
-	}
-
-	.summary-attribution {
-		font-size: 11px;
-		font-weight: 500;
 		color: var(--text-tertiary);
 		font-family: var(--font-sans);
 	}
