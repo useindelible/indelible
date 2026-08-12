@@ -5,7 +5,7 @@
 	import { getReaderPreferences } from '$lib/stores/reader-preferences.svelte';
 	import { sanitizeReaderHtml } from '$lib/utils/sanitize-html';
 	import { applyHighlights, type HighlightRange } from '../highlight-utils';
-	import { scrollProgressPercent } from '../progress-geometry';
+	import { hasScrollableOverflow, scrollProgressPercent } from '../progress-geometry';
 
 	interface Props {
 		source: BookSource;
@@ -170,7 +170,7 @@
 		if (active !== currentChapterIndex) {
 			currentChapterIndex = active;
 			const entry = chapterEntries.find((e) => e.index === active);
-			onChapterChange?.(active, entry?.id ?? '');
+			onChapterChange?.(active, entry?.chapterId ?? entry?.id ?? '');
 		}
 
 		// Determine which specific TOC entry is active by checking fragment anchors
@@ -396,6 +396,23 @@
 		if (!containerEl) return;
 		const target = containerEl.querySelector<HTMLElement>(`[data-chapter-index="${index}"]`);
 		if (!target) return;
+
+		if (!hasScrollableOverflow(containerEl)) {
+			const targetEntry = fragment
+				? source.toc.find((entry) => entry.index === index && entry.fragment === fragment)
+				: chapterEntries.find((entry) => entry.index === index);
+			const chapterEntry = chapterEntries.find((entry) => entry.index === index);
+
+			currentChapterIndex = index;
+			currentActiveEntryId = targetEntry?.id ?? chapterEntry?.id ?? '';
+			onChapterChange?.(
+				index,
+				targetEntry?.chapterId ?? chapterEntry?.chapterId ?? chapterEntry?.id ?? ''
+			);
+			onActiveEntryChange?.(currentActiveEntryId);
+			onProgress?.(scrollProgressPercent(containerEl), index, charOffset);
+			return;
+		}
 
 		if (fragment) {
 			const bodyEl = chapterBodyEls.get(index);
