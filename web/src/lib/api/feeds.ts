@@ -21,10 +21,22 @@ export async function uploadOpml(file: File): Promise<OpmlUploadResult> {
 
 	if (!resp.ok) {
 		const body = await resp.json().catch(() => null);
+		const problem = body as Record<string, unknown> | null;
+		const errors = Array.isArray(problem?.errors) ? problem.errors : [];
+		const firstError = errors[0] as Record<string, unknown> | undefined;
 		const detail =
-			(body as Record<string, string> | null)?.detail ??
-			(body as Record<string, string> | null)?.message ??
+			(resp.status === 422 && typeof firstError?.message === 'string'
+				? firstError.message
+				: undefined) ??
+			(typeof problem?.detail === 'string' ? problem.detail : undefined) ??
+			(typeof problem?.message === 'string' ? problem.message : undefined) ??
 			`Upload failed (${resp.status})`;
+		if (resp.status === 422) {
+			return {
+				ok: false,
+				error: `${file.name}: ${detail} — Choose a valid OPML file and try again.`
+			};
+		}
 		return { ok: false, error: detail };
 	}
 
