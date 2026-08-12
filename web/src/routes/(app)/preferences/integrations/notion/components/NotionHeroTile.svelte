@@ -47,6 +47,7 @@
 		</span>
 		{databaseLabel}
 	</div>
+	<div class="notion-tile-example">Example preview</div>
 	<div class="notion-tile-cols">
 		<span class="notion-tile-col">
 			<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h10M5 17h12" /></svg>
@@ -181,6 +182,15 @@
 	.notion-tile-title .db-icon svg,
 	.sync-mark svg {
 		stroke-width: 1.6;
+	}
+
+	.notion-tile-example {
+		margin-bottom: 6px;
+		font-size: 9.5px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--notion-tile-sub);
 	}
 
 	.notion-tile-cols,
