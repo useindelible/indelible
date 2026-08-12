@@ -89,6 +89,7 @@ export {
 	reindexConfig,
 	removeEntryFromCollection,
 	resetPassword,
+	retryMilaDocumentAction,
 	resolveDocumentTtsTimestamp,
 	resendVerification,
 	retrySubscription,

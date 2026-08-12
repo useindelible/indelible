@@ -78,7 +78,7 @@ pub(super) fn build_mila_ops(
         as Arc<dyn ind_application::repos::feed::FeedRepository>;
     let mila_session_service = Arc::new(ind_application::MilaSessionService::new(
         lifecycle,
-        mila_document_repo,
+        mila_document_repo.clone(),
         feed_delivery_repo,
         feed_repo,
     ));
@@ -92,6 +92,7 @@ pub(super) fn build_mila_ops(
             mila_session_repo,
             mila_session_service,
             chat_service,
+            document_repo: mila_document_repo,
             outbox_repo,
             embedding_backfill_repo,
             credential_cipher,

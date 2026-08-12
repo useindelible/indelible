@@ -6577,6 +6577,21 @@
         ],
         "type": "object"
       },
+      "RetryMilaActionResponse": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "queued": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "queued",
+          "action"
+        ],
+        "type": "object"
+      },
       "SaveFromDeliveryBody": {
         "description": "Save a feed delivery into the Library.",
         "properties": {
@@ -15922,6 +15937,73 @@
         ],
         "x-indelible-permissions": [
           "ai:use"
+        ]
+      }
+    },
+    "/api/v1/mila/documents/{document_id}/actions/{action}/retry": {
+      "post": {
+        "operationId": "retry_mila_document_action",
+        "parameters": [
+          {
+            "description": "Document id with doc_ prefix",
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Retryable Mila action: summary, tags, or entities",
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryMilaActionResponse"
+                }
+              }
+            },
+            "description": "Mila action retry queued"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient permissions"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "422": {
+            "description": "Unsupported Mila action"
+          },
+          "503": {
+            "description": "Mila service not configured"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "api_token": []
+          }
+        ],
+        "tags": [
+          "Mila"
+        ],
+        "x-indelible-permissions": [
+          "ai:use",
+          "library:read"
         ]
       }
     },

@@ -11,8 +11,8 @@ mod tts;
 use crate::config::ServerConfig;
 use ind_application::ports::{
     CollectionOperations, EntityOperations, FeedOperations, HighlightOperations, HomeOperations,
-    MilaChatPort, MilaConfigPort, MilaPromptPresetPort, MilaSessionPort, SearchOperations,
-    SmartListOperations, TagOperations,
+    MilaActionRetryPort, MilaChatPort, MilaConfigPort, MilaPromptPresetPort, MilaSessionPort,
+    SearchOperations, SmartListOperations, TagOperations,
 };
 use ind_auth::oauth::{OAuthConfigInput, build_oauth_config};
 use ind_http_api::AppState;
@@ -241,11 +241,13 @@ pub async fn build_with_overrides(
     let mut mila_prompt_preset_ops: Option<Arc<dyn MilaPromptPresetPort>> = None;
     let mut mila_session_ops: Option<Arc<dyn MilaSessionPort>> = None;
     let mut mila_chat_ops: Option<Arc<dyn MilaChatPort>> = None;
+    let mut mila_action_retry_ops: Option<Arc<dyn MilaActionRetryPort>> = None;
     if let Some(mila) = mila_adapter {
         mila_config_ops = Some(mila.clone());
         mila_prompt_preset_ops = Some(mila.clone());
         mila_session_ops = Some(mila.clone());
-        mila_chat_ops = Some(mila);
+        mila_chat_ops = Some(mila.clone());
+        mila_action_retry_ops = Some(mila);
     }
 
     let entity_ops: Option<Arc<dyn EntityOperations>> = {
@@ -402,6 +404,7 @@ pub async fn build_with_overrides(
         mila_prompt_preset_ops,
         mila_session_ops,
         mila_chat_ops,
+        mila_action_retry_ops,
         entity_ops,
         email_ingest_ops,
         email_ingest_provider,

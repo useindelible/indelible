@@ -55,13 +55,11 @@
 			const payload = event.payload as {
 				document_id?: unknown;
 				action?: unknown;
-				message?: unknown;
 			};
 			if (payload.document_id !== itemId) return;
 			if (payload.action !== 'entities') return;
 			if (event.type === 'ai.output.failed') {
-				failure =
-					typeof payload.message === 'string' ? payload.message : 'Entity extraction failed.';
+				failure = "Mila couldn't extract entities.";
 				return;
 			}
 			failure = null;

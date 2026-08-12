@@ -9,6 +9,7 @@ use ind_application::ports::*;
 use ind_application::repos::ai_preset::{AiPromptPresetRepository, UpdateAiPromptPresetInput};
 use ind_application::repos::collection::CollectionRepository;
 use ind_application::repos::content_vector::ContentVectorRepository;
+use ind_application::repos::document::DocumentRepository;
 use ind_application::repos::embedding_backfill::EmbeddingBackfillRepository;
 use ind_application::repos::lifecycle_outbox::document_ai_processing_outbox;
 use ind_application::repos::mila_session::MilaSessionRepository;
@@ -28,6 +29,7 @@ pub struct MilaOperationsService {
     mila_session_repo: Arc<dyn MilaSessionRepository>,
     mila_session_service: Arc<ind_application::MilaSessionService>,
     chat_service: Arc<MilaChatService>,
+    document_repo: Arc<dyn DocumentRepository>,
     outbox_repo: Arc<dyn JobOutboxRepository>,
     embedding_backfill_repo: Arc<dyn EmbeddingBackfillRepository>,
     credential_cipher: Option<Arc<ind_auth::CredentialCipher>>,
@@ -42,6 +44,7 @@ pub struct MilaOperationsDeps {
     pub mila_session_repo: Arc<dyn MilaSessionRepository>,
     pub mila_session_service: Arc<ind_application::MilaSessionService>,
     pub chat_service: Arc<MilaChatService>,
+    pub document_repo: Arc<dyn DocumentRepository>,
     pub outbox_repo: Arc<dyn JobOutboxRepository>,
     pub embedding_backfill_repo: Arc<dyn EmbeddingBackfillRepository>,
     pub credential_cipher: Option<Arc<ind_auth::CredentialCipher>>,
@@ -58,6 +61,7 @@ impl MilaOperationsService {
             mila_session_repo,
             mila_session_service,
             chat_service,
+            document_repo,
             outbox_repo,
             embedding_backfill_repo,
             credential_cipher,
@@ -72,6 +76,7 @@ impl MilaOperationsService {
             mila_session_repo,
             mila_session_service,
             chat_service,
+            document_repo,
             outbox_repo,
             embedding_backfill_repo,
             credential_cipher,
@@ -83,4 +88,5 @@ mod chat;
 mod config;
 mod helpers;
 mod presets;
+mod retry;
 mod sessions;

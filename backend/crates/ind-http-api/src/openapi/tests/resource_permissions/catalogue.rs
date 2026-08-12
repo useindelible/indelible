@@ -183,6 +183,7 @@ pub(super) const AI_OPERATIONS: &[CompositeOperationContract] = &[
     CompositeOperationContract::new("get", "/api/v1/mila/sessions/{session_id}/messages", &["ai:read"]),
     CompositeOperationContract::new("delete", "/api/v1/mila/sessions/{session_id}", &["ai:write"]),
     CompositeOperationContract::new("get", "/api/v1/mila/stream", &["ai:use", "library:read"]),
+    CompositeOperationContract::new("post", "/api/v1/mila/documents/{document_id}/actions/{action}/retry", &["ai:use", "library:read"]),
     CompositeOperationContract::new("get", "/api/v1/tts/voice-personas", &["ai:read"]),
     CompositeOperationContract::new("post", "/api/v1/tts/voice-personas", &["ai:write", "ai:use"]),
     CompositeOperationContract::new("post", "/api/v1/documents/{document_id}/tts/sessions", &["ai:use", "library:read"]),

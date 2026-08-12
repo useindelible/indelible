@@ -435,6 +435,9 @@ import type {
 	RestoreEntryData,
 	RestoreEntryErrors,
 	RestoreEntryResponses,
+	RetryMilaDocumentActionData,
+	RetryMilaDocumentActionErrors,
+	RetryMilaDocumentActionResponses,
 	RetrySubscriptionData,
 	RetrySubscriptionErrors,
 	RetrySubscriptionResponses,
@@ -2863,6 +2866,22 @@ export const testConfig = <ThrowOnError extends boolean = false>(
 			'Content-Type': 'application/json',
 			...options.headers
 		}
+	});
+
+export const retryMilaDocumentAction = <ThrowOnError extends boolean = false>(
+	options: Options<RetryMilaDocumentActionData, ThrowOnError>
+) =>
+	(options.client ?? client).post<
+		RetryMilaDocumentActionResponses,
+		RetryMilaDocumentActionErrors,
+		ThrowOnError
+	>({
+		security: [
+			{ scheme: 'bearer', type: 'http' },
+			{ scheme: 'bearer', type: 'http' }
+		],
+		url: '/api/v1/mila/documents/{document_id}/actions/{action}/retry',
+		...options
 	});
 
 export const listPromptPresets = <ThrowOnError extends boolean = false>(

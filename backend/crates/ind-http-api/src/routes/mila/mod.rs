@@ -2,11 +2,14 @@ pub(crate) mod chat;
 pub(crate) mod config;
 pub(crate) mod dto;
 pub(crate) mod presets;
+pub(crate) mod retry;
 pub(crate) mod sessions;
 
 use axum::Router;
 use axum::routing::{delete, get, patch, post};
-use ind_application::ports::{MilaChatPort, MilaConfigPort, MilaPromptPresetPort, MilaSessionPort};
+use ind_application::ports::{
+    MilaActionRetryPort, MilaChatPort, MilaConfigPort, MilaPromptPresetPort, MilaSessionPort,
+};
 
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -16,6 +19,7 @@ pub use config::{get_config, get_status, reindex_config, test_config, upsert_con
 pub use presets::{
     create_prompt_preset, delete_prompt_preset, list_prompt_presets, update_prompt_preset,
 };
+pub use retry::retry_mila_document_action;
 pub use sessions::{create_session, delete_session, get_session_messages, list_sessions};
 
 pub(crate) use dto::{
@@ -23,8 +27,8 @@ pub(crate) use dto::{
     MilaConversationResponse, MilaDocumentProvenanceResponse, MilaMessageResponse,
     MilaPromptPresetGroupResponse, MilaPromptPresetResponse, MilaPromptPresetsResponse,
     MilaSessionListResponse, MilaSessionPreviewResponse, MilaSessionResponse, MilaStatusResponse,
-    MilaStreamDeltaResponse, MilaStreamErrorResponse, MilaStreamParams, TestMilaConfigBody,
-    TestMilaConfigResponse, UpdateMilaPromptPresetBody, UpsertMilaConfigBody,
+    MilaStreamDeltaResponse, MilaStreamErrorResponse, MilaStreamParams, RetryMilaActionResponse,
+    TestMilaConfigBody, TestMilaConfigResponse, UpdateMilaPromptPresetBody, UpsertMilaConfigBody,
 };
 
 fn require_mila_config_ops(state: &AppState) -> Result<&dyn MilaConfigPort, ApiError> {
@@ -57,6 +61,15 @@ fn require_mila_session_ops(state: &AppState) -> Result<&dyn MilaSessionPort, Ap
 fn require_mila_chat_ops(state: &AppState) -> Result<&dyn MilaChatPort, ApiError> {
     state
         .mila_chat_ops
+        .as_deref()
+        .ok_or(ApiError::ServiceUnavailable {
+            message: "mila service not configured".into(),
+        })
+}
+
+fn require_mila_action_retry_ops(state: &AppState) -> Result<&dyn MilaActionRetryPort, ApiError> {
+    state
+        .mila_action_retry_ops
         .as_deref()
         .ok_or(ApiError::ServiceUnavailable {
             message: "mila service not configured".into(),
@@ -105,4 +118,8 @@ pub fn mila_routes() -> Router<AppState> {
         )
         .route("/api/v1/mila/sessions/{session_id}", delete(delete_session))
         .route("/api/v1/mila/stream", get(stream_chat))
+        .route(
+            "/api/v1/mila/documents/{document_id}/actions/{action}/retry",
+            post(retry_mila_document_action),
+        )
 }

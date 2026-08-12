@@ -29,6 +29,7 @@ mod api {
     mod library_ingest_failure_tests;
     mod library_route_permission_tests;
     mod media_journey_tests;
+    mod mila_action_retry_journey_tests;
     mod mila_journey_tests;
     mod notion_control_journey_tests;
     mod oauth_journey_tests;

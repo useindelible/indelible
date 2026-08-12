@@ -8,10 +8,10 @@ use ind_application::ports::{
     EmailSenderOperations, EntityOperations, ExportOperations, ExtensionAuthOperations,
     ExtensionSaveOperations, FeedDeliveryOperations, FeedOperations, FeedPreparationOperations,
     HighlightOperations, HomeOperations, ImportOperations, IntegrationOperations,
-    LibraryOperations, LibraryUploadOperations, MilaChatPort, MilaConfigPort, MilaPromptPresetPort,
-    MilaSessionPort, OAuthOperations, OnboardingOperations, SearchOperations, SettingsOperations,
-    SmartListOperations, TagOperations, TokenValidator, TtsOperations, UserLookup,
-    WebhookOperations,
+    LibraryOperations, LibraryUploadOperations, MilaActionRetryPort, MilaChatPort, MilaConfigPort,
+    MilaPromptPresetPort, MilaSessionPort, OAuthOperations, OnboardingOperations, SearchOperations,
+    SettingsOperations, SmartListOperations, TagOperations, TokenValidator, TtsOperations,
+    UserLookup, WebhookOperations,
 };
 use ind_application::repos::event::EventRepository;
 use ind_application::repos::oauth_flow::OAuthFlowRepository;
@@ -64,6 +64,7 @@ pub struct AppState {
     pub mila_prompt_preset_ops: Option<Arc<dyn MilaPromptPresetPort>>,
     pub mila_session_ops: Option<Arc<dyn MilaSessionPort>>,
     pub mila_chat_ops: Option<Arc<dyn MilaChatPort>>,
+    pub mila_action_retry_ops: Option<Arc<dyn MilaActionRetryPort>>,
     pub entity_ops: Option<Arc<dyn EntityOperations>>,
     pub email_ingest_ops: Option<Arc<dyn EmailIngestOperations>>,
     pub email_ingest_provider: Option<Arc<dyn ind_integrations::email::InboundEmailProvider>>,

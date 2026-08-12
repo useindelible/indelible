@@ -30,7 +30,7 @@
 		revokeReaderAssetUrls,
 		shouldLoadReaderAsset
 	} from './reader-assets';
-	import { subscribeReaderRealtime } from './reader-realtime';
+	import { subscribeReaderRealtime, type ReaderAiFailure } from './reader-realtime';
 	import { ReaderChromeController } from './reader-chrome.svelte';
 	import {
 		READER_VIEW_TABS,
@@ -57,7 +57,8 @@
 	let highlights = $state<HighlightWithNoteResponse[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let aiFailure = $state<string | null>(null);
+	let aiFailure = $state<ReaderAiFailure | null>(null);
+	let aiRetryStatus = $state<'idle' | 'pending' | 'queued' | 'error'>('idle');
 	const readerRetry = new ReaderRetryController();
 	const showReaderRetry = $derived(
 		readerRetry.pollVisible || shouldReprocessReaderPreparation(item, assets)
@@ -78,6 +79,26 @@
 		store.start();
 		return () => store.stop();
 	});
+
+	async function retryMilaAction() {
+		if (!aiFailure || aiRetryStatus === 'pending') return;
+		const retriedFailure = aiFailure;
+		const isCurrentFailure = () =>
+			aiFailure?.documentId === retriedFailure.documentId &&
+			aiFailure.action === retriedFailure.action &&
+			aiFailure.aiRunId === retriedFailure.aiRunId;
+		aiRetryStatus = 'pending';
+		try {
+			const { data, error } = await apiSdk.retryMilaDocumentAction({
+				path: { document_id: retriedFailure.documentId, action: retriedFailure.action }
+			});
+			if (!isCurrentFailure()) return;
+			if (error || !data?.queued) throw new Error('Retry was not accepted');
+			aiRetryStatus = 'queued';
+		} catch {
+			if (isCurrentFailure()) aiRetryStatus = 'error';
+		}
+	}
 	const tocEntries = $derived(
 		tocStore && tocStore.state.kind === 'ready' ? tocStore.state.entries : []
 	);
@@ -280,12 +301,16 @@
 		if (!browser || !documentId) return;
 		return subscribeReaderRealtime(documentId, {
 			onHighlightsChanged: scheduleHighlightReload,
-			onAiCompleted: () => {
-				aiFailure = null;
+			onAiCompleted: (completion) => {
+				if (aiFailure?.action === completion.action) {
+					aiFailure = null;
+					aiRetryStatus = 'idle';
+				}
 				void loadData({ silent: true });
 			},
-			onAiFailed: (message) => {
-				aiFailure = message;
+			onAiFailed: (failure) => {
+				aiFailure = failure;
+				aiRetryStatus = 'idle';
 				void loadData({ silent: true });
 			}
 		});
@@ -495,6 +520,8 @@
 		void documentId;
 		untrack(() => {
 			ttsOpen = false;
+			aiFailure = null;
+			aiRetryStatus = 'idle';
 		});
 	});
 
@@ -518,7 +545,15 @@
 <svelte:window onkeydown={isBookItem ? undefined : handleKeydown} />
 
 {#if aiFailure}
-	<AiFailureNotice message={aiFailure} />
+	<AiFailureNotice
+		failure={aiFailure}
+		status={aiRetryStatus}
+		onRetry={() => void retryMilaAction()}
+		onDismiss={() => {
+			aiFailure = null;
+			aiRetryStatus = 'idle';
+		}}
+	/>
 {/if}
 
 {#if loading}

@@ -104,6 +104,22 @@ pub struct MilaStreamRequest {
     pub highlight_offset: Option<usize>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RetryMilaDocumentAction {
+    Summary,
+    Tags,
+    Entities,
+}
+
+pub trait MilaActionRetryPort: Send + Sync {
+    fn retry_document_action(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        action: RetryMilaDocumentAction,
+    ) -> BoxFuture<'_, Result<(), AppError>>;
+}
+
 pub type MilaStreamOutputStream =
     Pin<Box<dyn Stream<Item = Result<MilaStreamDeltaOutput, AppError>> + Send + 'static>>;
 

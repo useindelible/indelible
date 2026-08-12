@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
+import { SvelteMap } from 'svelte/reactivity';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentListEntry, DocumentReaderAssetResponse } from '$lib/api';
 
@@ -12,10 +14,23 @@ const mockStreamAsset = vi.fn();
 const mockCreateDocumentEntry = vi.fn();
 const mockListDocumentEntities = vi.fn();
 const mockReprocessDocument = vi.fn();
+const mockRetryMilaDocumentAction = vi.fn();
+let readerRealtimeCallbacks:
+	| {
+			onAiCompleted: (completion: { action: string; aiRunId: string }) => void;
+			onAiFailed: (failure: {
+				documentId: string;
+				action: string;
+				aiRunId: string;
+				message: string;
+			}) => void;
+	  }
+	| undefined;
+const mockRouteParams = new SvelteMap<string, string>([['documentId', 'doc_1']]);
 
 vi.mock('$app/state', () => ({
 	page: {
-		params: { documentId: 'doc_1' },
+		params: new Proxy({}, { get: (_target, key) => mockRouteParams.get(String(key)) }),
 		url: { pathname: '/reader/doc_1', searchParams: { get: () => null } }
 	}
 }));
@@ -35,7 +50,14 @@ vi.mock('$lib/api', () => ({
 	createHighlight: vi.fn(),
 	deleteHighlight: vi.fn(),
 	patchHighlight: vi.fn(),
-	setHighlightTags: vi.fn()
+	setHighlightTags: vi.fn(),
+	retryMilaDocumentAction: (...a: unknown[]) => mockRetryMilaDocumentAction(...a)
+}));
+vi.mock('../../src/routes/(app)/reader/[documentId]/reader-realtime', () => ({
+	subscribeReaderRealtime: (_documentId: string, callbacks: typeof readerRealtimeCallbacks) => {
+		readerRealtimeCallbacks = callbacks;
+		return vi.fn();
+	}
 }));
 vi.mock('$lib/styles/theme', () => ({
 	applyTheme: vi.fn(),
@@ -93,6 +115,8 @@ function assets(items: Partial<DocumentReaderAssetResponse>[] = []): DocumentRea
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mockRouteParams.set('documentId', 'doc_1');
+	readerRealtimeCallbacks = undefined;
 	Object.defineProperty(window, 'matchMedia', {
 		writable: true,
 		value: vi.fn().mockImplementation((query: string) => ({
@@ -113,6 +137,7 @@ beforeEach(() => {
 	mockReprocessDocument.mockResolvedValue({
 		data: { queued: true, job_type: 'document.reprocess' }
 	});
+	mockRetryMilaDocumentAction.mockResolvedValue({ data: { queued: true, action: 'summary' } });
 });
 
 afterEach(() => {
@@ -120,6 +145,114 @@ afterEach(() => {
 });
 
 describe('document reader page', () => {
+	it('clears a Mila failure when the reader navigates to another document', async () => {
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+
+		readerRealtimeCallbacks?.onAiFailed({
+			documentId: 'doc_1',
+			action: 'summary',
+			aiRunId: 'airun_summary',
+			message: 'provider timeout'
+		});
+		expect(await screen.findByText("Mila couldn't create a summary.")).toBeTruthy();
+
+		mockRouteParams.set('documentId', 'doc_2');
+		await waitFor(() => expect(screen.queryByText("Mila couldn't create a summary.")).toBeNull());
+	});
+
+	it('does not apply a stale retry result to a newer failure', async () => {
+		let resolveRetry!: (value: { data: { queued: boolean; action: string } }) => void;
+		mockRetryMilaDocumentAction.mockReturnValueOnce(
+			new Promise((resolve) => {
+				resolveRetry = resolve;
+			})
+		);
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+
+		readerRealtimeCallbacks?.onAiFailed({
+			documentId: 'doc_1',
+			action: 'summary',
+			aiRunId: 'airun_summary',
+			message: 'summary timeout'
+		});
+		await fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+		readerRealtimeCallbacks?.onAiFailed({
+			documentId: 'doc_1',
+			action: 'tags',
+			aiRunId: 'airun_tags',
+			message: 'tags timeout'
+		});
+		resolveRetry({ data: { queued: true, action: 'summary' } });
+
+		await waitFor(() => expect(screen.getByText("Mila couldn't suggest tags.")).toBeTruthy());
+		expect(screen.queryByText('Retry queued.')).toBeNull();
+	});
+
+	it('clears a Mila failure only when the same action completes', async () => {
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+
+		readerRealtimeCallbacks?.onAiFailed({
+			documentId: 'doc_1',
+			action: 'summary',
+			aiRunId: 'airun_summary',
+			message: 'provider timeout'
+		});
+		expect(await screen.findByText("Mila couldn't create a summary.")).toBeTruthy();
+
+		readerRealtimeCallbacks?.onAiCompleted({ action: 'tags', aiRunId: 'airun_tags' });
+		await tick();
+		expect(screen.getByText("Mila couldn't create a summary.")).toBeTruthy();
+
+		readerRealtimeCallbacks?.onAiCompleted({ action: 'summary', aiRunId: 'airun_summary_retry' });
+		await waitFor(() => expect(screen.queryByText("Mila couldn't create a summary.")).toBeNull());
+	});
+
+	it('queues the failed Mila action and reports success', async () => {
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+
+		readerRealtimeCallbacks?.onAiFailed({
+			documentId: 'doc_1',
+			action: 'summary',
+			aiRunId: 'airun_1',
+			message: 'provider timeout'
+		});
+		await fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+
+		await waitFor(() =>
+			expect(mockRetryMilaDocumentAction).toHaveBeenCalledWith({
+				path: { document_id: 'doc_1', action: 'summary' }
+			})
+		);
+		expect(screen.getByText('Retry queued.')).toBeTruthy();
+	});
+
+	it('keeps the Mila failure actionable when retry enqueue fails', async () => {
+		mockRetryMilaDocumentAction.mockResolvedValueOnce({
+			error: { code: 'service_unavailable', message: 'provider unavailable' }
+		});
+		mockGetDocumentEntry.mockResolvedValue({ data: readModel() });
+		render(DocumentReaderPage);
+		await waitFor(() => expect(readerRealtimeCallbacks).toBeTruthy());
+
+		readerRealtimeCallbacks?.onAiFailed({
+			documentId: 'doc_1',
+			action: 'entities',
+			aiRunId: 'airun_2',
+			message: 'provider unavailable'
+		});
+		await fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+
+		await waitFor(() => expect(screen.getByText('Could not queue retry. Try again.')).toBeTruthy());
+		expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+	});
 	it('shows a preparing state until the readable asset is ready', async () => {
 		mockGetDocumentEntry.mockResolvedValue({ data: readModel({ readable_ready: false }) });
 		mockListAssets.mockResolvedValue({ data: { data: [], page: { has_more: false } } });

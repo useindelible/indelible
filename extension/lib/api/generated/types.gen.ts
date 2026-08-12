@@ -1825,6 +1825,11 @@ export type ResolveChunkResponse = {
   status: string
 }
 
+export type RetryMilaActionResponse = {
+  action: string
+  queued: boolean
+}
+
 /**
  * Save a feed delivery into the Library.
  */
@@ -7114,6 +7119,55 @@ export type TestConfigResponses = {
 }
 
 export type TestConfigResponse = TestConfigResponses[keyof TestConfigResponses]
+
+export type RetryMilaDocumentActionData = {
+  body?: never
+  path: {
+    /**
+     * Document id with doc_ prefix
+     */
+    document_id: string
+    /**
+     * Retryable Mila action: summary, tags, or entities
+     */
+    action: string
+  }
+  query?: never
+  url: '/api/v1/mila/documents/{document_id}/actions/{action}/retry'
+}
+
+export type RetryMilaDocumentActionErrors = {
+  /**
+   * Authentication required
+   */
+  401: unknown
+  /**
+   * Insufficient permissions
+   */
+  403: unknown
+  /**
+   * Document not found
+   */
+  404: unknown
+  /**
+   * Unsupported Mila action
+   */
+  422: unknown
+  /**
+   * Mila service not configured
+   */
+  503: unknown
+}
+
+export type RetryMilaDocumentActionResponses = {
+  /**
+   * Mila action retry queued
+   */
+  200: RetryMilaActionResponse
+}
+
+export type RetryMilaDocumentActionResponse =
+  RetryMilaDocumentActionResponses[keyof RetryMilaDocumentActionResponses]
 
 export type ListPromptPresetsData = {
   body?: never

@@ -3,10 +3,12 @@ use ind_domain::{AiPromptAction, MessageRole, MilaSessionType};
 
 mod config;
 mod presets;
+mod retry;
 mod sessions;
 
 pub use config::*;
 pub use presets::*;
+pub use retry::*;
 pub use sessions::*;
 
 // HTTP DTOs stay explicit even when they mirror application outputs so ind-application never depends on utoipa.
