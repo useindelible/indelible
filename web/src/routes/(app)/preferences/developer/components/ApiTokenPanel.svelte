@@ -6,7 +6,8 @@
 		ResourceAccessLevel,
 		ResourcePermissionKey
 	} from '../developer-model';
-	import { formatDate, formatRelative, permissionClass } from '../developer-model';
+	import { formatDate, formatRelative } from '../developer-model';
+	import PermissionChip from './PermissionChip.svelte';
 	import TokenIssueDialog from './TokenIssueDialog.svelte';
 	import TokenRevealCard from './TokenRevealCard.svelte';
 
@@ -141,7 +142,7 @@
 								<td>
 									<span class="permissions">
 										{#each token.permissions as permission (permission)}
-											<span class="permission {permissionClass(permission)}">{permission}</span>
+											<PermissionChip {permission} />
 										{/each}
 									</span>
 								</td>
@@ -370,43 +371,6 @@
 		display: inline-flex;
 		flex-wrap: wrap;
 		gap: 4px;
-	}
-
-	.permission {
-		display: inline-flex;
-		align-items: center;
-		padding: 2px 7px;
-		border-radius: 5px;
-		font-family: 'SF Mono', 'Fira Code', Menlo, ui-monospace, monospace;
-		font-size: 10.5px;
-		font-weight: 600;
-		letter-spacing: -0.01em;
-		text-transform: lowercase;
-	}
-
-	.permission.read {
-		background: var(--dev-scope-read-bg);
-		color: var(--dev-scope-read-fg);
-	}
-
-	.permission.write {
-		background: var(--dev-scope-write-bg);
-		color: var(--dev-scope-write-fg);
-	}
-
-	.permission.other {
-		background: var(--dev-scope-other-bg);
-		color: var(--dev-scope-other-fg);
-	}
-
-	.permission.obsidian {
-		background: var(--dev-scope-ext-bg);
-		color: var(--dev-scope-ext-fg);
-	}
-
-	.permission.use {
-		background: var(--dev-accent-soft);
-		color: var(--dev-accent);
 	}
 
 	.relative-time {

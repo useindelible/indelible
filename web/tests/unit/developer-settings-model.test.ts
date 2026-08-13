@@ -89,6 +89,14 @@ describe('developer settings model', () => {
 		expect(permissionClass('cli')).toBe('other');
 	});
 
+	it('groups acting permissions apart from reads', () => {
+		expect(permissionClass('library:read')).toBe('read');
+		expect(permissionClass('library:write')).toBe('write');
+		// ai:use invokes models, so it must not read as a read-only grant.
+		expect(permissionClass('ai:use')).toBe('write');
+		expect(permissionClass('obsidian:sync')).toBe('obsidian');
+	});
+
 	it('expands resource write levels to truthful read and write permissions', () => {
 		const write = setResourceAccess(['ai:use'], 'library', 'write');
 		expect(write).toEqual(['library:read', 'library:write', 'ai:use']);

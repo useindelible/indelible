@@ -77,7 +77,7 @@ export const INDEPENDENT_PERMISSION_DEFS: IndependentPermissionDef[] = [
 	{
 		key: 'ai:write',
 		label: 'AI configure',
-		desc: 'Manage AI configuration, presets, personas, and sessions. Includes AI read.'
+		desc: 'Manage AI configuration, presets, personas, and sessions.'
 	},
 	{ key: 'ai:use', label: 'AI use', desc: 'Invoke models, tests, indexing, and voice generation.' },
 	{
@@ -195,11 +195,13 @@ export function issuePresetFromSearchParams(
 	return { name: 'Obsidian plugin', permissions: ['obsidian:sync'] };
 }
 
+// Blue reads, amber acts, indigo leaves the building. `ai:use` groups with
+// write because it acts — and because --dev-accent-soft is identical to
+// --dev-scope-read-bg in dark, so a dedicated tint would read as a read grant.
 export function permissionClass(permission: string): string {
 	if (permission === 'obsidian:sync') return 'obsidian';
 	if (permission.endsWith(':read')) return 'read';
-	if (permission.endsWith(':write')) return 'write';
-	if (permission === 'ai:use') return 'use';
+	if (permission.endsWith(':write') || permission === 'ai:use') return 'write';
 	return 'other';
 }
 

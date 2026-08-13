@@ -1,8 +1,7 @@
 <script lang="ts">
+	import PermissionLedger from './PermissionLedger.svelte';
 	import {
-		INDEPENDENT_PERMISSION_DEFS,
-		RESOURCE_PERMISSION_GROUPS,
-		resourceAccessLevel,
+		formatDate,
 		type ExpiryOption,
 		type PermissionKey,
 		type ResourceAccessLevel,
@@ -42,6 +41,12 @@
 		onExpiry,
 		onSubmit
 	}: Props = $props();
+
+	const revokesOn = $derived(
+		expiry === 'never'
+			? null
+			: formatDate(new Date(Date.now() + Number(expiry) * 86_400_000).toISOString())
+	);
 </script>
 
 <div class="issue-form" class:open inert={!open} aria-hidden={!open}>
@@ -71,91 +76,39 @@
 			<div class="lab">
 				Permissions<span class="help">Start with none, then grant only what this token needs.</span>
 			</div>
-			<div class="permission-picker">
-				<div class="permission-toolbar">
-					<span>{permissions.size} selected</span>
-					<button type="button" class="select-all" onclick={onToggleAllPermissions}>
-						{allPermissionsSelected ? 'Clear all' : 'Select all'}
-					</button>
-				</div>
-
-				<div class="resource-list">
-					{#each RESOURCE_PERMISSION_GROUPS as group (group.key)}
-						<div class="resource-row">
-							<div class="resource-copy">
-								<div class="resource-name">{group.label}</div>
-								<div class="desc">{group.desc}</div>
-							</div>
-							<div class="level-picker" role="group" aria-label={`${group.label} access`}>
-								<button
-									type="button"
-									class:selected={resourceAccessLevel(permissions, group.key) === 'read'}
-									aria-pressed={resourceAccessLevel(permissions, group.key) === 'read'}
-									onclick={() =>
-										onSetResourceAccess(
-											group.key,
-											resourceAccessLevel(permissions, group.key) === 'read' ? 'none' : 'read'
-										)}
-								>
-									Read
-								</button>
-								<button
-									type="button"
-									class:selected={resourceAccessLevel(permissions, group.key) === 'write'}
-									aria-pressed={resourceAccessLevel(permissions, group.key) === 'write'}
-									onclick={() =>
-										onSetResourceAccess(
-											group.key,
-											resourceAccessLevel(permissions, group.key) === 'write' ? 'none' : 'write'
-										)}
-								>
-									Read + write
-								</button>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				<div class="permission-grid">
-					{#each INDEPENDENT_PERMISSION_DEFS as permission (permission.key)}
-						<button
-							type="button"
-							class="permission-card"
-							class:selected={permissions.has(permission.key)}
-							aria-pressed={permissions.has(permission.key)}
-							onclick={() => onTogglePermission(permission.key)}
-						>
-							<div class="permission-head">
-								<span class="permission-label">{permission.label}</span>
-								<span class="check">
-									<svg viewBox="0 0 24 24" aria-hidden="true">
-										<polyline points="20 6 9 17 4 12" />
-									</svg>
-								</span>
-							</div>
-							<span class="key">{permission.key}</span>
-							<div class="desc">{permission.desc}</div>
-						</button>
-					{/each}
-				</div>
-			</div>
+			<PermissionLedger
+				{permissions}
+				{allPermissionsSelected}
+				{onSetResourceAccess}
+				{onTogglePermission}
+				{onToggleAllPermissions}
+			/>
 		</div>
 
 		<div class="form-row">
 			<label class="lab" for="dev-token-expiry">
 				Expiry<span class="help">Token auto-revokes at this time.</span>
 			</label>
-			<select
-				id="dev-token-expiry"
-				class="select expiry-select"
-				value={expiry}
-				onchange={(event) => onExpiry(event.currentTarget.value as ExpiryOption)}
-			>
-				<option value="30">30 days</option>
-				<option value="90">90 days</option>
-				<option value="365">1 year</option>
-				<option value="never">No expiry</option>
-			</select>
+			<div class="expiry">
+				<select
+					id="dev-token-expiry"
+					class="select"
+					value={expiry}
+					onchange={(event) => onExpiry(event.currentTarget.value as ExpiryOption)}
+				>
+					<option value="30">30 days</option>
+					<option value="90">90 days</option>
+					<option value="365">1 year</option>
+					<option value="never">No expiry</option>
+				</select>
+				<span class="resolved">
+					{#if revokesOn}
+						Revokes <strong>{revokesOn}</strong>
+					{:else}
+						Stays valid until you revoke it.
+					{/if}
+				</span>
+			</div>
 		</div>
 
 		{#if error}
@@ -172,25 +125,29 @@
 </div>
 
 <style>
+	/* Expands on grid-template-rows, not max-height: the form grows past any
+	   fixed ceiling once every permission row is on screen. */
 	.issue-form {
 		background: var(--dev-card-strong);
 		border-radius: 14px;
 		box-shadow: inset 0 0 0 0.5px var(--border-primary);
 		margin-top: 12px;
-		overflow: hidden;
-		max-height: 0;
+		display: grid;
+		grid-template-rows: 0fr;
 		opacity: 0;
 		transition:
-			max-height 320ms ease,
+			grid-template-rows 340ms cubic-bezier(0.2, 0.7, 0.3, 1),
 			opacity 240ms ease;
 	}
 
 	.issue-form.open {
-		max-height: 1000px;
+		grid-template-rows: 1fr;
 		opacity: 1;
 	}
 
 	.issue-form-inner {
+		min-height: 0;
+		overflow: hidden;
 		padding: 22px 24px 24px;
 		display: flex;
 		flex-direction: column;
@@ -198,8 +155,7 @@
 	}
 
 	.issue-form-head,
-	.form-foot,
-	.permission-head {
+	.form-foot {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -296,151 +252,26 @@
 		background-position: right 10px center;
 	}
 
-	.expiry-select {
-		max-width: 240px;
-	}
-
-	.permission-picker {
+	.expiry {
 		display: flex;
-		flex-direction: column;
+		align-items: center;
+		flex-wrap: wrap;
 		gap: 12px;
 	}
 
-	.permission-toolbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
+	.expiry .select {
+		max-width: 200px;
+	}
+
+	.resolved {
 		font-size: 11.5px;
 		color: var(--text-tertiary);
+		letter-spacing: -0.005em;
 	}
 
-	.select-all {
-		border: none;
-		background: none;
-		color: var(--dev-accent);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-		padding: 3px 0;
-	}
-
-	.resource-list {
-		border-radius: 10px;
-		box-shadow: inset 0 0 0 0.5px var(--border-primary);
-		overflow: hidden;
-	}
-
-	.resource-row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 16px;
-		align-items: center;
-		padding: 11px 12px;
-		background: var(--bg-elevated);
-		border-bottom: 0.5px solid var(--border-hairline);
-	}
-
-	.resource-row:last-child {
-		border-bottom: none;
-	}
-
-	.resource-name,
-	.permission-label {
-		font-size: 12.5px;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.level-picker {
-		display: inline-flex;
-		padding: 2px;
-		border-radius: 8px;
-		background: var(--fill-hover);
-	}
-
-	.level-picker button {
-		border: none;
-		background: transparent;
+	.resolved strong {
 		color: var(--text-secondary);
-		font: inherit;
-		font-size: 11.5px;
-		font-weight: 500;
-		padding: 5px 8px;
-		border-radius: 6px;
-		cursor: pointer;
-	}
-
-	.level-picker button.selected {
-		background: var(--bg-elevated);
-		color: var(--dev-accent);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-	}
-
-	.permission-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 12px;
-	}
-
-	.permission-card {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		padding: 10px 12px;
-		background: var(--bg-elevated);
-		border-radius: 10px;
-		box-shadow: inset 0 0 0 0.5px var(--border-primary);
-		cursor: pointer;
-		text-align: left;
-		font: inherit;
-		color: inherit;
-		border: none;
-	}
-
-	.permission-card.selected {
-		box-shadow:
-			inset 0 0 0 1.5px var(--dev-accent),
-			0 0 0 4px var(--dev-accent-soft);
-		background: var(--dev-accent-soft);
-	}
-
-	.key {
-		font-family: 'SF Mono', 'Fira Code', Menlo, ui-monospace, monospace;
-		font-size: 12px;
-		font-weight: 700;
-		letter-spacing: 0;
-		color: var(--text-primary);
-	}
-
-	.check {
-		width: 16px;
-		height: 16px;
-		border-radius: 50%;
-		background: var(--dev-accent);
-		color: var(--text-on-color);
-		display: none;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.check svg {
-		width: 9px;
-		height: 9px;
-		stroke: currentColor;
-		fill: none;
-		stroke-width: 2.5;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-	}
-
-	.permission-card.selected .check {
-		display: inline-flex;
-	}
-
-	.desc {
-		font-size: 11.5px;
-		color: var(--text-secondary);
-		line-height: 1.4;
+		font-weight: 600;
 	}
 
 	.form-error {
@@ -481,18 +312,19 @@
 	}
 
 	@media (max-width: 720px) {
-		.form-row,
-		.permission-grid,
-		.resource-row {
+		.form-row {
 			grid-template-columns: 1fr;
+			gap: 6px;
 		}
 
-		.level-picker {
-			width: 100%;
+		.lab {
+			padding-top: 0;
 		}
+	}
 
-		.level-picker button {
-			flex: 1;
+	@media (prefers-reduced-motion: reduce) {
+		.issue-form {
+			transition: opacity 240ms ease;
 		}
 	}
 </style>

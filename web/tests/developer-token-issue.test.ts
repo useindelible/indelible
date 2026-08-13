@@ -48,7 +48,7 @@ async function dirtyTokenDraft() {
 	await fireEvent.input(form.getByPlaceholderText('e.g. Personal MacBook'), {
 		target: { value: 'Broad access' }
 	});
-	await fireEvent.click(form.getByRole('button', { name: 'Select all' }));
+	await fireEvent.click(form.getByRole('button', { name: 'Grant everything' }));
 	await fireEvent.change(form.getByLabelText(/Token auto-revokes/), {
 		target: { value: '365' }
 	});
@@ -59,7 +59,7 @@ function expectDefaultTokenDraft() {
 	expect((form.getByPlaceholderText('e.g. Personal MacBook') as HTMLInputElement).value).toBe(
 		'Personal MacBook'
 	);
-	expect(form.getByText('0 selected')).toBeTruthy();
+	expect(form.getByText('No permissions granted')).toBeTruthy();
 	expect((form.getByLabelText(/Token auto-revokes/) as HTMLSelectElement).value).toBe('90');
 	expect(form.queryByRole('alert')).toBeNull();
 }
@@ -159,11 +159,45 @@ describe('developer token issue form', () => {
 		expect((form.getByPlaceholderText('e.g. Personal MacBook') as HTMLInputElement).value).toBe(
 			'Obsidian plugin'
 		);
-		expect(form.getByText('1 selected')).toBeTruthy();
+		expect(form.getByText(/permission granted/).textContent).toContain('1');
 		expect(form.getByRole('button', { name: /Obsidian sync/ }).getAttribute('aria-pressed')).toBe(
 			'true'
 		);
 		expect(form.getByRole('button', { name: /AI use/ }).getAttribute('aria-pressed')).toBe('false');
+	});
+
+	it('renders the granted permissions as the array the request will carry', async () => {
+		await renderDeveloperPage();
+		await fireEvent.click(screen.getByRole('button', { name: 'Issue token' }));
+		const form = tokenIssueForm();
+
+		expect(form.getByText(/Nothing granted yet/)).toBeTruthy();
+
+		// Read + write on Library must surface library:read alongside library:write.
+		const libraryLevels = within(form.getByRole('radiogroup', { name: 'Library access' }));
+		await fireEvent.click(libraryLevels.getByRole('radio', { name: 'Read + write' }));
+		expect([...form.getAllByText(/^library:/)].map((chip) => chip.textContent)).toEqual([
+			'library:read',
+			'library:write'
+		]);
+
+		// ai:write implies ai:read, and the AI read row says so rather than silently checking.
+		await fireEvent.click(form.getByRole('button', { name: /AI configure/ }));
+		expect(form.getByText('ai:read', { selector: '.permission' })).toBeTruthy();
+		expect(form.getByRole('button', { name: /AI read/ }).className).toContain('implied');
+	});
+
+	it('resolves the expiry choice to a revocation date', async () => {
+		await renderDeveloperPage();
+		await fireEvent.click(screen.getByRole('button', { name: 'Issue token' }));
+		const form = tokenIssueForm();
+
+		expect(form.getByText(/^Revokes/)).toBeTruthy();
+
+		await fireEvent.change(form.getByLabelText(/Token auto-revokes/), {
+			target: { value: 'never' }
+		});
+		expect(form.getByText('Stays valid until you revoke it.')).toBeTruthy();
 	});
 
 	it('shows only authoritative hero counts and no fabricated activity', async () => {
