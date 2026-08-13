@@ -11,9 +11,10 @@ use ind_application::AppError;
 use ind_application::repos::content_vector::{
     CollectionDocumentFtsQuery, CollectionDocumentVectorQuery, ContentVectorRepository,
     ContentVectorSourceRef, CrossDocumentFtsQuery, CrossDocumentVectorQuery,
-    SingleDocumentFtsQuery, SingleDocumentVectorQuery,
+    SingleDocumentFtsQuery, SingleDocumentVectorQuery, VectorReplacementOutcome,
 };
-use ind_domain::{ContentVector, DocumentId, SearchHit, UserId};
+use ind_application::repos::embedding_backfill::EffectiveEmbeddingTarget;
+use ind_domain::{ContentVector, DocumentId, MilaPlatformDefaults, SearchHit, UserId};
 
 pub struct PgContentVectorRepository {
     pool: PgPool,
@@ -37,6 +38,24 @@ impl ContentVectorRepository for PgContentVectorRepository {
         vectors: &[ContentVector],
     ) -> Result<(), AppError> {
         self.replace_for_document_impl(document_id, vectors).await
+    }
+
+    async fn replace_for_document_if_target_current(
+        &self,
+        document_id: DocumentId,
+        user_id: UserId,
+        vectors: &[ContentVector],
+        generated_target: &EffectiveEmbeddingTarget,
+        platform_defaults: &MilaPlatformDefaults,
+    ) -> Result<VectorReplacementOutcome, AppError> {
+        self.replace_for_document_if_target_current_impl(
+            document_id,
+            user_id,
+            vectors,
+            generated_target,
+            platform_defaults,
+        )
+        .await
     }
 
     async fn delete_for_document(&self, document_id: DocumentId) -> Result<(), AppError> {

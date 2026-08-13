@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT d.id\n        FROM documents d\n        JOIN library_entries le\n          ON le.document_id = d.id\n         AND le.user_id = d.user_id\n         AND le.deleted_at IS NULL\n        WHERE d.user_id = $1\n          AND EXISTS (\n                SELECT 1\n                FROM archive_assets aa\n                WHERE aa.document_id = d.id\n                  AND aa.status = 'completed'\n                  AND aa.s3_key <> ''\n                  AND (\n                        (aa.asset_kind = 'readable_html' AND aa.content_type = 'text/html')\n                        OR (aa.asset_kind = 'epub' AND aa.content_type = 'application/json')\n                        OR (aa.asset_kind = 'original_upload' AND aa.content_type = 'application/pdf')\n                  )\n          )\n          AND NOT EXISTS (\n                SELECT 1\n                FROM content_vectors cv\n                WHERE cv.document_id = d.id\n                  AND cv.embedding_model = $2\n                  AND cv.embedding_dim = $3\n          )\n          AND (\n                NOT $5\n                OR (\n                    NOT EXISTS (\n                        SELECT 1\n                        FROM background_job_recoveries recovery\n                        WHERE recovery.job_type = 'document.ai.embed'\n                          AND recovery.status <> 'resolved'\n                          AND recovery.payload->>'document_id' = ('doc_' || d.id::text)\n                    )\n                    AND NOT EXISTS (\n                        SELECT 1\n                        FROM dead_letter_jobs dead_letter\n                        WHERE dead_letter.original_job_type = 'document.ai.embed'\n                          AND dead_letter.replayed_at IS NULL\n                          AND dead_letter.original_payload->>'document_id' = ('doc_' || d.id::text)\n                    )\n                )\n          )\n        ORDER BY (\n                    NOT $5\n                    AND (\n                        EXISTS (\n                            SELECT 1\n                            FROM background_job_recoveries recovery\n                            WHERE recovery.job_type = 'document.ai.embed'\n                              AND recovery.status <> 'resolved'\n                              AND recovery.payload->>'document_id' = ('doc_' || d.id::text)\n                        )\n                        OR EXISTS (\n                            SELECT 1\n                            FROM dead_letter_jobs dead_letter\n                            WHERE dead_letter.original_job_type = 'document.ai.embed'\n                              AND dead_letter.replayed_at IS NULL\n                              AND dead_letter.original_payload->>'document_id' = ('doc_' || d.id::text)\n                        )\n                    )\n                 ) DESC,\n                 le.saved_at DESC,\n                 le.id DESC\n        LIMIT $4\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Int8",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "16970d80a8c8e9099622aaba56a417f355c62d48678281465d8d31c0016aee0c"
+}

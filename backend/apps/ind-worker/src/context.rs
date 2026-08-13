@@ -120,6 +120,7 @@ pub struct WorkerContext {
     pub collection_repo: Arc<dyn CollectionRepository>,
     pub apalis_job_repo: Arc<dyn ApalisJobRepository>,
     pub embedding_backfill_repo: Arc<dyn EmbeddingBackfillRepository>,
+    pub mila_platform_defaults: ind_domain::MilaPlatformDefaults,
     pub integrity_stats_repo: Arc<dyn IntegrityStatsRepository>,
     pub maintenance_task_repo: Arc<dyn MaintenanceTaskRepository>,
     pub tts_orphan_sweeper: Option<Arc<TtsOrphanSweeper>>,
@@ -207,7 +208,7 @@ impl WorkerServicesBuilder {
         let defaulting_mila_repo: Arc<dyn MilaConfigRepository> = Arc::new(
             ind_application::repos::mila_config::DefaultingMilaConfigRepository::new(
                 mila_config_repo.clone(),
-                mila_defaults,
+                mila_defaults.clone(),
             ),
         );
         let content_provider = Arc::new(AssetBackedPreparedContentProvider::new(
@@ -231,6 +232,7 @@ impl WorkerServicesBuilder {
             Arc::new(PgContentVectorRepository::new(pool.clone())),
             document_repo.clone(),
             ai_client.clone(),
+            mila_defaults.clone(),
         )
         .with_credential_cipher(credential_cipher.clone());
         let ai_action_runner = AiActionRunner::new(
@@ -262,6 +264,7 @@ impl WorkerServicesBuilder {
                 collection_repo: Arc::new(PgCollectionRepository::new(pool.clone())),
                 apalis_job_repo: Arc::new(PgApalisJobRepository::new(pool.clone())),
                 embedding_backfill_repo: Arc::new(PgEmbeddingBackfillRepository::new(pool.clone())),
+                mila_platform_defaults: mila_defaults,
                 integrity_stats_repo: Arc::new(PgIntegrityStatsRepository::new(pool.clone())),
                 maintenance_task_repo: Arc::new(PgMaintenanceTaskRepository::new(pool.clone())),
                 tts_orphan_sweeper,

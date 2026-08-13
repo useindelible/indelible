@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO job_outbox (id, job_type, payload, dedupe_key, available_at, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE\n                SET payload = EXCLUDED.payload,\n                    available_at = CASE\n                        WHEN job_outbox.dispatched_at IS NULL\n                            THEN LEAST(job_outbox.available_at, EXCLUDED.available_at)\n                        ELSE EXCLUDED.available_at\n                    END,\n                    dispatched_at = NULL\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8001fdd481f8d5d7bbb32f762b661ac7c46b379b2fdf1755bfc2616362652aae"
+}

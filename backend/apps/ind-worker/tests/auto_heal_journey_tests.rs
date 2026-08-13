@@ -11,12 +11,14 @@ use ind_worker::context::WorkerServicesBuilder;
 
 async fn recovery_context(db: &TestDb) -> ind_worker::context::RecoveryJobDeps {
     let renderer = Arc::new(StorageBackedMockRenderer::new(db.storage().await));
+    let mut defaults = test_mila_defaults();
+    defaults.enabled = true;
     WorkerServicesBuilder::new(
         db.pool().clone(),
         renderer,
         None,
         db.bucket().to_string(),
-        test_mila_defaults(),
+        defaults,
         ind_egress::EgressPolicy::permissive(),
         None,
     )
@@ -25,6 +27,46 @@ async fn recovery_context(db: &TestDb) -> ind_worker::context::RecoveryJobDeps {
     .without_email_services()
     .build()
     .recovery_jobs()
+}
+
+#[tokio::test]
+async fn full_embedding_repair_batch_makes_the_existing_lease_due_again_soon() {
+    let db = TestDb::new().await;
+    let user = UserFactory::new().insert(db.pool()).await;
+    for title in ["First repair", "Second repair"] {
+        let document = DocumentFactory::new(user.id)
+            .with_title(title)
+            .insert(db.pool())
+            .await;
+        LibraryEntryFactory::new(user.id, document.id)
+            .insert(db.pool())
+            .await;
+        sqlx::query(
+            "INSERT INTO archive_assets \
+             (id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, created_at, status) \
+             VALUES ($1, $2, 'readable_html', $3, $4, 'text/html', 64, now(), 'completed')",
+        )
+        .bind(uuid::Uuid::now_v7())
+        .bind(document.id.into_uuid())
+        .bind(format!("documents/{}/readable.html", document.id))
+        .bind(db.bucket())
+        .execute(db.pool())
+        .await
+        .unwrap();
+    }
+
+    let mut context = recovery_context(&db).await;
+    context.auto_heal_batch_size = 1;
+    context.embedding_repair_interval_secs = 900;
+    ind_worker::auto_heal::run_auto_heal_once(&context).await;
+
+    let next_run_at: chrono::DateTime<chrono::Utc> = sqlx::query_scalar(
+        "SELECT next_run_at FROM maintenance_tasks WHERE task_name = 'embedding.repair'",
+    )
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    assert!(next_run_at <= chrono::Utc::now() + chrono::Duration::seconds(60));
 }
 
 #[tokio::test]

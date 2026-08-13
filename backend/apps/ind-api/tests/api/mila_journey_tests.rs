@@ -20,6 +20,175 @@ fn config(embedding_dim: i32) -> Value {
     })
 }
 
+fn byo_config(enabled: bool) -> Value {
+    let mut body = config(768);
+    body["embedding_model"] = json!("custom-embed");
+    body["byo_enabled"] = json!(enabled);
+    body
+}
+
+#[tokio::test]
+async fn byo_toggle_schedules_the_new_effective_embedding_target() {
+    let app = spawn_app().await;
+    let session = app.create_web_session().await;
+    let client = app.authed_client(&session);
+    let document = DocumentFactory::new(session.user.id)
+        .with_title("Provider toggle")
+        .insert(app.pool())
+        .await;
+    ind_test_support::LibraryEntryFactory::new(session.user.id, document.id)
+        .insert(app.pool())
+        .await;
+    sqlx::query(
+        "INSERT INTO archive_assets \
+         (id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, created_at, status) \
+         VALUES ($1, $2, 'readable_html', $3, 'test', 'text/html', 64, now(), 'completed')",
+    )
+    .bind(uuid::Uuid::now_v7())
+    .bind(document.id.into_uuid())
+    .bind(format!("documents/{}/readable.html", document.id))
+    .execute(app.pool())
+    .await
+    .unwrap();
+
+    response(
+        client
+            .post_json("/api/v1/mila/config", &byo_config(true))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    sqlx::query("DELETE FROM job_outbox WHERE payload->>'document_id' = $1")
+        .bind(document.id.to_string())
+        .execute(app.pool())
+        .await
+        .unwrap();
+
+    response(
+        client
+            .post_json("/api/v1/mila/config", &byo_config(false))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+
+    let queued: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM job_outbox \
+         WHERE job_type = 'document.ai.embed' AND payload->>'document_id' = $1",
+    )
+    .bind(document.id.to_string())
+    .fetch_one(app.pool())
+    .await
+    .unwrap();
+    assert_eq!(queued, 1);
+
+    sqlx::query(
+        "UPDATE job_outbox SET dispatched_at = now() \
+         WHERE job_type = 'document.ai.embed' AND payload->>'document_id' = $1",
+    )
+    .bind(document.id.to_string())
+    .execute(app.pool())
+    .await
+    .unwrap();
+
+    let mut chat_only_change = byo_config(false);
+    chat_only_change["chat_model"] = json!("gpt-4.1");
+    response(
+        client
+            .post_json("/api/v1/mila/config", &chat_only_change)
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    let remains_dispatched: bool = sqlx::query_scalar(
+        "SELECT dispatched_at IS NOT NULL FROM job_outbox \
+         WHERE job_type = 'document.ai.embed' AND payload->>'document_id' = $1",
+    )
+    .bind(document.id.to_string())
+    .fetch_one(app.pool())
+    .await
+    .unwrap();
+    assert!(
+        remains_dispatched,
+        "chat-only saves must not re-arm embed work"
+    );
+
+    response(
+        client
+            .post_json("/api/v1/mila/config/reindex", &chat_only_change)
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    let retry_rearmed: bool = sqlx::query_scalar(
+        "SELECT dispatched_at IS NULL FROM job_outbox \
+         WHERE job_type = 'document.ai.embed' AND payload->>'document_id' = $1",
+    )
+    .bind(document.id.to_string())
+    .fetch_one(app.pool())
+    .await
+    .unwrap();
+    assert!(retry_rearmed, "explicit Retry must re-arm embed work");
+}
+
+#[tokio::test]
+async fn enabling_mila_preserves_the_full_document_processing_backfill() {
+    let app = spawn_app().await;
+    let session = app.create_web_session().await;
+    let client = app.authed_client(&session);
+    let document = DocumentFactory::new(session.user.id)
+        .with_title("Enable Mila")
+        .insert(app.pool())
+        .await;
+    ind_test_support::LibraryEntryFactory::new(session.user.id, document.id)
+        .insert(app.pool())
+        .await;
+    sqlx::query(
+        "INSERT INTO archive_assets \
+         (id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, created_at, status) \
+         VALUES ($1, $2, 'readable_html', $3, 'test', 'text/html', 64, now(), 'completed')",
+    )
+    .bind(uuid::Uuid::now_v7())
+    .bind(document.id.into_uuid())
+    .bind(format!("documents/{}/readable.html", document.id))
+    .execute(app.pool())
+    .await
+    .unwrap();
+
+    let mut disabled = byo_config(false);
+    disabled["enabled"] = json!(false);
+    response(
+        client.post_json("/api/v1/mila/config", &disabled).await,
+        StatusCode::OK,
+    )
+    .await;
+    let mut enabled = disabled;
+    enabled["enabled"] = json!(true);
+    response(
+        client.post_json("/api/v1/mila/config", &enabled).await,
+        StatusCode::OK,
+    )
+    .await;
+
+    let queued_types: Vec<String> = sqlx::query_scalar(
+        "SELECT job_type FROM job_outbox \
+         WHERE payload->>'document_id' = $1 ORDER BY job_type",
+    )
+    .bind(document.id.to_string())
+    .fetch_all(app.pool())
+    .await
+    .unwrap();
+    assert_eq!(
+        queued_types,
+        vec![
+            "document.ai.embed",
+            "document.ai.entities",
+            "document.ai.summarize",
+            "document.ai.tags",
+        ]
+    );
+}
+
 #[tokio::test]
 async fn mila_journey_persists_config_presets_and_sessions_through_real_services() {
     let app = spawn_app().await;

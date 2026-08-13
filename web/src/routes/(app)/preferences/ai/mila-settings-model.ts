@@ -139,26 +139,14 @@ export function buildMilaTestBody(draft: MilaConfigDraft): TestMilaConfigBodyWri
 	const body: TestMilaConfigBodyWritable = {
 		chat_api_base: draft.chatApiBase.trim(),
 		chat_model: draft.chatModel.trim(),
+		supports_reasoning_effort: draft.supportsReasoningEffort,
 		embedding_api_base: draft.embeddingApiBase.trim(),
 		embedding_model: draft.embeddingModel.trim(),
-		embedding_dim: draft.embeddingDim,
-		supports_reasoning_effort: draft.supportsReasoningEffort
+		embedding_dim: draft.embeddingDim
 	};
 	if (draft.chatApiKey.trim()) body.chat_api_key = draft.chatApiKey.trim();
 	if (draft.embeddingApiKey.trim()) body.embedding_api_key = draft.embeddingApiKey.trim();
 	return body;
-}
-
-export function milaEmbeddingIdentityChanged(
-	config: MilaConfigResponse | null,
-	draft: MilaConfigDraft
-): boolean {
-	return Boolean(
-		config &&
-		(config.embedding_api_base !== draft.embeddingApiBase.trim() ||
-			config.embedding_model !== draft.embeddingModel.trim() ||
-			config.embedding_dim !== draft.embeddingDim)
-	);
 }
 
 export function buildMilaSaveBody(draft: MilaConfigDraft): UpsertMilaConfigBodyWritable {

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id\n        FROM dead_letter_jobs\n        WHERE original_job_type = 'document.ai.embed'\n          AND original_dedupe_key = ANY($1)\n          AND replayed_at IS NULL\n        ORDER BY id\n        FOR UPDATE\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c212c542303a8521ba3bd405cf298d82c2450a2221ba20e83536174fbc75cccc"
+}

@@ -1,6 +1,14 @@
 use crate::error::AppError;
+use crate::repos::embedding_backfill::EffectiveEmbeddingTarget;
+use ind_domain::MilaPlatformDefaults;
 use ind_domain::{CollectionId, ContentVector, DocumentId, SearchHit, SearchSectionKind, UserId};
 use uuid::Uuid;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VectorReplacementOutcome {
+    Committed,
+    Superseded,
+}
 
 /// Source reference for a retrieved content-vector chunk, resolved to its document (TASK-234).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -76,6 +84,15 @@ pub trait ContentVectorRepository: Send + Sync {
         document_id: DocumentId,
         vectors: &[ContentVector],
     ) -> Result<(), AppError>;
+
+    async fn replace_for_document_if_target_current(
+        &self,
+        document_id: DocumentId,
+        user_id: UserId,
+        vectors: &[ContentVector],
+        generated_target: &EffectiveEmbeddingTarget,
+        platform_defaults: &MilaPlatformDefaults,
+    ) -> Result<VectorReplacementOutcome, AppError>;
 
     async fn delete_for_document(&self, document_id: DocumentId) -> Result<(), AppError>;
 

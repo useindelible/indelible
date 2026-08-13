@@ -1,5 +1,11 @@
 use crate::error::AppError;
-use ind_domain::{DocumentId, UserId};
+use ind_domain::{DocumentId, MilaPlatformDefaults, UserId};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EffectiveEmbeddingTarget {
+    pub embedding_model: String,
+    pub embedding_dim: i32,
+}
 
 #[async_trait::async_trait]
 pub trait EmbeddingBackfillRepository: Send + Sync {
@@ -14,6 +20,26 @@ pub trait EmbeddingBackfillRepository: Send + Sync {
     ) -> Result<Vec<DocumentId>, AppError>;
 
     async fn enqueue_missing_vector_repairs(&self, limit: i64) -> Result<i64, AppError>;
+
+    async fn enqueue_target_vector_repairs(
+        &self,
+        defaults: &MilaPlatformDefaults,
+        limit: i64,
+    ) -> Result<i64, AppError>;
+
+    async fn enqueue_user_vector_repairs(
+        &self,
+        user_id: UserId,
+        target: &EffectiveEmbeddingTarget,
+        limit: i64,
+    ) -> Result<i64, AppError>;
+
+    async fn retry_user_vector_repairs(
+        &self,
+        user_id: UserId,
+        target: &EffectiveEmbeddingTarget,
+        limit: i64,
+    ) -> Result<i64, AppError>;
 
     async fn eligible_document_ids_for_backfill(
         &self,
@@ -43,5 +69,5 @@ pub trait EmbeddingBackfillRepository: Send + Sync {
         embedding_dim: i32,
     ) -> Result<i64, AppError>;
 
-    async fn has_pending_outbox(&self, user_id: UserId) -> Result<bool, AppError>;
+    async fn has_active_embedding_work(&self, user_id: UserId) -> Result<bool, AppError>;
 }

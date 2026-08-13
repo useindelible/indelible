@@ -35,31 +35,7 @@ impl MilaConfigService {
     ) -> Result<MilaConfig, AppError> {
         let current = self.repo.get_by_user(user_id).await?;
         let next = merge_config(user_id, current.as_ref(), &self.defaults, input, Utc::now())?;
-
-        if let Some(current) = current.as_ref()
-            && let Some(field) = frozen_embedding_field(current, &next)
-            && self.repo.has_content_vectors(user_id).await?
-        {
-            return Err(validation(
-                field,
-                "embedding settings are frozen once vectors exist; trigger a full re-index to change them",
-            ));
-        }
-
         self.repo.upsert(&next).await
-    }
-
-    pub async fn reindex_config(
-        &self,
-        user_id: UserId,
-        input: UpsertMilaConfigInput,
-    ) -> Result<MilaConfig, AppError> {
-        let current = self.repo.get_by_user(user_id).await?;
-        let next = merge_config(user_id, current.as_ref(), &self.defaults, input, Utc::now())?;
-        self.repo
-            .reindex_config(&next)
-            .await
-            .map(|outcome| outcome.config)
     }
 }
 
@@ -329,18 +305,6 @@ fn validate_base_change_key_update(
         ));
     }
     Ok(())
-}
-
-fn frozen_embedding_field(current: &MilaConfig, next: &MilaConfig) -> Option<&'static str> {
-    if current.embedding_api_base != next.embedding_api_base {
-        Some("embedding_api_base")
-    } else if current.embedding_model != next.embedding_model {
-        Some("embedding_model")
-    } else if current.embedding_dim != next.embedding_dim {
-        Some("embedding_dim")
-    } else {
-        None
-    }
 }
 
 fn validation(field: &'static str, message: &'static str) -> AppError {

@@ -40,6 +40,7 @@ impl EmbedHarness {
             self.clone(),
             self.clone(),
             self.provider.clone(),
+            platform_defaults(),
         )
     }
 }
@@ -95,6 +96,26 @@ fn config(user_id: UserId) -> MilaConfig {
     }
 }
 
+fn platform_defaults() -> MilaPlatformDefaults {
+    MilaPlatformDefaults {
+        chat_api_base: "https://example.com/v1".into(),
+        chat_model: "chat".into(),
+        embedding_api_base: "https://example.com/v1".into(),
+        embedding_model: "embed".into(),
+        embedding_dim: 4,
+        model_context_window: 16_000,
+        chat_context_pct: 70,
+        chunk_size: 8,
+        chunk_overlap: 2,
+        top_k: 5,
+        cross_item_top_k: 10,
+        cross_item_max_per_item: 3,
+        enabled: true,
+        supports_structured_output: true,
+        supports_reasoning_effort: true,
+    }
+}
+
 fn prepared(document_id: DocumentId, user_id: UserId) -> PreparedItemContent {
     let leaves = ["first passage", "second passage"]
         .into_iter()
@@ -143,9 +164,16 @@ impl EmbeddingConfig for EmbedHarness {
 }
 #[async_trait]
 impl EmbeddingVectors for EmbedHarness {
-    async fn replace(&self, _: DocumentId, vectors: &[ContentVector]) -> Result<(), AppError> {
+    async fn replace(
+        &self,
+        _: DocumentId,
+        _: UserId,
+        vectors: &[ContentVector],
+        _: &EffectiveEmbeddingTarget,
+        _: &MilaPlatformDefaults,
+    ) -> Result<VectorReplacementOutcome, AppError> {
         self.replacements.lock().unwrap().push(vectors.to_vec());
-        Ok(())
+        Ok(VectorReplacementOutcome::Committed)
     }
 }
 #[async_trait]

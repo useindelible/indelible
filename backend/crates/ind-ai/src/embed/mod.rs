@@ -3,15 +3,16 @@ use std::sync::Arc;
 
 use chrono::Utc;
 
-use ind_application::repos::content_vector::ContentVectorRepository;
+use ind_application::repos::content_vector::{ContentVectorRepository, VectorReplacementOutcome};
 use ind_application::repos::document::DocumentRepository;
+use ind_application::repos::embedding_backfill::EffectiveEmbeddingTarget;
 use ind_application::repos::mila_config::MilaConfigRepository;
 use ind_application::repos::prepared_content::PreparedContentProvider;
 use ind_application::{AppError, classify_search_language};
 use ind_auth::CredentialCipher;
 use ind_domain::{
     ContentVector, ContentVectorId, Document, DocumentId, DomainError, MilaConfig,
-    PreparedItemContent, PreparedSectionKind, SearchSectionKind, UserId,
+    MilaPlatformDefaults, PreparedItemContent, PreparedSectionKind, SearchSectionKind, UserId,
 };
 
 use crate::chunker::{ChunkingConfig, approximate_token_count, chunk_text};
@@ -42,6 +43,7 @@ pub struct EmbeddingIndexer {
     content_vector_repo: Arc<dyn EmbeddingVectors>,
     document_repo: Arc<dyn EmbeddingDocument>,
     ai_client: Arc<dyn AiProviderClient>,
+    platform_defaults: MilaPlatformDefaults,
     credential_cipher: Option<Arc<CredentialCipher>>,
 }
 
@@ -64,8 +66,11 @@ trait EmbeddingVectors: Send + Sync {
     async fn replace(
         &self,
         document_id: DocumentId,
+        user_id: UserId,
         vectors: &[ContentVector],
-    ) -> Result<(), AppError>;
+        generated_target: &EffectiveEmbeddingTarget,
+        platform_defaults: &MilaPlatformDefaults,
+    ) -> Result<VectorReplacementOutcome, AppError>;
 }
 
 #[async_trait::async_trait]
@@ -104,8 +109,23 @@ impl EmbeddingConfig for ConfigAdapter {
 
 #[async_trait::async_trait]
 impl EmbeddingVectors for VectorAdapter {
-    async fn replace(&self, id: DocumentId, vectors: &[ContentVector]) -> Result<(), AppError> {
-        self.0.replace_for_document(id, vectors).await
+    async fn replace(
+        &self,
+        document_id: DocumentId,
+        user_id: UserId,
+        vectors: &[ContentVector],
+        generated_target: &EffectiveEmbeddingTarget,
+        platform_defaults: &MilaPlatformDefaults,
+    ) -> Result<VectorReplacementOutcome, AppError> {
+        self.0
+            .replace_for_document_if_target_current(
+                document_id,
+                user_id,
+                vectors,
+                generated_target,
+                platform_defaults,
+            )
+            .await
     }
 }
 
@@ -134,6 +154,7 @@ impl EmbeddingIndexer {
         content_vector_repo: Arc<dyn ContentVectorRepository>,
         document_repo: Arc<dyn DocumentRepository>,
         ai_client: Arc<dyn AiProviderClient>,
+        platform_defaults: MilaPlatformDefaults,
     ) -> Self {
         Self {
             content_provider: Arc::new(ContentAdapter(content_provider)),
@@ -141,6 +162,7 @@ impl EmbeddingIndexer {
             content_vector_repo: Arc::new(VectorAdapter(content_vector_repo)),
             document_repo: Arc::new(DocumentAdapter(document_repo)),
             ai_client,
+            platform_defaults,
             credential_cipher: None,
         }
     }
@@ -152,6 +174,7 @@ impl EmbeddingIndexer {
         content_vector_repo: Arc<dyn EmbeddingVectors>,
         document_repo: Arc<dyn EmbeddingDocument>,
         ai_client: Arc<dyn AiProviderClient>,
+        platform_defaults: MilaPlatformDefaults,
     ) -> Self {
         Self {
             content_provider,
@@ -159,6 +182,7 @@ impl EmbeddingIndexer {
             content_vector_repo,
             document_repo,
             ai_client,
+            platform_defaults,
             credential_cipher: None,
         }
     }
@@ -177,6 +201,10 @@ impl EmbeddingIndexer {
         if !config.enabled {
             return Ok(());
         }
+        let generated_target = EffectiveEmbeddingTarget {
+            embedding_model: config.embedding_model.clone(),
+            embedding_dim: config.embedding_dim,
+        };
 
         let prepared = self.content_provider.prepared(document_id).await?;
         let readable = match &prepared {
@@ -237,7 +265,16 @@ impl EmbeddingIndexer {
         };
 
         if units.is_empty() {
-            return self.content_vector_repo.replace(document_id, &[]).await;
+            self.content_vector_repo
+                .replace(
+                    document_id,
+                    user_id,
+                    &[],
+                    &generated_target,
+                    &self.platform_defaults,
+                )
+                .await?;
+            return Ok(());
         }
 
         let provider = embedding_provider_from_config(&config, self.credential_cipher.as_deref())?;
@@ -277,8 +314,15 @@ impl EmbeddingIndexer {
         }
 
         self.content_vector_repo
-            .replace(document_id, &vectors)
-            .await
+            .replace(
+                document_id,
+                user_id,
+                &vectors,
+                &generated_target,
+                &self.platform_defaults,
+            )
+            .await?;
+        Ok(())
     }
 
     async fn embed_text_with_context_retry(

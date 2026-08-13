@@ -77,7 +77,8 @@ describe('Mila indexing status', () => {
 					indexed_items: 8,
 					stale_items: 0,
 					is_indexing: false,
-					progress_percent: 100
+					progress_percent: 100,
+					reindex_required: false
 				})
 			});
 		api.reindexConfig.mockResolvedValue({ data: config });
@@ -98,7 +99,13 @@ describe('Mila indexing status', () => {
 	it('polls while indexing and stops after completion', async () => {
 		vi.useFakeTimers();
 		api.getStatus.mockResolvedValueOnce({ data: status() }).mockResolvedValueOnce({
-			data: status({ indexed_items: 8, stale_items: 0, is_indexing: false, progress_percent: 100 })
+			data: status({
+				indexed_items: 8,
+				stale_items: 0,
+				is_indexing: false,
+				progress_percent: 100,
+				reindex_required: false
+			})
 		});
 		render(AiPreferencesPage);
 		await vi.advanceTimersByTimeAsync(2000);
@@ -149,5 +156,57 @@ describe('Mila indexing status', () => {
 
 		expect(await screen.findByText('Indexing is paused')).toBeTruthy();
 		expect(screen.queryByRole('button', { name: 'Retry indexing' })).toBeNull();
+	});
+
+	it('always saves provider changes through the normal config endpoint', async () => {
+		api.upsertConfig.mockResolvedValue({
+			data: { ...config, embedding_model: 'embedding-gemma' }
+		});
+		render(AiPreferencesPage);
+
+		const model = await screen.findByRole('textbox', { name: 'Embedding model ID' });
+		await fireEvent.input(model, { target: { value: 'embedding-gemma' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+		await waitFor(() => expect(api.upsertConfig).toHaveBeenCalledOnce());
+		expect(api.reindexConfig).not.toHaveBeenCalled();
+		expect(api.upsertConfig.mock.calls[0][0].body.embedding_model).toBe('embedding-gemma');
+	});
+
+	it('keeps persisted status authoritative while provider edits are unsaved', async () => {
+		render(AiPreferencesPage);
+		const region = await screen.findByRole('status', { name: 'Mila indexing status' });
+
+		const model = screen.getByRole('textbox', { name: 'Embedding model ID' });
+		await fireEvent.input(model, { target: { value: 'embedding-gemma' } });
+
+		expect(region.textContent).toContain('6 of 8 items indexed');
+		expect(region.textContent).toContain('qa-embed');
+		expect(region.textContent).not.toContain('embedding-gemma');
+	});
+
+	it('does not label platform indexing with the inactive stored BYO model', async () => {
+		api.getConfig.mockResolvedValue({ data: { ...config, byo_enabled: false } });
+		render(AiPreferencesPage);
+
+		const region = await screen.findByRole('status', { name: 'Mila indexing status' });
+		expect(region.textContent).toContain('Platform default');
+		expect(region.textContent).not.toContain('qa-embed');
+	});
+
+	it('does not declare readiness while the server still requires reindexing', async () => {
+		api.getStatus.mockResolvedValue({
+			data: status({
+				indexed_items: 8,
+				stale_items: 0,
+				is_indexing: false,
+				progress_percent: 100,
+				reindex_required: true
+			})
+		});
+		render(AiPreferencesPage);
+
+		expect(await screen.findByText('Indexing stopped early')).toBeTruthy();
+		expect(screen.queryByText('Your library is ready')).toBeNull();
 	});
 });

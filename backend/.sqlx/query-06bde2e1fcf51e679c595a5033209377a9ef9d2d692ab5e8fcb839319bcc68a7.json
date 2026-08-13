@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(DISTINCT d.id) AS \"count!\"\n            FROM documents d\n            JOIN library_entries le\n              ON le.document_id = d.id\n             AND le.user_id = d.user_id\n             AND le.deleted_at IS NULL\n            WHERE d.user_id = $1\n              AND EXISTS (\n                    SELECT 1\n                    FROM archive_assets aa\n                    WHERE aa.document_id = d.id\n                      AND aa.status = 'completed'\n                      AND aa.s3_key <> ''\n                      AND (\n                            (aa.asset_kind = 'readable_html' AND aa.content_type = 'text/html')\n                            OR (aa.asset_kind = 'epub' AND aa.content_type = 'application/json')\n                            OR (aa.asset_kind = 'original_upload' AND aa.content_type = 'application/pdf')\n                      )\n              )\n              AND EXISTS (\n                    SELECT 1\n                    FROM content_vectors cv\n                    WHERE cv.document_id = d.id\n              )\n              AND NOT EXISTS (\n                    SELECT 1\n                    FROM content_vectors cv\n                    WHERE cv.document_id = d.id\n                      AND cv.embedding_model = $2\n                      AND cv.embedding_dim = $3\n              )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "06bde2e1fcf51e679c595a5033209377a9ef9d2d692ab5e8fcb839319bcc68a7"
+}

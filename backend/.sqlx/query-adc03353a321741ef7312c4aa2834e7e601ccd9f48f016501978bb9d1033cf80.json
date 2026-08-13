@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE background_job_recoveries\n                SET status = 'resolved',\n                    next_retry_at = NULL,\n                    lease_owner = NULL,\n                    lease_expires_at = NULL,\n                    resolved_at = $2,\n                    updated_at = $2\n                WHERE recovery_key = $1\n                  AND status <> 'resolved'\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "adc03353a321741ef7312c4aa2834e7e601ccd9f48f016501978bb9d1033cf80"
+}

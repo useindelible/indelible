@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT d.id\n            FROM documents d\n            JOIN library_entries le\n              ON le.document_id = d.id\n             AND le.user_id = d.user_id\n             AND le.deleted_at IS NULL\n            LEFT JOIN mila_config mc ON mc.user_id = d.user_id\n            WHERE d.user_id IS NOT NULL\n              AND COALESCE(mc.enabled, $3)\n              AND EXISTS (\n                    SELECT 1\n                    FROM archive_assets aa\n                    WHERE aa.document_id = d.id\n                      AND aa.status = 'completed'\n                      AND aa.s3_key <> ''\n                      AND (\n                            (aa.asset_kind = 'readable_html' AND aa.content_type = 'text/html')\n                            OR (aa.asset_kind = 'epub' AND aa.content_type = 'application/json')\n                            OR (aa.asset_kind = 'original_upload' AND aa.content_type = 'application/pdf')\n                      )\n              )\n              AND NOT EXISTS (\n                    SELECT 1\n                    FROM content_vectors cv\n                    WHERE cv.document_id = d.id\n                      AND cv.embedding_model = CASE\n                            WHEN mc.byo_enabled THEN mc.embedding_model\n                            ELSE $1\n                          END\n                      AND cv.embedding_dim = CASE\n                            WHEN mc.byo_enabled THEN mc.embedding_dim\n                            ELSE $2\n                          END\n              )\n              AND NOT EXISTS (\n                    SELECT 1\n                    FROM job_outbox jo\n                    WHERE jo.dedupe_key = ('document.ai.embed:doc_' || d.id::text)\n                      AND (\n                            jo.dispatched_at IS NULL\n                            OR jo.dispatched_at >= now() - interval '15 minutes'\n                      )\n              )\n              AND NOT EXISTS (\n                    SELECT 1\n                    FROM job_outbox jo\n                    JOIN apalis.jobs active_job\n                      ON active_job.metadata->>'outbox_id' = jo.id::text\n                    WHERE jo.dedupe_key = ('document.ai.embed:doc_' || d.id::text)\n                      AND (\n                            active_job.status IN ('Pending', 'Queued', 'Running')\n                            OR (\n                                active_job.status = 'Failed'\n                                AND active_job.attempts < active_job.max_attempts\n                            )\n                      )\n              )\n              AND NOT EXISTS (\n                    SELECT 1\n                    FROM background_job_recoveries recovery\n                    WHERE recovery.job_type = 'document.ai.embed'\n                      AND recovery.status <> 'resolved'\n                      AND recovery.payload->>'document_id' = ('doc_' || d.id::text)\n              )\n              AND NOT EXISTS (\n                    SELECT 1\n                    FROM dead_letter_jobs dead_letter\n                    WHERE dead_letter.original_job_type = 'document.ai.embed'\n                      AND dead_letter.replayed_at IS NULL\n                      AND dead_letter.original_payload->>'document_id' = ('doc_' || d.id::text)\n              )\n            ORDER BY le.saved_at DESC, le.id DESC\n            LIMIT $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4",
+        "Bool",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "29513eedf167c6888cecdb1317dfcd40fd1d486f0fc9db0ff3bd06bc1215b90d"
+}

@@ -14,6 +14,7 @@ const EMBEDDING_REPAIR_TASK: &str = "embedding.repair";
 const INTEGRITY_TASK: &str = "integrity.check";
 const TTS_ORPHAN_TASK: &str = "tts.orphan_cleanup";
 const MAINTENANCE_FAILURE_RETRY_SECS: u64 = 60;
+const EMBEDDING_REPAIR_CONTINUATION_DELAY_SECS: u64 = 1;
 const TTS_PAGE_CONTINUATION_DELAY_SECS: u64 = 1;
 
 pub async fn run_auto_heal_loop(ctx: Arc<RecoveryJobDeps>) {
@@ -49,9 +50,10 @@ pub async fn run_auto_heal_once(ctx: &RecoveryJobDeps) {
 
 pub async fn repair_missing_vector_embeddings(
     repo: &dyn EmbeddingBackfillRepository,
+    defaults: &ind_domain::MilaPlatformDefaults,
     limit: i64,
 ) -> Result<i64, AppError> {
-    repo.enqueue_missing_vector_repairs(limit).await
+    repo.enqueue_target_vector_repairs(defaults, limit).await
 }
 
 pub async fn sweep_integrity_stats(
@@ -74,6 +76,7 @@ async fn run_embedding_repair_if_due(ctx: &RecoveryJobDeps) {
     };
     match repair_missing_vector_embeddings(
         ctx.embedding_backfill_repo.as_ref(),
+        &ctx.mila_platform_defaults,
         ctx.auto_heal_batch_size,
     )
     .await
@@ -81,10 +84,15 @@ async fn run_embedding_repair_if_due(ctx: &RecoveryJobDeps) {
         Ok(repaired) => {
             tracing::info!(repaired, "embedding missing-vector repair finished");
             let completed_at = Utc::now();
+            let delay_secs = if repaired >= ctx.auto_heal_batch_size {
+                EMBEDDING_REPAIR_CONTINUATION_DELAY_SECS
+            } else {
+                ctx.embedding_repair_interval_secs
+            };
             complete_maintenance(
                 ctx,
                 EMBEDDING_REPAIR_TASK,
-                schedule_after(completed_at, ctx.embedding_repair_interval_secs),
+                schedule_after(completed_at, delay_secs),
                 None,
                 completed_at,
             )

@@ -1,5 +1,7 @@
 use ind_application::AppError;
-use ind_domain::{ContentVector, DocumentId, DomainError, UserId};
+use ind_application::repos::content_vector::VectorReplacementOutcome;
+use ind_application::repos::embedding_backfill::EffectiveEmbeddingTarget;
+use ind_domain::{ContentVector, DocumentId, DomainError, MilaPlatformDefaults, UserId};
 use sqlx::{Postgres, Transaction};
 
 use super::PgContentVectorRepository;
@@ -164,6 +166,75 @@ impl PgContentVectorRepository {
         Ok(())
     }
 
+    pub(super) async fn replace_for_document_if_target_current_impl(
+        &self,
+        document_id: DocumentId,
+        user_id: UserId,
+        vectors: &[ContentVector],
+        generated_target: &EffectiveEmbeddingTarget,
+        platform_defaults: &MilaPlatformDefaults,
+    ) -> Result<VectorReplacementOutcome, AppError> {
+        validate_replacement_vectors(document_id, Some(user_id), vectors)?;
+        if vectors.first().is_some_and(|vector| {
+            vector.embedding_model != generated_target.embedding_model
+                || vector.embedding_dim != generated_target.embedding_dim
+        }) {
+            return Err(AppError::Domain(DomainError::InvariantViolation {
+                message: "replacement vector identity must match its generated target".into(),
+            }));
+        }
+
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|err| AppError::Repository(Box::new(err)))?;
+        lock_document(&mut tx, document_id).await?;
+        let stored = sqlx::query!(
+            r#"
+            SELECT embedding_model, embedding_dim, byo_enabled
+            FROM mila_config
+            WHERE user_id = $1
+            FOR SHARE
+            "#,
+            user_id.into_uuid(),
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+        let current_target = match stored {
+            Some(stored) if stored.byo_enabled => EffectiveEmbeddingTarget {
+                embedding_model: stored.embedding_model,
+                embedding_dim: stored.embedding_dim,
+            },
+            _ => EffectiveEmbeddingTarget {
+                embedding_model: platform_defaults.embedding_model.clone(),
+                embedding_dim: platform_defaults.embedding_dim,
+            },
+        };
+        if current_target != *generated_target {
+            tx.rollback()
+                .await
+                .map_err(|err| AppError::Repository(Box::new(err)))?;
+            return Ok(VectorReplacementOutcome::Superseded);
+        }
+
+        sqlx::query!(
+            "DELETE FROM content_vectors WHERE document_id = $1",
+            document_id.into_uuid(),
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+        for vector in vectors {
+            insert_vector_tx(&mut tx, vector).await?;
+        }
+        tx.commit()
+            .await
+            .map_err(|err| AppError::Repository(Box::new(err)))?;
+        Ok(VectorReplacementOutcome::Committed)
+    }
+
     pub(super) async fn delete_for_document_impl(
         &self,
         document_id: DocumentId,
@@ -207,6 +278,28 @@ impl PgContentVectorRepository {
         .await
         .map_err(map_sqlx_error)
     }
+}
+
+fn validate_replacement_vectors(
+    document_id: DocumentId,
+    user_id: Option<UserId>,
+    vectors: &[ContentVector],
+) -> Result<(), AppError> {
+    if let Some(first) = vectors.first()
+        && (user_id.is_some_and(|user_id| first.user_id != user_id)
+            || vectors.iter().any(|vector| {
+                vector.document_id != document_id
+                    || vector.user_id != first.user_id
+                    || vector.embedding_model != first.embedding_model
+                    || vector.embedding_dim != first.embedding_dim
+                    || vector.search_config != first.search_config
+            }))
+    {
+        return Err(AppError::Domain(DomainError::InvariantViolation {
+            message: "replacement vectors must share document and embedding identity".into(),
+        }));
+    }
+    Ok(())
 }
 
 async fn insert_vector_tx(

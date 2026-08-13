@@ -21,12 +21,7 @@
 
 	type Variant = 'paused' | 'indexing' | 'ready' | 'attention' | 'unavailable';
 
-	const complete = $derived(
-		!!status &&
-			!status.is_indexing &&
-			status.stale_items === 0 &&
-			status.indexed_items >= status.eligible_items
-	);
+	const complete = $derived(!!status && !status.is_indexing && !status.reindex_required);
 
 	const variant = $derived<Variant>(
 		error || !status

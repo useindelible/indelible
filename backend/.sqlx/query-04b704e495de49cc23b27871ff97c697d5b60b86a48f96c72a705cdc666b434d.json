@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT embedding_model, embedding_dim, byo_enabled\n            FROM mila_config\n            WHERE user_id = $1\n            FOR SHARE\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "embedding_model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "embedding_dim",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "byo_enabled",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "04b704e495de49cc23b27871ff97c697d5b60b86a48f96c72a705cdc666b434d"
+}

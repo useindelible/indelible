@@ -34,21 +34,10 @@ pub struct UpsertMilaConfigInput {
     pub supports_reasoning_effort: Option<bool>,
 }
 
-#[derive(Debug, Clone)]
-pub struct MilaConfigReindexOutcome {
-    pub config: MilaConfig,
-    pub queued_documents: i64,
-}
-
 #[async_trait::async_trait]
 pub trait MilaConfigRepository: Send + Sync {
     async fn get_by_user(&self, user_id: UserId) -> Result<Option<MilaConfig>, AppError>;
     async fn upsert(&self, config: &MilaConfig) -> Result<MilaConfig, AppError>;
-    async fn reindex_config(
-        &self,
-        config: &MilaConfig,
-    ) -> Result<MilaConfigReindexOutcome, AppError>;
-    async fn has_content_vectors(&self, user_id: UserId) -> Result<bool, AppError>;
 }
 
 pub struct DefaultingMilaConfigRepository {
@@ -76,16 +65,5 @@ impl MilaConfigRepository for DefaultingMilaConfigRepository {
 
     async fn upsert(&self, config: &MilaConfig) -> Result<MilaConfig, AppError> {
         self.inner.upsert(config).await
-    }
-
-    async fn reindex_config(
-        &self,
-        config: &MilaConfig,
-    ) -> Result<MilaConfigReindexOutcome, AppError> {
-        self.inner.reindex_config(config).await
-    }
-
-    async fn has_content_vectors(&self, user_id: UserId) -> Result<bool, AppError> {
-        self.inner.has_content_vectors(user_id).await
     }
 }

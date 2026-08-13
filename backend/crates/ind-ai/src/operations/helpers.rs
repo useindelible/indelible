@@ -52,8 +52,8 @@ pub(super) fn mila_status_view(
         indexed_items,
         stale_items,
         progress_percent,
-        is_indexing: enabled && (indexed_items < eligible_items || has_pending_jobs),
-        reindex_required: stale_items > 0,
+        is_indexing: enabled && has_pending_jobs,
+        reindex_required: enabled && indexed_items < eligible_items,
     }
 }
 

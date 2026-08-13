@@ -1,6 +1,17 @@
 use super::helpers::*;
 use super::*;
 
+const IMMEDIATE_REPAIR_BATCH_SIZE: i64 = 10;
+
+fn embedding_target(
+    config: &MilaConfig,
+) -> ind_application::repos::embedding_backfill::EffectiveEmbeddingTarget {
+    ind_application::repos::embedding_backfill::EffectiveEmbeddingTarget {
+        embedding_model: config.embedding_model.clone(),
+        embedding_dim: config.embedding_dim,
+    }
+}
+
 impl MilaConfigPort for MilaOperationsService {
     fn get_config(&self, user_id: UserId) -> BoxFuture<'_, Result<MilaConfigOutput, AppError>> {
         Box::pin(async move {
@@ -43,7 +54,7 @@ impl MilaConfigPort for MilaOperationsService {
                 .await?;
             let has_pending_jobs = if config.enabled {
                 self.embedding_backfill_repo
-                    .has_pending_outbox(user_id)
+                    .has_active_embedding_work(user_id)
                     .await?
             } else {
                 false
@@ -66,6 +77,9 @@ impl MilaConfigPort for MilaOperationsService {
     ) -> BoxFuture<'_, Result<MilaConfigOutput, AppError>> {
         Box::pin(async move {
             let current = self.service.get_config(user_id).await?;
+            let previous_target = current.as_ref().map(|config| {
+                embedding_target(&config.resolve_effective(self.service.platform_defaults()))
+            });
             let config = self
                 .service
                 .upsert_config(
@@ -101,10 +115,9 @@ impl MilaConfigPort for MilaOperationsService {
                 )
                 .await?;
 
+            let effective = config.resolve_effective(self.service.platform_defaults());
+
             if mila_enable_requires_backfill(current.as_ref(), config.enabled) {
-                // Backfill against the effective provider so the enqueued documents are
-                // embedded with the model Mila will actually query against.
-                let effective = config.resolve_effective(self.service.platform_defaults());
                 enqueue_embedding_backfill(
                     self.outbox_repo.as_ref(),
                     self.embedding_backfill_repo.as_ref(),
@@ -113,6 +126,16 @@ impl MilaConfigPort for MilaOperationsService {
                     effective.embedding_dim,
                 )
                 .await?;
+            } else if effective.enabled
+                && previous_target.as_ref() != Some(&embedding_target(&effective))
+            {
+                self.embedding_backfill_repo
+                    .enqueue_user_vector_repairs(
+                        user_id,
+                        &embedding_target(&effective),
+                        IMMEDIATE_REPAIR_BATCH_SIZE,
+                    )
+                    .await?;
             }
 
             Ok(mila_config_output(config))
@@ -127,7 +150,7 @@ impl MilaConfigPort for MilaOperationsService {
         Box::pin(async move {
             let config = self
                 .service
-                .reindex_config(
+                .upsert_config(
                     user_id,
                     ind_application::UpsertMilaConfigInput {
                         chat_api_base: Some(request.chat_api_base),
@@ -157,6 +180,15 @@ impl MilaConfigPort for MilaOperationsService {
                         supports_structured_output: request.supports_structured_output,
                         supports_reasoning_effort: request.supports_reasoning_effort,
                     },
+                )
+                .await?;
+
+            let effective = config.resolve_effective(self.service.platform_defaults());
+            self.embedding_backfill_repo
+                .retry_user_vector_repairs(
+                    user_id,
+                    &embedding_target(&effective),
+                    IMMEDIATE_REPAIR_BATCH_SIZE,
                 )
                 .await?;
 
