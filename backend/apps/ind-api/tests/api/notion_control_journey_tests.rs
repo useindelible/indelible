@@ -122,14 +122,15 @@ async fn notion_controls_persist_selection_enqueue_sync_and_enforce_tenant_scope
         .unwrap();
     assert_eq!(first["selected"], false);
 
-    let refreshed = response(
+    // Refresh archives the page Notion already holds before queueing a
+    // replacement, so an entry that was never exported has nothing to replace.
+    assert_status(
         client
             .post_json(&format!("{export_path}/{second_id}/refresh"), &json!({}))
             .await,
-        StatusCode::OK,
+        StatusCode::UNPROCESSABLE_ENTITY,
     )
     .await;
-    assert_eq!(refreshed["library_entry_id"], second_id);
     let sync = response(
         client
             .post_json(
