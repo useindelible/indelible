@@ -51,3 +51,7 @@ node_modules/
 
 # Internal engineering notes, kept out of the published tree.
 ARCHITECTURE.md
+/.playwright-mcp
+/.history
+/.nodeterm
+docs/
