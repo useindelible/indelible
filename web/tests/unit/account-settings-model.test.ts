@@ -43,7 +43,6 @@ describe('account settings model', () => {
 		);
 	});
 
-
 	it('requires an exact email confirmation ignoring case and surrounding whitespace', () => {
 		expect(isDeleteEmailConfirmed(' USER@example.com ', 'user@example.com')).toBe(true);
 		expect(isDeleteEmailConfirmed('', 'user@example.com')).toBe(false);

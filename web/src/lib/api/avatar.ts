@@ -6,9 +6,7 @@ type AllowedType = (typeof ALLOWED_TYPES)[number];
 export const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 
 export type AvatarUploadError =
-	| { code: 'invalid_type' }
-	| { code: 'too_large' }
-	| { code: 'upload_failed'; message: string };
+	{ code: 'invalid_type' } | { code: 'too_large' } | { code: 'upload_failed'; message: string };
 
 function isAllowedType(type: string): type is AllowedType {
 	return (ALLOWED_TYPES as readonly string[]).includes(type);

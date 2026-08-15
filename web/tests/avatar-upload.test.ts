@@ -54,9 +54,7 @@ describe('uploadAvatar', () => {
 		const result = await uploadAvatar(file);
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.objectUrl).toBe(
-				'https://api.example.com/api/v1/assets/usr_1/avatars/file.jpg'
-			);
+			expect(result.objectUrl).toBe('https://api.example.com/api/v1/assets/usr_1/avatars/file.jpg');
 		}
 		expect(mockUploadAvatarRequest).toHaveBeenCalledWith({ body: { file } });
 	});

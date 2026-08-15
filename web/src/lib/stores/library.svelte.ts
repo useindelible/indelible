@@ -305,9 +305,7 @@ async function fetchPage(): Promise<void> {
 		const body =
 			smartListId && activeSmartList
 				? buildSmartListItemsQueryBody({
-						filterExpression: draftTouched
-							? draftExpressionOrNull()
-							: savedSmartListExpression(),
+						filterExpression: draftTouched ? draftExpressionOrNull() : savedSmartListExpression(),
 						cursor,
 						limit: PAGE_LIMIT
 					})

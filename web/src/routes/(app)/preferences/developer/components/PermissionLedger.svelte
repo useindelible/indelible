@@ -32,7 +32,9 @@
 		{ value: 'write', label: 'Read + write' }
 	];
 
-	const granted = $derived(PERMISSION_CATALOGUE.filter((permission) => permissions.has(permission)));
+	const granted = $derived(
+		PERMISSION_CATALOGUE.filter((permission) => permissions.has(permission))
+	);
 </script>
 
 <div class="perm">

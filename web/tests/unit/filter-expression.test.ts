@@ -373,7 +373,9 @@ describe('filter bar model helpers', () => {
 
 describe('isFlatFilterExpression', () => {
 	it('accepts the shapes the filter bar can render', () => {
-		expect(isFlatFilterExpression({ type: 'condition', field: 'tag', op: 'contains', value: 'a' })).toBe(true);
+		expect(
+			isFlatFilterExpression({ type: 'condition', field: 'tag', op: 'contains', value: 'a' })
+		).toBe(true);
 		expect(
 			isFlatFilterExpression({
 				type: 'and',

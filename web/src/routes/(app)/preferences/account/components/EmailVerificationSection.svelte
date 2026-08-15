@@ -38,9 +38,9 @@
 					Change email <span class="badge coming">Coming soon</span>
 				</div>
 				<div class="hint">
-					Switching addresses signs you out everywhere and needs a verification link to sign
-					back in. This server has no outbound email configured to send that link, so the
-					change would lock you out. Available once outbound email is supported.
+					Switching addresses signs you out everywhere and needs a verification link to sign back
+					in. This server has no outbound email configured to send that link, so the change would
+					lock you out. Available once outbound email is supported.
 				</div>
 			</div>
 			<div>
