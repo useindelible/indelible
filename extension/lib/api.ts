@@ -1,5 +1,11 @@
 import { getRefreshToken, getServerUrl, clearRefreshToken, setRefreshToken } from './storage'
 import { serverRequestOptions } from './api/client'
+import {
+  SERVER_UNREACHABLE_MESSAGE,
+  fetchOrThrowUnreachable,
+  isServerUnreachableError,
+  serverUnavailableMessage,
+} from './server-reachability'
 import type { SourceLocatorPayload } from '../../shared/highlight-source'
 import {
   extensionCheckUrl,
@@ -107,7 +113,7 @@ export async function authenticatedFetch(path: string, init?: RequestInit): Prom
   headers.set('Authorization', `Bearer ${token}`)
   headers.set('Accept', 'application/json')
 
-  const response = await fetch(url, { ...init, headers })
+  const response = await fetchOrThrowUnreachable(url, { ...init, headers })
 
   if (response.status === 401) {
     const refreshed = await refreshAccessToken()
@@ -115,7 +121,7 @@ export async function authenticatedFetch(path: string, init?: RequestInit): Prom
       const retryToken = getAccessToken()
       if (retryToken) {
         headers.set('Authorization', `Bearer ${retryToken}`)
-        return fetch(url, { ...init, headers })
+        return fetchOrThrowUnreachable(url, { ...init, headers })
       }
     }
     clearAccessTokenMemory()
@@ -147,7 +153,7 @@ export async function refreshAccessToken(): Promise<boolean> {
     }
 
     if (!response.ok) {
-      throw new Error(`Indelible server is unavailable (HTTP ${response.status})`)
+      throw new Error(serverUnavailableMessage(response.status))
     }
 
     const data = (await response.json()) as TokenResponse
@@ -157,10 +163,10 @@ export async function refreshAccessToken(): Promise<boolean> {
     }
     return true
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith('Indelible server is unavailable')) {
+    if (error instanceof Error && isServerUnreachableError(error.message)) {
       throw error
     }
-    throw new Error('Indelible server is unreachable')
+    throw new Error(SERVER_UNREACHABLE_MESSAGE)
   }
 }
 

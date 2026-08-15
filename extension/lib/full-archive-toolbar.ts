@@ -6,6 +6,7 @@ import {
   type ProjectedHighlight,
 } from '@/lib/highlight-projection'
 
+import { bindConnectionEvents } from './full-archive-toolbar-connection'
 import { toolbarMarkup, triageIcon, triageLabel } from './full-archive-toolbar-markup'
 import { toolbarStyles } from './full-archive-toolbar-styles'
 
@@ -260,48 +261,7 @@ function bindToolbarEvents(root: ShadowRoot, state: ToolbarState): void {
   root.querySelector('.js-dismiss')?.addEventListener('click', dismiss)
   root.querySelector('.js-minimize')?.addEventListener('click', dismiss)
 
-  // Connect (disconnected state)
-  const doConnect = async (): Promise<void> => {
-    const input = root.querySelector<HTMLInputElement>('[data-role="server-url"]')
-    const serverUrl = input?.value.trim() || state.serverUrl || 'https://useindelible.com'
-    renderToolbar({ view: 'connecting', serverUrl })
-
-    try {
-      const response = (await browser.runtime.sendMessage({
-        action: 'toolbar:connect',
-        serverUrl,
-      })) as { success?: boolean; error?: string } | undefined
-      if (response?.success) return
-
-      renderToolbar({
-        view: 'auth-error',
-        serverUrl,
-        message:
-          response?.error?.replace(/^Error:\s*/, '') || 'Authorization could not be started.',
-      })
-    } catch (error) {
-      renderToolbar({
-        view: 'auth-error',
-        serverUrl,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Authorization could not be started. Please try again.',
-      })
-    }
-  }
-  root.querySelector('[data-action="connect"]')?.addEventListener('click', () => {
-    void doConnect()
-  })
-  root
-    .querySelector<HTMLInputElement>('[data-role="server-url"]')
-    ?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') void doConnect()
-    })
-
-  root.querySelector('[data-action="refresh"]')?.addEventListener('click', () => {
-    void browser.runtime.sendMessage({ action: 'toolbar:save' })
-  })
+  bindConnectionEvents(root, state, renderToolbar)
 
   if (!entry) return
   const libraryEntryId = entry.library_entry_id

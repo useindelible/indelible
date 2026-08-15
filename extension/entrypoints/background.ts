@@ -15,7 +15,8 @@ import {
   upsertEntryNote,
   type LocatorPayload,
 } from '@/lib/api'
-import { getServerUrl } from '@/lib/storage'
+import { getServerUrl, setServerUrl } from '@/lib/storage'
+import { resolveReachabilityView } from '@/lib/server-reachability'
 import { buildFullArchiveBody, buildReaderSaveFallbackBody } from '@/lib/archive'
 import {
   isCaptureMessage,
@@ -188,6 +189,9 @@ async function handleMessage(
         sender.tab?.id,
       )
 
+    case 'toolbar:set-server-url':
+      return handleSetServerUrl(message)
+
     case 'toolbar:save':
       return handleToolbarSave()
 
@@ -287,6 +291,22 @@ async function resumeToolbarAfterAuth(tabId: number): Promise<void> {
   }
 
   await handleCaptureStart(tab)
+}
+
+async function handleSetServerUrl(
+  message: ExtensionMessage,
+): Promise<{ success: boolean; error?: string }> {
+  const serverUrl = typeof message.serverUrl === 'string' ? message.serverUrl : ''
+  if (!serverUrl) {
+    return { success: false, error: 'Server URL is required' }
+  }
+
+  try {
+    await setServerUrl(serverUrl)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Server URL is invalid' }
+  }
 }
 
 async function handleAuthLogout(): Promise<{ success: boolean; error?: string }> {
@@ -462,7 +482,10 @@ async function renderToolbar(tabId: number, state: Record<string, unknown>): Pro
   if (toolbarSuppressed.has(tabId)) return
   try {
     await ensureFullArchiveContentScript(tabId)
-    await browser.tabs.sendMessage(tabId, { action: 'toolbar:render', state })
+    await browser.tabs.sendMessage(tabId, {
+      action: 'toolbar:render',
+      state: resolveReachabilityView(state),
+    })
   } catch {
     // Pages like the Chrome Web Store and browser internals may not accept content-script messages.
   }

@@ -251,6 +251,41 @@ describe('background message handler', () => {
       expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, { action: 'capture:run' })
     })
 
+    it('renders the recoverable unreachable view when a save fails because the server is down', async () => {
+      mockStorage['ind_server_url'] = 'http://localhost:38481'
+      ;(browser.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+        {
+          id: 42,
+          url: 'https://example.com/article',
+          title: 'Example article',
+        },
+      ])
+      ;(browser.tabs.sendMessage as ReturnType<typeof vi.fn>).mockImplementation(
+        async (_tabId: number, message: { action: string }) => {
+          if (message.action === 'indelible:ping' || message.action === 'toolbar:render') {
+            return { success: true }
+          }
+          if (message.action === 'capture:run') {
+            return { action: 'capture:error', message: 'Indelible server is unreachable' }
+          }
+          return undefined
+        },
+      )
+
+      await sendMessage({ action: 'toolbar:save' }, { id: EXTENSION_ID })
+
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          action: 'toolbar:render',
+          state: expect.objectContaining({
+            view: 'unreachable',
+            serverUrl: 'http://localhost:38481',
+          }),
+        }),
+      )
+    })
+
     it('rejects a configured-origin document returned after external-tab admission', async () => {
       mockStorage['ind_server_url'] = 'http://localhost:38473'
       setAccessTokenMemory('jwt_token', FUTURE_EXPIRY)
@@ -498,6 +533,44 @@ describe('background message handler', () => {
       expect(response.success).toBe(true)
       expect(mockStorage['ind_refresh_token']).toBeUndefined()
       expect(mockStorage['ind_connected_at']).toBeUndefined()
+    })
+
+    it('clears stored tokens even when the server cannot be reached to revoke them', async () => {
+      mockStorage['ind_refresh_token'] = 'indr_to_remove'
+      mockStorage['ind_server_url'] = 'http://localhost:38481'
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+      const response = await sendMessage({ action: 'auth:logout' }, { id: EXTENSION_ID })
+
+      expect(response.success).toBe(true)
+      expect(mockStorage['ind_refresh_token']).toBeUndefined()
+    })
+  })
+
+  describe('toolbar:set-server-url', () => {
+    it('persists a normalized server address', async () => {
+      mockStorage['ind_server_url'] = 'http://localhost:38481'
+
+      const response = await sendMessage(
+        { action: 'toolbar:set-server-url', serverUrl: 'http://localhost:38999/' },
+        { id: EXTENSION_ID },
+      )
+
+      expect(response.success).toBe(true)
+      expect(mockStorage['ind_server_url']).toBe('http://localhost:38999')
+    })
+
+    it('rejects an invalid address and keeps the stored one', async () => {
+      mockStorage['ind_server_url'] = 'http://localhost:38481'
+
+      const response = await sendMessage(
+        { action: 'toolbar:set-server-url', serverUrl: 'ftp://localhost:38999' },
+        { id: EXTENSION_ID },
+      )
+
+      expect(response.success).toBe(false)
+      expect(response.error).toContain('http or https')
+      expect(mockStorage['ind_server_url']).toBe('http://localhost:38481')
     })
   })
 

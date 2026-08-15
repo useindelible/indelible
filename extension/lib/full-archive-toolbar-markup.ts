@@ -174,17 +174,19 @@ export function toolbarMarkup(state: ToolbarState): string {
 
     case 'unreachable':
       barContent = `
-				<div class="left-lockup">
-					${BRAND_MARK}
-					<span class="item-name">Indelible is unreachable</span>
-				</div>
-				<div class="item">
-					<span class="s">Your session is retained · ${escapeHtml(state.serverUrl ?? 'Configured server')}</span>
-				</div>
-				<div class="group">
-					<button class="btn-primary" data-action="refresh">Retry</button>
-					<button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
-				</div>`
+        <div class="left-lockup">
+          ${BRAND_MARK}
+          <span class="item-name">Indelible is unreachable</span>
+        </div>
+        <div class="item">
+          <span class="s">${escapeHtml(state.message ?? 'Your session is retained · update the address if your server moved')}</span>
+        </div>
+        <div class="group">
+          <input class="url-input" data-role="server-url" type="text" value="${escapeAttr(state.serverUrl ?? 'https://useindelible.com')}" placeholder="https://useindelible.com" spellcheck="false" autocomplete="off">
+          <button class="btn-primary" data-action="retry">Retry</button>
+          <button class="btn-ghost" data-action="sign-out">Sign out</button>
+          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+        </div>`
       break
 
     case 'connecting':

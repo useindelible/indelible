@@ -1,5 +1,6 @@
 import { clearAccessTokenMemory, getAccessToken, refreshAccessToken } from '../api'
 import { clearRefreshToken, getServerUrl } from '../storage'
+import { fetchOrThrowUnreachable } from '../server-reachability'
 import { client } from './generated/client.gen'
 
 /**
@@ -22,7 +23,7 @@ const authFetch: typeof fetch = async (input, init) => {
   const retry = request.clone()
   request.headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(request)
+  const response = await fetchOrThrowUnreachable(request)
   if (response.status !== 401) {
     return response
   }
@@ -31,7 +32,7 @@ const authFetch: typeof fetch = async (input, init) => {
     const retryToken = getAccessToken()
     if (retryToken) {
       retry.headers.set('Authorization', `Bearer ${retryToken}`)
-      return fetch(retry)
+      return fetchOrThrowUnreachable(retry)
     }
   }
   clearAccessTokenMemory()
