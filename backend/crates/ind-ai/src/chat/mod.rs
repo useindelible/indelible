@@ -26,6 +26,7 @@ use ind_domain::{
     MilaSession, MilaSessionId, SearchHit, UserId,
 };
 
+use crate::MilaTokenBudgets;
 use crate::content::map_ai_error;
 use crate::{AiProviderClient, AiProviderConfig, ChatCompletionRequest};
 
@@ -64,6 +65,7 @@ pub struct MilaChatService {
     mila_session_repo: Arc<dyn ChatSessions>,
     ai_client: Arc<dyn AiProviderClient>,
     credential_cipher: Option<Arc<CredentialCipher>>,
+    token_budgets: MilaTokenBudgets,
 }
 
 #[async_trait::async_trait]
@@ -316,6 +318,7 @@ impl MilaChatService {
             mila_session_repo: Arc::new(SessionAdapter(mila_session_repo)),
             ai_client,
             credential_cipher: None,
+            token_budgets: MilaTokenBudgets::default(),
         }
     }
 
@@ -338,7 +341,13 @@ impl MilaChatService {
             mila_session_repo,
             ai_client,
             credential_cipher: None,
+            token_budgets: MilaTokenBudgets::default(),
         }
+    }
+
+    pub fn with_token_budgets(mut self, budgets: MilaTokenBudgets) -> Self {
+        self.token_budgets = budgets;
+        self
     }
 
     pub fn with_credential_cipher(mut self, cipher: Option<Arc<CredentialCipher>>) -> Self {
@@ -400,7 +409,11 @@ impl MilaChatService {
             }));
         }
 
-        validate_question_for_context(&request.question, config.model_context_window)?;
+        validate_question_for_context(
+            &request.question,
+            config.model_context_window,
+            self.token_budgets.chat_max_output_tokens as i32,
+        )?;
 
         let history = self
             .mila_session_repo

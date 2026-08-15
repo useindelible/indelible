@@ -245,6 +245,7 @@ impl WorkerServicesBuilder {
             Arc::new(PgEntityRepository::new(pool.clone())),
             ai_client,
         )
+        .with_token_budgets(ind_ai::MilaTokenBudgets::from(&mila_defaults))
         .with_credential_cipher(credential_cipher.clone());
         let embedding_indexer = Arc::new(embedding_indexer);
         let ai_action_runner = Arc::new(ai_action_runner);

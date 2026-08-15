@@ -121,7 +121,12 @@ impl MilaChatService {
 
         Ok(PreparedChatTurn {
             provider,
-            completion_request: build_chat_request(config, request.user_id, messages),
+            completion_request: build_chat_request(
+                config,
+                request.user_id,
+                messages,
+                self.token_budgets.chat_max_output_tokens,
+            ),
             user_message,
             source_chunk_ids,
             source_label_count,
@@ -170,8 +175,11 @@ impl MilaChatService {
         request: &MilaChatRequest,
         history: &[ChatMessage],
     ) -> Result<(Vec<ChatMessage>, Vec<Uuid>, usize), AppError> {
-        let inline_budget =
-            chat_inline_token_budget(config.model_context_window, config.chat_context_pct);
+        let inline_budget = chat_inline_token_budget(
+            config.model_context_window,
+            config.chat_context_pct,
+            self.token_budgets.chat_max_output_tokens as i32,
+        );
         let uses_rag = exceeds_context_threshold(&plain_text, inline_budget);
         debug!(
             uses_rag,

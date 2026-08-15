@@ -105,6 +105,14 @@ pub struct MilaPlatformDefaults {
     /// Total token window of the chat model. Defaults to 12000; override with
     /// `mila.model_context_window` (or `MILA_MODEL_CONTEXT_WINDOW`) to match your model.
     pub model_context_window: i32,
+    #[serde(default = "default_summary_max_output_tokens")]
+    pub summary_max_output_tokens: i32,
+    #[serde(default = "default_tags_max_output_tokens")]
+    pub tags_max_output_tokens: i32,
+    #[serde(default = "default_entities_max_output_tokens")]
+    pub entities_max_output_tokens: i32,
+    #[serde(default = "default_chat_max_output_tokens")]
+    pub chat_max_output_tokens: i32,
     #[serde(default = "default_chat_context_pct")]
     pub chat_context_pct: i32,
     pub chunk_size: i32,
@@ -127,7 +135,38 @@ const fn default_chat_context_pct() -> i32 {
     70
 }
 
+const fn default_summary_max_output_tokens() -> i32 {
+    1024
+}
+
+const fn default_tags_max_output_tokens() -> i32 {
+    1024
+}
+
+const fn default_entities_max_output_tokens() -> i32 {
+    2000
+}
+
+const fn default_chat_max_output_tokens() -> i32 {
+    1024
+}
+
+const ACTION_INPUT_FLOOR_AND_SAFETY_TOKENS: i32 = 768;
+const CHAT_PROMPT_HEADROOM_TOKENS: i32 = 1024;
+
 impl MilaPlatformDefaults {
+    pub fn minimum_model_context_window(&self) -> i32 {
+        let action_output = self
+            .summary_max_output_tokens
+            .max(self.tags_max_output_tokens)
+            .max(self.entities_max_output_tokens)
+            .saturating_add(ACTION_INPUT_FLOOR_AND_SAFETY_TOKENS);
+        let chat_output = self
+            .chat_max_output_tokens
+            .saturating_add(CHAT_PROMPT_HEADROOM_TOKENS);
+        action_output.max(chat_output).saturating_add(1)
+    }
+
     /// Validate the budgeting fields that the HTTP write path checks per-user but that the
     /// platform-default path (env/config -> `materialize` for users without a row) would
     /// otherwise accept unchecked. Call at startup so a bad deployment config fails fast.
@@ -142,6 +181,30 @@ impl MilaPlatformDefaults {
             return Err(format!(
                 "mila.model_context_window must be greater than 0, got {}",
                 self.model_context_window
+            ));
+        }
+        for (name, value) in [
+            ("summary_max_output_tokens", self.summary_max_output_tokens),
+            ("tags_max_output_tokens", self.tags_max_output_tokens),
+            (
+                "entities_max_output_tokens",
+                self.entities_max_output_tokens,
+            ),
+            ("chat_max_output_tokens", self.chat_max_output_tokens),
+        ] {
+            if value <= 0 {
+                return Err(format!("mila.{name} must be greater than 0, got {value}"));
+            }
+            if value >= self.model_context_window {
+                return Err(format!(
+                    "mila.{name} must be smaller than mila.model_context_window"
+                ));
+            }
+        }
+        if self.model_context_window < self.minimum_model_context_window() {
+            return Err(format!(
+                "mila.model_context_window must be at least {} for the configured output budgets",
+                self.minimum_model_context_window()
             ));
         }
         if !(1..=100).contains(&self.chat_context_pct) {

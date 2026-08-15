@@ -242,6 +242,10 @@ impl WorkerConfig {
             .set_default("mila.embedding_model", "text-embedding-3-small")?
             .set_default("mila.embedding_dim", 768_i64)?
             .set_default("mila.model_context_window", 12000_i64)?
+            .set_default("mila.summary_max_output_tokens", 1024_i64)?
+            .set_default("mila.tags_max_output_tokens", 1024_i64)?
+            .set_default("mila.entities_max_output_tokens", 2000_i64)?
+            .set_default("mila.chat_max_output_tokens", 1024_i64)?
             .set_default("mila.chunk_size", 512_i64)?
             .set_default("mila.chunk_overlap", 64_i64)?
             .set_default("mila.top_k", 6_i64)?
@@ -410,6 +414,22 @@ impl WorkerConfig {
             .set_override_option(
                 "mila.model_context_window",
                 parse_i64(env, "MILA_MODEL_CONTEXT_WINDOW"),
+            )?
+            .set_override_option(
+                "mila.summary_max_output_tokens",
+                parse_i64(env, "MILA_SUMMARY_MAX_OUTPUT_TOKENS"),
+            )?
+            .set_override_option(
+                "mila.tags_max_output_tokens",
+                parse_i64(env, "MILA_TAGS_MAX_OUTPUT_TOKENS"),
+            )?
+            .set_override_option(
+                "mila.entities_max_output_tokens",
+                parse_i64(env, "MILA_ENTITIES_MAX_OUTPUT_TOKENS"),
+            )?
+            .set_override_option(
+                "mila.chat_max_output_tokens",
+                parse_i64(env, "MILA_CHAT_MAX_OUTPUT_TOKENS"),
             )?
             .set_override_option(
                 "mila.chat_context_pct",

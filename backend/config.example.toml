@@ -171,8 +171,20 @@ embedding_model = "text-embedding-3-small"
 # Env: MILA_EMBEDDING_DIM
 embedding_dim = 768
 
-# Env: MILA_CONTEXT_THRESHOLD
-context_threshold = 12000
+# Env: MILA_MODEL_CONTEXT_WINDOW
+model_context_window = 12000
+
+# Env: MILA_SUMMARY_MAX_OUTPUT_TOKENS
+summary_max_output_tokens = 1024
+
+# Env: MILA_TAGS_MAX_OUTPUT_TOKENS
+tags_max_output_tokens = 1024
+
+# Env: MILA_ENTITIES_MAX_OUTPUT_TOKENS
+entities_max_output_tokens = 2000
+
+# Env: MILA_CHAT_MAX_OUTPUT_TOKENS
+chat_max_output_tokens = 1024
 
 # Env: MILA_CHUNK_SIZE
 chunk_size = 512

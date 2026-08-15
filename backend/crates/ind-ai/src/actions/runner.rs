@@ -20,6 +20,7 @@ use ind_domain::{
 };
 
 use crate::AiProviderClient;
+use crate::MilaTokenBudgets;
 use crate::resolution::{EntityRepositoryAdapter, EntityResolutionStore, EntityResolver};
 
 use super::parse::{parse_entities_output, parse_summary_output, parse_tags_output};
@@ -30,6 +31,7 @@ pub struct AiActionRunner {
     entity_store: Arc<dyn EntityResolutionStore>,
     pub(super) ai_client: Arc<dyn AiProviderClient>,
     pub(super) credential_cipher: Option<Arc<CredentialCipher>>,
+    pub(super) token_budgets: MilaTokenBudgets,
 }
 
 #[async_trait]
@@ -184,7 +186,13 @@ impl AiActionRunner {
             entity_store: Arc::new(EntityRepositoryAdapter(entity_repo)),
             ai_client,
             credential_cipher: None,
+            token_budgets: MilaTokenBudgets::default(),
         }
+    }
+
+    pub fn with_token_budgets(mut self, budgets: MilaTokenBudgets) -> Self {
+        self.token_budgets = budgets;
+        self
     }
 
     pub fn with_credential_cipher(mut self, cipher: Option<Arc<CredentialCipher>>) -> Self {
@@ -449,8 +457,12 @@ impl AiActionRunner {
         }
 
         let system_prompt = self.resolve_system_prompt(document.user_id, action).await?;
-        let input_budget =
-            super::budget::action_input_budget(config.model_context_window, &system_prompt, action);
+        let input_budget = super::budget::action_input_budget(
+            config.model_context_window,
+            &system_prompt,
+            action,
+            self.token_budgets,
+        );
         let user_prompt = build_document_user_prompt(&document, &plain_text, input_budget);
 
         Ok(Some(PreparedAction {

@@ -18,7 +18,7 @@ impl AiActionRunner {
         let provider =
             chat_provider_from_config(&prepared.config, self.credential_cipher.as_deref())?;
         let system_prompt = action_system_prompt(prepared, action);
-        let mut request = action_request(prepared, action, &system_prompt);
+        let mut request = action_request(prepared, action, &system_prompt, self.token_budgets);
         let response = self
             .ai_client
             .chat_completion(&provider, request.clone())
@@ -39,7 +39,7 @@ impl AiActionRunner {
                 ChatMessage::system(retry_prompt.as_str()),
                 ChatMessage::user(prepared.user_prompt.clone()),
             ];
-            request.max_completion_tokens = Some(compact_retry_budget(action));
+            request.max_completion_tokens = Some(compact_retry_budget(action, self.token_budgets));
             let response = self
                 .ai_client
                 .chat_completion(&provider, request)
@@ -131,6 +131,7 @@ fn action_request(
     prepared: &PreparedAction,
     action: AiPromptAction,
     system_prompt: &str,
+    budgets: crate::MilaTokenBudgets,
 ) -> ChatCompletionRequest {
     let mut request = ChatCompletionRequest::new(
         prepared.config.chat_model.clone(),
@@ -146,7 +147,7 @@ fn action_request(
             AiPromptAction::Chat | AiPromptAction::Custom => 0.7,
         });
     }
-    request.max_completion_tokens = Some(super::budget::output_budget_tokens(action) as u32);
+    request.max_completion_tokens = Some(budgets.action_output_tokens(action));
     request.user = Some(prepared.user_id.to_string());
     if prepared.config.supports_structured_output {
         request.response_format = super::schema::response_format_for(action);
@@ -175,12 +176,8 @@ fn sum_optional(first: Option<i32>, second: Option<i32>) -> Option<i32> {
     }
 }
 
-fn compact_retry_budget(action: AiPromptAction) -> u32 {
-    match action {
-        AiPromptAction::Summary | AiPromptAction::Tags => 512,
-        AiPromptAction::Entities => 1024,
-        AiPromptAction::Chat | AiPromptAction::Custom => 512,
-    }
+fn compact_retry_budget(action: AiPromptAction, budgets: crate::MilaTokenBudgets) -> u32 {
+    budgets.compact_action_output_tokens(action)
 }
 
 fn compact_retry_instruction(action: AiPromptAction) -> &'static str {
@@ -223,6 +220,48 @@ mod tests {
     use super::*;
 
     #[test]
+    fn action_requests_and_compact_retries_use_configured_output_budgets() {
+        let budgets = crate::MilaTokenBudgets {
+            summary_max_output_tokens: 2_048,
+            tags_max_output_tokens: 1_536,
+            entities_max_output_tokens: 8_000,
+            chat_max_output_tokens: 4_096,
+        };
+        let prepared = PreparedAction {
+            user_id: UserId::new(),
+            config: reasoning_config(),
+            system_prompt: "system".into(),
+            user_prompt: "article".into(),
+            document_title: "Article".into(),
+        };
+
+        assert_eq!(
+            action_request(&prepared, AiPromptAction::Summary, "system", budgets)
+                .max_completion_tokens,
+            Some(2_048)
+        );
+        assert_eq!(
+            action_request(&prepared, AiPromptAction::Tags, "system", budgets)
+                .max_completion_tokens,
+            Some(1_536)
+        );
+        assert_eq!(
+            action_request(&prepared, AiPromptAction::Entities, "system", budgets)
+                .max_completion_tokens,
+            Some(8_000)
+        );
+        assert_eq!(
+            compact_retry_budget(AiPromptAction::Summary, budgets),
+            1_024
+        );
+        assert_eq!(compact_retry_budget(AiPromptAction::Tags, budgets), 768);
+        assert_eq!(
+            compact_retry_budget(AiPromptAction::Entities, budgets),
+            4_000
+        );
+    }
+
+    #[test]
     fn reasoning_capable_article_actions_omit_sampling_parameters() {
         let prepared = PreparedAction {
             user_id: UserId::new(),
@@ -239,7 +278,12 @@ mod tests {
             AiPromptAction::Chat,
             AiPromptAction::Custom,
         ] {
-            let request = action_request(&prepared, action, "system");
+            let request = action_request(
+                &prepared,
+                action,
+                "system",
+                crate::MilaTokenBudgets::default(),
+            );
             let json = serde_json::to_value(request).unwrap();
             assert!(
                 json.get("temperature").is_none(),
@@ -272,7 +316,12 @@ mod tests {
             AiPromptAction::Chat,
             AiPromptAction::Custom,
         ] {
-            let request = action_request(&prepared, action, "system");
+            let request = action_request(
+                &prepared,
+                action,
+                "system",
+                crate::MilaTokenBudgets::default(),
+            );
             let json = serde_json::to_value(request).unwrap();
             assert!(
                 json.get("temperature").is_some(),

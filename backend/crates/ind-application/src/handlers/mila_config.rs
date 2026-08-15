@@ -87,6 +87,15 @@ fn merge_config(
             .or(current.map(|config| config.model_context_window))
             .unwrap_or(defaults.model_context_window),
     )?;
+    if model_context_window < defaults.minimum_model_context_window() {
+        return Err(validation_owned(
+            "model_context_window",
+            format!(
+                "must be at least {} for the configured output budgets",
+                defaults.minimum_model_context_window()
+            ),
+        ));
+    }
     let chat_context_pct = validate_percent(
         "chat_context_pct",
         input
@@ -333,6 +342,10 @@ mod tests {
             embedding_model: "managed-embedding".into(),
             embedding_dim: MILA_EMBEDDING_DIM,
             model_context_window: 8_192,
+            summary_max_output_tokens: 1024,
+            tags_max_output_tokens: 1024,
+            entities_max_output_tokens: 2000,
+            chat_max_output_tokens: 1024,
             chat_context_pct: 70,
             chunk_size: 1_000,
             chunk_overlap: 100,
@@ -478,5 +491,30 @@ mod tests {
 
         assert_eq!(merged.chat_api_base, "http://localhost:11434/v1");
         assert_eq!(merged.embedding_api_base, "http://localhost:11435/v1");
+    }
+
+    #[test]
+    fn model_context_must_exceed_every_deployment_output_budget() {
+        let user_id = UserId::new();
+        let mut defaults = defaults();
+        defaults.entities_max_output_tokens = 8_000;
+
+        let error = merge_config(
+            user_id,
+            Some(&current_config(user_id)),
+            &defaults,
+            UpsertMilaConfigInput {
+                model_context_window: Some(8_000),
+                ..Default::default()
+            },
+            Utc::now(),
+        )
+        .expect_err("the output budget must leave room for model input");
+
+        assert!(matches!(
+            error,
+            AppError::Domain(DomainError::Validation { ref field, .. })
+                if field == "model_context_window"
+        ));
     }
 }

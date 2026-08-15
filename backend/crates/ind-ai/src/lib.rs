@@ -43,7 +43,7 @@ pub use error::AiError;
 pub use operations::{MilaOperationsDeps, MilaOperationsService};
 pub use provider_test::MilaProviderTestService;
 pub use token_estimate::{
-    APPROX_CHARS_PER_TOKEN, HIGHLIGHT_WINDOW_TOKENS,
+    APPROX_CHARS_PER_TOKEN, HIGHLIGHT_WINDOW_TOKENS, MilaTokenBudgets,
     approximate_token_count as approximate_chat_tokens, chars_for_tokens,
     exceeds_context_threshold,
 };

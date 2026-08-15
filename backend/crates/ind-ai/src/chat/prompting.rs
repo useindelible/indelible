@@ -2,7 +2,7 @@ use ind_application::AppError;
 use ind_domain::{DomainError, MilaConfig, UserId};
 
 use crate::token_estimate::{
-    CHAT_RESPONSE_RESERVE_TOKENS, approximate_token_count, chars_for_tokens,
+    approximate_token_count, chars_for_tokens, chat_response_reserve_tokens,
 };
 use crate::untrusted::truncate_fenced;
 use crate::{ChatCompletionRequest, ChatMessage};
@@ -13,14 +13,19 @@ pub(super) fn build_chat_request(
     config: &MilaConfig,
     user_id: UserId,
     messages: Vec<ChatMessage>,
+    max_output_tokens: u32,
 ) -> ChatCompletionRequest {
-    let messages = fit_messages_to_context_window(messages, config.model_context_window);
+    let messages = fit_messages_to_context_window(
+        messages,
+        config.model_context_window,
+        max_output_tokens as i32,
+    );
     let mut request = ChatCompletionRequest::new(config.chat_model.clone(), messages);
     if !config.supports_reasoning_effort {
         request.temperature = Some(0.3);
         request.top_p = Some(0.95);
     }
-    request.max_completion_tokens = Some(1024);
+    request.max_completion_tokens = Some(max_output_tokens);
     request.user = Some(user_id.to_string());
     request
 }
@@ -39,9 +44,10 @@ fn estimated_request_tokens(messages: &[ChatMessage]) -> usize {
 fn fit_messages_to_context_window(
     mut messages: Vec<ChatMessage>,
     model_context_window: i32,
+    max_output_tokens: i32,
 ) -> Vec<ChatMessage> {
     let budget = model_context_window
-        .saturating_sub(CHAT_RESPONSE_RESERVE_TOKENS)
+        .saturating_sub(chat_response_reserve_tokens(max_output_tokens))
         .max(1) as usize;
 
     while estimated_request_tokens(&messages) > budget && history_tokens(&messages) > budget / 2 {
@@ -149,9 +155,10 @@ pub(super) fn validate_chat_request(request: &MilaChatRequest) -> Result<(), App
 pub(super) fn validate_question_for_context(
     question: &str,
     model_context_window: i32,
+    max_output_tokens: i32,
 ) -> Result<(), AppError> {
     let input_budget = model_context_window
-        .saturating_sub(CHAT_RESPONSE_RESERVE_TOKENS)
+        .saturating_sub(chat_response_reserve_tokens(max_output_tokens))
         .max(1) as usize;
     let question_budget = (input_budget / 2).max(1);
     if approximate_token_count(question.trim()) > question_budget {
@@ -173,6 +180,19 @@ mod tests {
     use crate::untrusted::fence;
 
     #[test]
+    fn chat_request_and_prompt_reserve_follow_the_configured_output_budget() {
+        let config = ind_domain::MilaPlatformDefaults {
+            chat_max_output_tokens: 4_096,
+            ..ind_test_support::test_mila_defaults()
+        }
+        .materialize(UserId::new(), chrono::Utc::now());
+        let request = build_chat_request(&config, UserId::new(), Vec::new(), 4_096);
+
+        assert_eq!(request.max_completion_tokens, Some(4_096));
+        assert_eq!(chat_response_reserve_tokens(4_096), 5_120);
+    }
+
+    #[test]
     fn prompt_assembly_bounds_oversized_context_and_long_history() {
         let mut messages = vec![
             ChatMessage::system("system guidance".repeat(40)),
@@ -190,11 +210,9 @@ mod tests {
         }
         messages.push(ChatMessage::user("current question"));
 
-        let fitted = fit_messages_to_context_window(messages, 4_096);
+        let fitted = fit_messages_to_context_window(messages, 4_096, 1_024);
 
-        assert!(
-            estimated_request_tokens(&fitted) <= (4_096 - CHAT_RESPONSE_RESERVE_TOKENS) as usize
-        );
+        assert!(estimated_request_tokens(&fitted) <= (4_096 - 2_048) as usize);
         assert_eq!(fitted.last().unwrap().content, "current question");
         assert_eq!(
             fitted
@@ -230,15 +248,15 @@ mod tests {
             ChatMessage::user("current question"),
         ];
 
-        let fitted = fit_messages_to_context_window(messages.clone(), 8_192);
+        let fitted = fit_messages_to_context_window(messages.clone(), 8_192, 1_024);
 
         assert_eq!(fitted, messages);
     }
 
     #[test]
     fn question_validation_uses_the_configured_window_and_non_ascii_estimate() {
-        assert!(validate_question_for_context(&"a".repeat(4_096), 4_096).is_ok());
-        let error = validate_question_for_context(&"界".repeat(1_025), 4_096).unwrap_err();
+        assert!(validate_question_for_context(&"a".repeat(4_096), 4_096, 1_024).is_ok());
+        let error = validate_question_for_context(&"界".repeat(1_025), 4_096, 1_024).unwrap_err();
         assert!(matches!(
             error,
             AppError::Domain(DomainError::Validation { ref field, .. }) if field == "question"

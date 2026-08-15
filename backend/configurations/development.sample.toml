@@ -47,6 +47,10 @@ embedding_model         = "text-embedding-nomic-embed-text-v1.5"
 embedding_dim           = 768
 # REQUIRED: total token window of your chat model (input + output).
 model_context_window    = 12000
+summary_max_output_tokens  = 1024
+tags_max_output_tokens     = 1024
+entities_max_output_tokens = 2000
+chat_max_output_tokens     = 1024
 # Percent (1-100) of model_context_window the chat sends inline before switching to RAG.
 chat_context_pct        = 70
 chunk_size              = 512

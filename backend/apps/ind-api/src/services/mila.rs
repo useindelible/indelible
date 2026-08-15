@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::config::ServerConfig;
 use crate::services::repositories::Repositories;
-use ind_ai::{AiHttpClientConfig, MilaChatService, ReqwestAiProviderClient};
+use ind_ai::{AiHttpClientConfig, MilaChatService, MilaTokenBudgets, ReqwestAiProviderClient};
 use ind_application::repos::mila_config::DefaultingMilaConfigRepository;
 use ind_application::storage::ObjectStorage;
 use ind_ingest::AssetBackedPreparedContentProvider;
@@ -66,6 +66,7 @@ pub(super) fn build_mila_ops(
             mila_session_repo.clone(),
             ai_client.clone(),
         )
+        .with_token_budgets(MilaTokenBudgets::from(&config.mila))
         .with_credential_cipher(credential_cipher.clone()),
     );
     let embedding_backfill_repo = Arc::new(PgEmbeddingBackfillRepository::new(pool.clone()))

@@ -148,6 +148,27 @@ fn mila_model_context_window_defaults_when_unset() {
 }
 
 #[test]
+fn mila_output_budgets_default_and_accept_environment_overrides() {
+    let defaults = load(&[]).unwrap();
+    assert_eq!(defaults.mila.summary_max_output_tokens, 1024);
+    assert_eq!(defaults.mila.tags_max_output_tokens, 1024);
+    assert_eq!(defaults.mila.entities_max_output_tokens, 2000);
+    assert_eq!(defaults.mila.chat_max_output_tokens, 1024);
+
+    let overridden = load(&[
+        ("MILA_SUMMARY_MAX_OUTPUT_TOKENS", "2048"),
+        ("MILA_TAGS_MAX_OUTPUT_TOKENS", "1536"),
+        ("MILA_ENTITIES_MAX_OUTPUT_TOKENS", "8000"),
+        ("MILA_CHAT_MAX_OUTPUT_TOKENS", "4096"),
+    ])
+    .unwrap();
+    assert_eq!(overridden.mila.summary_max_output_tokens, 2048);
+    assert_eq!(overridden.mila.tags_max_output_tokens, 1536);
+    assert_eq!(overridden.mila.entities_max_output_tokens, 8000);
+    assert_eq!(overridden.mila.chat_max_output_tokens, 4096);
+}
+
+#[test]
 fn assets_default_to_passthrough_so_self_hosters_need_no_public_object_store() {
     let config = load(&[]).unwrap();
     assert!(matches!(
@@ -174,6 +195,11 @@ fn invalid_mila_budgets_are_rejected() {
     for (key, value, expected) in [
         ("MILA_MODEL_CONTEXT_WINDOW", "0", "model_context_window"),
         ("MILA_CHAT_CONTEXT_PCT", "150", "chat_context_pct"),
+        (
+            "MILA_ENTITIES_MAX_OUTPUT_TOKENS",
+            "0",
+            "entities_max_output_tokens",
+        ),
     ] {
         let error = load(&[(key, value)])
             .err()

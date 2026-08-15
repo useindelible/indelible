@@ -57,6 +57,10 @@ embedding_dim           = 768
 # Total token window of your chat model (input + output). Defaults to 12000 in code;
 # override per deployment here or via MILA_MODEL_CONTEXT_WINDOW to match your model.
 model_context_window    = 12000
+summary_max_output_tokens  = 1024
+tags_max_output_tokens     = 1024
+entities_max_output_tokens = 2000
+chat_max_output_tokens     = 1024
 # Percent (1-100) of model_context_window the chat sends inline before switching to RAG.
 chat_context_pct        = 70
 chunk_size              = 512

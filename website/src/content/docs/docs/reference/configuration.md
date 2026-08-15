@@ -94,6 +94,10 @@ platform-wide API key variable.
 | `MILA_EMBEDDING_API_BASE` | no | OpenAI-compatible embeddings endpoint (default `https://api.openai.com/v1`) |
 | `MILA_EMBEDDING_MODEL` | no | Embedding model (default `text-embedding-3-small`) |
 | `MILA_MODEL_CONTEXT_WINDOW` | no | Chat model token window (default `12000`). Set to match your model |
+| `MILA_SUMMARY_MAX_OUTPUT_TOKENS` | no | Maximum summary completion tokens (default `1024`) |
+| `MILA_TAGS_MAX_OUTPUT_TOKENS` | no | Maximum tag completion tokens (default `1024`) |
+| `MILA_ENTITIES_MAX_OUTPUT_TOKENS` | no | Maximum entity-extraction completion tokens (default `2000`) |
+| `MILA_CHAT_MAX_OUTPUT_TOKENS` | no | Maximum interactive chat completion tokens (default `1024`) |
 
 The embedding vector dimension is fixed to match the pgvector storage the database
 was built for. The binary rejects a mismatched `MILA_EMBEDDING_DIM` at startup, so
