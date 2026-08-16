@@ -79,7 +79,7 @@ tower-http = { version = "0.6", features = ["cors", "trace", "request-id", "prop
 http = "1"
 oauth2 = "5"
 openidconnect = "4.0.1"
-jsonwebtoken = "9"
+jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 reqwest = { version = "0.13.2", features = ["json"] }
 feed-rs = "2"
 quick-xml = { version = "0.37", features = ["serialize"] }

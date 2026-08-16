@@ -73,7 +73,7 @@ pub fn sign_access_token(
 
 pub fn validate_access_token(token: &str, secret: &[u8]) -> Result<JwtClaims, AuthError> {
     // Pin the algorithm explicitly. `Validation::default()` already resolves to
-    // HS256 in jsonwebtoken 9, but stating it guards against a future default
+    // HS256 in jsonwebtoken 11, but stating it guards against a future default
     // change and documents that algorithm-substitution (alg:none, HS/RS
     // confusion) is rejected.
     let mut validation = Validation::new(Algorithm::HS256);
