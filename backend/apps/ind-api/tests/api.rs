@@ -17,6 +17,7 @@ mod api {
     mod disconnect_revocation_tests;
     mod document_annotation_journey_tests;
     mod document_search_tests;
+    mod entity_resolution_journey_tests;
     mod extension_auth_journey_tests;
     mod feed_route_permission_tests;
     mod feed_subscription_journey_tests;

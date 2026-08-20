@@ -1,6 +1,9 @@
+use ind_domain::{GenericJobEnvelope, JobOutboxId};
 use ind_test_support::{AuthedClient, TestApp, TestAuthSession, spawn_app, test_mila_defaults};
 use reqwest::StatusCode;
 use serde_json::{Value, json};
+use wiremock::matchers::{body_partial_json, method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 pub const SIMPLE_READER_HTML: &str = "<article><h1>Integration Reader Article</h1><p>This fixture travels through real HTTP, DB, and S3 paths.</p></article>";
 
@@ -246,4 +249,79 @@ pub fn build_worker_context(app: &TestApp) -> ind_worker::context::WorkerContext
     .with_worker_id("test-worker")
     .without_email_services()
     .build()
+}
+
+/// A minimal OpenAI-style chat completion whose assistant message is `content` serialised.
+pub fn mila_completion(content: Value) -> Value {
+    json!({
+        "id": "completion_surgical",
+        "model": "surgical-model",
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": content.to_string()},
+            "finish_reason": "stop"
+        }],
+        "usage": {"prompt_tokens": 21, "completion_tokens": 8, "total_tokens": 29}
+    })
+}
+
+/// Mount one expected `POST /v1/chat/completions` keyed by the structured-output schema name.
+pub async fn mount_mila_completion(server: &MockServer, schema: &str, content: Value) {
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .and(body_partial_json(json!({
+            "response_format": {"json_schema": {"name": schema}}
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(mila_completion(content)))
+        .expect(1)
+        .mount(server)
+        .await;
+}
+
+pub async fn dispatch_ai_job(
+    context: &ind_worker::context::WorkerContext,
+    job_type: &str,
+    payload: Value,
+) -> Result<Option<()>, ind_application::AppError> {
+    ind_worker::jobs::ai::dispatch_generic_job(
+        &context.ai_search_jobs(),
+        GenericJobEnvelope {
+            outbox_id: JobOutboxId::new(),
+            job_type: job_type.to_string(),
+            payload,
+            dedupe_key: None,
+        },
+    )
+    .await
+}
+
+/// Point the scenario user's Mila at a mock provider with structured output enabled.
+pub async fn configure_mila(scenario: &SaveScenario, provider_uri: &str) {
+    let configured = assert_json_response(
+        scenario
+            .web_client()
+            .post_json(
+                "/api/v1/mila/config",
+                &json!({
+                    "chat_api_base": format!("{provider_uri}/v1"),
+                    "chat_model": "surgical-model",
+                    "embedding_api_base": format!("{provider_uri}/v1"),
+                    "embedding_model": "surgical-embedding",
+                    "embedding_dim": 768,
+                    "model_context_window": 16000,
+                    "chat_context_pct": 70,
+                    "top_k": 5,
+                    "cross_item_top_k": 10,
+                    "cross_item_max_per_item": 3,
+                    "enabled": true,
+                    "byo_enabled": true,
+                    "supports_structured_output": true,
+                    "supports_reasoning_effort": true
+                }),
+            )
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    assert_eq!(configured["byo_enabled"], true);
 }

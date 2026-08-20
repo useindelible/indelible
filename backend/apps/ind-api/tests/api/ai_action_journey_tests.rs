@@ -1,74 +1,31 @@
 use ind_domain::{
-    DocumentId, ExtractEntitiesDocumentJob, GenericJobEnvelope, JobOutboxId,
-    SuggestTagsDocumentJob, SummarizeDocumentJob, job_types,
+    DocumentId, ExtractEntitiesDocumentJob, SuggestTagsDocumentJob, SummarizeDocumentJob, job_types,
 };
-use reqwest::StatusCode;
 use serde_json::{Value, json};
-use wiremock::matchers::{body_partial_json, method, path};
+use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use super::common::{
-    SaveScenario, assert_json_response, build_worker_context, document_id_from_response,
+    SaveScenario, build_worker_context, configure_mila, dispatch_ai_job, document_id_from_response,
+    mount_mila_completion,
 };
-
-fn completion(content: Value) -> Value {
-    json!({
-        "id": "completion_surgical",
-        "model": "surgical-model",
-        "choices": [{
-            "index": 0,
-            "message": {"role": "assistant", "content": content.to_string()},
-            "finish_reason": "stop"
-        }],
-        "usage": {"prompt_tokens": 21, "completion_tokens": 8, "total_tokens": 29}
-    })
-}
-
-async fn mount_completion(server: &MockServer, schema: &str, content: Value) {
-    Mock::given(method("POST"))
-        .and(path("/v1/chat/completions"))
-        .and(body_partial_json(json!({
-            "response_format": {"json_schema": {"name": schema}}
-        })))
-        .respond_with(ResponseTemplate::new(200).set_body_json(completion(content)))
-        .expect(1)
-        .mount(server)
-        .await;
-}
-
-async fn dispatch(
-    context: &ind_worker::context::WorkerContext,
-    job_type: &str,
-    payload: Value,
-) -> Result<Option<()>, ind_application::AppError> {
-    ind_worker::jobs::ai::dispatch_generic_job(
-        &context.ai_search_jobs(),
-        GenericJobEnvelope {
-            outbox_id: JobOutboxId::new(),
-            job_type: job_type.to_string(),
-            payload,
-            dedupe_key: None,
-        },
-    )
-    .await
-}
 
 #[tokio::test]
 async fn ai_actions_cross_http_worker_storage_and_persistence_boundaries() {
     let provider = MockServer::start().await;
-    mount_completion(
+    mount_mila_completion(
         &provider,
         "summary",
         json!({"summary": "A concise systems article."}),
     )
     .await;
-    mount_completion(
+    mount_mila_completion(
         &provider,
         "tags",
         json!({"tags": [" Rust ", "systems", "rust"]}),
     )
     .await;
-    mount_completion(
+    mount_mila_completion(
         &provider,
         "entities",
         json!({"entities": [{
@@ -86,37 +43,11 @@ async fn ai_actions_cross_http_worker_storage_and_persistence_boundaries() {
         .extension_reader_save("https://example.com/ai-action-boundary")
         .await;
     let document_id: DocumentId = document_id_from_response(&saved).parse().unwrap();
-    let client = scenario.web_client();
-    let configured = assert_json_response(
-        client
-            .post_json(
-                "/api/v1/mila/config",
-                &json!({
-                    "chat_api_base": format!("{}/v1", provider.uri()),
-                    "chat_model": "surgical-model",
-                    "embedding_api_base": format!("{}/v1", provider.uri()),
-                    "embedding_model": "surgical-embedding",
-                    "embedding_dim": 768,
-                    "model_context_window": 16000,
-                    "chat_context_pct": 70,
-                    "top_k": 5,
-                    "cross_item_top_k": 10,
-                    "cross_item_max_per_item": 3,
-                    "enabled": true,
-                    "byo_enabled": true,
-                    "supports_structured_output": true,
-                    "supports_reasoning_effort": true
-                }),
-            )
-            .await,
-        StatusCode::OK,
-    )
-    .await;
-    assert_eq!(configured["byo_enabled"], true);
+    configure_mila(&scenario, &provider.uri()).await;
 
     let context = build_worker_context(&scenario.app);
     assert_eq!(
-        dispatch(
+        dispatch_ai_job(
             &context,
             job_types::DOCUMENT_AI_SUMMARIZE,
             serde_json::to_value(SummarizeDocumentJob { document_id }).unwrap(),
@@ -125,14 +56,14 @@ async fn ai_actions_cross_http_worker_storage_and_persistence_boundaries() {
         .unwrap(),
         Some(())
     );
-    dispatch(
+    dispatch_ai_job(
         &context,
         job_types::DOCUMENT_AI_TAGS,
         serde_json::to_value(SuggestTagsDocumentJob { document_id }).unwrap(),
     )
     .await
     .unwrap();
-    dispatch(
+    dispatch_ai_job(
         &context,
         job_types::DOCUMENT_AI_ENTITIES,
         serde_json::to_value(ExtractEntitiesDocumentJob { document_id }).unwrap(),
@@ -204,7 +135,7 @@ async fn ai_actions_cross_http_worker_storage_and_persistence_boundaries() {
         .expect(1)
         .mount(&provider)
         .await;
-    let failure = dispatch(
+    let failure = dispatch_ai_job(
         &context,
         job_types::DOCUMENT_AI_SUMMARIZE,
         serde_json::to_value(SummarizeDocumentJob { document_id }).unwrap(),
