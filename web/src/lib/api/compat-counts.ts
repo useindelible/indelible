@@ -8,8 +8,3 @@ export async function trashCount() {
 export async function itemTypeCounts() {
 	return { data: { counts: {} as Record<string, number> } };
 }
-
-export async function getDocumentEntryTags(options?: { path: { document_id: string } }) {
-	void options;
-	return { data: { tags: [] as string[] } };
-}

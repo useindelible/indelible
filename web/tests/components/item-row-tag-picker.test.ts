@@ -1,12 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import ItemRow from '$lib/components/library/ItemRow.svelte';
 import type { DocumentListEntry } from '$lib/api';
 
-vi.mock('$lib/api', () => ({
-	getDocumentEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } }),
-	replaceDocumentEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } })
+const apiMocks = vi.hoisted(() => ({
+	getLibraryEntryTags: vi.fn().mockImplementation(({ path }) =>
+		Promise.resolve({
+			data: { tags: path.library_entry_id === 'lib_lib' ? ['neural networks'] : [] }
+		})
+	),
+	replaceLibraryEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } }),
+	listTags: vi.fn().mockResolvedValue({ data: { data: [], page: { next_cursor: null } } })
 }));
+
+vi.mock('$lib/api', () => apiMocks);
 
 function item(overrides: Partial<DocumentListEntry> = {}): DocumentListEntry {
 	return {
@@ -42,6 +49,17 @@ function renderRow(entry: DocumentListEntry) {
 }
 
 describe('ItemRow tag picker gating', () => {
+	it('loads existing tags through the library entry identity', async () => {
+		renderRow(item());
+
+		await fireEvent.contextMenu(screen.getByRole('option'));
+		await fireEvent.click(screen.getByText('Add Tags'));
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'Remove tag neural networks' })).toBeTruthy();
+		});
+	});
+
 	it('offers Add Tags for a library-backed row', async () => {
 		renderRow(item());
 
@@ -51,7 +69,9 @@ describe('ItemRow tag picker gating', () => {
 	});
 
 	it('hides Add Tags for a feed delivery row', async () => {
-		renderRow(item({ id: 'dlv_1', object: 'feed_delivery', source: 'feed' }));
+		renderRow(
+			item({ id: 'dlv_1', library_entry_id: null, object: 'feed_delivery', source: 'feed' })
+		);
 
 		await fireEvent.contextMenu(screen.getByRole('option'));
 

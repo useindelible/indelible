@@ -3,7 +3,7 @@ import './client';
 import { getAccessToken } from '$lib/auth-tokens';
 
 export { api, AUTH_REDIRECT_SUPPRESSION_HEADER, getApiBaseUrl } from './client';
-export { getDocumentEntryTags, itemTypeCounts, trashCount } from './compat-counts';
+export { itemTypeCounts, trashCount } from './compat-counts';
 export type {
 	DocumentAssetListResponse,
 	DocumentListEntry,
@@ -553,12 +553,16 @@ export async function emptyTrash() {
 	return { data: undefined };
 }
 
-export async function replaceDocumentEntryTags(options: {
-	path: { document_id: string };
+export async function getLibraryEntryTags(options: { path: { library_entry_id: string } }) {
+	const { data } = await generated.getEntryTags({ path: options.path });
+	return { data: (data ?? { tags: [] }) as LibraryEntryTagsResponse };
+}
+
+export async function replaceLibraryEntryTags(options: {
+	path: { library_entry_id: string };
 	body: { tags: string[] };
 }) {
-	const library_entry_id = await resolveLibraryEntryId(options.path.document_id);
-	const { data } = await generated.setEntryTags({ path: { library_entry_id }, body: options.body });
+	const { data } = await generated.setEntryTags({ path: options.path, body: options.body });
 	return { data: (data ?? { tags: [] }) as LibraryEntryTagsResponse };
 }
 

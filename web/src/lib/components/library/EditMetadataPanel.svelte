@@ -29,6 +29,7 @@
 
 	// Snapshot captures the prop at mount time — intentional for form field initialization.
 	const snap = $state.snapshot(item);
+	const libraryEntryId = snap.library_entry_id;
 	let title = $state(snap.title);
 	let author = $state(snap.author ?? '');
 	let publishedAt = $state(toDateInputValue(snap.published_at));
@@ -38,7 +39,12 @@
 	let tagsLoaded = $state(false);
 
 	$effect(() => {
-		apiSdk.getDocumentEntryTags({ path: { document_id: item.id } }).then(({ data }) => {
+		if (!libraryEntryId) {
+			tagsLoaded = true;
+			return;
+		}
+
+		apiSdk.getLibraryEntryTags({ path: { library_entry_id: libraryEntryId } }).then(({ data }) => {
 			tags = data?.tags ?? [];
 			tagsLoaded = true;
 		});
@@ -89,6 +95,13 @@
 		error = '';
 		saving = true;
 		try {
+			const saveTags = libraryEntryId
+				? apiSdk.replaceLibraryEntryTags({
+						path: { library_entry_id: libraryEntryId },
+						body: { tags }
+					})
+				: Promise.resolve();
+
 			const [itemResult] = await Promise.all([
 				apiSdk.updateDocumentEntry({
 					path: { document_id: item.id },
@@ -99,10 +112,7 @@
 						excerpt: excerpt || undefined
 					}
 				}),
-				apiSdk.replaceDocumentEntryTags({
-					path: { document_id: item.id },
-					body: { tags }
-				})
+				saveTags
 			]);
 
 			if (itemResult.data) {

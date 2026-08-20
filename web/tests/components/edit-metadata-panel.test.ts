@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentListEntry } from '$lib/api';
 
 const apiMocks = vi.hoisted(() => ({
-	getDocumentEntryTags: vi.fn(),
-	replaceDocumentEntryTags: vi.fn(),
+	getLibraryEntryTags: vi.fn(),
+	replaceLibraryEntryTags: vi.fn(),
+	listTags: vi.fn(),
 	updateDocumentEntry: vi.fn()
 }));
 
@@ -42,7 +43,20 @@ function item(itemType: string): DocumentListEntry {
 describe('EditMetadataPanel content types', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		apiMocks.getDocumentEntryTags.mockResolvedValue({ data: { tags: [] } });
+		apiMocks.getLibraryEntryTags.mockImplementation(({ path }) =>
+			Promise.resolve({
+				data: { tags: path.library_entry_id === 'lib_1' ? ['neural networks'] : [] }
+			})
+		);
+		apiMocks.listTags.mockResolvedValue({
+			data: { data: [], page: { next_cursor: null } }
+		});
+	});
+
+	it('loads existing tags through the library entry identity', async () => {
+		render(EditMetadataPanel, { props: { item: item('article'), onClose: vi.fn() } });
+
+		expect(await screen.findByRole('button', { name: 'Remove tag neural networks' })).toBeTruthy();
 	});
 
 	it('does not offer Podcast when editing an ordinary item', () => {

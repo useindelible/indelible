@@ -4,8 +4,8 @@ import ItemRow from '$lib/components/library/ItemRow.svelte';
 import type { DocumentListEntry } from '$lib/api';
 
 vi.mock('$lib/api', () => ({
-	getDocumentEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } }),
-	replaceDocumentEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } })
+	getLibraryEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } }),
+	replaceLibraryEntryTags: vi.fn().mockResolvedValue({ data: { tags: [] } })
 }));
 
 function item(overrides: Partial<DocumentListEntry> = {}): DocumentListEntry {

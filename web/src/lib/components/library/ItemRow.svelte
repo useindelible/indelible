@@ -49,7 +49,7 @@
 					triageMode,
 					onTriage,
 					onDelete,
-					onAddTags: isFeedRow ? undefined : openTagPicker
+					onAddTags: item.library_entry_id ? openTagPicker : undefined
 				}
 			});
 		} else {
@@ -66,10 +66,6 @@
 		};
 	});
 
-	// Feed deliveries carry a `dlv_` id, not a library-backed document; tag mutations would hit a
-	// dead path, so the tag picker is only offered for saved library rows.
-	const isFeedRow = $derived(item.object === 'feed_delivery');
-
 	// Tag picker
 	let tagPickerOpen = $state(false);
 	let tagPickerTags = $state<string[]>([]);
@@ -84,11 +80,16 @@
 	);
 
 	async function openTagPicker() {
+		const libraryEntryId = item.library_entry_id;
+		if (!libraryEntryId) return;
+
 		tagPickerLoading = true;
 		tagPickerError = null;
 		tagPickerOpen = true;
 		try {
-			const resp = await api.getDocumentEntryTags({ path: { document_id: item.id } });
+			const resp = await api.getLibraryEntryTags({
+				path: { library_entry_id: libraryEntryId }
+			});
 			const loaded = resp.data?.tags ?? [];
 			tagPickerTags = [...loaded];
 			tagPickerOriginal = [...loaded];
@@ -100,11 +101,14 @@
 	}
 
 	async function saveTagPicker() {
+		const libraryEntryId = item.library_entry_id;
+		if (!libraryEntryId) return;
+
 		tagPickerSaving = true;
 		tagPickerError = null;
 		try {
-			await api.replaceDocumentEntryTags({
-				path: { document_id: item.id },
+			await api.replaceLibraryEntryTags({
+				path: { library_entry_id: libraryEntryId },
 				body: { tags: tagPickerTags }
 			});
 			tagPickerOpen = false;
