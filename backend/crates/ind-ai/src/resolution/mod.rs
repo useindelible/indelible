@@ -1,6 +1,9 @@
 mod prompt;
 mod resolver;
 
+#[cfg(test)]
+mod tests;
+
 use ind_application::AppError;
 
 use crate::ResponseFormat;

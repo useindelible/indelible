@@ -396,13 +396,12 @@ fn adjudication_request(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
-
+    use super::super::tests::sample_config;
     use super::*;
 
     #[test]
     fn reasoning_capable_entity_adjudication_omits_sampling_parameters() {
-        let request = adjudication_request(&reasoning_config(), Vec::new(), 1);
+        let request = adjudication_request(&sample_config(UserId::new()), Vec::new(), 1);
         let json = serde_json::to_value(request).unwrap();
 
         assert!(json.get("temperature").is_none());
@@ -412,40 +411,12 @@ mod tests {
 
     #[test]
     fn sampling_entity_adjudication_keeps_temperature() {
-        let mut config = reasoning_config();
+        let mut config = sample_config(UserId::new());
         config.supports_reasoning_effort = false;
         let request = adjudication_request(&config, Vec::new(), 1);
         let json = serde_json::to_value(request).unwrap();
 
         assert_eq!(json.get("temperature"), Some(&serde_json::json!(0.0)));
         assert!(json.get("reasoning_effort").is_none());
-    }
-
-    fn reasoning_config() -> MilaConfig {
-        MilaConfig {
-            user_id: UserId::new(),
-            chat_api_base: "https://api.openai.com/v1".into(),
-            chat_api_key_enc: None,
-            chat_model: "reasoning-model".into(),
-            embedding_api_base: "https://api.openai.com/v1".into(),
-            embedding_api_key_enc: None,
-            embedding_model: "embedding-model".into(),
-            embedding_dim: 768,
-            byo_enabled: true,
-            model_context_window: 16_000,
-            chat_context_pct: 70,
-            chunk_size: 800,
-            chunk_overlap: 100,
-            top_k: 6,
-            cross_item_top_k: 20,
-            cross_item_max_per_item: 3,
-            enabled: true,
-            supports_structured_output: true,
-            supports_reasoning_effort: true,
-            chat_cipher_version: 0,
-            embedding_cipher_version: 0,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
     }
 }

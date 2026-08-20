@@ -3,18 +3,24 @@ use ind_domain::{Entity, EntityType, ExtractedEntity};
 use crate::untrusted::{GUIDANCE, fence};
 
 pub(crate) const ENTITY_RESOLUTION_SYSTEM_PROMPT: &str = "You are given a document title and a \
-numbered list of newly extracted entities. For EACH entity you are given its description, aliases, \
-and a list of candidate existing entities of the same type (each numbered, with a description). For \
-each entity, decide which ONE of ITS candidates, if any, is the SAME real-world referent. Use the \
-descriptions and document context, not just the names. Be conservative: choose a candidate only if \
-confident they are the exact same person, organization, place, event, or work — not merely related. \
-A parent brand and its product are NOT the same (Amazon vs Amazon Bedrock => null). Things merely \
-sharing letters are NOT the same (React vs ReAct => null; Swift vs SWIFT => null). An acronym and \
-its expansion ARE the same (AWS vs Amazon Web Services => match). A fuller form of one person's name \
-IS the same (Elon Musk vs Elon Reeve Musk => match); a bare given name (Daniel vs Daniel Abadi) is a \
-match ONLY if the descriptions/document make it unambiguously the same person, otherwise null. \
-Return {\"results\": [{\"entity\": <entity number>, \"match\": <candidate number or null>, \
-\"confidence\": 0..1}, ...]} with exactly one object per entity. Output only the JSON object.";
+numbered list of newly extracted entities. For EACH entity you are given its type, description, \
+aliases, and a list of candidate existing entities (each numbered, with its type and description). \
+For each entity, decide which ONE of ITS candidates, if any, is the SAME real-world referent. Use \
+the descriptions and document context, not just the names. A type label is the extractor's \
+per-document guess and only weak evidence: the same referent is often labelled differently across \
+documents (a regulation as event in one and topic in the next), so a type mismatch alone must not \
+block a match, and a type match alone must not make one. Decide by the descriptions: Digital \
+Markets Act/event described as an EU regulation vs Digital Markets Act/topic described as the same \
+EU regulation => match; Amazon/organization the company vs Amazon/location the river => null. Be \
+conservative otherwise: choose a candidate only if confident they are the exact same person, \
+organization, place, event, or work — not merely related. A parent brand and its product are NOT \
+the same (Amazon vs Amazon Bedrock => null). Things merely sharing letters are NOT the same (React \
+vs ReAct => null; Swift vs SWIFT => null). An acronym and its expansion ARE the same (AWS vs Amazon \
+Web Services => match). A fuller form of one person's name IS the same (Elon Musk vs Elon Reeve \
+Musk => match); a bare given name (Daniel vs Daniel Abadi) is a match ONLY if the \
+descriptions/document make it unambiguously the same person, otherwise null. Return {\"results\": \
+[{\"entity\": <entity number>, \"match\": <candidate number or null>, \"confidence\": 0..1}, \
+...]} with exactly one object per entity. Output only the JSON object.";
 
 /// One newly extracted entity plus the candidate existing entities surfaced for it.
 pub(crate) struct AdjudicationItem<'a> {
@@ -42,9 +48,10 @@ pub(crate) fn build_batch_resolution_prompt(doc_title: &str, items: &[Adjudicati
         for (candidate_index, candidate) in item.candidates.iter().enumerate() {
             let candidate_description = candidate.description.as_deref().unwrap_or("(none)");
             body.push_str(&format!(
-                "    {number}. name: {name}   description: {candidate_description}\n",
+                "    {number}. name: {name}   type: {ty}   description: {candidate_description}\n",
                 number = candidate_index + 1,
                 name = candidate.name,
+                ty = entity_type_label(candidate.entity_type),
             ));
         }
     }
