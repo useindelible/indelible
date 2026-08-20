@@ -153,6 +153,7 @@
 		flex: 1;
 		min-width: 0;
 		overflow-y: auto;
+		container-type: inline-size;
 	}
 
 	.settings-shell.mobile {

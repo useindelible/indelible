@@ -62,10 +62,11 @@
 	let isDirty = $derived(snapshot() !== savedSnapshot);
 
 	$effect(() => {
-		if (auth.user) {
-			displayName = auth.user.display_name;
-			if (!pendingAvatarFile) avatarPreview = auth.user.avatar_url ?? '';
+		const user = auth.user;
+		if (user) {
 			untrack(() => {
+				displayName = user.display_name;
+				if (!pendingAvatarFile) avatarPreview = user.avatar_url ?? '';
 				savedSnapshot = snapshot();
 			});
 		}

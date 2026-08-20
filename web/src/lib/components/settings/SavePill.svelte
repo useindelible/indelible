@@ -45,12 +45,13 @@
 
 <style>
 	.save-pill-anchor {
-		position: sticky;
+		position: fixed;
+		right: 0;
 		bottom: 20px;
+		width: 100cqw;
 		display: flex;
 		justify-content: center;
 		pointer-events: none;
-		margin-top: 32px;
 		z-index: 10;
 	}
 
@@ -64,7 +65,8 @@
 		box-shadow:
 			0 2px 12px rgba(0, 0, 0, 0.08),
 			0 0 0 0.5px rgba(0, 0, 0, 0.06);
-		pointer-events: auto;
+		pointer-events: none;
+		visibility: hidden;
 		opacity: 0;
 		transform: translateY(8px) scale(0.96);
 		transition:
@@ -79,6 +81,8 @@
 	}
 
 	.save-pill.visible {
+		pointer-events: auto;
+		visibility: visible;
 		opacity: 1;
 		transform: translateY(0) scale(1);
 	}
