@@ -153,7 +153,7 @@ async fn merge_keeps_source_aliases_and_remembers_the_source_name() {
 }
 
 #[tokio::test]
-async fn merge_resolves_alias_collisions_in_favour_of_the_target() {
+async fn merge_repoints_an_existing_alias_for_the_source_name_and_keeps_both_sides_aliases() {
     let db = TestDb::new().await;
     let repo = PgEntityRepository::new(db.pool().clone());
     let owner = UserFactory::new().insert(db.pool()).await;
@@ -166,21 +166,24 @@ async fn merge_resolves_alias_collisions_in_favour_of_the_target() {
         .insert_canonical(owner.id, "Meta Platforms", EntityType::Organization, None)
         .await
         .unwrap();
+    let bystander = repo
+        .insert_canonical(owner.id, "Meta AI", EntityType::Organization, None)
+        .await
+        .unwrap();
     repo.insert_alias(owner.id, "Facebook", EntityType::Organization, target.id)
         .await
         .unwrap();
     repo.insert_alias(owner.id, "FB", EntityType::Organization, source.id)
         .await
         .unwrap();
-    // Same (type, name) alias on both sides: the target's row must win and the merge must not fail.
-    sqlx::query(
-        "INSERT INTO entity_aliases (user_id, entity_type, name, entity_id) \
-         VALUES ($1, 'organization', 'Facebook', $2) \
-         ON CONFLICT (user_id, entity_type, name) DO NOTHING",
+    // The source's own name already exists as an alias row (pointing elsewhere): the merge must
+    // claim it for the target instead of failing on the alias primary key.
+    repo.insert_alias(
+        owner.id,
+        "Meta Platforms",
+        EntityType::Organization,
+        bystander.id,
     )
-    .bind(owner.id.into_uuid())
-    .bind(source.id.into_uuid())
-    .execute(db.pool())
     .await
     .unwrap();
 
@@ -195,4 +198,12 @@ async fn merge_resolves_alias_collisions_in_favour_of_the_target() {
             .unwrap();
         assert_eq!(resolved.map(|entity| entity.id), Some(target.id), "{alias}");
     }
+    let bystander_still_there = repo
+        .find_for_resolution(owner.id, "Meta AI", EntityType::Organization)
+        .await
+        .unwrap();
+    assert_eq!(
+        bystander_still_there.map(|entity| entity.id),
+        Some(bystander.id)
+    );
 }

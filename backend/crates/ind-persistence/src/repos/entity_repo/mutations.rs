@@ -126,26 +126,9 @@ impl PgEntityRepository {
         .await
         .map_err(map_sqlx_error)?;
 
-        // Aliases cascade-delete with the source row, so move them first. Where the target already
-        // owns the same (type, name) alias, keep the target's row and drop the source's.
-        sqlx::query!(
-            r#"
-            DELETE FROM entity_aliases a
-            WHERE a.user_id = $1 AND a.entity_id = $2
-              AND EXISTS (
-                SELECT 1 FROM entity_aliases t
-                WHERE t.user_id = $1 AND t.entity_type = a.entity_type AND t.name = a.name
-                  AND t.entity_id = $3
-              )
-            "#,
-            user_id.into_uuid(),
-            source_id.into_uuid(),
-            target_id.into_uuid(),
-        )
-        .execute(&mut *tx)
-        .await
-        .map_err(map_sqlx_error)?;
-
+        // Aliases cascade-delete with the source row, so move them first. The alias key is
+        // (user, type, name), so a name can only ever point at one entity and repointing cannot
+        // collide.
         sqlx::query!(
             "UPDATE entity_aliases SET entity_id = $3 WHERE user_id = $1 AND entity_id = $2",
             user_id.into_uuid(),
