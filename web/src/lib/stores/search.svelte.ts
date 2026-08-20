@@ -1,17 +1,20 @@
 import * as apiSdk from '$lib/api';
+import type { DocumentListEntry } from '$lib/api';
 import type {
 	SearchEntityCardResponse,
 	SearchResultResponse,
 	SearchSuggestionResponse,
 	RecentSearchResponse
 } from '$lib/api/generated/types.gen';
+import { resultKey, toPlaceholderEntry } from './search-entry';
+
+export { resultKey };
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_MS = 300;
-
-export function resultKey(r: SearchResultResponse): string {
-	return r.document_id ?? r.delivery_id ?? r.source_entry_id ?? '';
-}
+// Selection follows the pointer, so a sweep down the list must not fan out
+// into one entry fetch per row it crossed.
+const ENTRY_LOAD_DEBOUNCE_MS = 150;
 
 let results = $state<SearchResultResponse[]>([]);
 let entityCard = $state<SearchEntityCardResponse | null>(null);
@@ -22,6 +25,7 @@ let loadingMore = $state(false);
 let query = $state('');
 let submittedQuery = $state('');
 let selectedId = $state<string | null>(null);
+let loadedEntries = $state<Record<string, DocumentListEntry>>({});
 let fetchError = $state<string | null>(null);
 let resultCount = $state<string | null>(null);
 
@@ -34,10 +38,38 @@ let recentSearches = $state<RecentSearchResponse[]>([]);
 let recentLoading = $state(false);
 
 const selectedResult = $derived(results.find((r) => resultKey(r) === selectedId) ?? null);
+const selectedEntry = $derived.by((): DocumentListEntry | null => {
+	if (!selectedResult) return null;
+	const loaded = selectedResult.document_id ? loadedEntries[selectedResult.document_id] : undefined;
+	return loaded ?? toPlaceholderEntry(selectedResult);
+});
 const isEmpty = $derived(!loading && results.length === 0 && submittedQuery.length > 0);
 const showRecent = $derived(submittedQuery.length === 0 && !loading);
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+let entryLoadTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function loadEntry(documentId: string): Promise<void> {
+	if (loadedEntries[documentId]) return;
+	try {
+		const { data } = await apiSdk.getDocumentEntry({ path: { document_id: documentId } });
+		if (data) loadedEntries = { ...loadedEntries, [documentId]: data };
+	} catch {
+		// The placeholder built from the hit stays in place.
+	}
+}
+
+function scheduleEntryLoad(id: string | null, delayMs: number): void {
+	clearTimeout(entryLoadTimer);
+	const documentId = results.find((r) => resultKey(r) === id)?.document_id;
+	if (!documentId) return;
+	entryLoadTimer = setTimeout(() => void loadEntry(documentId), delayMs);
+}
+
+function selectResult(id: string | null): void {
+	selectedId = id;
+	scheduleEntryLoad(id, ENTRY_LOAD_DEBOUNCE_MS);
+}
 
 async function executeSearch(q: string, newCursor?: string): Promise<void> {
 	try {
@@ -85,6 +117,8 @@ async function submitSearch(q?: string): Promise<void> {
 	hasMore = false;
 	fetchError = null;
 	selectedId = null;
+	loadedEntries = {};
+	clearTimeout(entryLoadTimer);
 	resultCount = null;
 	suggestionsVisible = false;
 	loading = true;
@@ -93,6 +127,7 @@ async function submitSearch(q?: string): Promise<void> {
 
 	if (selectedId === null && results.length > 0) {
 		selectedId = resultKey(results[0]!);
+		scheduleEntryLoad(selectedId, 0);
 	}
 	loading = false;
 }
@@ -176,6 +211,8 @@ function clearSearch(): void {
 	hasMore = false;
 	fetchError = null;
 	selectedId = null;
+	loadedEntries = {};
+	clearTimeout(entryLoadTimer);
 	resultCount = null;
 	suggestionItems = [];
 	suggestionsVisible = false;
@@ -224,6 +261,9 @@ export function getSearch() {
 		get selectedResult() {
 			return selectedResult;
 		},
+		get selectedEntry() {
+			return selectedEntry;
+		},
 		get isEmpty() {
 			return isEmpty;
 		},
@@ -257,9 +297,7 @@ export function getSearch() {
 		get recentLoading() {
 			return recentLoading;
 		},
-		setSelectedId(id: string | null) {
-			selectedId = id;
-		},
+		setSelectedId: selectResult,
 		submitSearch,
 		loadMore,
 		loadRecentSearches,

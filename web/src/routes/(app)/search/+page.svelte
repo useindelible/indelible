@@ -2,7 +2,6 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import type { DocumentListEntry } from '$lib/api';
 	import { getSearch, resultKey } from '$lib/stores/search.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { openSearchResult } from '$lib/components/search/open-result';
@@ -13,7 +12,6 @@
 	import {
 		buildSearchQuery,
 		FILTER_HINTS,
-		getDomain,
 		parseEntityPrefix,
 		type ActiveEntityFilter
 	} from './search-page-model';
@@ -219,30 +217,7 @@
 		compactDetailOpen = true;
 	}
 
-	const detailItem = $derived.by((): DocumentListEntry | null => {
-		const result = search.selectedResult;
-		if (!result) return null;
-		return {
-			id: result.document_id ?? resultKey(result),
-			document_id: result.document_id ?? resultKey(result),
-			document_type: result.content_type,
-			library_entry_id: result.document_id ?? resultKey(result),
-			title: result.title,
-			item_type: result.content_type,
-			object: result.result_kind,
-			url: result.url ?? null,
-			canonical_url: result.url ?? null,
-			domain: result.url ? getDomain(result.url) : null,
-			saved_at: result.saved_at,
-			updated_at: result.updated_at,
-			created_at: result.saved_at,
-			excerpt: result.snippet.replace(/<\/?mark>/g, ''),
-			triage_state: 'inbox',
-			is_favorite: false,
-			is_shortlisted: false,
-			source: 'manual'
-		};
-	});
+	const detailItem = $derived(search.selectedEntry);
 </script>
 
 {#snippet sidebar()}

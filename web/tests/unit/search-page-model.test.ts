@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildSearchQuery,
 	FILTER_HINTS,
-	getDomain,
 	parseEntityPrefix
 } from '../../src/routes/(app)/search/search-page-model';
 
@@ -28,11 +27,6 @@ describe('search page model', () => {
 		expect(buildSearchQuery(' retrieval ', { name: 'Mila', entityType: 'PERSON' })).toBe(
 			'entity:"Mila" retrieval'
 		);
-	});
-
-	it('extracts bare domains safely', () => {
-		expect(getDomain('https://www.example.com/post')).toBe('example.com');
-		expect(getDomain('not a url')).toBe('');
 	});
 
 	it('keeps the advanced filter hints in one shared list', () => {
