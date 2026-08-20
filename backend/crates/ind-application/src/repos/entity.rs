@@ -93,8 +93,10 @@ pub trait EntityRepository: Send + Sync {
         entity_type: EntityType,
     ) -> Result<Option<Entity>, AppError>;
 
-    /// Existing same-type entities lexically close to `name` (case-insensitive equality, trigram
-    /// similarity, word-subset). High-recall finder for the adjudicator; aliases are never returned.
+    /// Existing entities of any type lexically close to `name` (case-insensitive equality, trigram
+    /// similarity, word-subset), exact-name matches first. The exact `(entity_type, name)` row is
+    /// excluded (that is `find_for_resolution`'s hit). High-recall finder for the adjudicator;
+    /// aliases are never returned.
     async fn block_candidates(
         &self,
         user_id: UserId,

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, user_id, name, entity_type, description, created_at\n            FROM entities b\n            WHERE b.user_id = $1 AND b.entity_type = $2 AND b.name <> $3\n              AND (\n                    lower(btrim(b.name)) = lower(btrim($3))\n                 OR similarity(b.name, $3) >= 0.45\n                 OR regexp_split_to_array(lower($3), '\\s+')   <@ regexp_split_to_array(lower(b.name), '\\s+')\n                 OR regexp_split_to_array(lower(b.name), '\\s+') <@ regexp_split_to_array(lower($3), '\\s+')\n              )\n            ORDER BY similarity(b.name, $3) DESC\n            LIMIT $4\n            ",
+  "query": "\n            SELECT id, user_id, name, entity_type, description, created_at\n            FROM entities b\n            WHERE b.user_id = $1\n              AND NOT (b.entity_type = $2 AND b.name = $3)\n              AND (\n                    lower(btrim(b.name)) = lower(btrim($3))\n                 OR similarity(b.name, $3) >= 0.45\n                 OR regexp_split_to_array(lower($3), '\\s+')   <@ regexp_split_to_array(lower(b.name), '\\s+')\n                 OR regexp_split_to_array(lower(b.name), '\\s+') <@ regexp_split_to_array(lower($3), '\\s+')\n              )\n            ORDER BY (lower(btrim(b.name)) = lower(btrim($3))) DESC, similarity(b.name, $3) DESC\n            LIMIT $4\n            ",
   "describe": {
     "columns": [
       {
@@ -51,5 +51,5 @@
       false
     ]
   },
-  "hash": "ebcd2156b1d47984703c60a09ea0031f22e97f66dc530c8d15a4a40d608f0a70"
+  "hash": "0a513a93bbfe7d6fd6e4a526c2635e6b00409214882492ba853be7a16cb1faef"
 }

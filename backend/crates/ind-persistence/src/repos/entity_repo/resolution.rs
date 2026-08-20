@@ -54,19 +54,24 @@ impl PgEntityRepository {
         entity_type: EntityType,
         limit: i64,
     ) -> Result<Vec<Entity>, AppError> {
+        // Candidates come from every type: the extractor's type label drifts between documents
+        // (a company tagged organization once and topic next), so the adjudicator must be able to
+        // see the same-name entity under another type. Only the exact (type, name) row is excluded
+        // because find_for_resolution already claims it.
         let rows = sqlx::query_as!(
             EntityRow,
             r#"
             SELECT id, user_id, name, entity_type, description, created_at
             FROM entities b
-            WHERE b.user_id = $1 AND b.entity_type = $2 AND b.name <> $3
+            WHERE b.user_id = $1
+              AND NOT (b.entity_type = $2 AND b.name = $3)
               AND (
                     lower(btrim(b.name)) = lower(btrim($3))
                  OR similarity(b.name, $3) >= 0.45
                  OR regexp_split_to_array(lower($3), '\s+')   <@ regexp_split_to_array(lower(b.name), '\s+')
                  OR regexp_split_to_array(lower(b.name), '\s+') <@ regexp_split_to_array(lower($3), '\s+')
               )
-            ORDER BY similarity(b.name, $3) DESC
+            ORDER BY (lower(btrim(b.name)) = lower(btrim($3))) DESC, similarity(b.name, $3) DESC
             LIMIT $4
             "#,
             user_id.into_uuid(),

@@ -53,3 +53,66 @@ async fn resolution_does_not_leak_entities_across_tenants() {
         .unwrap();
     assert_eq!(resolved.map(|entity| entity.id), Some(owned.id));
 }
+
+#[tokio::test]
+async fn block_candidates_surfaces_same_name_entities_of_other_types() {
+    let db = TestDb::new().await;
+    let repo = PgEntityRepository::new(db.pool().clone());
+    let owner = UserFactory::new().insert(db.pool()).await;
+    let other = UserFactory::new().insert(db.pool()).await;
+
+    let org = repo
+        .insert_canonical(
+            owner.id,
+            "DeepSeek",
+            EntityType::Organization,
+            Some("Chinese AI company"),
+        )
+        .await
+        .unwrap();
+    repo.insert_canonical(other.id, "DeepSeek", EntityType::Work, None)
+        .await
+        .unwrap();
+
+    let for_work = repo
+        .block_candidates(owner.id, "DeepSeek", EntityType::Work, 5)
+        .await
+        .unwrap();
+    assert_eq!(
+        for_work.iter().map(|entity| entity.id).collect::<Vec<_>>(),
+        vec![org.id]
+    );
+
+    let for_org = repo
+        .block_candidates(owner.id, "DeepSeek", EntityType::Organization, 5)
+        .await
+        .unwrap();
+    assert!(
+        for_org.is_empty(),
+        "the exact (name, type) row is find_for_resolution's hit, never a candidate"
+    );
+}
+
+#[tokio::test]
+async fn block_candidates_ranks_exact_name_before_fuzzy_matches() {
+    let db = TestDb::new().await;
+    let repo = PgEntityRepository::new(db.pool().clone());
+    let owner = UserFactory::new().insert(db.pool()).await;
+
+    repo.insert_canonical(owner.id, "DeepSeek V3", EntityType::Work, None)
+        .await
+        .unwrap();
+    repo.insert_canonical(owner.id, "DeepSeek R1", EntityType::Work, None)
+        .await
+        .unwrap();
+    let exact = repo
+        .insert_canonical(owner.id, "DeepSeek", EntityType::Organization, None)
+        .await
+        .unwrap();
+
+    let candidates = repo
+        .block_candidates(owner.id, "DeepSeek", EntityType::Work, 2)
+        .await
+        .unwrap();
+    assert_eq!(candidates.first().map(|entity| entity.id), Some(exact.id));
+}
