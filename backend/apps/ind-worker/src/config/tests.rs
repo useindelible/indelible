@@ -28,6 +28,7 @@ fn defaults_and_overrides_are_loaded() {
         ("WORKER_MAX_CONCURRENCY", "4"),
         ("WORKER_CLAIM_BUFFER_SIZE", "8"),
         ("CAPTURE_MAX_CONCURRENCY", "3"),
+        ("RENDERER_REQUEST_TIMEOUT_SECS", "200"),
         ("NOTION_EXPORT_MAX_CONCURRENCY", "2"),
         ("NOTION_SYNC_MAX_CONCURRENCY", "1"),
         ("AUTO_HEAL_TTS_ORPHAN_PAGE_SIZE", "250"),
@@ -43,6 +44,7 @@ fn defaults_and_overrides_are_loaded() {
         (4, 8)
     );
     assert_eq!(config.capture.max_concurrency, 3);
+    assert_eq!(config.renderer_request_timeout_secs, 200);
     assert_eq!(config.integrations.notion.export_max_concurrency, 2);
     assert_eq!(config.integrations.notion.sync_max_concurrency, 1);
     assert_eq!(config.auto_heal.tts_orphan_page_size, 250);
@@ -111,4 +113,10 @@ fn s3_boolean_grammar_and_endpoint_contract_are_preserved() {
         config.s3_config().unwrap_err().to_string(),
         "S3_ENDPOINT is required when S3_ENABLED=true"
     );
+}
+
+#[test]
+fn renderer_request_timeout_defaults_to_outlast_the_renderer_capture_deadline() {
+    let config = WorkerConfig::load_from_env(&TestEnv::new(&[])).unwrap();
+    assert_eq!(config.renderer_request_timeout_secs, 135);
 }

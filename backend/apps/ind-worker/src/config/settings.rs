@@ -18,6 +18,9 @@ pub struct WorkerConfig {
     pub capture: CaptureWorkerSettings,
     pub database_url: SecretString,
     pub renderer_url: String,
+    /// Longer than the renderer's own capture deadline so the renderer normally reports its
+    /// classified timeout first; this is the backstop for a renderer that never answers at all.
+    pub renderer_request_timeout_secs: u64,
     pub s3_enabled: bool,
     pub s3_bucket: String,
     pub s3_endpoint: Option<String>,

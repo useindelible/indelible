@@ -134,7 +134,10 @@ async fn build_context(
     embedding_backfill_repo: Arc<dyn EmbeddingBackfillRepository>,
     search_reindex_repo: Arc<dyn SearchReindexRepository>,
 ) -> anyhow::Result<WorkerContext> {
-    let renderer = Arc::new(HttpRendererClient::new(&config.renderer_url));
+    let renderer = Arc::new(HttpRendererClient::new(
+        &config.renderer_url,
+        Duration::from_secs(config.renderer_request_timeout_secs),
+    ));
     let object_storage = build_object_storage(config).await?;
     let credential_cipher = providers::build_credential_cipher(config);
     let startup_id = chrono::Utc::now().timestamp_micros();

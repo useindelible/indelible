@@ -322,7 +322,8 @@ fn classify_renderer_error_message(message: &str) -> ClassifiedFailure {
             disposition: FailureDisposition::Terminal,
             reason_code: "page_too_large",
         }
-    } else if lower.contains("timeout") || lower.contains("deadline") {
+    } else if lower.contains("timeout") || lower.contains("timed out") || lower.contains("deadline")
+    {
         ClassifiedFailure {
             disposition: FailureDisposition::Retryable,
             reason_code: "renderer_timeout",
@@ -475,6 +476,11 @@ mod tests {
             ),
             (
                 classify_renderer_error_message("renderer returned HTTP 500: screenshot timeout"),
+                true,
+                "renderer_timeout",
+            ),
+            (
+                classify_renderer_error_message("renderer request timed out after 135s"),
                 true,
                 "renderer_timeout",
             ),

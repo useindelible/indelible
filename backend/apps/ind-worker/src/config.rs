@@ -190,6 +190,7 @@ impl WorkerConfig {
             .set_default("worker.claim_buffer_size", 16_i64)?
             .set_default("capture.max_concurrency", 1_i64)?
             .set_default("renderer_url", "http://127.0.0.1:3100")?
+            .set_default("renderer_request_timeout_secs", 135_i64)?
             // Development defaults the egress guard open for private/loopback
             // targets so a local AI/feed endpoint works without extra config
             // (mirrors ind-renderer / ind-api). Production stays closed;
@@ -281,6 +282,10 @@ impl WorkerConfig {
                     .or_else(|| parse_i64(env, "FEED_PREFETCH_MAX_CONCURRENCY")),
             )?
             .set_override_option("renderer_url", env.get("RENDERER_URL"))?
+            .set_override_option(
+                "renderer_request_timeout_secs",
+                parse_i64(env, "RENDERER_REQUEST_TIMEOUT_SECS"),
+            )?
             .set_override_option("s3_enabled", parse_bool(env, "S3_ENABLED"))?
             .set_override_option("s3_bucket", env.get("S3_BUCKET"))?
             .set_override_option("s3_endpoint", env.get("S3_ENDPOINT"))?
