@@ -52,6 +52,8 @@ impl CaptureStage {
 pub(crate) enum CaptureError {
     #[error("{stage} timed out")]
     Timeout { stage: &'static str },
+    #[error("capture exceeded the {budget_secs}s deadline")]
+    DeadlineExceeded { budget_secs: u64 },
     #[error("{}: {source}", stage.label())]
     Cdp {
         stage: CaptureStage,
@@ -87,6 +89,7 @@ impl CaptureError {
         matches!(
             self,
             Self::Timeout { .. }
+                | Self::DeadlineExceeded { .. }
                 | Self::Cdp {
                     category: CdpErrorCategory::Timeout,
                     ..
@@ -94,13 +97,17 @@ impl CaptureError {
         )
     }
 
+    /// A capture that outlived its whole-request budget may be waiting on a command Chromium will
+    /// never answer (a tab whose renderer process died, for instance); only a relaunch guarantees
+    /// the next capture a working browser.
     pub(crate) fn browser_is_unhealthy(&self) -> bool {
         matches!(
             self,
-            Self::Cdp {
-                category: CdpErrorCategory::NoResponse | CdpErrorCategory::Channel,
-                ..
-            }
+            Self::DeadlineExceeded { .. }
+                | Self::Cdp {
+                    category: CdpErrorCategory::NoResponse | CdpErrorCategory::Channel,
+                    ..
+                }
         )
     }
 
@@ -111,6 +118,7 @@ impl CaptureError {
     pub(crate) fn stage_label(&self) -> &'static str {
         match self {
             Self::Timeout { stage } => stage,
+            Self::DeadlineExceeded { .. } => "capture_deadline",
             Self::Cdp { stage, .. } | Self::Other { stage, .. } => stage.label(),
         }
     }
@@ -129,5 +137,11 @@ mod tests {
         let no_response = CaptureError::cdp(CaptureStage::Pdf, CdpError::NoResponse);
         assert!(no_response.browser_is_unhealthy());
         assert_eq!(no_response.stage_label(), "pdf");
+
+        let deadline = CaptureError::DeadlineExceeded { budget_secs: 120 };
+        assert!(deadline.is_timeout());
+        assert!(deadline.browser_is_unhealthy());
+        assert_eq!(deadline.stage_label(), "capture_deadline");
+        assert_eq!(deadline.to_string(), "capture exceeded the 120s deadline");
     }
 }

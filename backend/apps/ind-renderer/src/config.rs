@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::time::Duration;
 
 use config::{Config, File, FileFormat};
 use secrecy::SecretString;
@@ -17,8 +18,15 @@ pub struct RendererConfig {
 #[derive(Clone, Deserialize)]
 pub struct CaptureSettings {
     pub max_concurrency: usize,
+    pub deadline_secs: u64,
     pub locale: String,
     pub timezone: String,
+}
+
+impl CaptureSettings {
+    pub fn deadline(&self) -> Duration {
+        Duration::from_secs(self.deadline_secs)
+    }
 }
 
 #[derive(Default, Deserialize)]
@@ -100,6 +108,7 @@ impl RendererConfig {
             .set_default("chromium.single_process", false)?
             .set_default("chromium.idle_timeout_secs", 30_i64)?
             .set_default("capture.max_concurrency", 1_i64)?
+            .set_default("capture.deadline_secs", 120_i64)?
             .set_default("capture.locale", "en-US")?
             .set_default("capture.timezone", "UTC")?
             .set_default("s3.region", "us-east-1")?
@@ -139,6 +148,10 @@ impl RendererConfig {
                 parse_i64(env("CAPTURE_MAX_CONCURRENCY"))
                     .or_else(|| parse_i64(env("FEED_PREFETCH_MAX_CONCURRENCY"))),
             )?
+            .set_override_option(
+                "capture.deadline_secs",
+                parse_i64(env("CAPTURE_DEADLINE_SECS")),
+            )?
             .set_override_option("capture.locale", env("CAPTURE_LOCALE"))?
             .set_override_option("capture.timezone", env("CAPTURE_TIMEZONE"))?
             .set_override_option("s3.endpoint", env("S3_ENDPOINT"))?
@@ -160,6 +173,9 @@ impl RendererConfig {
 
         if cfg.capture.max_concurrency == 0 {
             anyhow::bail!("capture.max_concurrency must be greater than zero");
+        }
+        if cfg.capture.deadline_secs == 0 {
+            anyhow::bail!("capture.deadline_secs must be greater than zero");
         }
 
         Ok(cfg)
@@ -221,13 +237,15 @@ mod tests {
         assert_eq!(
             (
                 defaults.capture.max_concurrency,
+                defaults.capture.deadline_secs,
                 defaults.capture.locale.as_str(),
                 defaults.capture.timezone.as_str()
             ),
-            (1, "en-US", "UTC")
+            (1, 120, "en-US", "UTC")
         );
         let overridden = load(&[
             ("CAPTURE_MAX_CONCURRENCY", "3"),
+            ("CAPTURE_DEADLINE_SECS", "45"),
             ("FEED_PREFETCH_MAX_CONCURRENCY", "2"),
             ("CAPTURE_LOCALE", "fr-FR"),
             ("CAPTURE_TIMEZONE", "Europe/Paris"),
@@ -236,10 +254,11 @@ mod tests {
         assert_eq!(
             (
                 overridden.capture.max_concurrency,
+                overridden.capture.deadline_secs,
                 overridden.capture.locale.as_str(),
                 overridden.capture.timezone.as_str()
             ),
-            (3, "fr-FR", "Europe/Paris")
+            (3, 45, "fr-FR", "Europe/Paris")
         );
         assert_eq!(
             load(&[("FEED_PREFETCH_MAX_CONCURRENCY", "2")])
@@ -247,6 +266,18 @@ mod tests {
                 .capture
                 .max_concurrency,
             2
+        );
+    }
+
+    #[test]
+    fn zero_capture_deadline_is_rejected() {
+        let error = load(&[("CAPTURE_DEADLINE_SECS", "0")])
+            .err()
+            .expect("zero deadline must fail");
+        assert!(
+            error
+                .to_string()
+                .contains("capture.deadline_secs must be greater than zero")
         );
     }
 

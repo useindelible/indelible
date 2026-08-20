@@ -1,10 +1,11 @@
+use std::convert::Infallible;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::Router;
-use axum::body::Bytes;
-use axum::http::StatusCode;
-use axum::response::Html;
+use axum::body::{Body, Bytes};
+use axum::http::{StatusCode, header};
+use axum::response::{Html, Response};
 use axum::routing::{any, get};
 use secrecy::SecretString;
 use serde_json::{Value, json};
@@ -15,6 +16,8 @@ use super::config::{
     S3Settings,
 };
 use super::storage::S3Storage;
+
+const PRODUCTION_LIKE_DEADLINE_SECS: u64 = 120;
 
 async fn spawn(app: Router) -> (String, tokio::task::JoinHandle<()>) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -63,7 +66,7 @@ fn chromium_path() -> PathBuf {
     PathBuf::from("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 }
 
-fn config(s3_endpoint: String) -> RendererConfig {
+fn config(s3_endpoint: String, deadline_secs: u64) -> RendererConfig {
     RendererConfig {
         server: RendererServerSettings {
             environment: "test".into(),
@@ -79,6 +82,7 @@ fn config(s3_endpoint: String) -> RendererConfig {
         },
         capture: CaptureSettings {
             max_concurrency: 1,
+            deadline_secs,
             locale: "en-US".into(),
             timezone: "UTC".into(),
         },
@@ -110,8 +114,44 @@ async fn article() -> Html<&'static str> {
     )
 }
 
+/// Sends headers and then never finishes the body, so the page's load event never fires and
+/// a capture stays parked in navigation for as long as the renderer lets it.
+async fn stalled_article() -> Response {
+    Response::builder()
+        .header(header::CONTENT_TYPE, "text/html")
+        .body(Body::from_stream(futures::stream::pending::<
+            Result<Bytes, Infallible>,
+        >()))
+        .unwrap()
+}
+
 async fn accept_s3_upload(_body: Bytes) -> StatusCode {
     StatusCode::OK
+}
+
+struct Renderer {
+    browser: Arc<BrowserManager>,
+    url: String,
+    task: tokio::task::JoinHandle<()>,
+}
+
+async fn renderer(settings: RendererConfig) -> Renderer {
+    let storage = Arc::new(S3Storage::from_config(&settings).await.unwrap());
+    let browser = Arc::new(BrowserManager::new(
+        settings.chromium.path.clone(),
+        settings.chromium.single_process,
+        settings.chromium.virtual_time_budget,
+        settings.chromium.idle_timeout_secs,
+        settings.capture.max_concurrency,
+    ));
+    let state = super::build_app_state(
+        browser.clone(),
+        settings.capture.clone(),
+        storage,
+        settings.egress_policy(),
+    );
+    let (url, task) = spawn(super::build_router(state)).await;
+    Renderer { browser, url, task }
 }
 
 async fn stored_monolith() -> Html<&'static str> {
@@ -133,22 +173,11 @@ async fn render_url_crosses_http_browser_extraction_capture_and_storage_boundari
         )
         .fallback(any(accept_s3_upload));
     let (s3_endpoint, s3_task) = spawn(s3).await;
-    let settings = config(s3_endpoint);
-    let storage = Arc::new(S3Storage::from_config(&settings).await.unwrap());
-    let browser = Arc::new(BrowserManager::new(
-        settings.chromium.path.clone(),
-        settings.chromium.single_process,
-        settings.chromium.virtual_time_budget,
-        settings.chromium.idle_timeout_secs,
-        settings.capture.max_concurrency,
-    ));
-    let state = super::build_app_state(
-        browser.clone(),
-        settings.capture.clone(),
-        storage,
-        settings.egress_policy(),
-    );
-    let (renderer_url, renderer_task) = spawn(super::build_router(state)).await;
+    let Renderer {
+        browser,
+        url: renderer_url,
+        task: renderer_task,
+    } = renderer(config(s3_endpoint, PRODUCTION_LIKE_DEADLINE_SECS)).await;
 
     let client = reqwest::Client::new();
     let idle_health: Value = client
@@ -228,5 +257,66 @@ async fn render_url_crosses_http_browser_extraction_capture_and_storage_boundari
     browser.shutdown().await;
     renderer_task.abort();
     article_task.abort();
+    s3_task.abort();
+}
+
+#[tokio::test]
+async fn capture_that_outlives_the_deadline_fails_fast_and_frees_the_slot_for_the_next_one() {
+    let (site_url, site_task) = spawn(
+        Router::new()
+            .route("/stalled", get(stalled_article))
+            .route("/article", get(article)),
+    )
+    .await;
+    let (s3_endpoint, s3_task) = spawn(Router::new().fallback(any(accept_s3_upload))).await;
+    let Renderer {
+        browser,
+        url: renderer_url,
+        task: renderer_task,
+    } = renderer(config(s3_endpoint, 3)).await;
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(format!("{renderer_url}/render/url"))
+        .json(&json!({
+            "item_id": "itm_stalled",
+            "user_id": "usr_deadline",
+            "url": format!("{site_url}/stalled"),
+            "outputs": ["readable_html"]
+        }))
+        .send()
+        .await
+        .unwrap();
+    let status = response.status();
+    let failed: Value = response.json().await.unwrap();
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR, "{failed}");
+    assert!(
+        failed["error"]
+            .as_str()
+            .is_some_and(|error| error.contains("3s deadline")),
+        "{failed}"
+    );
+
+    // Capture concurrency is one: this only gets through if the stalled capture released its
+    // permit, and only succeeds if the browser it left behind was recycled into a working one.
+    let response = client
+        .post(format!("{renderer_url}/render/url"))
+        .json(&json!({
+            "item_id": "itm_after_stall",
+            "user_id": "usr_deadline",
+            "url": format!("{site_url}/article"),
+            "outputs": ["readable_html"]
+        }))
+        .send()
+        .await
+        .unwrap();
+    let status = response.status();
+    let rendered: Value = response.json().await.unwrap();
+    assert_eq!(status, StatusCode::OK, "{rendered}");
+    assert_eq!(rendered["artifacts"][0]["kind"], "readable_html");
+
+    browser.shutdown().await;
+    renderer_task.abort();
+    site_task.abort();
     s3_task.abort();
 }
