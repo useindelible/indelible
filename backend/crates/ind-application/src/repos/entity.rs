@@ -67,6 +67,10 @@ pub trait EntityRepository: Send + Sync {
         description: Option<Option<&str>>,
     ) -> Result<Entity, AppError>;
 
+    /// Fold `source_id` into `target_id`: mentions are re-keyed (counts summed), every alias of the
+    /// source is repointed at the target (target wins on a same-name collision), the source's own
+    /// `(entity_type, name)` becomes an alias of the target, and the source row is deleted — all in
+    /// one transaction.
     async fn merge_entities(
         &self,
         user_id: UserId,

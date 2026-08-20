@@ -6,7 +6,7 @@ use uuid::Uuid;
 use ind_application::AppError;
 use ind_domain::{DocumentId, DomainError, Entity, EntityId, UserId};
 
-use super::rows::EntityRow;
+use super::rows::{EntityRow, format_entity_type};
 use super::{PgEntityRepository, map_sqlx_error};
 
 impl PgEntityRepository {
@@ -61,7 +61,7 @@ impl PgEntityRepository {
             .await
             .map_err(|err| AppError::Repository(Box::new(err)))?;
 
-        sqlx::query_as!(
+        let source: Entity = sqlx::query_as!(
             EntityRow,
             r#"
             SELECT id, user_id, name, entity_type, description, created_at
@@ -80,7 +80,8 @@ impl PgEntityRepository {
                 entity: "entity",
                 id: source_id.to_string(),
             })
-        })?;
+        })?
+        .try_into()?;
 
         let target = sqlx::query_as!(
             EntityRow,
@@ -120,6 +121,52 @@ impl PgEntityRepository {
             "#,
             target_id.into_uuid(),
             source_id.into_uuid(),
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        // Aliases cascade-delete with the source row, so move them first. Where the target already
+        // owns the same (type, name) alias, keep the target's row and drop the source's.
+        sqlx::query!(
+            r#"
+            DELETE FROM entity_aliases a
+            WHERE a.user_id = $1 AND a.entity_id = $2
+              AND EXISTS (
+                SELECT 1 FROM entity_aliases t
+                WHERE t.user_id = $1 AND t.entity_type = a.entity_type AND t.name = a.name
+                  AND t.entity_id = $3
+              )
+            "#,
+            user_id.into_uuid(),
+            source_id.into_uuid(),
+            target_id.into_uuid(),
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        sqlx::query!(
+            "UPDATE entity_aliases SET entity_id = $3 WHERE user_id = $1 AND entity_id = $2",
+            user_id.into_uuid(),
+            source_id.into_uuid(),
+            target_id.into_uuid(),
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        // The merged-away name keeps resolving to the survivor without another model call.
+        sqlx::query!(
+            r#"
+            INSERT INTO entity_aliases (user_id, entity_type, name, entity_id)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id, entity_type, name) DO UPDATE SET entity_id = EXCLUDED.entity_id
+            "#,
+            user_id.into_uuid(),
+            format_entity_type(source.entity_type),
+            source.name,
+            target_id.into_uuid(),
         )
         .execute(&mut *tx)
         .await

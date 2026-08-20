@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE entity_aliases SET entity_id = $3 WHERE user_id = $1 AND entity_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "174088751b35941e150fff91a8044ab7580090a1bd6b7d4f1e6bfba8ddb1847f"
+}

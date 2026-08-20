@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM entity_aliases a\n            WHERE a.user_id = $1 AND a.entity_id = $2\n              AND EXISTS (\n                SELECT 1 FROM entity_aliases t\n                WHERE t.user_id = $1 AND t.entity_type = a.entity_type AND t.name = a.name\n                  AND t.entity_id = $3\n              )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1af494c9033d10c4db614ef24439aa946bb60bce0d2fe5c1204504c8eab7fb06"
+}

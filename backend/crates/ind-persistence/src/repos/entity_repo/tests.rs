@@ -116,3 +116,83 @@ async fn block_candidates_ranks_exact_name_before_fuzzy_matches() {
         .unwrap();
     assert_eq!(candidates.first().map(|entity| entity.id), Some(exact.id));
 }
+
+#[tokio::test]
+async fn merge_keeps_source_aliases_and_remembers_the_source_name() {
+    let db = TestDb::new().await;
+    let repo = PgEntityRepository::new(db.pool().clone());
+    let owner = UserFactory::new().insert(db.pool()).await;
+
+    let target = repo
+        .insert_canonical(owner.id, "DeepSeek", EntityType::Organization, None)
+        .await
+        .unwrap();
+    let source = repo
+        .insert_canonical(owner.id, "DeepSeek", EntityType::Work, None)
+        .await
+        .unwrap();
+    repo.insert_alias(owner.id, "DeepSeek AI", EntityType::Work, source.id)
+        .await
+        .unwrap();
+
+    repo.merge_entities(owner.id, source.id, target.id)
+        .await
+        .unwrap();
+
+    let via_alias = repo
+        .find_for_resolution(owner.id, "DeepSeek AI", EntityType::Work)
+        .await
+        .unwrap();
+    assert_eq!(via_alias.map(|entity| entity.id), Some(target.id));
+
+    let via_source_name = repo
+        .find_for_resolution(owner.id, "DeepSeek", EntityType::Work)
+        .await
+        .unwrap();
+    assert_eq!(via_source_name.map(|entity| entity.id), Some(target.id));
+}
+
+#[tokio::test]
+async fn merge_resolves_alias_collisions_in_favour_of_the_target() {
+    let db = TestDb::new().await;
+    let repo = PgEntityRepository::new(db.pool().clone());
+    let owner = UserFactory::new().insert(db.pool()).await;
+
+    let target = repo
+        .insert_canonical(owner.id, "Meta", EntityType::Organization, None)
+        .await
+        .unwrap();
+    let source = repo
+        .insert_canonical(owner.id, "Meta Platforms", EntityType::Organization, None)
+        .await
+        .unwrap();
+    repo.insert_alias(owner.id, "Facebook", EntityType::Organization, target.id)
+        .await
+        .unwrap();
+    repo.insert_alias(owner.id, "FB", EntityType::Organization, source.id)
+        .await
+        .unwrap();
+    // Same (type, name) alias on both sides: the target's row must win and the merge must not fail.
+    sqlx::query(
+        "INSERT INTO entity_aliases (user_id, entity_type, name, entity_id) \
+         VALUES ($1, 'organization', 'Facebook', $2) \
+         ON CONFLICT (user_id, entity_type, name) DO NOTHING",
+    )
+    .bind(owner.id.into_uuid())
+    .bind(source.id.into_uuid())
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    repo.merge_entities(owner.id, source.id, target.id)
+        .await
+        .unwrap();
+
+    for alias in ["Facebook", "FB", "Meta Platforms"] {
+        let resolved = repo
+            .find_for_resolution(owner.id, alias, EntityType::Organization)
+            .await
+            .unwrap();
+        assert_eq!(resolved.map(|entity| entity.id), Some(target.id), "{alias}");
+    }
+}
