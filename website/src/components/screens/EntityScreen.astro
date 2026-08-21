@@ -15,10 +15,11 @@ import { ENTITY, CO_MENTIONS, ENTITY_DOCS } from '../../data/entity';
 import { MILA_ABOUT_CREDIT } from '../../data/app';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	class?: string;
 }
-const { dark = false, class: className } = Astro.props;
+const { dark, class: className } = Astro.props;
 
 const count = ENTITY_DOCS.length;
 ---

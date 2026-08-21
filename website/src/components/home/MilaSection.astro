@@ -92,6 +92,8 @@ import { reveal } from '../../lib/reveal-attrs';
 
 	/* The screen is taller than the copy; crop it rather than shrink the type. */
 	.split-img {
+		--frame-shadow: none;
+		--frame-ring: 0;
 		max-height: 620px;
 		overflow: hidden;
 		border: 1px solid var(--line);

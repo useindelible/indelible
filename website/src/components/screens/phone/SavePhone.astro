@@ -14,11 +14,12 @@ import ProgressBar from './ProgressBar.astro';
 import { PHONE_INBOX_ITEMS } from '../../../data/phone-inbox';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	android?: boolean;
 	class?: string;
 }
-const { dark = true, android = true, class: className } = Astro.props;
+const { dark, android = true, class: className } = Astro.props;
 
 /** Only what shows above the sheet is worth rendering. */
 const BEHIND = PHONE_INBOX_ITEMS.slice(0, 3);

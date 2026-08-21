@@ -10,17 +10,25 @@ import type { ScreenDevice } from '../../lib/screen-scaler';
 
 interface Props {
 	device?: ScreenDevice;
-	/** The application's own dark column, independent of the page theme. */
+	/**
+	 * Which column of the app's palette to render.
+	 *
+	 * Omitted, the frame FOLLOWS THE PAGE THEME — a dark page shows the dark
+	 * app, which is where the frame's lit edge does its work. Passing a boolean
+	 * pins it instead, for the places whose whole point is a fixed pairing:
+	 * the theme-parity band, and the screens the design source chose to show
+	 * dark on a light page.
+	 */
 	dark?: boolean;
 	/** Layout class from the parent, e.g. a constellation position. */
 	class?: string;
 	/** Describes the screen for assistive tech; frames are images of the app. */
 	label: string;
 }
-const { device = 'desk', dark = false, class: className, label } = Astro.props;
+const { device = 'desk', dark, class: className, label } = Astro.props;
 ---
 
-<div class:list={['app-ui', { dk: dark }, className]}>
+<div class:list={['app-ui', { auto: dark === undefined, dk: dark === true }, className]}>
 	<div class="screen" data-screen data-d={device} role="img" aria-label={label}>
 		<div class="screen-inner" data-screen-inner>
 			<slot />

@@ -16,10 +16,11 @@ import DetailPanel from './app/DetailPanel.astro';
 import { DOCS } from '../../data/library';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	class?: string;
 }
-const { dark = false, class: className } = Astro.props;
+const { dark, class: className } = Astro.props;
 
 /** Eleven rows fills the 900px frame and leaves the last one cut, which is
     the cue that the list continues. */
@@ -29,7 +30,11 @@ const rows = DOCS.slice(0, 11);
 <ScreenFrame
 	dark={dark}
 	class={className}
-	label={`The Indelible library in the ${dark ? 'dark' : 'light'} theme`}
+	label={
+		dark === undefined
+			? 'The Indelible library'
+			: `The Indelible library in the ${dark ? 'dark' : 'light'} theme`
+	}
 >
 	<AppShell>
 		<Sidebar active="articles" />

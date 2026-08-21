@@ -44,8 +44,12 @@
 	line-height: 1.33;
 }
 
-/* ---- light column (Color.kt) ---- */
-.phone.l {
+/* ---- light column (Color.kt) ----
+   `.l` and `.d` pin a column; `.auto` follows the page theme, the way a
+   desktop frame's .app-ui.auto does. A phone showing a reading paper pins
+   instead — the paper is a product feature, not a page setting. */
+.phone.l,
+:root:not([data-theme='dark']) .phone.auto {
 	--canvas: #ffffff;
 	--surface: #f6f8fa;
 	--raised: #ffffff;
@@ -78,7 +82,8 @@
 }
 
 /* ---- dark column (Color.kt) ---- */
-.phone.d {
+.phone.d,
+:root[data-theme='dark'] .phone.auto {
 	--canvas: #0d1117;
 	--surface: #161b22;
 	--raised: #1c2128;

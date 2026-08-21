@@ -34,7 +34,7 @@ import { reveal } from '../../lib/reveal-attrs';
 			<figure style="--i:1"><FeedPhone /><figcaption>Feed</figcaption></figure>
 			<figure style="--i:2"><DrawerPhone /><figcaption>Library</figcaption></figure>
 			<figure style="--i:3">
-				<ReaderPhone paper="light" /><figcaption>Highlighting</figcaption>
+				<ReaderPhone /><figcaption>Highlighting</figcaption>
 			</figure>
 			<figure style="--i:0"><BookPhone /><figcaption>Books</figcaption></figure>
 			<figure style="--i:1"><VideoPhone /><figcaption>Video</figcaption></figure>
@@ -47,6 +47,8 @@ import { reveal } from '../../lib/reveal-attrs';
 				<p>Light for daylight, sepia for long sittings, dark for the train.</p>
 			</div>
 
+			{/* Pinned, all three. The section's claim is that the papers exist
+			    side by side, so none of them may follow the page. */}
 			<div class="themes-r">
 				<figure {...reveal('up', 0)}>
 					<ReaderPhone paper="light" /><figcaption>Light</figcaption>

@@ -15,10 +15,11 @@ import Icon from './Icon.astro';
 import { FEED_ENTRIES, FEED_RECORD } from '../../data/feed';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	class?: string;
 }
-const { dark = false, class: className } = Astro.props;
+const { dark, class: className } = Astro.props;
 ---
 
 <ScreenFrame dark={dark} class={className} label="The Indelible feed of unread entries">

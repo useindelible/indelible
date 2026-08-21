@@ -11,7 +11,7 @@ import ScreenFrame from '../ScreenFrame.astro';
 import { PHONE_STATUS_GLYPHS } from '../../../lib/phone-status';
 
 interface Props {
-	/** The app's dark column. Independent of the page theme. */
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	/** Android draws a punch-hole camera and tighter corners. */
 	android?: boolean;
@@ -22,7 +22,7 @@ interface Props {
 	time?: string;
 }
 const {
-	dark = true,
+	dark,
 	android = false,
 	frameClass,
 	class: className,
@@ -32,7 +32,14 @@ const {
 ---
 
 <ScreenFrame device="phone" dark={dark} class={className} label={label}>
-	<div class:list={['phone', dark ? 'd' : 'l', { andr: android }, frameClass]}>
+	<div
+		class:list={[
+			'phone',
+			{ auto: dark === undefined, d: dark === true, l: dark === false },
+			{ andr: android },
+			frameClass,
+		]}
+	>
 		<div class="ph-grain"></div>
 		{android ? <div class="ph-punch" /> : <div class="ph-island" />}
 

@@ -74,6 +74,8 @@ const { tag, title, span = 4, index = 0, variant = 'scale' } = Astro.props;
 	   is the live equivalent of the source's object-fit:cover from top left. */
 	figure {
 		height: 190px;
+		--frame-shadow: none;
+		--frame-ring: 0;
 	}
 
 	figure :global(.screen) {

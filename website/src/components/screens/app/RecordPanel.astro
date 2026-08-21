@@ -367,7 +367,8 @@ const {
 
 	/* The screen's dark class sits outside this component, so it has to be
 	   global; everything it selects is still scoped. */
-	:global(.app-ui.dk) .auth .fw {
+	:global(.app-ui.dk) .auth .fw,
+:global(:root[data-theme='dark'] .app-ui.auto) .auth .fw {
 		background: color-mix(in srgb, var(--acc) 24%, transparent);
 		color: rgba(255, 255, 255, 0.62);
 	}

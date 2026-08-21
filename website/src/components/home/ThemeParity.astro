@@ -21,8 +21,10 @@ import { reveal } from '../../lib/reveal-attrs';
 		/>
 
 		<div class="parity">
+			{/* Both halves are pinned. The whole claim of this band is that the
+			    two themes exist side by side, so neither may follow the page. */}
 			<figure {...reveal('up', 3)}>
-				<LibraryScreen />
+				<LibraryScreen dark={false} />
 				<figcaption>Library &middot; Light</figcaption>
 			</figure>
 			<figure {...reveal('up', 0)}>

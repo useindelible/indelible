@@ -11,16 +11,18 @@ import ReaderChrome from './ReaderChrome.astro';
 import ReaderDock from './ReaderDock.astro';
 import { ARTICLE, ARTICLE_BODY, ARTICLE_HEADING } from '../../../data/reader-article';
 
-type Paper = 'light' | 'sepia' | 'dark';
+/** 'auto' follows the page; the rest pin a shipped ReaderTheme. */
+type Paper = 'auto' | 'light' | 'sepia' | 'dark';
 
 interface Props {
 	paper?: Paper;
 	android?: boolean;
 	class?: string;
 }
-const { paper = 'light', android = false, class: className } = Astro.props;
+const { paper = 'auto', android = false, class: className } = Astro.props;
 
 const PAPER_CLASS: Record<Paper, string> = {
+	auto: 'pp-auto',
 	light: 'pp-l',
 	sepia: 'pp-s',
 	dark: 'pp-d',
@@ -40,11 +42,15 @@ function parts(text: string, phrase?: string) {
 ---
 
 <PhoneFrame
-	dark={paper === 'dark'}
+	dark={paper === 'auto' ? undefined : paper === 'dark'}
 	android={android}
 	class={className}
 	frameClass={`ph-rd ${PAPER_CLASS[paper]}`}
-	label={`An article in the Indelible reader, ${paper} theme`}
+	label={
+		paper === 'auto'
+			? 'An article in the Indelible reader'
+			: `An article in the Indelible reader, ${paper} theme`
+	}
 >
 	<div class="ph-aura">
 		<svg viewBox="0 0 2172 724" preserveAspectRatio="xMidYMid meet" aria-hidden="true">

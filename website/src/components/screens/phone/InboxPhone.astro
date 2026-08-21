@@ -19,11 +19,12 @@ import {
 } from '../../../data/phone-inbox';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	android?: boolean;
 	class?: string;
 }
-const { dark = true, android = true, class: className } = Astro.props;
+const { dark, android = true, class: className } = Astro.props;
 const { meter } = PHONE_INBOX_HEAD;
 ---
 

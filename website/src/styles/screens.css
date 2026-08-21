@@ -13,9 +13,65 @@
 	width: 100%;
 	overflow: hidden;
 	border-radius: 8px;
-	border: 1px solid var(--line);
 	background: #fff;
 	box-shadow: var(--shot);
+}
+
+/* ---- the lit edge ----
+
+   A desktop frame is a lit object rather than a pasted screenshot, and the
+   whole effect is one specular ring: a hairline that is bright along the top
+   edge, where light would fall, and fades down the sides.
+
+   The ring is a ::before with a gradient background masked to a 1px band,
+   because a `border` cannot hold a gradient. It sits INSIDE the frame, which
+   matters: .screen clips its children, so an outside glow would be cut. The
+   ambient bloom is therefore a box-shadow, which paints outside the clip.
+
+   Phones are excluded — they carry their own bezel and shadow, and a second
+   ring around one reads as a halo.
+
+   TO FLATTEN A FRAME, set --frame-shadow and --frame-ring on any ancestor:
+
+     .cell figure { --frame-shadow: none; --frame-ring: 0; }
+
+   Custom properties inherit, so that one low-specificity line is enough and
+   no wrapper has to out-specify the rules below. A frame cropped inside its
+   own bordered card wants this — it already has an edge, and a second one
+   reads as an artifact. */
+.screen[data-d='desk'] {
+	box-shadow: var(
+		--frame-shadow,
+		var(--shot),
+		0 0 60px -12px var(--frame-bloom),
+		0 0 140px -40px var(--frame-bloom)
+	);
+}
+
+.screen[data-d='desk']::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	pointer-events: none;
+	opacity: var(--frame-ring, 1);
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(
+		to bottom,
+		var(--frame-ring-top) 0%,
+		var(--frame-ring-side) 38%,
+		var(--frame-ring-side) 100%
+	);
+	/* Punch the middle out so only the 1px band paints. */
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
 }
 
 .screen[data-d='desk'] {
@@ -26,7 +82,6 @@
 .screen[data-d='phone'] {
 	aspect-ratio: 390 / 844;
 	overflow: visible;
-	border: 0;
 	border-radius: 0;
 	background: transparent;
 	box-shadow: none;
@@ -76,9 +131,16 @@
 	--hov: rgba(0, 0, 0, 0.035);
 	--sfont: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue',
 		sans-serif;
+
+	/* The lit edge, declared with the column it is drawn on rather than with
+	   the page theme: a white frame needs a dark ring whatever the page is
+	   doing, or the theme-parity band loses one of its two edges. */
+	--frame-ring-top: rgba(20, 20, 15, 0.17);
+	--frame-ring-side: rgba(20, 20, 15, 0.08);
 }
 
-.app-ui.dk {
+.app-ui.dk,
+:root[data-theme='dark'] .app-ui.auto {
 	--bg1: #000000;
 	--bg2: #1c1c1e;
 	--bg3: #2c2c2e;
@@ -95,9 +157,13 @@
 	--sel: rgba(10, 132, 255, 0.14);
 	--sel2: rgba(10, 132, 255, 0.22);
 	--hov: rgba(255, 255, 255, 0.06);
+
+	--frame-ring-top: rgba(255, 255, 255, 0.18);
+	--frame-ring-side: rgba(255, 255, 255, 0.05);
 }
 
-.app-ui.dk .screen {
+.app-ui.dk .screen,
+:root[data-theme='dark'] .app-ui.auto .screen {
 	background: #000;
 }
 

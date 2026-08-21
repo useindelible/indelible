@@ -61,6 +61,11 @@
 	--t-crimson: #e07070;
 	--t-sky: #6fa8e8;
 
+	/* Ambient spill from a frame onto the page behind it. This one follows the
+	   PAGE, not the frame: it is light landing on the page's ground. The ring
+	   is drawn on the frame itself, so it lives with the frame — screens.css. */
+	--t-frame-bloom: rgba(140, 160, 190, 0.09);
+
 	--t-shot:
 		0 40px 100px -30px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(237, 233, 224, 0.09);
 	--t-card: 0 18px 44px -26px rgba(0, 0, 0, 0.8);
@@ -99,6 +104,10 @@
 	--t-amber: #b4791a;
 	--t-crimson: #a32b22;
 	--t-sky: #1d63b5;
+
+	/* On paper a glow reads as a smudge, so this is almost nothing — the light
+	   theme's lift comes from --t-shot's grounded shadow instead. */
+	--t-frame-bloom: rgba(20, 20, 15, 0.05);
 
 	--t-shot:
 		0 2px 6px rgba(20, 20, 15, 0.04), 0 28px 64px -26px rgba(20, 20, 15, 0.28),

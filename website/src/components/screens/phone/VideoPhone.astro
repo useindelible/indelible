@@ -13,11 +13,12 @@ import { PHONE_VIDEO, PHONE_VIDEO_TRANSCRIPT } from '../../../data/phone-video';
 import { VIDEO, VIDEO_POSTER } from '../../../data/video';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	android?: boolean;
 	class?: string;
 }
-const { dark = true, android = false, class: className } = Astro.props;
+const { dark, android = false, class: className } = Astro.props;
 ---
 
 <PhoneFrame

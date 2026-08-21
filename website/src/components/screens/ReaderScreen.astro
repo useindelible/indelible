@@ -24,6 +24,7 @@ import type { ReaderDocument } from '../../lib/types';
 interface Props {
 	/** Defaults to the short article; pass LONGREAD for the novel. */
 	document?: ReaderDocument;
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	/** Shows the Listen transport above the page. */
 	listening?: boolean;
@@ -31,7 +32,7 @@ interface Props {
 }
 const {
 	document: doc = READER_DOC,
-	dark = false,
+	dark,
 	listening = false,
 	class: className,
 } = Astro.props;

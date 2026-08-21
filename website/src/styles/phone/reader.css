@@ -16,7 +16,8 @@
 }
 
 /* ---- paper: light ---- */
-.ph-rd.pp-l {
+.ph-rd.pp-l,
+:root:not([data-theme='dark']) .ph-rd.pp-auto {
 	--page: #fbfaf6;
 	--ink: #17181a;
 	--body: #35383c;
@@ -76,7 +77,8 @@
 }
 
 /* ---- paper: dark ---- */
-.ph-rd.pp-d {
+.ph-rd.pp-d,
+:root[data-theme='dark'] .ph-rd.pp-auto {
 	--page: #1a1f26;
 	--ink: #e9eff5;
 	--body: #bfc9d4;

@@ -67,16 +67,17 @@ const DESKTOP = [
 		<Wrap>
 			<h1>Screen gallery</h1>
 			<p class="note">
-				Internal reference. Each screen is shown light then dark, at the width it is drawn on
-				the landing page.
+				Internal reference. Each screen is pinned light then dark, at the width it is drawn
+				on the landing page. On the landing page most frames instead follow the page theme.
 			</p>
 
 			{
 				DESKTOP.map(({ name, C }) => (
 					<section>
 						<h2>{name}</h2>
+						{/* Pinned, not auto: the gallery's job is both columns at once. */}
 						<div class="pair">
-							<C />
+							<C dark={false} />
 							<C dark />
 						</div>
 					</section>
@@ -86,7 +87,7 @@ const DESKTOP = [
 			<section>
 				<h2>Reader, listening</h2>
 				<div class="pair">
-					<ReaderScreen listening />
+					<ReaderScreen listening dark={false} />
 					<ReaderScreen listening dark />
 				</div>
 			</section>
@@ -102,16 +103,16 @@ const DESKTOP = [
 					<ReaderPhone paper="light" />
 					<ReaderPhone paper="dark" />
 					<HomePhone dark={false} />
-					<HomePhone />
-					<FeedPhone />
+					<HomePhone dark />
+					<FeedPhone dark />
 					<FeedPhone dark={false} />
-					<SearchPhone />
+					<SearchPhone dark />
 					<SearchPhone dark={false} />
-					<InboxPhone />
-					<DrawerPhone />
+					<InboxPhone dark />
+					<DrawerPhone dark />
 					<BookPhone />
-					<VideoPhone />
-					<SavePhone />
+					<VideoPhone dark />
+					<SavePhone dark />
 					<ReaderPhone paper="sepia" />
 					<ReaderPhone paper="dark" />
 				</div>

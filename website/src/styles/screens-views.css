@@ -8,7 +8,8 @@
    deliberately excluded, so nothing here duplicates or fights a component.
    ========================================================================= */
 
-.app-ui.dk {
+.app-ui.dk,
+:root[data-theme='dark'] .app-ui.auto {
 	--bg1:#000000;
 	--bg2:#1C1C1E;
 	--bg3:#2C2C2E;
@@ -34,12 +35,8 @@
 	--paperink:#E9E2D4;
 }
 
-.app-ui.dk .screen,
-.screen.isdk {
-	background:#000;
-}
-
-.app-ui.dk .auth .fw {
+.app-ui.dk .auth .fw,
+:root[data-theme='dark'] .app-ui.auto .auth .fw {
 	background:color-mix(in srgb,var(--acc) 24%,transparent);
 	color:rgba(255,255,255,.62);
 }
@@ -1886,7 +1883,8 @@
 	padding:3px 7px;
 }
 
-.app-ui.dk .fd-badge {
+.app-ui.dk .fd-badge,
+:root[data-theme='dark'] .app-ui.auto .fd-badge {
 	color:#E0B457;
 	background:rgba(224,180,87,.13);
 }
@@ -1921,7 +1919,8 @@
 	color:var(--rink);
 }
 
-.app-ui.dk .rd2 {
+.app-ui.dk .rd2,
+:root[data-theme='dark'] .app-ui.auto .rd2 {
 	--rpage:#181A1B;
 	--rink:#E8E6E3;
 	--rmuted:#9A9A9E;
@@ -2388,7 +2387,8 @@
 	box-shadow:0 1px 3px rgba(0,0,0,.10);
 }
 
-.app-ui.dk .tl-seg i.on {
+.app-ui.dk .tl-seg i.on,
+:root[data-theme='dark'] .app-ui.auto .tl-seg i.on {
 	background:var(--bg3);
 	box-shadow:none;
 }
@@ -2631,7 +2631,8 @@
 	color:#1B4E9B;
 }
 
-.app-ui.dk .en-tile.c1 {
+.app-ui.dk .en-tile.c1,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c1 {
 	background:#2B4A7A;
 	color:#CFE0FF;
 }
@@ -2641,7 +2642,8 @@
 	color:#1F6B3A;
 }
 
-.app-ui.dk .en-tile.c2 {
+.app-ui.dk .en-tile.c2,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c2 {
 	background:#2C5638;
 	color:#CFEBD8;
 }
@@ -2651,7 +2653,8 @@
 	color:#5B3A8C;
 }
 
-.app-ui.dk .en-tile.c3 {
+.app-ui.dk .en-tile.c3,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c3 {
 	background:#453160;
 	color:#E1D2F7;
 }
@@ -2661,7 +2664,8 @@
 	color:#7A5A18;
 }
 
-.app-ui.dk .en-tile.c4 {
+.app-ui.dk .en-tile.c4,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c4 {
 	background:#5A4A22;
 	color:#F0DFB4;
 }
@@ -2671,7 +2675,8 @@
 	color:#93292B;
 }
 
-.app-ui.dk .en-tile.c5 {
+.app-ui.dk .en-tile.c5,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c5 {
 	background:#6B2F2F;
 	color:#F7CFCF;
 }
@@ -2681,7 +2686,8 @@
 	color:#1F5B68;
 }
 
-.app-ui.dk .en-tile.c6 {
+.app-ui.dk .en-tile.c6,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c6 {
 	background:#2A4C56;
 	color:#CDE9F0;
 }
@@ -2691,7 +2697,8 @@
 	color:#2C4472;
 }
 
-.app-ui.dk .en-tile.c7 {
+.app-ui.dk .en-tile.c7,
+:root[data-theme='dark'] .app-ui.auto .en-tile.c7 {
 	background:#2A3E5E;
 	color:#D3DFF5;
 }
@@ -2969,7 +2976,8 @@
 	color:var(--acc);
 }
 
-.app-ui.dk .withs .ch.e1 {
+.app-ui.dk .withs .ch.e1,
+:root[data-theme='dark'] .app-ui.auto .withs .ch.e1 {
 	background:rgba(255,159,10,.16);
 	color:#FF9F0A;
 }
@@ -3128,7 +3136,8 @@
 	color:#1D1D1F;
 }
 
-.app-ui.dk .st-h {
+.app-ui.dk .st-h,
+:root[data-theme='dark'] .app-ui.auto .st-h {
 	background:linear-gradient(120deg,#241C3A,#2E2350);
 	color:#F5F5F7;
 }
@@ -3246,7 +3255,8 @@
 	color:#3A3026;
 }
 
-.app-ui.dk .sep {
+.app-ui.dk .sep,
+:root[data-theme='dark'] .app-ui.auto .sep {
 	background:#1A1512;
 	color:#E5D9C4;
 }

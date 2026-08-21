@@ -22,10 +22,11 @@ import {
 import { SEARCH_RECORD } from '../../data/search-record';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	class?: string;
 }
-const { dark = false, class: className } = Astro.props;
+const { dark, class: className } = Astro.props;
 ---
 
 <ScreenFrame dark={dark} class={className} label="Searching the Indelible library">

@@ -13,10 +13,11 @@ import RecordPanel from './app/RecordPanel.astro';
 import { VIDEO, VIDEO_PARAGRAPHS, VIDEO_POSTER, VIDEO_RECORD } from '../../data/video';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	class?: string;
 }
-const { dark = false, class: className } = Astro.props;
+const { dark, class: className } = Astro.props;
 ---
 
 <ScreenFrame dark={dark} class={className} label="A saved YouTube video with its transcript">

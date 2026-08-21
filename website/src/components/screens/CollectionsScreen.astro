@@ -9,10 +9,11 @@ import DocRow from './app/DocRow.astro';
 import { COLLECTIONS, DOCS } from '../../data/library';
 
 interface Props {
+	/** Omit to follow the page theme; pass a boolean to pin the column. */
 	dark?: boolean;
 	class?: string;
 }
-const { dark = false, class: className } = Astro.props;
+const { dark, class: className } = Astro.props;
 ---
 
 <ScreenFrame dark={dark} class={className} label="Collections in the Indelible library">

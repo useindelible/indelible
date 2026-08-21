@@ -52,6 +52,11 @@
 	--crimson: var(--t-crimson);
 	--sky: var(--t-sky);
 
+	/* ---- product frames ----
+	   Only the bloom is here. The ring tracks the frame's own column, not the
+	   page, so screens.css sets it beside the app palette. */
+	--frame-bloom: var(--t-frame-bloom);
+
 	/* ---- elevation ---- */
 	--shot: var(--t-shot);
 	--card: var(--t-card);
