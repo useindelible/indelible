@@ -24,7 +24,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'Indelible',
     description: 'Save, archive, and organize web content with Indelible',
-    version: '0.1.1',
+    version: '0.1.0',
     key: browser === 'chrome' ? CHROME_STORE_PUBLIC_KEY : undefined,
     action: {
       default_title: 'Indelible',
