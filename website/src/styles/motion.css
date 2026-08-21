@@ -1,0 +1,150 @@
+/* ============================================================================
+   Motion system — hand rolled, no library, zero scroll listeners.
+
+   Elements declare an entrance with data-rev="<variant>". A single
+   IntersectionObserver (see src/lib/reveal.ts) adds .in once and stops
+   observing. Stagger comes from --i on the element, not from JavaScript.
+
+   Two traps, both already paid for once — do not reintroduce them:
+
+   1. clip-path as a start state makes an element un-intersectable, because
+      IntersectionObserver honours the target's own clip. That is why the
+      "clip" variant keeps the target at opacity 1 and clips its CHILD.
+   2. A blanket `.in { clip-path: inset(0 0 0 0) }` clips absolutely
+      positioned children that overflow their parent. Scope clip rules to the
+      variant that asked for them.
+   ========================================================================= */
+
+[data-rev] {
+	opacity: 0;
+	will-change: transform, opacity;
+}
+
+[data-rev='up'] {
+	transform: translate3d(0, 30px, 0);
+}
+
+[data-rev='fade'] {
+	transform: none;
+}
+
+[data-rev='scale'] {
+	transform: scale(0.962) translate3d(0, 22px, 0);
+}
+
+[data-rev='left'] {
+	transform: translate3d(-26px, 0, 0);
+}
+
+[data-rev='right'] {
+	transform: translate3d(26px, 0, 0);
+}
+
+[data-rev].in {
+	opacity: 1;
+	transform: none;
+	transition:
+		opacity var(--d-rev) var(--e-out),
+		transform var(--d-rev) var(--e-out);
+	transition-delay: calc(var(--i, 0) * 68ms);
+	will-change: auto;
+}
+
+/* A device that overhangs another one: it arrives smaller and lower, then
+   settles. The tilt is NOT part of this transform — it lives on the parent, so
+   reduced-motion cannot flatten a composition into a straight stack. */
+[data-rev='pop'] {
+	transform: scale(0.82) translate3d(0, 30px, 0);
+}
+
+[data-rev='pop'].in {
+	transition:
+		opacity 0.6s var(--e-out),
+		transform 0.95s var(--e-spring);
+	transition-delay: calc(0.24s + var(--i, 0) * 68ms);
+}
+
+/* A group reveals its CHILDREN in sequence and stays visible itself, for rows
+   whose items are laid out by the parent (a scroller, a grid). */
+[data-rev='group'] {
+	opacity: 1;
+}
+
+[data-rev='group'] > * {
+	opacity: 0;
+	transform: translate3d(0, 28px, 0);
+}
+
+[data-rev='group'].in > * {
+	opacity: 1;
+	transform: none;
+	transition:
+		opacity 0.75s var(--e-out),
+		transform 0.75s var(--e-out);
+	transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* The clip variant reveals its child, never itself. See trap 1 above. */
+[data-rev='clip'] {
+	opacity: 1;
+}
+
+[data-rev='clip'] > * {
+	clip-path: inset(0 0 101% 0);
+	transform: translate3d(0, 16px, 0);
+	will-change: clip-path, transform;
+}
+
+[data-rev='clip'].in > * {
+	clip-path: inset(0 0 0 0);
+	transform: none;
+	transition:
+		clip-path 1s var(--e-out),
+		transform 1s var(--e-out);
+	will-change: auto;
+}
+
+/* ---- line-by-line headline wipe ---- */
+
+.lines span {
+	display: block;
+	overflow: hidden;
+}
+
+.lines span > i {
+	display: block;
+	font-style: inherit;
+	transform: translate3d(0, 105%, 0);
+	transition: transform 0.95s var(--e-out);
+	transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+.lines.in span > i {
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-rev],
+	[data-rev].in,
+	[data-rev='clip'] > *,
+	[data-rev='group'] > * {
+		opacity: 1 !important;
+		transform: none !important;
+		clip-path: none !important;
+		transition: none !important;
+	}
+
+	.lines span > i {
+		transform: none !important;
+		transition: none !important;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+}

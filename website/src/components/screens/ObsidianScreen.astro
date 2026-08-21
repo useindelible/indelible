@@ -1,0 +1,80 @@
+---
+/**
+ * Integrations → Obsidian.
+ *
+ * Vault writes happen inside the plugin, so the sync rows point at Obsidian
+ * rather than pretending this page can run them. Saying so is the honest
+ * design; a button here that did nothing would not be.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import PrefsNav from './app/PrefsNav.astro';
+import Icon from './Icon.astro';
+import {
+	OBSIDIAN,
+	OBSIDIAN_BEHAVIOUR,
+	OBSIDIAN_GEM,
+	OBSIDIAN_SYNC,
+	type ObsidianRow,
+} from '../../data/integrations';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = true, class: className } = Astro.props;
+
+const GROUPS: { heading: string; note: string; rows: readonly ObsidianRow[] }[] = [
+	{ heading: 'Sync', note: OBSIDIAN.syncNote, rows: OBSIDIAN_SYNC },
+	{ heading: 'Behavior', note: OBSIDIAN.behaviourNote, rows: OBSIDIAN_BEHAVIOUR },
+];
+---
+
+<ScreenFrame dark={dark} class={className} label="The Obsidian integration settings in Indelible">
+	<AppShell layout="nav">
+		<Sidebar active="prefs" />
+		<PrefsNav active="Integrations" />
+
+		<div class="ml-main">
+			<div class="ob-hero">
+				<span class="ob-gem" set:html={OBSIDIAN_GEM} />
+				<div class="ob-crumb">
+					<Icon name="feed" size={13} /> Integrations <span style="opacity:.5">/</span>
+					<Icon name="collections" size={13} /> Obsidian
+				</div>
+				<h3>Obsidian Export</h3>
+				<p>{OBSIDIAN.blurb}</p>
+				<div class="ob-state">
+					<span class="ob-ok">Connected</span>
+					<span class="sy">Synced <b>{OBSIDIAN.synced}</b></span>
+				</div>
+			</div>
+
+			{
+				GROUPS.map((group) => (
+					<>
+						<div class="ob-sec">
+							<span class="t">{group.heading}</span>
+							<span class="n">{group.note}</span>
+						</div>
+						<div class="ob-card">
+							{group.rows.map((row) => (
+								<div class="ob-row">
+									<div>
+										<div class="t">{row.title}</div>
+										<div class="s" set:html={row.sub} />
+									</div>
+									{row.right === 'in-obsidian' && <span class="ob-pill">In Obsidian</span>}
+									{row.right === 'generate' && <span class="ob-gen">Generate token</span>}
+									{row.right === 'switch-on' && <span class="ob-sw on" />}
+									{row.right === 'switch-off' && <span class="ob-sw" />}
+								</div>
+							))}
+						</div>
+					</>
+				))
+			}
+		</div>
+	</AppShell>
+</ScreenFrame>

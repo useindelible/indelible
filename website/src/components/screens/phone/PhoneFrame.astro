@@ -1,0 +1,48 @@
+---
+/**
+ * A 390x844 device frame.
+ *
+ * Renders the bezel, the notch or punch-hole, the status bar and the home
+ * indicator, then whatever the screen puts inside. The frame carries its own
+ * shadow and bezel ring, which is why ScreenFrame gets out of the way for
+ * `device="phone"`.
+ */
+import ScreenFrame from '../ScreenFrame.astro';
+import { PHONE_STATUS_GLYPHS } from '../../../lib/phone-status';
+
+interface Props {
+	/** The app's dark column. Independent of the page theme. */
+	dark?: boolean;
+	/** Android draws a punch-hole camera and tighter corners. */
+	android?: boolean;
+	/** Extra classes on the frame, e.g. a reader paper. */
+	frameClass?: string;
+	class?: string;
+	label: string;
+	time?: string;
+}
+const {
+	dark = true,
+	android = false,
+	frameClass,
+	class: className,
+	label,
+	time = '9:41',
+} = Astro.props;
+---
+
+<ScreenFrame device="phone" dark={dark} class={className} label={label}>
+	<div class:list={['phone', dark ? 'd' : 'l', { andr: android }, frameClass]}>
+		<div class="ph-grain"></div>
+		{android ? <div class="ph-punch" /> : <div class="ph-island" />}
+
+		<div class="ph-sbar">
+			<span class="t">{time}</span>
+			<span class="gl" set:html={PHONE_STATUS_GLYPHS} />
+		</div>
+
+		<slot />
+
+		<div class="ph-homeind"></div>
+	</div>
+</ScreenFrame>

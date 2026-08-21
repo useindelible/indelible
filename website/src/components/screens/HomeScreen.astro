@@ -1,0 +1,87 @@
+---
+/**
+ * The Home dashboard: Continue Reading, Quick Reads, the Daily Review banner
+ * and Recently Added.
+ *
+ * Shares its shelves with HomePhone through data/home-shelf.ts. Change an item
+ * and both surfaces move together.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import HomeCard from './app/HomeCard.astro';
+import { USER } from '../../data/app';
+import { HOME_CONTINUE, HOME_QUICK, HOME_RECENT } from '../../data/home-shelf';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+
+const SHELVES = [
+	{ title: 'Continue Reading', cards: HOME_CONTINUE },
+	{ title: 'Quick Reads', cards: HOME_QUICK },
+] as const;
+---
+
+<ScreenFrame dark={dark} class={className} label="The Indelible home dashboard">
+	<AppShell layout="list">
+		<Sidebar active="home" />
+
+		<ListPane>
+			<div class="hm-top">
+				<span class="hm-hello">Good morning, {USER.name}.</span>
+				<span class="hm-cfg">
+					<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+						<rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+						<rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+						<rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+						<rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+					</svg>Configure
+				</span>
+			</div>
+
+			{
+				SHELVES.map((shelf) => (
+					<>
+						<div class="hm-sec">
+							<h3>{shelf.title}</h3>
+							<span class="hm-all">See all &rarr;</span>
+						</div>
+						<div class="hm-rail">
+							{shelf.cards.map((card) => (
+								<HomeCard card={card} />
+							))}
+						</div>
+					</>
+				))
+			}
+
+			<div class="hm-sec"><h3>Daily Review</h3></div>
+			<div class="hm-review">
+				<span class="hm-ricon">
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+						<path d="M12 3.6l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.9l6-.8z"></path>
+					</svg>
+				</span>
+				<span>
+					<span class="hm-rt">Review your highlights</span>
+					<span class="hm-rs">
+						Resurface what you have saved and build lasting knowledge.
+					</span>
+				</span>
+				{/* Washed out on purpose: the feature is not live. */}
+				<span class="hm-soon">Coming soon</span>
+			</div>
+
+			<div class="hm-sec">
+				<h3>Recently Added</h3><span class="hm-all">See all &rarr;</span>
+			</div>
+			<div class="hm-rail">
+				{HOME_RECENT.map((card) => <HomeCard card={card} />)}
+			</div>
+		</ListPane>
+	</AppShell>
+</ScreenFrame>

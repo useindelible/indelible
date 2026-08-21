@@ -1,0 +1,424 @@
+/* ============================================================================
+   Phone reader.
+
+   The reader has its own palette layer on top of the phone frame: a "paper"
+   rather than a theme. The three papers are the shipped ReaderTheme values —
+   light, sepia and dark. `nocturne` and `botanical` exist only in old
+   prototypes and do not ship; do not add them here.
+
+   The accent stays the brand blue on every paper. The paper carries the
+   warmth; the accent does not.
+   ========================================================================= */
+
+.ph-rd {
+	background: var(--page);
+	color: var(--ink);
+}
+
+/* ---- paper: light ---- */
+.ph-rd.pp-l {
+	--page: #fbfaf6;
+	--ink: #17181a;
+	--body: #35383c;
+	--muted: #6e7378;
+	--faint: #93999f;
+	--line: rgba(23, 24, 26, 0.1);
+	--line-2: rgba(23, 24, 26, 0.16);
+	--raise: #ffffff;
+	--inset: #f2f0ea;
+	--veil: rgba(251, 250, 246, 0.84);
+	--accent: #0969da;
+	--accent-wash: rgba(9, 105, 218, 0.1);
+	--accent-edge: rgba(9, 105, 218, 0.28);
+	--on-accent: #ffffff;
+	--lift:
+		0 18px 40px -22px rgba(28, 24, 16, 0.42), 0 0 0 1px rgba(23, 24, 26, 0.07);
+	--sheen: rgba(255, 255, 255, 0.9);
+	--grain-op: 0.03;
+	--grain-blend: multiply;
+	--hl-y: rgba(255, 214, 0, 0.24);
+	--hl-b: rgba(9, 105, 218, 0.14);
+	--chrome-scrim: rgba(255, 255, 255, 0.44);
+	--art-op: 1;
+	--art-sat: 1.02;
+	--art-bright: 1;
+	--art-con: 1;
+}
+
+/* ---- paper: sepia ---- */
+.ph-rd.pp-s {
+	--page: #f3e7d0;
+	--ink: #241d12;
+	--body: #46392a;
+	--muted: #7a6a53;
+	--faint: #9c8c74;
+	--line: rgba(36, 29, 18, 0.12);
+	--line-2: rgba(36, 29, 18, 0.19);
+	--raise: #fbf3e4;
+	--inset: #eadcc0;
+	--veil: rgba(243, 231, 208, 0.86);
+	--accent: #0969da;
+	--accent-wash: rgba(9, 105, 218, 0.1);
+	--accent-edge: rgba(9, 105, 218, 0.28);
+	--on-accent: #ffffff;
+	--lift:
+		0 18px 40px -22px rgba(60, 44, 20, 0.42), 0 0 0 1px rgba(36, 29, 18, 0.09);
+	--sheen: rgba(255, 255, 255, 0.7);
+	--grain-op: 0.035;
+	--grain-blend: multiply;
+	--hl-y: rgba(214, 170, 0, 0.3);
+	--hl-b: rgba(9, 105, 218, 0.14);
+	--chrome-scrim: rgba(255, 255, 255, 0.44);
+	--art-op: 1;
+	--art-sat: 1.02;
+	--art-bright: 1;
+	--art-con: 1;
+}
+
+/* ---- paper: dark ---- */
+.ph-rd.pp-d {
+	--page: #1a1f26;
+	--ink: #e9eff5;
+	--body: #bfc9d4;
+	--muted: #8b949e;
+	--faint: #6e7681;
+	--line: rgba(233, 239, 245, 0.1);
+	--line-2: rgba(233, 239, 245, 0.17);
+	--raise: #232932;
+	--inset: #222831;
+	--veil: rgba(26, 31, 38, 0.84);
+	--accent: #2f81f7;
+	--accent-wash: rgba(47, 129, 247, 0.16);
+	--accent-edge: rgba(47, 129, 247, 0.36);
+	--on-accent: #ffffff;
+	--lift: 0 18px 44px -22px rgba(1, 4, 9, 0.9), 0 0 0 1px rgba(233, 239, 245, 0.07);
+	--sheen: rgba(255, 255, 255, 0.05);
+	--grain-op: 0.05;
+	--grain-blend: overlay;
+	--hl-y: rgba(227, 179, 65, 0.22);
+	--hl-b: rgba(47, 129, 247, 0.2);
+	--chrome-scrim: rgba(0, 0, 0, 0.46);
+	--art-op: 0.92;
+	--art-sat: 1.35;
+	--art-bright: 0.52;
+	--art-con: 1.12;
+}
+
+/* ---- artwork ---- */
+
+.ph-aura {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.ph-aura svg {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: auto;
+	opacity: var(--art-op);
+	filter: saturate(var(--art-sat)) brightness(var(--art-bright))
+		contrast(var(--art-con));
+}
+
+.ph-aura::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to bottom, transparent 28%, var(--page) 100%);
+}
+
+.ph-chromeveil {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 110px;
+	z-index: 1;
+	pointer-events: none;
+	background: linear-gradient(
+		to bottom,
+		var(--chrome-scrim) 0px,
+		var(--chrome-scrim) 56px,
+		transparent 110px
+	);
+}
+
+/* ---- floating chrome ---- */
+
+.ph-float {
+	position: absolute;
+	top: 48px;
+	left: 12px;
+	right: 12px;
+	z-index: 42;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.ph-fgroup {
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+}
+
+.ph-fbtn {
+	height: 38px;
+	min-width: 38px;
+	border-radius: var(--r-full);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ink);
+	background: var(--veil);
+	backdrop-filter: blur(14px) saturate(165%);
+	-webkit-backdrop-filter: blur(14px) saturate(165%);
+	box-shadow:
+		0 0 0 1px var(--line) inset,
+		0 6px 16px -10px rgba(0, 0, 0, 0.45);
+}
+
+.ph-fbtn svg {
+	width: 19px;
+	height: 19px;
+}
+
+/* ---- article ---- */
+
+.ph-rscroll {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	position: relative;
+	z-index: 10;
+	padding: 0 22px;
+}
+
+.ph-masthead {
+	padding: 50px 0 0;
+}
+
+.ph-mhsrc {
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.ph-mhmark {
+	width: 24px;
+	height: 24px;
+	border-radius: var(--r-sm);
+	background: var(--inset);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.ph-mhname {
+	font-family: var(--ph-mono);
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.ph-mhtitle {
+	margin-top: 16px;
+	font-family: var(--ph-serif);
+	font-size: 33px;
+	font-weight: 600;
+	letter-spacing: -0.028em;
+	line-height: 1.1;
+	color: var(--ink);
+}
+
+.ph-mhmeta {
+	margin-top: 15px;
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	font-family: var(--ph-mono);
+	font-size: 10.5px;
+	font-weight: 500;
+	letter-spacing: 0.05em;
+	color: var(--faint);
+}
+
+.ph-mhmeta .sp {
+	opacity: 0.45;
+}
+
+.ph-mhrule {
+	height: 1px;
+	margin-top: 24px;
+	background: var(--line);
+}
+
+.ph-sum {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 0;
+	color: var(--muted);
+}
+
+.ph-sum .lab {
+	flex: 1;
+	font-family: var(--ph-mono);
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+
+.ph-sum svg {
+	width: 15px;
+	height: 15px;
+}
+
+.ph-sum .spark {
+	color: var(--accent);
+	display: flex;
+}
+
+.ph-body {
+	padding-top: 6px;
+}
+
+.ph-body p {
+	margin-bottom: 1.05em;
+	font-family: var(--ph-serif);
+	font-size: 19px;
+	line-height: 1.72;
+	letter-spacing: -0.003em;
+	color: var(--body);
+}
+
+.ph-h2 {
+	margin: 1.7em 0 0.5em;
+	font-family: var(--ph-serif);
+	font-size: 22px;
+	font-weight: 600;
+	letter-spacing: -0.015em;
+	color: var(--ink);
+}
+
+.ph-hl {
+	border-radius: var(--r-xs);
+	padding: 1px 0;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+
+.ph-hl.y {
+	background: var(--hl-y);
+	box-shadow: inset 0 -2px 0 rgba(226, 186, 64, 0.7);
+}
+
+.ph-hl.b {
+	background: var(--hl-b);
+	box-shadow: inset 0 -2px 0 rgba(84, 140, 208, 0.7);
+}
+
+/* ---- dock ---- */
+
+/* ---- reading dock ----
+   Geometry from mobile-reader-reimagined.html's `.dock.dock-mini`: a single
+   flat row of six, no dividers. Listen is a soft accent square rather than a
+   filled pill with a label — at this size the word cost more than it said. */
+.ph-dock {
+	position: absolute;
+	left: 50%;
+	bottom: 22px;
+	transform: translateX(-50%);
+	z-index: 44;
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	padding: 5px;
+	/* The mini dock's own radius; not a step on the Shape.kt scale. */
+	border-radius: 17px;
+	background: var(--veil);
+	backdrop-filter: blur(20px) saturate(165%);
+	-webkit-backdrop-filter: blur(20px) saturate(165%);
+	box-shadow:
+		0 0 0 1px var(--line) inset,
+		0 1px 0 var(--sheen) inset,
+		var(--lift);
+}
+
+.ph-dbtn {
+	position: relative;
+	width: 40px;
+	height: 40px;
+	border-radius: var(--r-lg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--muted);
+}
+
+.ph-dbtn svg {
+	width: 20px;
+	height: 20px;
+}
+
+/* The selected tool. */
+.ph-dbtn.active {
+	color: var(--accent);
+}
+
+.ph-dbtn.active::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: 6px;
+	width: 4px;
+	height: 4px;
+	transform: translateX(-50%);
+	border-radius: 50%;
+	background: var(--accent);
+}
+
+/* A panel opened from the dock. Distinct from .active on purpose. */
+.ph-dbtn.on {
+	background: var(--accent-wash);
+	color: var(--accent);
+}
+
+.ph-aa {
+	font-family: var(--ph-serif);
+	font-size: 18px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--ink);
+}
+
+.ph-listen {
+	width: 40px;
+	height: 40px;
+	margin-left: 1px;
+	border-radius: var(--r-lg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--accent-wash);
+	color: var(--accent);
+}
+
+.ph-listen svg {
+	/* Optically centred: a triangle's mass sits left of its box. */
+	margin-left: 1px;
+}
+

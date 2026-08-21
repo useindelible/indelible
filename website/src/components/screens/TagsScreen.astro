@@ -1,0 +1,53 @@
+---
+/**
+ * The tag manager — a real list, not a chip cloud.
+ *
+ * Ten tags fill about two thirds of the frame, so there is visible space below
+ * the list. That is what the live page looks like with ten tags; extend TAGS
+ * if the cell should read denser, and the footer follows automatically.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import Icon from './Icon.astro';
+import { TAGS } from '../../data/tags';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="The Indelible tag manager">
+	<AppShell layout="list">
+		<Sidebar active="tags" />
+		<ListPane>
+			<div class="tl-h">
+				<h2>Tags</h2>
+				<span class="tl-new"><Icon name="add" size={13} />New Tag</span>
+				<span class="tl-seg"><i class="on">Document</i><i>Highlight</i></span>
+				<span class="tl-find"><Icon name="search" size={14} />Find&hellip;</span>
+			</div>
+
+			{
+				TAGS.map((tag) => (
+					<div class:list={['tl-row', { sub: tag.nested }]}>
+						<span class="tl-cb" />
+						<span class="tl-dis">
+							{tag.hasChildren && <Icon name="chevron-down" size={12} />}
+						</span>
+						<span class="tl-dot" style={`background:${tag.colour}`} />
+						<span class="tl-nm">{tag.name}</span>
+						<span class="tl-ct">{tag.count}</span>
+						<span class="tl-go"><Icon name="chevron-right" size={13} /></span>
+					</div>
+				))
+			}
+
+			<div class="grip"></div>
+			<div class="tl-foot">{TAGS.length} tags</div>
+		</ListPane>
+	</AppShell>
+</ScreenFrame>

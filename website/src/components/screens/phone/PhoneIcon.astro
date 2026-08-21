@@ -1,0 +1,34 @@
+---
+/** A mobile icon. Unknown names throw rather than rendering nothing. */
+import { PHONE_ICONS, type PhoneIconName } from '../../../lib/phone-icons';
+
+interface Props {
+	name: PhoneIconName;
+	size?: number;
+	/** Filled glyphs (the play triangle) rather than stroked outlines. */
+	solid?: boolean;
+	class?: string;
+}
+const { name, size = 24, solid = false, class: className } = Astro.props;
+
+const path = PHONE_ICONS[name];
+if (!path) {
+	throw new Error(
+		`Phone icon "${name}" does not exist. Known: ${Object.keys(PHONE_ICONS).join(', ')}`,
+	);
+}
+---
+
+<svg
+	class:list={[className, { 'ph-solid': solid }]}
+	viewBox="0 0 24 24"
+	width={size}
+	height={size}
+	fill="none"
+	stroke="currentColor"
+	stroke-width="2"
+	stroke-linecap="round"
+	stroke-linejoin="round"
+	aria-hidden="true"
+	set:html={path}
+/>

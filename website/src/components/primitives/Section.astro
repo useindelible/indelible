@@ -1,0 +1,52 @@
+---
+/**
+ * A page section: vertical rhythm plus an optional ground tint and top rule.
+ *
+ * `flush` removes the top padding for sections that sit directly under
+ * another section's trailing content and would otherwise double up.
+ */
+interface Props {
+	id?: string;
+	tone?: 'default' | 'raised';
+	flush?: boolean;
+	/** Pin this section to a palette regardless of the page theme. */
+	theme?: string;
+	class?: string;
+}
+const {
+	id,
+	tone = 'default',
+	flush = false,
+	theme,
+	class: className,
+} = Astro.props;
+---
+
+<section
+	id={id}
+	data-theme-scope={theme}
+	class:list={['sec', `tone-${tone}`, { flush }, className]}
+>
+	<slot />
+</section>
+
+<style>
+	.sec {
+		padding: 104px 0;
+	}
+
+	.sec.flush {
+		padding-top: 0;
+	}
+
+	.tone-raised {
+		background: var(--bg-2);
+		border-top: 1px solid var(--line);
+	}
+
+	@media (max-width: 760px) {
+		.sec {
+			padding: 68px 0;
+		}
+	}
+</style>

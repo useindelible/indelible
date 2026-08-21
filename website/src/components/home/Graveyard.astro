@@ -1,0 +1,128 @@
+---
+/**
+ * The shutdown record.
+ *
+ * Pinned dark in every page theme — it is the one cinematic band, and the
+ * argument it makes does not work on paper. It asks Section for the palette
+ * rather than overriding colours itself.
+ *
+ * Every date here is verifiable. Do not soften or round them.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import { reveal } from '../../lib/reveal-attrs';
+import { GRAVEYARD, GRAVEYARD_NOTE } from '../../data/graveyard';
+---
+
+<Section theme="dark" class="grave">
+	<Wrap>
+		<SectionLead
+			eyebrow="Why this matters"
+			title="Every app you trusted to hold your reading is already gone."
+			lede="Not hypothetically. These are the dates. The pattern is always the same: a company decides, and your library is collateral."
+		/>
+
+		<dl>
+			{
+				GRAVEYARD.map((entry, i) => (
+					<div class:list={['row', { live: entry.live }]} {...reveal('up', i)}>
+						<dt class="name">{entry.name}</dt>
+						<dd class="dates">{entry.dates}</dd>
+						<dd class="fate">{entry.fate}</dd>
+					</div>
+				))
+			}
+		</dl>
+
+		<p class="note">{GRAVEYARD_NOTE}</p>
+	</Wrap>
+</Section>
+
+<style>
+	.grave {
+		position: relative;
+		background: var(--bg);
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+	}
+
+	.grave::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background: radial-gradient(
+			720px circle at 6% 0%,
+			var(--accent-dim),
+			transparent 62%
+		);
+	}
+
+	.grave :global(.h2) {
+		font-size: clamp(34px, 4.6vw, 56px);
+		max-width: 22ch;
+	}
+
+	.row {
+		display: grid;
+		grid-template-columns: 1.05fr 0.7fr 1.9fr;
+		gap: 26px;
+		padding: 22px 0;
+		align-items: baseline;
+		border-top: 1px solid var(--line);
+		transition: background var(--d-mid) var(--e-out);
+	}
+
+	.row:first-child {
+		border-top: 0;
+	}
+
+	.name {
+		font-family: var(--f-d);
+		font-size: 25px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+
+	.dates {
+		font-family: var(--f-m);
+		font-size: 12.5px;
+		letter-spacing: 0.06em;
+		color: var(--faint);
+	}
+
+	.fate {
+		font-size: 15px;
+		color: var(--dim);
+	}
+
+	/* The live entry is the answer to the two above it. */
+	.row.live {
+		border-top: 1px solid var(--line-2);
+	}
+
+	.row.live .name,
+	.row.live .dates {
+		color: var(--accent);
+	}
+
+	.row.live .fate {
+		color: var(--ink);
+	}
+
+	.note {
+		margin-top: 26px;
+		font-family: var(--f-m);
+		font-size: 11px;
+		letter-spacing: 0.07em;
+		color: var(--faint);
+	}
+
+	@media (max-width: 760px) {
+		.row {
+			grid-template-columns: 1fr;
+			gap: 6px;
+		}
+	}
+</style>

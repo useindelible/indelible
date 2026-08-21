@@ -1,0 +1,116 @@
+/* ============================================================================
+   Product screen frames.
+
+   A screen is a rendering of the real application, authored at a fixed design
+   size and scaled into its column. Everything inside a frame uses the app's
+   own palette (--bg1, --t1, --acc …), which is deliberately separate from the
+   marketing page's tokens: the page is Indelible's marketing voice, the frame
+   is the product. They must not share variables or one will drift the other.
+   ========================================================================= */
+
+.screen {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	border-radius: 8px;
+	border: 1px solid var(--line);
+	background: #fff;
+	box-shadow: var(--shot);
+}
+
+.screen[data-d='desk'] {
+	aspect-ratio: 1366 / 900;
+}
+
+/* Phones carry their own bezel and shadow, so the frame gets out of the way. */
+.screen[data-d='phone'] {
+	aspect-ratio: 390 / 844;
+	overflow: visible;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+/* The inner stage is pinned at the design size so the screen lays out at real
+   app dimensions and is THEN scaled. Without an explicit size it would lay out
+   against the frame's own width and shrink into it, leaving dead space.
+   These must stay in step with DESIGN_WIDTH in lib/screen-scaler.ts. */
+.screen-inner {
+	position: absolute;
+	top: 0;
+	left: 0;
+	transform-origin: 0 0;
+	will-change: transform;
+	-webkit-font-smoothing: antialiased;
+}
+
+.screen[data-d='desk'] .screen-inner {
+	width: 1366px;
+	height: 900px;
+}
+
+.screen[data-d='phone'] .screen-inner {
+	width: 390px;
+	height: 844px;
+}
+
+/* ---- the application's own palette ---- */
+
+.app-ui {
+	--bg1: #ffffff;
+	--bg2: #f5f5f7;
+	--bg3: #e8e8ed;
+	--t1: #1d1d1f;
+	--t2: #86868b;
+	--t3: #aeaeb2;
+	--t4: #c7c7cc;
+	--acc: #0071e3;
+	--ok: #34c759;
+	--warn: #ff9500;
+	--bad: #ff3b30;
+	--bd: rgba(0, 0, 0, 0.07);
+	--bd2: rgba(0, 0, 0, 0.1);
+	--sel: rgba(0, 113, 227, 0.08);
+	--sel2: rgba(0, 113, 227, 0.14);
+	--hov: rgba(0, 0, 0, 0.035);
+	--sfont: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue',
+		sans-serif;
+}
+
+.app-ui.dk {
+	--bg1: #000000;
+	--bg2: #1c1c1e;
+	--bg3: #2c2c2e;
+	--t1: #f5f5f7;
+	--t2: #98989d;
+	--t3: #636366;
+	--t4: #48484a;
+	--acc: #0a84ff;
+	--ok: #30d158;
+	--warn: #ff9f0a;
+	--bad: #ff453a;
+	--bd: rgba(255, 255, 255, 0.08);
+	--bd2: rgba(255, 255, 255, 0.12);
+	--sel: rgba(10, 132, 255, 0.14);
+	--sel2: rgba(10, 132, 255, 0.22);
+	--hov: rgba(255, 255, 255, 0.06);
+}
+
+.app-ui.dk .screen {
+	background: #000;
+}
+
+/* base.css sets svg{display:block} for the marketing page, where a baseline
+   gap under an icon is always a bug. Inside a screen it is not: the app's own
+   stylesheet declares display:block on the ~55 icons that need it and leaves
+   the rest inline, next to text. Restore the default so those stay inline. */
+.screen-inner svg {
+	display: inline;
+}
+
+/* Screens use real headings and paragraphs; :where() keeps this at zero
+   specificity so any component rule still wins by source order. */
+.screen-inner :where(h1, h2, h3, h4, p, figure, ul, ol) {
+	margin: 0;
+}

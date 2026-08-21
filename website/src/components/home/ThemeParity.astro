@@ -1,0 +1,65 @@
+---
+/**
+ * The same surface, designed twice.
+ *
+ * Both frames pin their own palette with ScreenFrame's `dark` flag, so this
+ * section reads identically whichever theme the page is in — that is the
+ * claim it is making.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import LibraryScreen from '../screens/LibraryScreen.astro';
+import { reveal } from '../../lib/reveal-attrs';
+---
+
+<Section flush>
+	<Wrap>
+		<SectionLead
+			title="Both themes, everywhere, properly."
+			lede="Not an inverted stylesheet. Every surface is designed twice, and your choice follows you onto the phone."
+		/>
+
+		<div class="parity">
+			<figure {...reveal('up', 3)}>
+				<LibraryScreen />
+				<figcaption>Library &middot; Light</figcaption>
+			</figure>
+			<figure {...reveal('up', 0)}>
+				<LibraryScreen dark />
+				<figcaption>Library &middot; Dark</figcaption>
+			</figure>
+		</div>
+	</Wrap>
+</Section>
+
+<style>
+	.parity {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+	}
+
+	figure {
+		margin: 0;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		overflow: hidden;
+	}
+
+	figcaption {
+		padding: 13px 16px;
+		border-top: 1px solid var(--line);
+		font-family: var(--f-m);
+		font-size: 10.5px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	@media (max-width: 760px) {
+		.parity {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

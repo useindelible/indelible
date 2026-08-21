@@ -1,0 +1,138 @@
+---
+/**
+ * The list pane's toolbar.
+ *
+ * Treatments are measured from the app and are not interchangeable: the title
+ * is accent-coloured with a chevron, Inbox is a filled accent pill with no
+ * count, Later and Archive are filled grey circles with no border, Filter and
+ * the sort control are plain text, and the panel toggle is an accent tint.
+ */
+import Icon from '../Icon.astro';
+
+interface Props {
+	title: string;
+	/** Active filter count, shown as a badge on Filter when present. */
+	filters?: number;
+	sort?: string;
+}
+const { title, filters, sort = 'Date saved' } = Astro.props;
+---
+
+<div class="lp-h">
+	<h2>{title}<Icon name="chevron-down" size={14} /></h2>
+
+	<div class="sp">
+		<span class="pill"><Icon name="inbox" size={14} /> Inbox</span>
+		<span class="gh"><Icon name="later" size={14} /></span>
+		<span class="gh"><Icon name="archive" size={14} /></span>
+		<span class="sepv"></span>
+		<span class="fbtn">
+			<Icon name="filter" size={14} />
+			{filters && <b>{filters}</b>}
+			Filter
+		</span>
+		<span class="sortb">{sort}<Icon name="chevron-down" size={14} /></span>
+		<span class="gh sq on"><Icon name="switch-view" size={14} /></span>
+	</div>
+</div>
+
+<style>
+	.lp-h {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--bd);
+	}
+
+	h2 {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 19px;
+		font-weight: 600;
+		letter-spacing: -0.022em;
+		color: var(--acc);
+	}
+
+	h2 :global(svg) {
+		opacity: 0.85;
+	}
+
+	.sp {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 7px 15px;
+		border-radius: 999px;
+		background: var(--acc);
+		color: #fff;
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.gh {
+		width: 31px;
+		height: 31px;
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--bg3);
+		color: var(--t2);
+	}
+
+	.gh.sq {
+		border-radius: 8px;
+	}
+
+	.gh.on {
+		background: var(--sel2);
+		color: var(--acc);
+	}
+
+	.sepv {
+		width: 1px;
+		height: 20px;
+		margin: 0 2px;
+		background: var(--bd2);
+	}
+
+	.fbtn,
+	.sortb {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 5px 4px;
+		font-size: 13px;
+		color: var(--t2);
+	}
+
+	.fbtn :global(svg) {
+		opacity: 0.65;
+	}
+
+	.sortb :global(svg) {
+		opacity: 0.6;
+	}
+
+	.fbtn b {
+		min-width: 17px;
+		height: 17px;
+		padding: 0 4px;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: var(--acc);
+		color: #fff;
+		font-size: 10px;
+		font-weight: 600;
+	}
+</style>

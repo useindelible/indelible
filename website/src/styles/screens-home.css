@@ -1,0 +1,209 @@
+/* ============================================================================
+   Home view.
+
+   Cards are 200px with a 102px cover, so five plus a PARTIAL sixth fit the
+   1146px pane. That partial card is the cue that the rail scrolls — the live
+   view shows one. Do not round the card width up to a clean fit.
+   ========================================================================= */
+
+/* ---------- home dashboard ----------
+   Rails of cards with real cover art, from the live Home view. The covers are
+   coded: diagrams are redrawn as SVG, photographs become composed shapes in
+   the same palette. No raster assets anywhere in this file. */
+.hm-top {
+	display:flex;
+	flex:none;
+	align-items:center;
+	justify-content:space-between;
+	padding:15px 22px 6px;
+}
+
+.hm-hello {
+	font-size:15px;
+	color:var(--t1);
+}
+
+.hm-cfg {
+	display:inline-flex;
+	align-items:center;
+	gap:7px;
+	border:1px solid var(--bd2);
+	border-radius:999px;
+	padding:7px 14px;
+	font-size:13px;
+	color:var(--t1);
+}
+
+.hm-cfg svg {
+	display:block;
+	opacity:.7;
+}
+
+.hm-sec {
+	display:flex;
+	flex:none;
+	align-items:baseline;
+	justify-content:space-between;
+	padding:18px 22px 12px;
+}
+
+.hm-sec h3 {
+	font-size:19px;
+	font-weight:700;
+	letter-spacing:-.022em;
+	color:var(--t1);
+}
+
+.hm-all {
+	font-size:13px;
+	color:var(--acc);
+	font-weight:500;
+}
+
+.hm-rail {
+	display:flex;
+	flex:none;
+	gap:16px;
+	padding:0 22px;
+	overflow:hidden;
+}
+
+.hm-card {
+	width:200px;
+	flex:none;
+	border:1px solid var(--bd);
+	border-radius:10px;
+	overflow:hidden;
+	background:var(--bg1);
+}
+
+.hm-thumb {
+	height:102px;
+	position:relative;
+	overflow:hidden;
+	background:var(--bg2);
+}
+
+.hm-art {
+	position:absolute;
+	inset:0;
+}
+
+.cvr {
+	position:absolute;
+	inset:0;
+	overflow:hidden;
+}
+
+.cvr i {
+	position:absolute;
+	display:block;
+}
+
+.hm-prog {
+	position:absolute;
+	left:0;
+	bottom:0;
+	height:3px;
+	background:var(--acc);
+	z-index:3;
+}
+
+.hm-b {
+	padding:10px 12px 12px;
+}
+
+.hm-meta {
+	display:flex;
+	align-items:center;
+	gap:7px;
+	font-size:11.5px;
+	color:var(--t2);
+	white-space:nowrap;
+	overflow:hidden;
+}
+
+.hm-fav {
+	width:15px;
+	height:15px;
+	border-radius:4px;
+	display:grid;
+	place-items:center;
+	font-size:9px;
+	font-weight:700;
+	color:#fff;
+	flex:none;
+	letter-spacing:-.02em;
+}
+
+.hm-title {
+	font-size:13.5px;
+	font-weight:600;
+	letter-spacing:-.012em;
+	line-height:1.34;
+	margin-top:8px;
+	color:var(--t1);
+	display:-webkit-box;
+	-webkit-line-clamp:2;
+	-webkit-box-orient:vertical;
+	overflow:hidden;
+}
+
+.hm-auth {
+	font-size:11.5px;
+	color:var(--t3);
+	margin-top:9px;
+}
+
+/* Daily review is the one amber surface, and its action is not live yet */
+.hm-review {
+	flex:none;
+	margin:2px 22px 0;
+	border:1px solid rgba(255,149,0,.30);
+	background:rgba(255,149,0,.07);
+	border-radius:12px;
+	padding:14px 16px;
+	display:flex;
+	align-items:center;
+	gap:14px;
+}
+
+.hm-ricon {
+	width:40px;
+	height:40px;
+	border-radius:11px;
+	background:#FF9500;
+	color:#fff;
+	display:grid;
+	place-items:center;
+	flex:none;
+}
+
+.hm-ricon svg {
+	display:block;
+}
+
+.hm-rt {
+	display:block;
+	font-size:15px;
+	font-weight:600;
+	color:var(--t1);
+}
+
+.hm-rs {
+	display:block;
+	font-size:13px;
+	color:var(--t2);
+	margin-top:3px;
+}
+
+.hm-soon {
+	margin-left:auto;
+	border-radius:999px;
+	padding:8px 17px;
+	font-size:13px;
+	font-weight:500;
+	background:color-mix(in srgb,var(--acc) 42%,transparent);
+	color:#fff;
+	white-space:nowrap;
+}

@@ -1,0 +1,91 @@
+---
+/**
+ * The capability strip under the hero.
+ *
+ * The list is rendered twice and translated by -50%, which is what makes the
+ * loop seamless; the second copy is aria-hidden so it is announced once.
+ * Reduced motion drops the duplicate and centres the single row.
+ */
+interface Props {
+	items: readonly string[];
+}
+const { items } = Astro.props;
+---
+
+<div class="hero-foot">
+	<div class="mq">
+		<div>{items.map((item) => <span>{item}</span>)}</div>
+		<div aria-hidden="true">{items.map((item) => <span>{item}</span>)}</div>
+	</div>
+</div>
+
+<style>
+	/* The #000 stops below are mask opacity, not colour: in a mask-image,
+	   black means fully opaque. They are theme-independent by definition. */
+	.hero-foot {
+		position: relative;
+		margin-top: 74px;
+		padding: 20px 0;
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+		overflow: hidden;
+		-webkit-mask-image: linear-gradient(
+			90deg,
+			transparent,
+			/* Mask alpha stops, not colours: black is opaque in a mask. */
+		#000 9%,
+			#000 91%,
+			transparent
+		);
+		mask-image: linear-gradient(
+			90deg,
+			transparent,
+			#000 9%,
+			#000 91%,
+			transparent
+		);
+	}
+
+	.mq {
+		display: flex;
+		width: max-content;
+		animation: mq 34s linear infinite;
+	}
+
+	.hero-foot:hover .mq {
+		animation-play-state: paused;
+	}
+
+	.mq > div {
+		display: flex;
+		gap: 42px;
+		padding-right: 42px;
+	}
+
+	span {
+		font-family: var(--f-m);
+		font-size: 11px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--faint);
+		white-space: nowrap;
+	}
+
+	@keyframes mq {
+		to {
+			transform: translate3d(-50%, 0, 0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.mq {
+			animation: none;
+			width: 100%;
+			justify-content: center;
+		}
+
+		.mq > div:last-child {
+			display: none;
+		}
+	}
+</style>

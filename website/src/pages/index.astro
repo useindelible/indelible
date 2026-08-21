@@ -1,44 +1,78 @@
 ---
-import SiteHeader from '../components/SiteHeader.astro';
-import Hero from '../components/Hero.astro';
-import Features from '../components/Features.astro';
-import DeploymentSplit from '../components/DeploymentSplit.astro';
-import OpenSource from '../components/OpenSource.astro';
-import SiteFooter from '../components/SiteFooter.astro';
-import '../styles/site-tokens.css';
-import '../styles/landing.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/layout/SiteHeader.astro';
+import Button from '../components/primitives/Button.astro';
+import Hero from '../components/home/Hero.astro';
+import LibraryScreen from '../components/screens/LibraryScreen.astro';
+import ReaderPhone from '../components/screens/phone/ReaderPhone.astro';
+import HomePhone from '../components/screens/phone/HomePhone.astro';
+import ReaderAuraSprite from '../components/screens/phone/ReaderAuraSprite.astro';
+import Constellation from '../components/home/Constellation.astro';
+import Graveyard from '../components/home/Graveyard.astro';
+import ProductWall from '../components/home/ProductWall.astro';
+import LongReads from '../components/home/LongReads.astro';
+import MilaSection from '../components/home/MilaSection.astro';
+import Mobile from '../components/home/Mobile.astro';
+import Integrations from '../components/home/Integrations.astro';
+import CaptureRoutes from '../components/home/CaptureRoutes.astro';
+import ExtensionScreen from '../components/screens/ExtensionScreen.astro';
+import ThemeParity from '../components/home/ThemeParity.astro';
+import SelfHost from '../components/home/SelfHost.astro';
+import SiteFooter from '../components/layout/SiteFooter.astro';
+import { SITE, CAPABILITIES } from '../data/site';
+import type { Stat } from '../lib/types';
+
+const HERO_STATS: Stat[] = [
+	{ value: 64, label: 'capabilities verified' },
+	{ value: 6, label: 'ways in' },
+	{ value: 4, label: 'clients' },
+	{ value: 'AGPL', label: 'Licensed forever' },
+];
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Indelible: Read it later. Keep it forever.</title>
-		<meta
-			name="description"
-			content="Open-source read-it-later and knowledge archiver. Everything you save is captured in full, so your library never rots."
-		/>
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<script is:inline>
-			// Reuse Starlight's persisted choice so landing and docs agree on theme.
-			const stored = localStorage.getItem('starlight-theme');
-			document.documentElement.dataset.theme =
-				stored === 'light' || stored === 'dark'
-					? stored
-					: matchMedia('(prefers-color-scheme: dark)').matches
-						? 'dark'
-						: 'light';
-		</script>
-	</head>
-	<body>
-		<SiteHeader />
-		<main>
-			<Hero />
-			<Features />
-			<DeploymentSplit />
-			<OpenSource />
-		</main>
-		<SiteFooter />
-	</body>
-</html>
+<BaseLayout title={`${SITE.name}: ${SITE.tagline}`} description={SITE.description}>
+	<ReaderAuraSprite />
+	<SiteHeader />
+	<main>
+		<Hero
+			eyebrow="Pocket deleted every library, Oct 2025"
+			headline={[{ text: 'Read it later.' }, { text: 'Keep it ', em: 'forever.' }]}
+			lede="Articles, newsletters, PDFs and books, archived in full at save time and stored on hardware you own."
+			stats={HERO_STATS}
+			marquee={CAPABILITIES}
+		>
+			<Constellation slot="visual">
+				<LibraryScreen slot="main" />
+				<ReaderPhone slot="phone" paper="light" />
+				<HomePhone slot="ext" dark={false} />
+			</Constellation>
+
+			<Fragment slot="cta">
+				<Button href="#host" arrow>Self-host on GitHub</Button>
+				<Button href="#surfaces" variant="ghost">See the product</Button>
+			</Fragment>
+		</Hero>
+
+		<Graveyard />
+
+		<ProductWall />
+
+		<LongReads />
+
+		<MilaSection />
+
+		<Mobile />
+
+		<CaptureRoutes>
+			<ExtensionScreen slot="frame" />
+		</CaptureRoutes>
+
+		<Integrations />
+
+		<ThemeParity />
+
+		<SelfHost />
+	</main>
+
+	<SiteFooter />
+</BaseLayout>

@@ -1,0 +1,108 @@
+/* ============================================================================
+   THEMES — the only file in the project that contains a colour literal.
+
+   To change a theme, edit its block. To add one:
+
+     1. copy a block, rename the selector to [data-theme='yourname']
+     2. change the sixteen values
+     3. add it to THEMES in src/data/themes.ts
+
+   Nothing else needs to change. Every component reads semantic tokens
+   (--bg, --ink, --accent …) from tokens.css, and tokens.css never hard-codes
+   a colour — it only forwards what a theme block sets. That indirection is
+   the whole point: a component can never pin itself to one palette.
+
+   Each block defines exactly the same names. If a theme omits one it inherits
+   the previous theme's value, which is how palettes go subtly wrong, so keep
+   the blocks aligned and complete.
+
+   SCOPED THEMES. Every block also answers to [data-theme-scope='<id>'], so any
+   region can pin itself to a palette regardless of the page theme:
+
+     <section data-theme-scope="dark">…</section>
+
+   Custom properties inherit, so everything inside that region re-themes. This
+   is how the graveyard band stays dark in a light page without a single
+   component knowing about it.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- dark ----
+   The default. Warm near-black ground, bone ink, terracotta accent. */
+:root,
+[data-theme='dark'],
+[data-theme-scope='dark'] {
+	--t-bg: #0d0f0e;
+	--t-bg-2: #131615;
+	--t-raised: #191d1b;
+	--t-raised-2: #20241f;
+
+	--t-ink: #ede9e0;
+	--t-dim: #a29c90;
+	--t-faint: #6e6a61;
+
+	--t-line: rgba(237, 233, 224, 0.11);
+	--t-line-2: rgba(237, 233, 224, 0.2);
+
+	--t-accent: #ff6b2c;
+	--t-accent-dim: rgba(255, 107, 44, 0.14);
+	--t-on-accent: #ffffff;
+	/* Highlights drawn ON the accent, so they track --t-on-accent. */
+	--t-accent-sheen: rgba(255, 255, 255, 0.22);
+	--t-accent-sheen-hi: rgba(255, 255, 255, 0.28);
+	--t-accent-chip: rgba(255, 255, 255, 0.2);
+	--t-accent-chip-hi: rgba(255, 255, 255, 0.32);
+
+	/* The terminal quotes a real shell, so it stays dark in every theme. */
+	--t-term-bg: #0a0c0b;
+	--t-term-ink: #ede9e0;
+
+	--t-moss: #8fbf6b;
+	--t-amber: #e0ae46;
+	--t-crimson: #e07070;
+	--t-sky: #6fa8e8;
+
+	--t-shot:
+		0 40px 100px -30px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(237, 233, 224, 0.09);
+	--t-card: 0 18px 44px -26px rgba(0, 0, 0, 0.8);
+}
+
+/* --------------------------------------------------------------- light ----
+   Warm paper rather than white; the accent darkens to hold contrast on it. */
+[data-theme='light'],
+[data-theme-scope='light'] {
+	--t-bg: #f7f6f3;
+	--t-bg-2: #efede7;
+	--t-raised: #ffffff;
+	--t-raised-2: #faf9f6;
+
+	--t-ink: #14140f;
+	--t-dim: #5b564e;
+	--t-faint: #8e877c;
+
+	--t-line: rgba(20, 20, 15, 0.1);
+	--t-line-2: rgba(20, 20, 15, 0.17);
+
+	--t-accent: #c2410c;
+	--t-accent-dim: rgba(194, 65, 12, 0.09);
+	--t-on-accent: #ffffff;
+	/* Highlights drawn ON the accent, so they track --t-on-accent. */
+	--t-accent-sheen: rgba(255, 255, 255, 0.22);
+	--t-accent-sheen-hi: rgba(255, 255, 255, 0.28);
+	--t-accent-chip: rgba(255, 255, 255, 0.2);
+	--t-accent-chip-hi: rgba(255, 255, 255, 0.32);
+
+	/* The terminal quotes a real shell, so it stays dark in every theme. */
+	--t-term-bg: #0a0c0b;
+	--t-term-ink: #ede9e0;
+
+	--t-moss: #4d6b3a;
+	--t-amber: #b4791a;
+	--t-crimson: #a32b22;
+	--t-sky: #1d63b5;
+
+	--t-shot:
+		0 2px 6px rgba(20, 20, 15, 0.04), 0 28px 64px -26px rgba(20, 20, 15, 0.28),
+		0 0 0 1px rgba(20, 20, 15, 0.07);
+	--t-card:
+		0 1px 2px rgba(20, 20, 15, 0.04), 0 12px 34px -20px rgba(20, 20, 15, 0.22);
+}

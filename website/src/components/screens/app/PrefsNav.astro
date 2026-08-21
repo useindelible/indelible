@@ -1,0 +1,30 @@
+---
+/**
+ * The Preferences navigation column.
+ *
+ * Identical on every settings screen except which row is active, which is why
+ * it takes only `active`.
+ */
+import Icon from '../Icon.astro';
+import { PREFS_NAV } from '../../../data/mila';
+
+interface Props {
+	/** Label of the active row. An unknown label highlights nothing. */
+	active?: string;
+}
+const { active } = Astro.props;
+---
+
+<div class="ml-nav">
+	<div class="lab">Preferences</div>
+	{
+		PREFS_NAV.map((item) => (
+			<a class:list={{ on: item.label === active }}>
+				<span class="g">
+					<Icon name={item.icon} />
+				</span>
+				{item.label}
+			</a>
+		))
+	}
+</div>

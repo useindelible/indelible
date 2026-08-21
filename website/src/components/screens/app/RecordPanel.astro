@@ -1,0 +1,374 @@
+---
+/**
+ * The article record in the detail panel.
+ *
+ * A generic panel rather than DetailPanel's document-driven one: some screens
+ * (search) show a record for a document that is not in DOCS. The Follow button
+ * is disabled here for the same reason it is everywhere — it is disabled in
+ * the product.
+ *
+ * Everything below the title flexes, because the records differ in kind: a
+ * feed entry has an excerpt rather than a Mila summary and nothing extracted
+ * from it yet, and a book has pages and a reading-progress group where an
+ * article has words and an author. Pass a slot to append an action under the
+ * metadata.
+ */
+import Icon from '../Icon.astro';
+import { MILA_SUMMARY_CREDIT, MILA_ENTITY_CREDIT } from '../../../data/app';
+
+export interface RecordField {
+	label: string;
+	value: string;
+	/** Renders as a progress bar rather than text. */
+	progress?: number;
+}
+
+export interface RecordEntity {
+	name: string;
+	count?: string;
+}
+
+/** A labelled block of fields below the metadata, e.g. Reading progress. */
+export interface RecordGroup {
+	heading: string;
+	fields: readonly RecordField[];
+}
+
+interface Props {
+	title: string;
+	/** The line under the title: a domain for a document, an author for a book. */
+	domain: string;
+	/** Omitted entirely when the record has no author card, as a book does not. */
+	author?: string;
+	/** Second line of the author card, printed as @handle. */
+	authorHandle?: string;
+	summary: string;
+	/** 'Summary' for a fetched document, 'Excerpt' for an unfetched entry. */
+	summaryHeading?: string;
+	/** Empty when nothing wrote the prose, which drops the byline entirely. */
+	summaryBy?: string;
+	fields: readonly RecordField[];
+	/** Further labelled field groups after Metadata. */
+	groups?: readonly RecordGroup[];
+	entityHeading?: string;
+	entities?: readonly RecordEntity[];
+}
+const {
+	title,
+	domain,
+	author,
+	authorHandle,
+	summary,
+	summaryHeading = 'Summary',
+	summaryBy = MILA_SUMMARY_CREDIT,
+	fields,
+	groups,
+	entityHeading,
+	entities,
+} = Astro.props;
+---
+
+<div class="dp">
+	<div class="dp-h">
+		<span class="lbl">Details</span>
+		<span class="sp2">
+			<span class="pill"><Icon name="info" size={13} /> Info</span>
+			<span class="gh"><Icon name="notebook" size={13} /></span>
+			<span class="gh"><Icon name="chat" size={13} /></span>
+		</span>
+	</div>
+
+	<div class="dp-b">
+		<h3 class="dp-t">{title}</h3>
+		<div class="dp-d">{domain}</div>
+
+		{
+			author && (
+				<div class="auth">
+					<span class="av">
+						<Icon name="person" size={19} />
+					</span>
+					<span>
+						<span class="nm">{author}</span>
+						{authorHandle && <span class="hd">@{authorHandle}</span>}
+					</span>
+					<button
+						class="fw"
+						type="button"
+						disabled
+						aria-label="Follow author (not yet available)"
+					>
+						<Icon name="globe" size={11} />
+						Follow
+					</button>
+				</div>
+			)
+		}
+
+		<div class="k">{summaryHeading}</div>
+		<p class="sum">{summary}</p>
+		{summaryBy && <div class="by">{summaryBy}</div>}
+
+		{
+			[{ heading: 'Metadata', fields }, ...(groups ?? [])].map((group) => (
+				<>
+					<div class="k">{group.heading}</div>
+					<div class="mt">
+						{group.fields.map((f) => (
+							<div class="r">
+								<span class="l">{f.label}</span>
+								<span class="v">
+									{f.progress !== undefined ? (
+										<span class="pgi">
+											{f.progress}%
+											<span class="pgb">
+												<span class="pgf" style={`width:${f.progress}%`} />
+											</span>
+										</span>
+									) : (
+										f.value
+									)}
+								</span>
+							</div>
+						))}
+					</div>
+				</>
+			))
+		}
+
+		{
+			entities && entities.length > 0 && (
+				<>
+					<div class="k">Entities</div>
+					<div class="by" style="margin-top:-3px">
+						{MILA_ENTITY_CREDIT}
+					</div>
+					{entityHeading && (
+						<div class="k" style="margin-top:11px;font-size:10px">
+							{entityHeading}
+						</div>
+					)}
+					{entities.map((e) => (
+						<div class="ent">
+							<a>{e.name}</a>
+							{e.count && <span class="c">{e.count}</span>}
+						</div>
+					))}
+				</>
+			)
+		}
+
+		<slot />
+	</div>
+</div>
+
+<style>
+	/* Mirrors DetailPanel: both render the same panel chrome, and duplicating a
+	   handful of rules is cheaper than a shared partial neither owns. */
+	.dp {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		background: var(--bg1);
+		border-left: 1px solid var(--bd);
+	}
+
+	.dp-h {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--bd);
+	}
+
+	.lbl {
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--t3);
+	}
+
+	.sp2 {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 6px 13px;
+		border-radius: 999px;
+		background: var(--acc);
+		color: #fff;
+		font-size: 12.5px;
+		font-weight: 600;
+	}
+
+	.gh {
+		width: 29px;
+		height: 29px;
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--bg3);
+		color: var(--t2);
+	}
+
+	.dp-b {
+		padding: 15px 14px;
+		overflow: hidden;
+	}
+
+	.dp-t {
+		font-size: 16.5px;
+		font-weight: 700;
+		line-height: 1.27;
+		letter-spacing: -0.022em;
+	}
+
+	.dp-d {
+		margin-top: 3px;
+		font-size: 12.5px;
+		color: var(--t2);
+	}
+
+	.auth {
+		display: flex;
+		align-items: center;
+		gap: 11px;
+		margin-top: 14px;
+		padding: 12px;
+		border-radius: 14px;
+		background: var(--hov);
+	}
+
+	.auth .av {
+		width: 38px;
+		height: 38px;
+		flex: none;
+		border-radius: 50%;
+		display: grid;
+		place-items: center;
+		color: #fff;
+		background: linear-gradient(135deg, #667eea, #764ba2);
+	}
+
+	.nm {
+		display: block;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--t1);
+	}
+
+	.hd {
+		font-size: 12px;
+		color: var(--t2);
+	}
+
+	.fw {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		min-height: 28px;
+		padding: 5px 12px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #fff;
+		background: color-mix(in srgb, var(--acc) 42%, transparent);
+		cursor: default;
+	}
+
+	.k {
+		margin: 16px 0 7px;
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--t3);
+	}
+
+	.sum {
+		font-size: 12.8px;
+		line-height: 1.55;
+		color: var(--t1);
+	}
+
+	.mt .r {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		padding: 9px 0;
+		border-bottom: 0.5px solid var(--bd);
+	}
+
+	.mt .r:last-child {
+		border-bottom: none;
+	}
+
+	.mt .l {
+		font-size: 12px;
+		color: var(--t2);
+	}
+
+	.mt .v {
+		font-size: 13px;
+		text-align: right;
+		color: var(--t1);
+	}
+
+	.pgi {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.pgb {
+		display: inline-block;
+		width: 74px;
+		height: 4px;
+		border-radius: 3px;
+		background: var(--bd2);
+		overflow: hidden;
+	}
+
+	.pgf {
+		display: block;
+		height: 100%;
+		background: var(--acc);
+	}
+
+	.ent {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 5px 0;
+		font-size: 12.5px;
+	}
+
+	.ent a {
+		color: var(--acc);
+	}
+
+	.ent .c {
+		padding: 2px 6px;
+		border-radius: 5px;
+		background: var(--bg3);
+		font-size: 10.5px;
+		color: var(--t3);
+	}
+
+	/* The screen's dark class sits outside this component, so it has to be
+	   global; everything it selects is still scoped. */
+	:global(.app-ui.dk) .auth .fw {
+		background: color-mix(in srgb, var(--acc) 24%, transparent);
+		color: rgba(255, 255, 255, 0.62);
+	}
+</style>

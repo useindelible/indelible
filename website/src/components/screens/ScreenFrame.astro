@@ -1,0 +1,29 @@
+---
+/**
+ * A product screen frame.
+ *
+ * Wraps any screen's contents in the fixed-size stage that lib/screen-scaler.ts
+ * scales. Screens themselves never set a width — they author at the design
+ * size and let the frame place them.
+ */
+import type { ScreenDevice } from '../../lib/screen-scaler';
+
+interface Props {
+	device?: ScreenDevice;
+	/** The application's own dark column, independent of the page theme. */
+	dark?: boolean;
+	/** Layout class from the parent, e.g. a constellation position. */
+	class?: string;
+	/** Describes the screen for assistive tech; frames are images of the app. */
+	label: string;
+}
+const { device = 'desk', dark = false, class: className, label } = Astro.props;
+---
+
+<div class:list={['app-ui', { dk: dark }, className]}>
+	<div class="screen" data-screen data-d={device} role="img" aria-label={label}>
+		<div class="screen-inner" data-screen-inner>
+			<slot />
+		</div>
+	</div>
+</div>

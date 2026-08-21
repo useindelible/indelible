@@ -1,0 +1,94 @@
+---
+/**
+ * Search: the field, the syntax legend, the matched entity, then the hits.
+ *
+ * Matches are highlighted in place. The legend wraps to two lines at the
+ * authored width because the live window is wider than 1366 — that is correct,
+ * not a bug to fix by clipping the tail.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import RecordPanel from './app/RecordPanel.astro';
+import Icon from './Icon.astro';
+import { highlight } from '../../lib/highlight';
+import {
+	SEARCH_QUERY,
+	SEARCH_SYNTAX,
+	SEARCH_ENTITY,
+	SEARCH_HITS,
+} from '../../data/search';
+import { SEARCH_RECORD } from '../../data/search-record';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="Searching the Indelible library">
+	<AppShell>
+		<Sidebar active="search" />
+
+		<ListPane>
+			<div class="sf">
+				<span class="mag"><Icon name="search" size={19} /></span>
+				<span class="q">{SEARCH_QUERY}</span>
+				<span class="x"><Icon name="remove" size={13} /></span>
+				<span class="go"><Icon name="search" size={16} /></span>
+			</div>
+
+			<div class="synr">
+				<b>Syntax:</b>{SEARCH_SYNTAX.map((t) => <i>{t}</i>)}
+				<span class="qm"><Icon name="info" size={13} /></span>
+			</div>
+
+			<div class="rescount">
+				{SEARCH_HITS.length} results for &ldquo;<b>{SEARCH_QUERY}</b>&rdquo;
+			</div>
+
+			<div class="ecard">
+				<span class="tile"><Icon name="books" size={25} /></span>
+				<div>
+					<div class="nm">{SEARCH_ENTITY.name}<span class="bdg">{SEARCH_ENTITY.badge}</span></div>
+					<div class="sub">{SEARCH_ENTITY.mentions}</div>
+					<div class="met">{SEARCH_ENTITY.seen}</div>
+				</div>
+				<span class="fby"><Icon name="filter" size={13} />Filter by entity</span>
+			</div>
+
+			{
+				SEARCH_HITS.map((hit) => (
+					<div class:list={['row', { on: hit.selected }]}>
+						<div class="tb" style={`background:${hit.tint}`}>{hit.emoji}</div>
+						<div>
+							<div class="rt">{hit.title}</div>
+							<div class="rx rx2">
+								{highlight(hit.excerpt, SEARCH_QUERY).map((f) =>
+									f.match ? <span class="hit">{f.text}</span> : f.text,
+								)}
+							</div>
+							<div class="rm">
+								<span class="fav" style={`background:${hit.favColour}`}>{hit.favLetter}</span>
+								<b>{hit.domain}</b>
+							</div>
+							<div class="withs">
+								<span>with</span>
+								{hit.entities.map((e) => <span class={`ch ${e.tone}`}>{e.name}</span>)}
+							</div>
+						</div>
+						<div class="srmeta">
+							<span class="tbadge">{hit.kind}</span>
+							<span class="ag">{hit.age}</span>
+						</div>
+					</div>
+				))
+			}
+			<div class="grip"></div>
+		</ListPane>
+
+		<RecordPanel {...SEARCH_RECORD} />
+	</AppShell>
+</ScreenFrame>

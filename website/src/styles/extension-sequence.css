@@ -1,0 +1,137 @@
+/* ============================================================================
+   Extension capture sequence.
+
+   Pre-save -> saving -> saved -> highlight -> tags, played once when the frame
+   enters view. IntersectionObserver adds .xt-play; there is no scroll listener.
+
+   The frame's RESTING state is the finished one. Every animation ends on
+   exactly those static values with animation-fill-mode:both, so if the script
+   never runs — or the reader has prefers-reduced-motion — the screen still
+   shows a correct finished frame rather than a stalled first beat.
+
+   Two things learned the hard way and encoded here:
+   - border-box cannot shrink a box below its own padding, so the status pills
+     animate their padding inside the keyframes rather than carrying a static
+     one, which would leave them 20px wide at rest.
+   - The tag panel needs an opaque background: the design source's translucent
+     bar relies on a backdrop-filter blur that is not ported, so 96% alpha lets
+     the page beneath bleed through.
+   ========================================================================= */
+
+.xt-play .xt-spin {
+	animation:xt-spin 800ms linear infinite;
+}
+
+.xt-play .xt-tb {
+	animation:xt-bar 420ms cubic-bezier(.2,.85,.2,1) 1200ms both;
+}
+
+.xt-play .xt-lock,.xt-play .xt-item,.xt-play .xt-grp {
+	animation:xt-fade 340ms ease 1420ms both;
+}
+
+.xt-play .xt-badge {
+	animation:xt-badge 2700ms linear 1200ms both;
+}
+
+.xt-play .xt-status.a {
+	animation:xt-pillA 2250ms cubic-bezier(.2,.85,.2,1) 1700ms both;
+}
+
+.xt-play .xt-status.b {
+	animation:xt-pillB 1500ms cubic-bezier(.2,.85,.2,1) 3900ms both;
+}
+
+.xt-play .xt-count i.a {
+	animation:xt-swap 2670ms steps(1,end) 1200ms both;
+}
+
+.xt-play .xt-count i.b {
+	animation:xt-swapb 2670ms steps(1,end) 1200ms both;
+}
+
+.xt-play .xt-item .sv {
+	animation:xt-fade 420ms ease 3600ms both;
+}
+
+.xt-play .xt-hl {
+	animation:xt-wipe 1200ms cubic-bezier(.35,0,.25,1) 5600ms both;
+}
+
+.xt-play .xt-panel {
+	animation:xt-panel 3400ms cubic-bezier(.2,.85,.2,1) 8000ms both;
+}
+
+.xt-play .xt-chip {
+	animation:xt-chipA 2900ms cubic-bezier(.32,1.22,.36,1) 8500ms both;
+}
+
+.xt-play .xt-chip:nth-child(2) {
+	animation:xt-chipB 2500ms cubic-bezier(.32,1.22,.36,1) 8900ms both;
+}
+
+.xt-play .xt-ib.tg {
+	animation:xt-tint 3400ms ease 8000ms both;
+}
+
+@keyframes xt-spin{to{transform:rotate(360deg)}}
+
+@keyframes xt-bar{from{height:0}to{height:44px}}
+
+@keyframes xt-fade{from{opacity:0}to{opacity:1}}
+
+@keyframes xt-badge{
+  0%{opacity:0;transform:scale(.4);background:var(--xr-warn)}
+  9%{opacity:1;transform:scale(1);background:var(--xr-warn)}
+  85%{opacity:1;transform:scale(1);background:var(--xr-warn)}
+  100%{opacity:1;transform:scale(1);background:var(--xr-ok)}}
+
+@keyframes xt-pillA{
+  0%{max-width:0;opacity:0;padding:0}
+  16%{max-width:110px;opacity:1;padding:0 10px}
+  84%{max-width:110px;opacity:1;padding:0 10px}
+  100%{max-width:0;opacity:0;padding:0}}
+
+@keyframes xt-pillB{
+  0%{max-width:0;opacity:0;padding:0}
+  24%{max-width:110px;opacity:1;padding:0 10px}
+  73%{max-width:110px;opacity:1;padding:0 10px}
+  100%{max-width:0;opacity:0;padding:0}}
+
+@keyframes xt-swap{0%{opacity:1}92%{opacity:1}100%{opacity:0}}
+
+@keyframes xt-swapb{0%{opacity:0}92%{opacity:0}100%{opacity:1}}
+
+@keyframes xt-wipe{
+  from{background-size:0% 100%;color:var(--xp-t1);box-shadow:0 0 0 1px transparent}
+  to{background-size:100% 100%;color:var(--xr-hlt);box-shadow:0 0 0 1px var(--xr-hlring)}}
+
+@keyframes xt-panel{
+  0%{opacity:0;visibility:hidden;transform:translateY(-6px)}
+  11%{opacity:1;visibility:visible;transform:translateY(0)}
+  84%{opacity:1;visibility:visible;transform:translateY(0)}
+  100%{opacity:0;visibility:hidden;transform:translateY(-6px)}}
+
+@keyframes xt-chipA{
+  0%{opacity:0;transform:scale(.84)}
+  13%{opacity:1;transform:scale(1)}
+  86%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(.84)}}
+
+@keyframes xt-chipB{
+  0%{opacity:0;transform:scale(.84)}
+  15%{opacity:1;transform:scale(1)}
+  84%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(.84)}}
+
+@keyframes xt-tint{
+  0%{color:var(--xp-t2);background:transparent}
+  11%{color:var(--acc);background:var(--sel2)}
+  84%{color:var(--acc);background:var(--sel2)}
+  100%{color:var(--xp-t2);background:transparent}}
+
+@media(prefers-reduced-motion:reduce){
+  .xt-play .xt-tb,.xt-play .xt-lock,.xt-play .xt-item,.xt-play .xt-grp,
+  .xt-play .xt-badge,.xt-play .xt-status,.xt-play .xt-count i,
+  .xt-play .xt-hl,.xt-play .xt-panel,.xt-play .xt-chip,
+  .xt-play .xt-ib.tg,.xt-play .xt-spin,.xt-play .xt-item .sv{animation:none!important}}

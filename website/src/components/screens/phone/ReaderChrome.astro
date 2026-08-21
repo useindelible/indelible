@@ -1,0 +1,17 @@
+---
+/**
+ * The floating chrome over a reading surface: back on the left, contents and
+ * overflow on the right, above a veil that keeps them legible over text.
+ */
+import PhoneIcon from './PhoneIcon.astro';
+---
+
+<div class="ph-chromeveil"></div>
+
+<div class="ph-float">
+	<span class="ph-fbtn"><PhoneIcon name="chev-l" size={19} /></span>
+	<span class="ph-fgroup">
+		<span class="ph-fbtn"><PhoneIcon name="toc" size={19} /></span>
+		<span class="ph-fbtn"><PhoneIcon name="more" size={19} /></span>
+	</span>
+</div>

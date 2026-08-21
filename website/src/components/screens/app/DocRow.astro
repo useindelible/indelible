@@ -1,0 +1,46 @@
+---
+/**
+ * One document in the list pane.
+ *
+ * The favicon is a letter mark rather than a fetched site icon — a stated
+ * approximation, not an oversight. Progress only renders when there is some.
+ */
+import type { Doc } from '../../../data/library';
+
+interface Props {
+	doc: Doc;
+	selected?: boolean;
+}
+const { doc, selected = false } = Astro.props;
+---
+
+<div class:list={['row', { on: selected }]}>
+	<div class="tb" style={`background:${doc.tint}`}>{doc.emoji}</div>
+
+	<div>
+		<h3 class="rt">{doc.title}</h3>
+		<p class="rx">{doc.summary}</p>
+		<div class="rm">
+			<span class="fav" style={`background:${doc.accent}`}>
+				{doc.source[0].toUpperCase()}
+			</span>
+			<b>{doc.source}</b><span>·</span>
+			<span>{doc.author}</span><span>·</span>
+			<span>{doc.length}</span>
+		</div>
+		{
+			doc.progress > 0 && (
+				<div class="pg">
+					<i style={`width:${doc.progress}%`} />
+				</div>
+			)
+		}
+	</div>
+
+	<div class="ag">{doc.age}</div>
+</div>
+
+<style>
+	/* Row chrome lives in styles/app-rows.css — search and the feed draw the
+	   same row and none of them owns it. Nothing here is DocRow-only yet. */
+</style>

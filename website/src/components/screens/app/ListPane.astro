@@ -1,0 +1,42 @@
+---
+/**
+ * The middle pane: toolbar, rows, and a pinned item count.
+ *
+ * `overflow: hidden` is what makes a screen look like a viewport onto a longer
+ * list — rows past the frame are cut, not shrunk.
+ */
+interface Props {
+	/** Total in the collection, shown bottom-right. */
+	count?: string;
+}
+const { count } = Astro.props;
+---
+
+<div class="lp">
+	<slot />
+	{count && <div class="lp-f">{count}</div>}
+</div>
+
+<style>
+	.lp {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		background: var(--bg1);
+		overflow: hidden;
+	}
+
+	.lp-f {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		padding: 9px 18px;
+		border-top: 1px solid var(--bd);
+		background: var(--bg1);
+		font-size: 11.5px;
+		color: var(--t3);
+		text-align: right;
+	}
+</style>

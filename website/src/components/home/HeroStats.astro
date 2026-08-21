@@ -1,0 +1,63 @@
+---
+/**
+ * The signature row under the hero copy.
+ *
+ * A numeric `value` counts up on entry (see lib/counters.ts); a string value
+ * such as "AGPL" is printed as-is.
+ */
+import type { Stat } from '../../lib/types';
+
+interface Props {
+	stats: Stat[];
+}
+const { stats } = Astro.props;
+---
+
+<dl class="hero-sig">
+	{
+		stats.map((stat) => (
+			<div>
+				<dt>
+					{typeof stat.value === 'number' ? (
+						<b data-count={stat.value}>0</b>
+					) : (
+						<b>{stat.value}</b>
+					)}
+				</dt>
+				<dd>{stat.label}</dd>
+			</div>
+		))
+	}
+</dl>
+
+<style>
+	.hero-sig {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 22px;
+		margin-top: 34px;
+		padding-top: 22px;
+		border-top: 1px solid var(--line);
+	}
+
+	dt,
+	dd {
+		font-family: var(--f-m);
+		font-size: 11px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	b {
+		display: block;
+		font-family: var(--f-d);
+		font-size: 23px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		color: var(--ink);
+		text-transform: none;
+		margin-bottom: 2px;
+		font-variant-numeric: tabular-nums;
+	}
+</style>

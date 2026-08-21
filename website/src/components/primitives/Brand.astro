@@ -1,0 +1,66 @@
+---
+/** The wordmark. Used by the header and the footer, so it lives here once. */
+interface Props {
+	size?: 'md' | 'sm';
+	href?: string;
+	class?: string;
+}
+const { size = 'md', href = '/', class: className } = Astro.props;
+---
+
+<a class:list={['brand', `brand-${size}`, className]} href={href}>
+	<span class="mark" aria-hidden="true"></span>
+	<span class="word">Indelible</span>
+</a>
+
+<style>
+	.brand {
+		display: flex;
+		align-items: center;
+		gap: 11px;
+		flex: none;
+	}
+
+	.mark {
+		position: relative;
+		width: 25px;
+		height: 25px;
+		border-radius: 7px;
+		background: var(--accent);
+		flex: none;
+	}
+
+	/* The counter is punched with the page ground, so it tracks the theme. */
+	.mark::after {
+		content: '';
+		position: absolute;
+		inset: 8px;
+		border-radius: 50%;
+		background: var(--bg);
+	}
+
+	.word {
+		font-family: var(--f-d);
+		font-size: 19px;
+		font-weight: 600;
+		letter-spacing: -0.015em;
+	}
+
+	.brand-sm {
+		gap: 10px;
+	}
+
+	.brand-sm .mark {
+		width: 22px;
+		height: 22px;
+		border-radius: 6px;
+	}
+
+	.brand-sm .mark::after {
+		inset: 7px;
+	}
+
+	.brand-sm .word {
+		font-size: 17px;
+	}
+</style>

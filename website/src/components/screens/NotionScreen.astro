@@ -1,0 +1,156 @@
+---
+/**
+ * Integrations → Notion.
+ *
+ * Indelible writes into one managed database; the preview card is the shape of
+ * the Notion table it maintains, so the screen shows what you get rather than
+ * describing it.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import PrefsNav from './app/PrefsNav.astro';
+import Icon from './Icon.astro';
+import GlyphRefresh from './app/GlyphRefresh.astro';
+import { NOTION } from '../../data/integrations';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = true, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="The Notion integration settings in Indelible">
+	<AppShell layout="nav">
+		<Sidebar active="prefs" />
+		<PrefsNav active="Integrations" />
+
+		<div class="ml-main">
+			<div class="nt-hero">
+				<div class="nt-prev">
+					<div class="hd">
+						<span>🏠</span>{NOTION.workspace}<span class="ok">Connected</span>
+					</div>
+					<div class="db"><Icon name="articles" /> {NOTION.database}</div>
+					<div class="nt-lab">Example preview</div>
+
+					<table class="nt-tbl">
+						<thead>
+							<tr><th>Title</th><th>Source</th><th>Saved</th></tr>
+						</thead>
+						<tbody>
+							{
+								NOTION.rows.map((r) => (
+									<tr>
+										<td>
+											<Icon name="articles" size={12} /> {r.title}
+										</td>
+										<td>{r.source}</td>
+										<td>{r.saved}</td>
+									</tr>
+								))
+							}
+						</tbody>
+					</table>
+
+					<div class="ft">
+						<span><GlyphRefresh /> {NOTION.lastEdited}</span>
+						<span>{NOTION.pending}</span>
+					</div>
+				</div>
+
+				<div class="nt-eb">
+					<i style="background:#2F6FE0;color:#fff">i</i>&times;
+					<i style="background:#F4EFE4;color:#141210">N</i>Indelible &times; Notion
+				</div>
+				<h3>Your library,<br />kept in Notion.</h3>
+				<p>{NOTION.blurb}</p>
+
+				<div class="nt-stats">
+					<div><b>{NOTION.documents}</b><i>Documents</i></div>
+					<div><b>{NOTION.lastSync}</b><i>Last sync</i></div>
+				</div>
+			</div>
+
+			<div class="nt-sec">
+				<div class="t">Connection</div>
+				<div class="d">{NOTION.connectionNote}</div>
+			</div>
+
+			<div class="nt-card">
+				<div class="nt-acc">
+					<span class="ic">🏠</span>
+					<div>
+						<div class="n">{NOTION.workspace} <s>&#10003;</s></div>
+						<div class="s">{NOTION.connectedOn}</div>
+					</div>
+					<span class="sp">
+						<span class="nt-btn"><GlyphRefresh />Re-authorize</span>
+						<span class="nt-btn">Change account</span>
+					</span>
+				</div>
+
+				{
+					NOTION.ids.map((id) => (
+						<div class="nt-id">
+							<span class="k">{id.label}</span>
+							<span class="v">{id.value}</span>
+							<span class="cp">
+								<svg
+									viewBox="0 0 24 24"
+									width="14"
+									height="14"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.7"
+									aria-hidden="true"
+								>
+									<rect x="9" y="9" width="11" height="11" rx="2" />
+									<path d="M5 15V6a1 1 0 011-1h9" />
+								</svg>
+							</span>
+						</div>
+					))
+				}
+			</div>
+
+			<div class="nt-sec">
+				<div class="t">Sync</div>
+				<div class="d">{NOTION.syncNote}</div>
+			</div>
+
+			<div class="nt-card">
+				<div class="nt-sync">
+					{
+						NOTION.sync.map((s) => (
+							<div class="c">
+								<i>{s.label}</i>
+								<b class:list={{ ok: 'ok' in s && s.ok }}>{s.value}</b>
+							</div>
+						))
+					}
+					<span class="nt-go">&rarr; Start export</span>
+				</div>
+			</div>
+
+			<div class="nt-sec">
+				<div class="t">Export settings</div>
+				<div class="d">{NOTION.exportNote}</div>
+			</div>
+
+			<div class="nt-card">
+				<div class="nt-tog">
+					<div>
+						<div class="t">Export automatically</div>
+						<div class="s">
+							New documents and highlights export as you save them, with a daily catch-up
+							sweep.
+						</div>
+					</div>
+					<span class="nt-sw"></span>
+				</div>
+			</div>
+		</div>
+	</AppShell>
+</ScreenFrame>

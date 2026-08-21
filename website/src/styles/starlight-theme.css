@@ -133,3 +133,53 @@ nav.sidebar .top-level ul ul {
 	color: var(--ink);
 	margin-top: 0.15rem;
 }
+
+/* ── Code blocks ─────────────────────────────────────────────
+   A code block quotes a real shell, so it stays dark in both site themes,
+   exactly like the landing page's Terminal primitive. Colour and geometry are
+   set in astro.config.mjs, where Expressive Code owns them; what is left here
+   is the typography of the title bar, which styleOverrides cannot express.
+
+   The bar keeps its job — naming the block — and loses the macOS costume: the
+   traffic lights are somebody else's chrome, so their opacity is zeroed in the
+   config and the label moves to the left where a caption belongs. */
+
+.expressive-code .frame .header {
+	justify-content: flex-start;
+	padding-inline: 1.15rem;
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--term-ink) 50%, transparent);
+}
+
+/* The dots are hidden but still reserve their strip; reclaim it. */
+.expressive-code .frame.is-terminal .header::before {
+	display: none;
+}
+
+/* A terminal block usually carries no title. Rather than an empty bar, name
+   what it is — the block's own label, not decoration. */
+.expressive-code .frame.is-terminal .title:empty::before {
+	content: 'Terminal';
+}
+
+/* A titled block (a file name) is a tab in Expressive Code's model. Flatten it
+   to the same caption, marked by the accent underline the config sets. */
+.expressive-code .frame.has-title:not(.is-terminal) .title {
+	padding-inline: 0;
+	font-family: var(--font-mono);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	letter-spacing: 0.14em;
+	text-transform: none;
+	color: color-mix(in srgb, var(--term-ink) 72%, transparent);
+}
+
+/* The copy button sits on the dark ground, so it needs the dark palette
+   regardless of which theme the page is in. */
+.expressive-code .copy button {
+	color: color-mix(in srgb, var(--term-ink) 72%, transparent);
+}

@@ -1,0 +1,129 @@
+---
+/**
+ * The site's only button. `variant` picks the treatment; `arrow` adds the
+ * trailing disc that slides on hover.
+ *
+ * Renders an <a> when given an href and a <button> otherwise, so a link is
+ * never faked with a click handler.
+ */
+interface Props {
+	href?: string;
+	variant?: 'primary' | 'ghost';
+	size?: 'md' | 'sm';
+	arrow?: boolean;
+	type?: 'button' | 'submit';
+	class?: string;
+	'aria-label'?: string;
+}
+const {
+	href,
+	variant = 'primary',
+	size = 'md',
+	arrow = false,
+	type = 'button',
+	class: className,
+	...rest
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+const tagProps = href ? { href } : { type };
+const classes = ['btn', `btn-${variant}`, `btn-${size}`, className];
+---
+
+<Tag class:list={classes} {...tagProps} {...rest}>
+	<slot />
+	{
+		arrow && (
+			<span class="ico" aria-hidden="true">
+				<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M5 12h13M12.5 6l6 6-6 6" />
+				</svg>
+			</span>
+		)
+	}
+</Tag>
+
+<style>
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 14.5px;
+		font-weight: 500;
+		white-space: nowrap;
+		border-radius: 999px;
+		border: 1px solid transparent;
+		transition:
+			transform var(--d-micro) var(--e-spring),
+			filter var(--d-micro) var(--e-out),
+			box-shadow var(--d-mid) var(--e-out),
+			border-color var(--d-mid) var(--e-out);
+	}
+
+	.btn:active {
+		transform: scale(0.975);
+	}
+
+	.btn-primary {
+		padding: 13px 14px 13px 24px;
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--on-accent);
+		box-shadow:
+			0 1px 0 var(--accent-sheen) inset,
+			0 10px 24px -14px var(--accent);
+	}
+
+	.btn-primary:hover {
+		filter: brightness(1.09);
+		box-shadow:
+			0 1px 0 var(--accent-sheen-hi) inset,
+			0 16px 32px -14px var(--accent);
+	}
+
+	.btn-ghost {
+		padding: 13px 24px;
+		background: transparent;
+		color: var(--ink);
+		border-color: var(--line-2);
+	}
+
+	.btn-ghost:hover {
+		border-color: var(--ink);
+	}
+
+	.btn-sm {
+		font-size: 13.5px;
+	}
+
+	.btn-sm.btn-primary {
+		padding: 9px 9px 9px 18px;
+	}
+
+	.btn-sm.btn-ghost {
+		padding: 9px 18px;
+	}
+
+	.ico {
+		width: 26px;
+		height: 26px;
+		flex: none;
+		border-radius: 999px;
+		background: var(--accent-chip);
+		display: grid;
+		place-items: center;
+		transition:
+			transform var(--d-mid) var(--e-spring),
+			background var(--d-micro) var(--e-out);
+	}
+
+	.btn:hover .ico {
+		transform: translateX(3px);
+		background: var(--accent-chip-hi);
+	}
+
+	.btn-sm .ico {
+		width: 24px;
+		height: 24px;
+	}
+</style>

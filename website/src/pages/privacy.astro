@@ -1,35 +1,25 @@
 ---
-import SiteHeader from '../components/SiteHeader.astro';
-import SiteFooter from '../components/SiteFooter.astro';
-import '../styles/site-tokens.css';
-import '../styles/landing.css';
+/**
+ * The privacy policy.
+ *
+ * Prose only: it borrows the site's header, footer and type scale rather than
+ * defining a look of its own, so a theme change reaches it too.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/layout/SiteHeader.astro';
+import SiteFooter from '../components/layout/SiteFooter.astro';
+import Wrap from '../components/primitives/Wrap.astro';
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Privacy Policy | Indelible</title>
-		<meta
-			name="description"
-			content="Privacy policy for the Indelible website, browser extension, and mobile apps."
-		/>
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<script is:inline>
-			// Reuse Starlight's persisted choice so landing and docs agree on theme.
-			const stored = localStorage.getItem('starlight-theme');
-			document.documentElement.dataset.theme =
-				stored === 'light' || stored === 'dark'
-					? stored
-					: matchMedia('(prefers-color-scheme: dark)').matches
-						? 'dark'
-						: 'light';
-		</script>
-	</head>
-	<body>
-		<SiteHeader />
-		<main class="wrap policy">
+<BaseLayout
+	title="Privacy Policy | Indelible"
+	description="Privacy policy for the Indelible website, browser extension, and mobile apps."
+	path="/privacy"
+>
+	<SiteHeader />
+
+	<main>
+		<Wrap class="policy">
 			<h1>Privacy Policy</h1>
 			<p class="meta">Effective July 29, 2026</p>
 
@@ -49,7 +39,7 @@ import '../styles/landing.css';
 			<p>
 				useindelible.com is a static site. It uses no analytics, no advertising, no tracking
 				cookies, and no third-party scripts. The site is served by Cloudflare, which may keep
-				standard request logs for delivery and security purposes under
+				standard request logs for delivery and security purposes under{' '}
 				<a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a>.
 			</p>
 
@@ -100,47 +90,51 @@ import '../styles/landing.css';
 			<h2>Changes and contact</h2>
 			<p>
 				Changes to this policy are published on this page with an updated effective date.
-				Questions are welcome on
+				Questions are welcome on{' '}
 				<a href="https://github.com/useindelible/indelible">GitHub</a>.
 			</p>
-		</main>
-		<SiteFooter />
-	</body>
-</html>
+		</Wrap>
+	</main>
+
+	<SiteFooter />
+</BaseLayout>
 
 <style>
+	/* Clears the fixed nav pill (56px + its 14px gutter) with room to breathe. */
 	.policy {
 		max-width: 720px;
-		padding-top: 64px;
-		padding-bottom: 96px;
+		padding-top: 150px;
+		padding-bottom: 120px;
 	}
 
 	.policy h1 {
-		font-family: var(--font-serif);
+		font-family: var(--f-d);
 		font-size: 40px;
 		font-weight: 500;
+		letter-spacing: -0.02em;
 		margin-bottom: 8px;
 	}
 
 	.policy .meta {
-		font-family: var(--font-mono);
-		font-size: 13px;
-		color: var(--ink-faint);
 		margin-bottom: 40px;
+		font-family: var(--f-m);
+		font-size: 13px;
+		color: var(--faint);
 	}
 
 	.policy h2 {
-		font-family: var(--font-serif);
+		margin: 40px 0 12px;
+		font-family: var(--f-d);
 		font-size: 24px;
 		font-weight: 500;
-		margin: 40px 0 12px;
+		letter-spacing: -0.015em;
 	}
 
 	.policy p,
 	.policy li {
 		font-size: 15px;
 		line-height: 1.7;
-		color: var(--ink-soft);
+		color: var(--dim);
 	}
 
 	.policy p + p {
@@ -148,10 +142,10 @@ import '../styles/landing.css';
 	}
 
 	.policy ul {
-		padding-left: 20px;
 		display: grid;
 		gap: 10px;
 		margin-top: 12px;
+		padding-left: 20px;
 	}
 
 	.policy strong {

@@ -1,0 +1,17 @@
+---
+/** The page's single measure. Every full-bleed section puts its content in one. */
+interface Props {
+	class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<div class:list={['wrap', className]}><slot /></div>
+
+<style>
+	.wrap {
+		max-width: var(--wrap-max);
+		margin: 0 auto;
+		padding: 0 var(--wrap-pad);
+	}
+</style>

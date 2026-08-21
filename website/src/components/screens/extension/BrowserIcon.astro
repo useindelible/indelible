@@ -1,0 +1,27 @@
+---
+/** A browser-toolbar icon. Unknown names throw rather than render nothing. */
+import { BROWSER_ICONS, type BrowserIconName } from '../../../lib/browser-icons';
+
+interface Props {
+	name: BrowserIconName;
+	solid?: boolean;
+	class?: string;
+}
+const { name, solid = false, class: className } = Astro.props;
+
+const path = BROWSER_ICONS[name];
+if (!path) {
+	throw new Error(
+		`Browser icon "${name}" does not exist. Known: ${Object.keys(BROWSER_ICONS).join(', ')}`,
+	);
+}
+---
+
+<svg
+	class:list={['xt-ic', { fill: solid }, className]}
+	viewBox="0 0 16 16"
+	fill={solid ? 'currentColor' : 'none'}
+	stroke={solid ? 'none' : undefined}
+	aria-hidden="true"
+	set:html={path}
+/>

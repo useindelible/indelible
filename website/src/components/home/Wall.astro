@@ -1,0 +1,17 @@
+---
+/** A twelve-column grid of wall cells. */
+interface Props {
+	class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<div class:list={['wall', className]}><slot /></div>
+
+<style>
+	.wall {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: 18px;
+	}
+</style>

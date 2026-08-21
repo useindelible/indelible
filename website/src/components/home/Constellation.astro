@@ -1,0 +1,110 @@
+---
+/**
+ * The hero's device group: a desktop screen with phones overlapping it.
+ *
+ * The screens arrive through slots so this component owns composition and
+ * depth only. It never imports a screen, which is what lets the same
+ * arrangement be reused with a different set.
+ *
+ * The main screen deliberately bleeds past its column (118%). Any reuse at a
+ * narrower measure needs its own sizing — see the note in the CSS.
+ */
+---
+
+<div class="const">
+	<div class="const-main"><slot name="main" /></div>
+	<div class="const-phone"><slot name="phone" /></div>
+	<div class="const-ext"><slot name="ext" /></div>
+</div>
+
+<style>
+	.const {
+		position: relative;
+		min-height: 520px;
+		padding-bottom: 34px;
+		margin-bottom: 26px;
+	}
+
+	/* Bleeds past the column on purpose: the hero reads as a window onto
+	   something larger than the page. */
+	.const-main {
+		width: 118%;
+	}
+
+	.const-phone,
+	.const-ext {
+		position: absolute;
+		z-index: 2;
+	}
+
+	.const-phone {
+		right: 1%;
+		bottom: -13%;
+		width: 21.5%;
+	}
+
+	.const-ext {
+		left: 4%;
+		bottom: -17%;
+		width: 18.5%;
+	}
+
+	@media (max-width: 1080px) {
+		.const {
+			min-height: 0;
+		}
+
+		.const-main {
+			width: 100%;
+		}
+
+		.const-phone {
+			right: 0;
+			bottom: -8%;
+			width: 20%;
+		}
+
+		/* Three overlapping devices do not survive a single column. */
+		.const-ext {
+			display: none;
+		}
+	}
+
+	/* Scroll-driven parallax. Transform only, and only where the browser can
+	   drive it from the timeline — no scroll listener exists on this site. */
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.const-main,
+			.const-phone,
+			.const-ext {
+				animation: drift linear both;
+				animation-timeline: view();
+				animation-range: entry 30% exit 90%;
+			}
+
+			.const-main {
+				--from: 14px;
+				--to: -26px;
+			}
+
+			.const-phone {
+				--from: 44px;
+				--to: -48px;
+			}
+
+			.const-ext {
+				--from: 32px;
+				--to: -36px;
+			}
+
+			@keyframes drift {
+				from {
+					transform: translate3d(0, var(--from), 0);
+				}
+				to {
+					transform: translate3d(0, var(--to), 0);
+				}
+			}
+		}
+	}
+</style>

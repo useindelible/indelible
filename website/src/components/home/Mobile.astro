@@ -1,0 +1,144 @@
+---
+/**
+ * Android and iOS.
+ *
+ * A scroller of the eight phone screens, then the three reading papers the app
+ * actually ships. The frames alternate iPhone and Android so both appear —
+ * "native, not a wrapper" is a claim the pictures have to carry.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import HomePhone from '../screens/phone/HomePhone.astro';
+import InboxPhone from '../screens/phone/InboxPhone.astro';
+import FeedPhone from '../screens/phone/FeedPhone.astro';
+import DrawerPhone from '../screens/phone/DrawerPhone.astro';
+import ReaderPhone from '../screens/phone/ReaderPhone.astro';
+import BookPhone from '../screens/phone/BookPhone.astro';
+import VideoPhone from '../screens/phone/VideoPhone.astro';
+import SavePhone from '../screens/phone/SavePhone.astro';
+import { reveal } from '../../lib/reveal-attrs';
+---
+
+<Section id="mobile" tone="raised">
+	<Wrap>
+		<SectionLead
+			eyebrow="Native, not a wrapper"
+			title="Android and iOS, sharing one library."
+			lede="Kotlin Multiplatform on both. Highlights made with the native selection toolbar, reading position and appearance all survive a process restart and land back on the web."
+		/>
+
+		<div class="phones" {...reveal('group')}>
+			<figure style="--i:3"><HomePhone /><figcaption>Home</figcaption></figure>
+			<figure style="--i:0"><InboxPhone /><figcaption>Inbox</figcaption></figure>
+			<figure style="--i:1"><FeedPhone /><figcaption>Feed</figcaption></figure>
+			<figure style="--i:2"><DrawerPhone /><figcaption>Library</figcaption></figure>
+			<figure style="--i:3">
+				<ReaderPhone paper="light" /><figcaption>Highlighting</figcaption>
+			</figure>
+			<figure style="--i:0"><BookPhone /><figcaption>Books</figcaption></figure>
+			<figure style="--i:1"><VideoPhone /><figcaption>Video</figcaption></figure>
+			<figure style="--i:2"><SavePhone /><figcaption>Save</figcaption></figure>
+		</div>
+
+		<div class="themes">
+			<div class="themes-h" {...reveal('up')}>
+				<h3 class="h3">Three reading themes, because you do not read in one light.</h3>
+				<p>Light for daylight, sepia for long sittings, dark for the train.</p>
+			</div>
+
+			<div class="themes-r">
+				<figure {...reveal('up', 0)}>
+					<ReaderPhone paper="light" /><figcaption>Light</figcaption>
+				</figure>
+				<figure {...reveal('up', 1)}>
+					<ReaderPhone paper="sepia" /><figcaption>Sepia</figcaption>
+				</figure>
+				<figure {...reveal('up', 2)}>
+					<ReaderPhone paper="dark" /><figcaption>Dark</figcaption>
+				</figure>
+			</div>
+		</div>
+	</Wrap>
+</Section>
+
+<style>
+	/* A scroller, not a grid: eight phones do not fit any page width, and
+	   shrinking them until they do makes every one of them unreadable. */
+	.phones {
+		display: flex;
+		gap: 20px;
+		padding: 8px 0 22px;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+	}
+
+	.phones::-webkit-scrollbar {
+		height: 5px;
+	}
+
+	.phones::-webkit-scrollbar-thumb {
+		background: var(--line-2);
+		border-radius: 9px;
+	}
+
+	.phones figure {
+		flex: none;
+		width: 212px;
+		margin: 0;
+		scroll-snap-align: start;
+	}
+
+	.phones figcaption,
+	.themes-r figcaption {
+		margin-top: 13px;
+		font-family: var(--f-m);
+		font-size: 10.5px;
+		letter-spacing: 0.11em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	.themes {
+		margin-top: 74px;
+		padding-top: 44px;
+		border-top: 1px solid var(--line);
+	}
+
+	.themes-h {
+		max-width: 60ch;
+		margin-bottom: 34px;
+	}
+
+	.themes-h .h3 {
+		margin-bottom: 9px;
+		font-size: 26px;
+	}
+
+	.themes-h p {
+		font-size: 15.5px;
+		color: var(--dim);
+	}
+
+	.themes-r {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 26px;
+	}
+
+	.themes-r figure {
+		margin: 0;
+	}
+
+	.themes-r figcaption {
+		letter-spacing: 0.14em;
+		text-align: center;
+	}
+
+	@media (max-width: 760px) {
+		.themes-r {
+			grid-template-columns: 1fr;
+			gap: 34px;
+		}
+	}
+</style>

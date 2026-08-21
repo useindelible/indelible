@@ -1,0 +1,85 @@
+---
+/**
+ * Search on a phone.
+ *
+ * Same query and corpus as the desktop search screen. Matches are highlighted
+ * in place from real fragments, not an interpolated HTML string.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import PhoneNav from './PhoneNav.astro';
+import PhoneTopBar from './PhoneTopBar.astro';
+import PhoneRow from './PhoneRow.astro';
+import { highlight } from '../../../lib/highlight';
+import {
+	PHONE_SEARCH_FILTERS,
+	PHONE_SEARCH_HEAD,
+	PHONE_SEARCH_HITS,
+	PHONE_SEARCH_QUERY,
+} from '../../../data/phone-search';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = false, class: className } = Astro.props;
+---
+
+<PhoneFrame
+	dark={dark}
+	android={android}
+	class={className}
+	label="Search results in Indelible on a phone"
+>
+	<PhoneTopBar title="Search" />
+
+	<div class="ph-scroll">
+		<div class="ph-lede" style="padding-bottom:12px">
+			<div class="ph-eyebrow">{PHONE_SEARCH_HEAD.eyebrow}</div>
+			<div class="ph-ledetitle"><h1>{PHONE_SEARCH_HEAD.title}</h1></div>
+		</div>
+
+		<div class="ph-sfield">
+			<PhoneIcon name="search" size={17} />
+			<span class="q">{PHONE_SEARCH_QUERY}</span>
+			<PhoneIcon name="close" size={16} />
+		</div>
+
+		<div class="ph-filters">
+			{
+				PHONE_SEARCH_FILTERS.map((f) => (
+					<span class:list={['ph-chip', { on: f.on }]}>{f.label}</span>
+				))
+			}
+		</div>
+
+		<div class="ph-rows">
+			{
+				PHONE_SEARCH_HITS.map((hit) => (
+					<PhoneRow
+						tint={hit.tint}
+						emoji={hit.emoji}
+						kind={hit.kind}
+						play={hit.play}
+						duration={hit.duration}
+						source={hit.source}
+						length={hit.length}
+						title={hit.title}
+					>
+						<p class="ph-rsum" slot="summary">
+							{highlight(hit.summary, PHONE_SEARCH_QUERY).map((f) =>
+								f.match ? <span class="ph-hit">{f.text}</span> : f.text,
+							)}
+						</p>
+						<div class="ph-rfoot">
+							<span class="ph-stamp">{hit.stamp}</span>
+						</div>
+					</PhoneRow>
+				))
+			}
+		</div>
+	</div>
+
+	<PhoneNav active="search" />
+</PhoneFrame>

@@ -1,0 +1,85 @@
+---
+/**
+ * An entity: every mention across the library, linked back to its documents.
+ *
+ * The right rail is the ENTITY record, not the document DETAILS switcher, so
+ * it has no Info/Notebook/Chat header. No sidebar row is active either — an
+ * entity is not a library section, and the live page highlights nothing.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import Icon from './Icon.astro';
+import { ENTITY, CO_MENTIONS, ENTITY_DOCS } from '../../data/entity';
+import { MILA_ABOUT_CREDIT } from '../../data/app';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+
+const count = ENTITY_DOCS.length;
+---
+
+<ScreenFrame dark={dark} class={className} label={`The ${ENTITY.name} entity page`}>
+	<AppShell>
+		<Sidebar active="entity" />
+
+		<ListPane>
+			<span class="en-back">
+				<Icon name="back-to-library" size={13} />Back to library
+			</span>
+			<div class="en-h"><b>{ENTITY.name}</b><span class="en-kind">{ENTITY.kind}</span></div>
+			<div class="en-meta">
+				{ENTITY.references} references &middot; {count} documents &middot; First seen
+				{ENTITY.firstSeen} &middot; Last seen {ENTITY.lastSeen}
+			</div>
+
+			<div class="en-lab">Frequently mentioned with</div>
+			<div class="en-chips">
+				{CO_MENTIONS.map((m) => <span class="en-chip">{m.name}<i>({m.count})</i></span>)}
+			</div>
+
+			<div class="en-lab">Documents <span>{count} documents</span></div>
+			{
+				ENTITY_DOCS.map((d) => (
+					<div class="en-row">
+						<span class={`en-tile ${d.hue}`}>{d.letter}</span>
+						<div>
+							<div class="en-t">{d.title}</div>
+							<div class="en-m">
+								{d.domain && <b>{d.domain}</b>}
+								{d.domain ? ' · ' : '· '}
+								{d.date}
+							</div>
+							{d.excerpt && <div class="en-x">{d.excerpt}</div>}
+						</div>
+					</div>
+				))
+			}
+			<div class="grip"></div>
+		</ListPane>
+
+		<div class="en-dp">
+			<div class="nm">{ENTITY.name}</div>
+			<span class="en-kind">{ENTITY.kind}</span>
+			<div class="en-rule"></div>
+			<div class="en-lab" style="padding:16px 0 8px">About</div>
+			<div class="en-about">{ENTITY.about}</div>
+			<div class="by">{MILA_ABOUT_CREDIT}</div>
+			<div class="en-lab" style="padding:20px 0 10px">Timeline</div>
+			<div class="en-tl">
+				{
+					ENTITY_DOCS.map((d) => (
+						<div class="en-ti">
+							<div class="en-td">{d.date}</div>
+							<div class="en-tt">{d.title}</div>
+						</div>
+					))
+				}
+			</div>
+		</div>
+	</AppShell>
+</ScreenFrame>

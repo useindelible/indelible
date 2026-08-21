@@ -1,0 +1,85 @@
+---
+/**
+ * The feed on a phone.
+ *
+ * Every row offers Save rather than a reading stamp: a feed entry has not been
+ * kept yet, and keeping it is the only action that matters here.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import PhoneNav from './PhoneNav.astro';
+import PhoneTopBar from './PhoneTopBar.astro';
+import PhoneRow from './PhoneRow.astro';
+import {
+	PHONE_FEED_ENTRIES,
+	PHONE_FEED_FILTERS,
+	PHONE_FEED_HEAD,
+} from '../../../data/phone-feed';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = false, class: className } = Astro.props;
+const { meter } = PHONE_FEED_HEAD;
+---
+
+<PhoneFrame dark={dark} android={android} class={className} label="The Indelible feed on a phone">
+	<PhoneTopBar title="Feed" count={PHONE_FEED_HEAD.count} />
+
+	<div class="ph-scroll">
+		<div class="ph-lede">
+			<div class="ph-eyebrow">{PHONE_FEED_HEAD.eyebrow}</div>
+			<div class="ph-ledetitle">
+				<h1>{PHONE_FEED_HEAD.title}</h1>
+				<span class="n">{PHONE_FEED_HEAD.count}</span>
+				<span class="ph-chev"><PhoneIcon name="chev-d" size={13} /></span>
+			</div>
+
+			<div class="ph-meter">
+				<i class="u" style={`flex:${meter.unread}`}></i>
+				<i class="r" style={`flex:${meter.reading}`}></i>
+				<i class="f" style={`flex:${meter.done}`}></i>
+			</div>
+			<div class="ph-key">
+				<span><i class="u"></i>{meter.unread} unread</span>
+				<span><i class="r"></i>{meter.reading} reading</span>
+				<span><i class="f"></i>{meter.third}</span>
+			</div>
+		</div>
+
+		<div class="ph-filters">
+			{
+				PHONE_FEED_FILTERS.map((f) => (
+					<span class:list={['ph-chip', { on: f.on }]}>{f.label}</span>
+				))
+			}
+		</div>
+
+		<div class="ph-rows">
+			{
+				PHONE_FEED_ENTRIES.map((e) => (
+					<PhoneRow
+						tint={e.tint}
+						emoji={e.emoji}
+						unread={e.unread}
+						source={e.source}
+						length={e.length}
+						title={e.title}
+						summary={e.summary}
+					>
+						<div class="ph-rfoot">
+							<span class="ph-btn quiet">
+								<PhoneIcon name="plus" size={15} />
+								<span>Save</span>
+							</span>
+						</div>
+					</PhoneRow>
+				))
+			}
+		</div>
+	</div>
+
+	<PhoneNav active="feed" />
+</PhoneFrame>

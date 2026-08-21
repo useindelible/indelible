@@ -1,0 +1,75 @@
+---
+/**
+ * A feature row: copy on one side, a device pair on the other.
+ *
+ * `flip` puts the visual first. It reorders with CSS rather than markup so the
+ * reading order stays copy-then-illustration for assistive tech.
+ */
+import { reveal } from '../../lib/reveal-attrs';
+
+interface Props {
+	tag: string;
+	title: string;
+	flip?: boolean;
+}
+const { tag, title, flip = false } = Astro.props;
+---
+
+<div class:list={['feat', { flip }]}>
+	<div class="feat-copy" {...reveal(flip ? 'right' : 'left')}>
+		<span class="cell-tag">{tag}</span>
+		<h3 class="h3">{title}</h3>
+		<p><slot /></p>
+	</div>
+	<div class="feat-viz"><slot name="viz" /></div>
+</div>
+
+<style>
+	.feat {
+		display: grid;
+		grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+		gap: 54px;
+		align-items: center;
+		margin-top: 92px;
+	}
+
+	.feat.flip {
+		grid-template-columns: minmax(0, 1.28fr) minmax(0, 0.72fr);
+	}
+
+	.feat.flip .feat-viz {
+		order: -1;
+	}
+
+	.feat-copy :global(.cell-tag) {
+		margin-bottom: 12px;
+	}
+
+	.feat-copy .h3 {
+		margin-bottom: 12px;
+		max-width: 17ch;
+		font-size: clamp(24px, 2.5vw, 33px);
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+
+	.feat-copy p {
+		max-width: 42ch;
+		font-size: 16px;
+		line-height: 1.55;
+		color: var(--dim);
+	}
+
+	@media (max-width: 980px) {
+		.feat,
+		.feat.flip {
+			grid-template-columns: 1fr;
+			gap: 30px;
+			margin-top: 64px;
+		}
+
+		.feat.flip .feat-viz {
+			order: 0;
+		}
+	}
+</style>

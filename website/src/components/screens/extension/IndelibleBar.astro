@@ -1,0 +1,43 @@
+---
+/**
+ * The 44px bar the extension injects under the browser chrome.
+ *
+ * Controls left to right as the live extension renders them. The status pills
+ * and the two-digit count exist for the capture sequence; at rest they are
+ * zero-width and show the finished state.
+ */
+import BrowserIcon from './BrowserIcon.astro';
+import BrandMark from './BrandMark.astro';
+import { SAVED_PAGE } from '../../../data/extension';
+---
+
+<div class="xt-tb">
+	<div class="xt-lock">
+		<BrandMark size={18} />
+		<span class="xt-open">Open reader<BrowserIcon name="chev-r" /></span>
+		<span class="xt-count"><i class="a">0</i><i class="b">1</i></span>
+	</div>
+
+	<div class="xt-item">
+		<span class="t">{SAVED_PAGE.title}</span>
+		<span class="d">&middot;</span>
+		<span class="s">
+			{SAVED_PAGE.host}<span class="sv"> &middot; {SAVED_PAGE.savedAgo}</span>
+		</span>
+	</div>
+
+	<span class="xt-status a"><span class="xt-spin"></span>Saving&hellip;</span>
+	<span class="xt-status b"><BrowserIcon name="tick" />Saved</span>
+
+	<div class="xt-grp">
+		<span class="xt-tog"><span class="xt-sw"><i></i></span>Auto-highlight</span>
+		<span class="xt-vr"></span>
+		<span class="xt-ib tg"><BrowserIcon name="tag" /></span>
+		<span class="xt-ib"><BrowserIcon name="note" /></span>
+		<span class="xt-ib"><BrowserIcon name="star" /></span>
+		<span class="xt-ib"><BrowserIcon name="reload" /></span>
+		<span class="xt-vr"></span>
+		<span class="xt-dd"><BrowserIcon name="inbox" />Inbox<BrowserIcon name="chev-d" /></span>
+		<span class="xt-ib"><BrowserIcon name="chev-u" /></span>
+	</div>
+</div>

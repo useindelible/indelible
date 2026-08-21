@@ -1,0 +1,52 @@
+---
+/** Collections: grouped sources, each with its own count. */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import Toolbar from './app/Toolbar.astro';
+import DocRow from './app/DocRow.astro';
+import { COLLECTIONS, DOCS } from '../../data/library';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="Collections in the Indelible library">
+	<AppShell layout="list">
+		<Sidebar active="collections" />
+		<ListPane>
+			<Toolbar title="Collections" sort="Recently used" />
+
+			<div class="sect">
+				<h3 style="font-size:12.5px;font-weight:400;color:var(--t2)">
+					{COLLECTIONS.length} collections &middot; 197 items curated
+				</h3>
+			</div>
+
+			<div class="gr c3 coll">
+				{
+					COLLECTIONS.map((c) => (
+						<div class="cd">
+							<div class="top" style={`background:${c.tint}`}>{c.emoji}</div>
+							<div class="bd">
+								<div class="nm">{c.name}</div>
+								<div class="ds">{c.description}</div>
+								<div class="ft">
+									<span>{c.items}</span>
+									{c.sub && <span>&middot; {c.sub}</span>}
+								</div>
+							</div>
+						</div>
+					))
+				}
+			</div>
+
+			<div class="sect"><h3>Recently updated</h3></div>
+			{DOCS.slice(0, 2).map((doc) => <DocRow doc={doc} />)}
+		</ListPane>
+	</AppShell>
+</ScreenFrame>

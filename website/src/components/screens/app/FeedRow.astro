@@ -1,0 +1,45 @@
+---
+/**
+ * One entry in the feed list.
+ *
+ * Not a DocRow: an entry has a FEED badge and an age where a document has a
+ * length and a reading position, and its progress track is drawn empty
+ * because nothing has been read.
+ */
+import type { FeedEntry } from '../../../data/feed';
+import { FEED_ART } from '../../../data/feed-art';
+
+interface Props {
+	entry: FeedEntry;
+	selected?: boolean;
+}
+const { entry, selected = false } = Astro.props;
+---
+
+<div class:list={['fd-row', { on: selected }]}>
+	<span class="fd-tile" set:html={FEED_ART[entry.art]} />
+
+	<div>
+		<h3 class="fd-t">{entry.title}</h3>
+		<p class="fd-x">{entry.excerpt}</p>
+		<div class="fd-src">
+			<span class="fav" style={`background:${entry.favColour}`}>{entry.favLetter}</span>
+			<b>{entry.domain}</b>
+			{
+				entry.author && (
+					<>
+						<span>·</span>
+						<span>{entry.author}</span>
+					</>
+				)
+			}
+		</div>
+		{/* Drawn empty: an entry has no reading position yet. */}
+		<div class="pg"></div>
+	</div>
+
+	<div class="fd-rt">
+		<span class="fd-badge">Feed</span>
+		<span class="fd-age">{entry.age}</span>
+	</div>
+</div>

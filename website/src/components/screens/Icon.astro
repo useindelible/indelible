@@ -1,0 +1,40 @@
+---
+/**
+ * An application icon.
+ *
+ * Unknown names throw at build time rather than rendering nothing. A silently
+ * empty icon once removed a whole control from a screen and read as a missing
+ * feature, so this failure is deliberately loud.
+ */
+import { APP_ICONS, type AppIconName } from '../../lib/icons';
+
+interface Props {
+	name: AppIconName;
+	size?: number;
+	/** Solid glyphs (transport arrows) render filled with no outline stroke. */
+	solid?: boolean;
+	class?: string;
+}
+const { name, size = 15, solid = false, class: className } = Astro.props;
+
+const path = APP_ICONS[name];
+if (!path) {
+	throw new Error(
+		`Icon "${name}" does not exist. Known icons: ${Object.keys(APP_ICONS).join(', ')}`,
+	);
+}
+---
+
+<svg
+	class={className}
+	viewBox="0 0 24 24"
+	width={size}
+	height={size}
+	fill={solid ? 'currentColor' : 'none'}
+	stroke={solid ? 'none' : 'currentColor'}
+	stroke-width={solid ? undefined : 1.6}
+	stroke-linecap={solid ? undefined : 'round'}
+	stroke-linejoin={solid ? undefined : 'round'}
+	aria-hidden="true"
+	set:html={path}
+/>

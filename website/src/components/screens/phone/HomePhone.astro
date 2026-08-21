@@ -1,0 +1,146 @@
+---
+/**
+ * Home on a phone.
+ *
+ * Carries the same items as the desktop Home view, folded into one column.
+ * Both read from data/home-shelf.ts, so the two surfaces cannot drift.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import PhoneNav from './PhoneNav.astro';
+import PhoneTopBar from './PhoneTopBar.astro';
+import ProgressBar from './ProgressBar.astro';
+import CoverArt from '../CoverArt.astro';
+import PhoneRow from './PhoneRow.astro';
+import { USER } from '../../../data/app';
+import {
+	CONTINUE_HERO,
+	CONTINUE_RAIL,
+	QUICK_READS,
+	READING_METER,
+	WEEK_STATS,
+} from '../../../data/home-shelf';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = false, class: className } = Astro.props;
+
+const firstName = USER.name.split(' ')[0];
+---
+
+<PhoneFrame
+	dark={dark}
+	android={android}
+	class={className}
+	label="The Indelible home screen on a phone"
+>
+	<PhoneTopBar title="Today" />
+
+	<div class="ph-scroll">
+		<div class="ph-lede">
+			<div class="ph-eyebrow">Friday, 24 July</div>
+			<div class="ph-ledetitle"><h1 class="ser">Good morning, {firstName}</h1></div>
+
+			<div class="ph-meter">
+				<i class="u" style={`flex:${READING_METER.unread}`}></i>
+				<i class="r" style={`flex:${READING_METER.reading}`}></i>
+				<i class="f" style={`flex:${READING_METER.done}`}></i>
+			</div>
+			<div class="ph-key">
+				<span><i class="u"></i>{READING_METER.unread} unread</span>
+				<span><i class="r"></i>{READING_METER.reading} reading</span>
+				<span><i class="f"></i>{READING_METER.remaining}</span>
+			</div>
+		</div>
+
+		<div class="ph-dash">
+			<div class="ph-hero">
+				<div class="ph-htop">
+					<span class="ph-kicker">Continue reading</span>
+					<span class="ph-pct">{CONTINUE_HERO.progress}%</span>
+				</div>
+				<div class="ph-hrow">
+					<span class="ph-cover"><CoverArt name={CONTINUE_HERO.art} /></span>
+					<span class="ph-hbody">
+						<span class="ph-hsrc">{CONTINUE_HERO.source}</span>
+						<span class="ph-htitle">{CONTINUE_HERO.title}</span>
+					</span>
+				</div>
+				<div class="ph-track">
+					<ProgressBar value={CONTINUE_HERO.progress} />
+					<span class="pin" style={`left:${CONTINUE_HERO.progress}%`}></span>
+				</div>
+				<div class="ph-hfoot">
+					<span class="ph-hlab">{CONTINUE_HERO.byline}</span>
+					<span class="ph-btn pri">
+						<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"
+							><path d="M8 5v14l11-7z"></path></svg
+						>Resume
+					</span>
+				</div>
+			</div>
+
+			<div class="ph-stats">
+				{
+					WEEK_STATS.map((stat) => (
+						<div class="ph-stat">
+							<PhoneIcon name={stat.icon} size={14} />
+							<div class="ph-statnum">{stat.value}</div>
+							<div class="ph-statlab">{stat.label}</div>
+						</div>
+					))
+				}
+			</div>
+
+			<section>
+				<div class="ph-sechead">
+					<span class="ph-sectitle">Continue reading</span>
+					<span class="ph-secmore">All<PhoneIcon name="chev-r" size={12} /></span>
+				</div>
+				<div class="ph-rail">
+					{
+						CONTINUE_RAIL.map((item) => (
+							<span class="ph-mini">
+								<span class="ph-mcover">
+									<CoverArt name={item.art} />
+									<ProgressBar value={item.progress} />
+								</span>
+								<span class="ph-msrc">{item.source}</span>
+								<span class="ph-mt">{item.title}</span>
+								<span class="ph-mlab">{item.byline}</span>
+							</span>
+						))
+					}
+				</div>
+			</section>
+		</div>
+
+		<div class="ph-sechead ph-secpad" style="margin-top:28px">
+			<span class="ph-sectitle">Quick Reads</span>
+			<span class="ph-secmore">All<PhoneIcon name="chev-r" size={12} /></span>
+		</div>
+
+		<div class="ph-rows" style="padding-top:0">
+			{
+				QUICK_READS.map((item) => (
+					<PhoneRow
+						art={item.art}
+						source={item.source}
+						length={item.length}
+						title={item.title}
+						summary={item.summary}
+					>
+						<div class="ph-rfoot">
+							<span class="ph-stamp">{item.stamp}</span>
+						</div>
+					</PhoneRow>
+				))
+			}
+		</div>
+	</div>
+
+	<PhoneNav active="home" />
+</PhoneFrame>

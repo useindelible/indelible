@@ -1,0 +1,797 @@
+/* ============================================================================
+   Extension browser shell.
+
+   The Indelible extension injects a 44px bar under the browser chrome; the
+   page keeps its full width underneath. There is no side panel.
+
+   Ported mechanically from the design source. Everything is xt- prefixed and
+   scoped under .xt because the reference's own class names (.item .group
+   .status .tab .address .nav .dot .badge .switch .ic) would each collide with
+   the marketing page or another screen.
+
+   The capture sequence lives in extension-sequence.css.
+   ========================================================================= */
+
+/* ============================================================
+   EXTENSION BROWSER SHELL  (.xt)
+   Ported from prototypes/extension-toolbar-browser-shell.html, which is the
+   design source for the 44px toolbar the extension injects into the page.
+   That file's class names are extremely generic (.item .group .status .tab
+   .address .nav .dot .mark .badge .hero .tile .switch .ic) and every one of
+   them would collide with either the marketing page or another screen, so
+   nothing is reused verbatim: everything here is xt- prefixed and scoped
+   under .xt. See gen/collision-audit.py.
+   ============================================================ */
+.xt {
+	--xb-top:#ECECF1;
+	--xb-rail:#FFFFFF;
+	--xb-bd:rgba(0,0,0,.10);
+	--xc-t:#1D1D1F;
+	--xc-m:#77777C;
+	--xa-bg:#FFFFFF;
+	--xp-bg:#FFFFFF;
+	--xp-t1:#1D1D1F;
+	--xp-t2:#6E6E73;
+	--xp-t3:#AEAEB2;
+	--xp-line:rgba(0,0,0,.08);
+	--xr-bg:rgba(255,255,255,.94);
+	--xr-solid:#FBFBFD;
+	--xr-stroke:rgba(0,0,0,.10);
+	--xr-fill:rgba(0,0,0,.04);
+	--xr-sub:rgba(0,0,0,.035);
+	--xr-bd2:rgba(0,0,0,.12);
+	--xr-hl:#FFE88A;
+	--xr-hlt:#3A2A00;
+	--xr-hlring:rgba(180,130,0,.22);
+	--xr-warn:#B26A00;
+	--xr-warns:rgba(255,149,0,.15);
+	--xr-ok:#1C7C3C;
+	--xr-oks:rgba(52,199,89,.16);
+	height:900px;
+	display:flex;
+	flex-direction:column;
+	background:var(--xp-bg);
+	font-family:var(--sfont);
+	color:var(--xp-t1);
+	letter-spacing:-.01em;
+}
+
+.app-ui.dk .xt {
+	--xb-top:#111317;
+	--xb-rail:#24272D;
+	--xb-bd:rgba(255,255,255,.12);
+	--xc-t:#F5F5F7;
+	--xc-m:#98989D;
+	--xa-bg:#111317;
+	--xp-bg:#1A1A1A;
+	--xp-t1:#F5F5F7;
+	--xp-t2:#B4B4BA;
+	--xp-t3:#7E7E82;
+	--xp-line:rgba(255,255,255,.08);
+	--xr-bg:rgba(28,28,30,.96);
+	--xr-solid:#1C1C1E;
+	--xr-stroke:rgba(255,255,255,.13);
+	--xr-fill:rgba(255,255,255,.07);
+	--xr-sub:rgba(255,255,255,.05);
+	--xr-bd2:rgba(255,255,255,.14);
+	--xr-hl:rgba(255,214,0,.26);
+	--xr-hlt:#FFE680;
+	--xr-hlring:rgba(255,214,0,.28);
+	--xr-warn:#FFB340;
+	--xr-warns:rgba(255,159,10,.18);
+	--xr-ok:#3FD168;
+	--xr-oks:rgba(48,209,88,.17);
+}
+
+/* ---- browser chrome ---- */
+.xt-tabs {
+	height:36px;
+	padding:0 12px;
+	display:flex;
+	align-items:flex-end;
+	gap:6px;
+	background:var(--xb-top);
+	border-bottom:1px solid var(--xb-bd);
+	flex:none;
+}
+
+.xt-traffic {
+	height:100%;
+	display:flex;
+	align-items:center;
+	gap:8px;
+	margin-right:10px;
+}
+
+.xt-traffic i {
+	width:11px;
+	height:11px;
+	border-radius:50%;
+	display:block;
+}
+
+.xt-tab {
+	height:29px;
+	width:216px;
+	padding:0 11px;
+	display:flex;
+	align-items:center;
+	gap:8px;
+	color:var(--xc-m);
+	background:transparent;
+	border:1px solid transparent;
+	border-bottom:0;
+	border-radius:10px 10px 0 0;
+	font-size:12px;
+	line-height:1;
+	flex:none;
+	white-space:nowrap;
+	overflow:hidden;
+}
+
+.xt-tab span {
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+
+.xt-tab.on {
+	color:var(--xc-t);
+	background:var(--xb-rail);
+	border-color:var(--xb-bd);
+}
+
+.xt-fav {
+	width:14px;
+	height:14px;
+	border-radius:4px;
+	flex:none;
+	color:#fff;
+	font-size:9px;
+	font-weight:700;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+}
+
+.xt-bar {
+	height:54px;
+	display:grid;
+	grid-template-columns:auto 1fr auto;
+	align-items:center;
+	gap:12px;
+	padding:8px 12px;
+	background:var(--xb-rail);
+	border-bottom:1px solid var(--xb-bd);
+	flex:none;
+}
+
+.xt-nav,.xt-slot {
+	display:flex;
+	align-items:center;
+	gap:4px;
+}
+
+.xt-rb {
+	width:30px;
+	height:30px;
+	border-radius:8px;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	color:var(--xc-m);
+	flex:none;
+}
+
+.xt-omni {
+	height:34px;
+	border-radius:17px;
+	padding:0 8px 0 11px;
+	display:flex;
+	align-items:center;
+	gap:9px;
+	color:var(--xc-t);
+	background:var(--xa-bg);
+	border:1px solid var(--xb-bd);
+	font-size:13px;
+	overflow:hidden;
+}
+
+.app-ui.dk .xt-omni {
+	background:#191C22;
+	border-color:rgba(255,255,255,.09);
+}
+
+.xt-url {
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	flex:1;
+	min-width:0;
+}
+
+.xt-url b {
+	font-weight:500;
+	color:var(--xc-t);
+}
+
+.xt-url span {
+	color:var(--xc-m);
+}
+
+.xt-xi {
+	width:22px;
+	height:22px;
+	border-radius:6px;
+	flex:none;
+	color:#fff;
+	font-size:10px;
+	font-weight:700;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+}
+
+.xt-xi.ind {
+	background:var(--acc);
+}
+
+.xt-avatar {
+	width:24px;
+	height:24px;
+	border-radius:50%;
+	flex:none;
+	font-size:10px;
+	font-weight:600;
+	color:#fff;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	background:linear-gradient(135deg,#667eea,#764ba2);
+	margin-left:4px;
+}
+
+.xt-bm {
+	height:38px;
+	padding:0 14px;
+	display:flex;
+	align-items:center;
+	gap:16px;
+	color:var(--xc-m);
+	background:var(--xb-rail);
+	border-bottom:1px solid var(--xb-bd);
+	font-size:12px;
+	flex:none;
+	overflow:hidden;
+}
+
+.xt-bmi {
+	display:inline-flex;
+	align-items:center;
+	gap:6px;
+	white-space:nowrap;
+	flex:none;
+}
+
+.xt-bmd {
+	width:14px;
+	height:14px;
+	border-radius:4px;
+	flex:none;
+	color:#fff;
+	font-size:8px;
+	font-weight:700;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+}
+
+.xt-bm .sp {
+	margin-left:auto;
+}
+
+/* ---- the injected 44px toolbar ---- */
+.xt-vp {
+	flex:1;
+	min-height:0;
+	position:relative;
+	overflow:hidden;
+	background:var(--xp-bg);
+	display:flex;
+	flex-direction:column;
+}
+
+.xt-tb {
+	height:44px;
+	flex:none;
+	display:flex;
+	align-items:center;
+	gap:12px;
+	padding:0 14px;
+	background:var(--xr-solid);
+	border-bottom:.5px solid var(--xr-stroke);
+	box-shadow:0 8px 24px rgba(0,0,0,.10),0 0 0 .5px rgba(0,0,0,.05);
+	position:relative;
+	z-index:5;
+}
+
+.app-ui.dk .xt-tb {
+	box-shadow:0 8px 24px rgba(0,0,0,.44),0 0 0 .5px rgba(255,255,255,.06);
+}
+
+.xt-lock {
+	display:inline-flex;
+	align-items:center;
+	gap:8px;
+	flex:none;
+}
+
+.xt-open {
+	height:26px;
+	padding:0 6px 0 8px;
+	border-radius:6px;
+	display:inline-flex;
+	align-items:center;
+	gap:3px;
+	color:var(--xp-t1);
+	font-size:13px;
+	font-weight:600;
+}
+
+.xt-open .xt-ic {
+	color:var(--xp-t3);
+}
+
+.xt-count {
+	height:20px;
+	min-width:24px;
+	padding:0 8px;
+	border-radius:980px;
+	background:var(--xr-sub);
+	border:.5px solid var(--xr-bd2);
+	color:var(--xp-t2);
+	font-size:11px;
+	font-weight:600;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	flex:none;
+}
+
+.xt-item {
+	min-width:0;
+	flex:1;
+	display:flex;
+	align-items:center;
+	gap:7px;
+}
+
+.xt-item .t {
+	color:var(--xp-t1);
+	font-size:13px;
+	font-weight:600;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	flex:0 1 auto;
+	min-width:0;
+	max-width:380px;
+}
+
+.xt-item .s {
+	color:var(--xp-t2);
+	font-size:12px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	min-width:0;
+	flex:1;
+}
+
+.xt-item .d {
+	color:var(--xp-t3);
+	font-size:12px;
+	flex:none;
+}
+
+.xt-grp {
+	display:inline-flex;
+	align-items:center;
+	gap:2px;
+	flex:none;
+}
+
+.xt-tog {
+	display:inline-flex;
+	align-items:center;
+	gap:6px;
+	padding:0 4px;
+	color:var(--xp-t2);
+	font-size:12px;
+	font-weight:500;
+}
+
+.xt-sw {
+	width:28px;
+	height:16px;
+	border-radius:980px;
+	background:rgba(120,120,128,.30);
+	position:relative;
+	flex:none;
+	display:block;
+}
+
+.xt-sw.on {
+	background:var(--acc);
+}
+
+.xt-sw i {
+	position:absolute;
+	top:1.5px;
+	left:1.5px;
+	width:13px;
+	height:13px;
+	border-radius:50%;
+	background:#fff;
+	display:block;
+	box-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+
+.xt-sw.on i {
+	left:13.5px;
+}
+
+.xt-ib {
+	width:26px;
+	height:26px;
+	border-radius:6px;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	color:var(--xp-t2);
+	flex:none;
+}
+
+.xt-vr {
+	width:.5px;
+	height:20px;
+	background:var(--xr-bd2);
+	margin:0 5px;
+	flex:none;
+}
+
+.xt-dd {
+	height:26px;
+	padding:0 4px 0 8px;
+	border-radius:6px;
+	display:inline-flex;
+	align-items:center;
+	gap:5px;
+	color:var(--xp-t1);
+	font-size:13px;
+	font-weight:500;
+	flex:none;
+}
+
+.xt-dd .xt-ic {
+	color:var(--xp-t2);
+}
+
+.xt-ic {
+	width:15px;
+	height:15px;
+	display:block;
+	flex:none;
+	stroke:currentColor;
+	stroke-width:1.4;
+	stroke-linecap:round;
+	stroke-linejoin:round;
+	fill:none;
+}
+
+.xt-ic.fill {
+	fill:currentColor;
+	stroke:none;
+}
+
+/* ---- the page underneath ---- */
+.xt-page {
+	flex:1;
+	min-height:0;
+	overflow:hidden;
+	background:var(--xp-bg);
+}
+
+/* The publisher's own masthead. A stylised likeness of the real one, built so
+   the frame reads as somebody else's website rather than another Indelible
+   surface -- that contrast is the whole point of the extension section. */
+.xt-mast {
+	background:#34506A;
+	padding:17px 34px 0;
+	flex:none;
+}
+
+.xt-mrow {
+	display:flex;
+	align-items:flex-start;
+	gap:24px;
+}
+
+.xt-word {
+	font-size:20px;
+	line-height:1.24;
+	color:#fff;
+	letter-spacing:-.005em;
+}
+
+.xt-word b {
+	display:block;
+	font-weight:700;
+}
+
+.xt-word span {
+	display:block;
+	font-weight:400;
+}
+
+.xt-tag {
+	margin-top:9px;
+	max-width:392px;
+	color:rgba(255,255,255,.8);
+	font-size:13px;
+	line-height:1.45;
+}
+
+.xt-mright {
+	margin-left:auto;
+	display:flex;
+	flex-direction:column;
+	align-items:flex-end;
+	gap:11px;
+}
+
+.xt-signin {
+	color:rgba(255,255,255,.88);
+	font-size:12.5px;
+}
+
+.xt-submit {
+	height:30px;
+	padding:0 16px;
+	border-radius:980px;
+	display:inline-flex;
+	align-items:center;
+	border:1px solid rgba(255,255,255,.46);
+	color:#fff;
+	font-size:12.5px;
+}
+
+.xt-mnav {
+	display:flex;
+	align-items:center;
+	gap:20px;
+	margin-top:17px;
+	padding-bottom:13px;
+	color:rgba(255,255,255,.9);
+	font-size:11.5px;
+	letter-spacing:.085em;
+	text-transform:uppercase;
+}
+
+.xt-mnav .bar {
+	width:1px;
+	height:13px;
+	background:rgba(255,255,255,.34);
+	margin:0 2px;
+}
+
+.xt-mnav .soc {
+	margin-left:auto;
+	display:flex;
+	align-items:center;
+	gap:17px;
+	color:rgba(255,255,255,.86);
+}
+
+.xt-mnav .soc .xt-ic {
+	width:14px;
+	height:14px;
+}
+
+.xt-kick {
+	color:#A79B88;
+	font-size:11.5px;
+	letter-spacing:.1em;
+	text-transform:uppercase;
+	margin-bottom:13px;
+}
+
+.xt-art {
+	max-width:718px;
+	margin:0 auto;
+	padding:26px 24px 0;
+}
+
+.xt-h1 {
+	font-size:30px;
+	line-height:1.2;
+	font-weight:700;
+	letter-spacing:-.025em;
+	color:var(--xp-t1);
+}
+
+.xt-by {
+	margin-top:11px;
+	display:flex;
+	align-items:center;
+	gap:8px;
+	color:var(--xp-t2);
+	font-size:12.5px;
+}
+
+.xt-by i {
+	width:22px;
+	height:22px;
+	border-radius:50%;
+	display:block;
+	background:linear-gradient(135deg,#667eea,#764ba2);
+}
+
+.xt-fig {
+	margin-top:18px;
+	position:relative;
+	height:188px;
+	border-radius:4px;
+	overflow:hidden;
+}
+
+.xt-cap {
+	margin-top:9px;
+	color:var(--xp-t3);
+	font-size:12px;
+}
+
+.xt-p {
+	margin-top:17px;
+	font-size:16px;
+	line-height:1.62;
+	color:var(--xp-t1);
+}
+
+.xt-hl {
+	background-image:linear-gradient(var(--xr-hl),var(--xr-hl));
+	background-repeat:no-repeat;
+	background-size:100% 100%;
+	color:var(--xr-hlt);
+	border-radius:2px;
+	box-shadow:0 0 0 1px var(--xr-hlring);
+}
+
+.xt-tb {
+	overflow:hidden;
+}
+
+/* count pill: 0 and 1 stacked, cross-faded on save */
+.xt-count {
+	position:relative;
+}
+
+.xt-count i {
+	font-style:normal;
+	display:block;
+}
+
+.xt-count i.a {
+	position:absolute;
+	inset:0;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	opacity:0;
+}
+
+/* status pill; max-width is animatable, width:auto is not, so the pill grows
+   and collapses without ever reserving space in the resting bar */
+.xt-status {
+	max-width:0;
+	opacity:0;
+	overflow:hidden;
+	white-space:nowrap;
+	flex:none;
+	height:22px;
+	border-radius:980px;
+	display:inline-flex;
+	align-items:center;
+	gap:6px;
+	font-size:11px;
+	font-weight:600;
+	padding:0;
+}
+
+.xt-status.a {
+	background:var(--xr-warns);
+	color:var(--xr-warn);
+}
+
+.xt-status.b {
+	background:var(--xr-oks);
+	color:var(--xr-ok);
+}
+
+.xt-spin {
+	width:9px;
+	height:9px;
+	border-radius:50%;
+	flex:none;
+	border:1.4px solid currentColor;
+	border-right-color:transparent;
+}
+
+/* badge on the extension icon in the browser chrome */
+.xt-xi {
+	position:relative;
+}
+
+.xt-badge {
+	position:absolute;
+	right:-3px;
+	bottom:-3px;
+	width:11px;
+	height:11px;
+	border-radius:50%;
+	background:var(--xr-ok);
+	border:2px solid var(--xb-rail);
+	display:block;
+}
+
+/* tag panel, drawn over the page rather than in its flow */
+.xt-panel {
+	position:absolute;
+	top:44px;
+	left:0;
+	right:0;
+	z-index:4;
+	padding:11px 16px 13px;
+	background:var(--xr-solid);
+	border-bottom:.5px solid var(--xr-stroke);
+	box-shadow:0 10px 26px rgba(0,0,0,.18);
+	opacity:0;
+	visibility:hidden;
+	transform:translateY(-6px);
+}
+
+.xt-ph {
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	margin-bottom:9px;
+	font-size:12px;
+	font-weight:600;
+	color:var(--xp-t1);
+}
+
+.xt-ph .xt-ic {
+	color:var(--xp-t2);
+}
+
+.xt-chips {
+	display:flex;
+	gap:6px;
+}
+
+.xt-chip {
+	height:24px;
+	padding:0 10px;
+	border-radius:980px;
+	background:var(--xr-sub);
+	border:.5px solid var(--xr-bd2);
+	color:var(--xp-t1);
+	font-size:12px;
+	font-weight:500;
+	display:inline-flex;
+	align-items:center;
+	opacity:0;
+	transform:scale(.84);
+}
+
+/* ---- the sequence ---- */
+

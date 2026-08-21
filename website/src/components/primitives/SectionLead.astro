@@ -1,0 +1,39 @@
+---
+/**
+ * The heading block that opens a section: optional eyebrow, an h2 and a lede.
+ *
+ * Every section on the page uses this, which is why the heading level is not
+ * configurable — a section heading is an h2, and the page has exactly one h1.
+ */
+import Eyebrow from './Eyebrow.astro';
+import { reveal } from '../../lib/reveal-attrs';
+
+interface Props {
+	eyebrow?: string;
+	title: string;
+	lede?: string;
+	class?: string;
+}
+const { eyebrow, title, lede, class: className } = Astro.props;
+---
+
+<div class:list={['sec-lead', className]} {...reveal('up')}>
+	{eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+	<h2 class="h2" set:html={title} />
+	{lede && <p class="lede" set:html={lede} />}
+</div>
+
+<style>
+	.sec-lead {
+		max-width: 64ch;
+		margin-bottom: 52px;
+	}
+
+	.sec-lead :global(.eyebrow) {
+		margin-bottom: 18px;
+	}
+
+	.sec-lead .h2 {
+		margin-bottom: 16px;
+	}
+</style>

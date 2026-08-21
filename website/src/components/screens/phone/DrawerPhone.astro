@@ -1,0 +1,97 @@
+---
+/**
+ * The navigation drawer on a phone.
+ *
+ * The whole library in one list: sections, collections and tags, with counts.
+ * It replaces the screen rather than sliding over it, which is why there is no
+ * scrim or content behind it here.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import { USER } from '../../../data/app';
+import {
+	DRAWER_ACTIVE,
+	DRAWER_COLLECTIONS,
+	DRAWER_LIBRARY,
+	DRAWER_SUBTITLE,
+	DRAWER_TAGS,
+} from '../../../data/phone-drawer';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = true, class: className } = Astro.props;
+---
+
+<PhoneFrame
+	dark={dark}
+	android={android}
+	class={className}
+	label="The Indelible navigation drawer on a phone"
+>
+	<div class="ph-drawer">
+		<div class="ph-dhead">
+			<span class="ph-avatar av-lg">{USER.initials[0]}</span>
+			<span>
+				<span class="ph-dname">{USER.name}</span>
+				<span class="ph-dsub">{DRAWER_SUBTITLE}</span>
+			</span>
+			<span class="ph-iconbtn close"><PhoneIcon name="close" /></span>
+		</div>
+
+		<div class="ph-dscroll">
+			<div class="ph-dsec">Library</div>
+			{
+				DRAWER_LIBRARY.map((item) => (
+					<div class:list={['ph-di', { on: item.label === DRAWER_ACTIVE }]}>
+						<span class="g">
+							<PhoneIcon name={item.icon} size={18} />
+						</span>
+						{item.label}
+						<span class="n">{item.count}</span>
+					</div>
+				))
+			}
+
+			<div class="ph-dsec">Collections</div>
+			{
+				DRAWER_COLLECTIONS.map((c) => (
+					<div class="ph-di">
+						<span class="g">
+							<i class="ph-cdot" style={`background:${c.colour}`} />
+						</span>
+						{c.name}
+						<span class="n">{c.count}</span>
+					</div>
+				))
+			}
+
+			<div class="ph-dsec">Tags</div>
+			<div class="ph-di">
+				<span class="g"><PhoneIcon name="tag" size={18} /></span>
+				{DRAWER_TAGS.label}
+				<span class="n">{DRAWER_TAGS.count}</span>
+			</div>
+		</div>
+
+		<div class="ph-dfoot">
+			<span class="ph-dfbtn"><PhoneIcon name="cog" size={18} />Preferences</span>
+			<span class="ph-dfbtn"><PhoneIcon name="trash" size={18} />Trash</span>
+		</div>
+	</div>
+</PhoneFrame>
+
+<style>
+	/* The drawer's own header avatar is larger than the top bar's. */
+	.ph-dhead .av-lg {
+		width: 38px;
+		height: 38px;
+		font-size: 15px;
+	}
+
+	.ph-dhead .close {
+		margin-left: auto;
+	}
+</style>

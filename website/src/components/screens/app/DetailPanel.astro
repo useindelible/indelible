@@ -1,0 +1,313 @@
+---
+/**
+ * The right rail: the record for whichever document the list has selected.
+ *
+ * It describes THIS document. Entities come from the document rather than a
+ * fixed list, so a book and a talk never show an essay's people.
+ *
+ * The Follow button is genuinely disabled in the app, which is why it reads
+ * washed out. Do not make it look live.
+ */
+import Icon from '../Icon.astro';
+import { MILA_SUMMARY_CREDIT } from '../../../data/app';
+import { entitiesFor, type Doc } from '../../../data/library';
+
+interface Props {
+	doc: Doc;
+	/** Index into DOCS, used to look up extracted entities. */
+	index?: number;
+	kind?: string;
+}
+const { doc, index, kind = 'Article' } = Astro.props;
+
+const entities = entitiesFor(doc, index);
+const handle = doc.author.split(' ')[0].toLowerCase();
+const meta = [
+	{ label: 'Type', value: kind },
+	{ label: 'Domain', value: doc.source },
+	{ label: 'Published', value: 'Mar 2026' },
+	{ label: 'Length', value: `${doc.length} read` },
+	{ label: 'Words', value: '2,129 words' },
+	{ label: 'Saved', value: doc.age },
+];
+---
+
+<div class="dp">
+	<div class="dp-h">
+		<span class="lbl">Details</span>
+		<span class="sp2">
+			<span class="pill"><Icon name="info" size={13} /> Info</span>
+			<span class="gh"><Icon name="notebook" size={13} /></span>
+			<span class="gh"><Icon name="chat" size={13} /></span>
+		</span>
+	</div>
+
+	<div class="dp-b">
+		<h3 class="dp-t">{doc.title}</h3>
+		<div class="dp-d">{doc.source}</div>
+
+		<div class="auth">
+			<span class="av"><Icon name="person" size={19} /></span>
+			<span>
+				<span class="nm">{doc.author}</span><br />
+				<span class="hd">@{handle}</span>
+			</span>
+			<button class="fw" type="button" disabled aria-label="Follow author (not yet available)">
+				<Icon name="globe" size={11} />Follow
+			</button>
+		</div>
+
+		<div class="k">Summary</div>
+		<p class="sum">
+			{doc.summary} The piece closes on the trade-offs that only show up once a
+			system is under real load.
+		</p>
+		<div class="by">{MILA_SUMMARY_CREDIT}</div>
+
+		<div class="k">Metadata</div>
+		<div class="mt">
+			{
+				meta.map((r) => (
+					<div class="r">
+						<span class="l">{r.label}</span>
+						<span class="v">{r.value}</span>
+					</div>
+				))
+			}
+			<div class="r">
+				<span class="l">Progress</span>
+				<span class="v">
+					<span class="pgi">
+						{doc.progress}%
+						<span class="pgb"><span class="pgf" style={`width:${doc.progress}%`} /></span>
+					</span>
+				</span>
+			</div>
+			<div class="r"><span class="l">Language</span><span class="v">English</span></div>
+		</div>
+
+		<div class="k">Entities</div>
+		{
+			entities.map((e) => (
+				<div class="ent">
+					<a>{e.name}</a>
+					<span class="c">{e.count}</span>
+				</div>
+			))
+		}
+	</div>
+</div>
+
+<style>
+	.dp {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		background: var(--bg1);
+		border-left: 1px solid var(--bd);
+	}
+
+	.dp-h {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--bd);
+	}
+
+	.lbl {
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--t3);
+	}
+
+	.sp2 {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 6px 13px;
+		border-radius: 999px;
+		background: var(--acc);
+		color: #fff;
+		font-size: 12.5px;
+		font-weight: 600;
+		box-shadow: 0 3px 12px -2px color-mix(in srgb, var(--acc) 55%, transparent);
+	}
+
+	.gh {
+		width: 29px;
+		height: 29px;
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--bg3);
+		color: var(--t2);
+	}
+
+	.dp-b {
+		padding: 15px 14px;
+		overflow: hidden;
+	}
+
+	.dp-t {
+		font-size: 16.5px;
+		font-weight: 700;
+		line-height: 1.27;
+		letter-spacing: -0.022em;
+	}
+
+	.dp-d {
+		margin-top: 3px;
+		font-size: 12.5px;
+		color: var(--t2);
+	}
+
+	.auth {
+		display: flex;
+		align-items: center;
+		gap: 11px;
+		margin-top: 14px;
+		padding: 12px;
+		border-radius: 14px;
+		background: var(--hov);
+	}
+
+	.auth .av {
+		width: 38px;
+		height: 38px;
+		flex: none;
+		border-radius: 50%;
+		display: grid;
+		place-items: center;
+		color: #fff;
+		background: linear-gradient(135deg, #667eea, #764ba2);
+	}
+
+	.nm {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--t1);
+	}
+
+	.hd {
+		font-size: 12px;
+		color: var(--t2);
+	}
+
+	/* Disabled in the product; the washed-out accent is the correct state. */
+	.fw {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		min-height: 28px;
+		padding: 5px 12px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #fff;
+		background: color-mix(in srgb, var(--acc) 42%, transparent);
+		cursor: default;
+	}
+
+	.k {
+		margin: 16px 0 7px;
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--t3);
+	}
+
+	.sum {
+		font-size: 12.8px;
+		line-height: 1.55;
+		color: var(--t1);
+	}
+
+	.mt {
+		margin-top: 2px;
+	}
+
+	.mt .r {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		padding: 9px 0;
+		border-bottom: 0.5px solid var(--bd);
+	}
+
+	.mt .r:last-child {
+		border-bottom: none;
+	}
+
+	.mt .l {
+		font-size: 12px;
+		color: var(--t2);
+	}
+
+	.mt .v {
+		font-size: 13px;
+		text-align: right;
+		color: var(--t1);
+	}
+
+	.pgi {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.pgb {
+		display: inline-block;
+		width: 74px;
+		height: 4px;
+		border-radius: 3px;
+		background: var(--bd2);
+		overflow: hidden;
+	}
+
+	.pgf {
+		display: block;
+		height: 100%;
+		background: var(--acc);
+	}
+
+	.ent {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 5px 0;
+		font-size: 12.5px;
+	}
+
+	.ent a {
+		color: var(--acc);
+	}
+
+	.ent .c {
+		padding: 2px 6px;
+		border-radius: 5px;
+		background: var(--bg3);
+		font-size: 10.5px;
+		color: var(--t3);
+	}
+
+	/* The screen's dark class sits outside this component, so it has to be
+	   global; everything it selects is still scoped. */
+	:global(.app-ui.dk) .auth .fw {
+		background: color-mix(in srgb, var(--acc) 24%, transparent);
+		color: rgba(255, 255, 255, 0.62);
+	}
+</style>

@@ -1,0 +1,89 @@
+---
+/**
+ * A saved video on a phone.
+ *
+ * The transcript is the point: below the poster the talk is text you can
+ * search and quote, which is what saving it was for.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import PhoneNav from './PhoneNav.astro';
+import PhoneTopBar from './PhoneTopBar.astro';
+import { PHONE_VIDEO, PHONE_VIDEO_TRANSCRIPT } from '../../../data/phone-video';
+import { VIDEO, VIDEO_POSTER } from '../../../data/video';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = false, class: className } = Astro.props;
+---
+
+<PhoneFrame
+	dark={dark}
+	android={android}
+	class={className}
+	label="A saved video with its transcript on a phone"
+>
+	<PhoneTopBar title={PHONE_VIDEO.domain} />
+
+	<div class="ph-scroll pad">
+		<div class="ph-video" role="img" aria-label={VIDEO.posterAlt}>
+			<span class="poster" set:html={VIDEO_POSTER} />
+			<span class="play"><PhoneIcon name="play" size={22} solid /></span>
+			<span class="dur">{PHONE_VIDEO.duration}</span>
+		</div>
+
+		<h1 class="ph-mhtitle vt">{PHONE_VIDEO.title}</h1>
+
+		<div class="ph-rmeta vm">
+			<span class="src">{PHONE_VIDEO.channel}</span><span class="sp">/</span>
+			<span>{PHONE_VIDEO.views}</span><span class="sp">/</span>
+			<span>{PHONE_VIDEO.duration}</span>
+		</div>
+
+		<div class="ph-sechead vs">
+			<span class="ph-sectitle">Transcript</span>
+			<span class="ph-secmore">Search<PhoneIcon name="chev-r" size={12} /></span>
+		</div>
+
+		{
+			PHONE_VIDEO_TRANSCRIPT.map((line) => (
+				<div class:list={['ph-tr', { on: line.current }]}>
+					<span class="ts">{line.at}</span>
+					<span>{line.text}</span>
+				</div>
+			))
+		}
+	</div>
+
+	<PhoneNav active="library" />
+</PhoneFrame>
+
+<style>
+	/* This screen sets its own gutter: the poster runs to the column edges,
+	   which the shared .ph-scroll padding would prevent. */
+	.ph-scroll.pad {
+		padding: 0 20px;
+	}
+
+	.poster {
+		position: absolute;
+		inset: 0;
+		display: block;
+	}
+
+	.vt {
+		margin-top: 16px;
+		font-size: 22px;
+	}
+
+	.vm {
+		margin-top: 11px;
+	}
+
+	.vs {
+		margin-top: 22px;
+	}
+</style>

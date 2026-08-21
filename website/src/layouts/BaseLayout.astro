@@ -1,0 +1,78 @@
+---
+/**
+ * The document shell: head, theme bootstrap, global stylesheets, and the
+ * behaviour modules every page shares.
+ *
+ * Pages supply only their own content. Anything page-specific belongs in the
+ * page or its section components, never here.
+ */
+import { PRE_PAINT_SNIPPET } from '../lib/theme';
+
+import '@fontsource-variable/literata';
+import '@fontsource-variable/ibm-plex-sans';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+
+import '../styles/themes.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/motion.css';
+import '../styles/screens.css';
+import '../styles/app-rows.css';
+import '../styles/phone/frame.css';
+import '../styles/phone/reader.css';
+import '../styles/phone/ui.css';
+import '../styles/screens-home.css';
+import '../styles/screens-views.css';
+import '../styles/extension.css';
+import '../styles/extension-sequence.css';
+
+interface Props {
+	title: string;
+	description: string;
+	/** Path relative to the site root, e.g. "/privacy". Used for canonical. */
+	path?: string;
+	/** Internal pages that should stay out of search results. */
+	noindex?: boolean;
+}
+
+const { title, description, path = '/', noindex = false } = Astro.props;
+const canonical = new URL(path, Astro.site ?? 'https://useindelible.com');
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonical.href} />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical.href} />
+		<meta name="twitter:card" content="summary_large_image" />
+
+		{/* Must run before first paint, or the page flashes the wrong theme. */}
+		<script is:inline set:html={PRE_PAINT_SNIPPET} />
+	</head>
+	<body>
+		<slot />
+
+		<script>
+			import { initReveal } from '../lib/reveal';
+			import { initCounters } from '../lib/counters';
+			import { initScreenScaler } from '../lib/screen-scaler';
+			import { initExtensionSequence } from '../lib/extension-sequence';
+
+			initReveal();
+			initCounters();
+			initScreenScaler();
+			initExtensionSequence();
+		</script>
+	</body>
+</html>

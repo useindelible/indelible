@@ -1,0 +1,28 @@
+---
+/**
+ * The reading dock: the actions that apply to whatever you are reading.
+ *
+ * Ported from prototypes/mobile-reimagined/mobile-reader-reimagined.html,
+ * which is its design source. Six buttons in one flat row — type size,
+ * highlight, note, contents, move, listen — with no dividers and no Mila
+ * button; Mila is reached from the summary in the masthead, not from here.
+ *
+ * The article reader and the book reader share it exactly, because annotating
+ * a chapter and annotating an article are the same act.
+ */
+import PhoneIcon from './PhoneIcon.astro';
+---
+
+<div class="ph-dock">
+	<span class="ph-dbtn"><span class="ph-aa">Aa</span></span>
+
+	{/* Highlight is the selected tool: accent ink and a dot, not a filled chip.
+	    A filled chip means "this panel is open", which is a different state. */}
+	<span class="ph-dbtn active"><PhoneIcon name="highlight" /></span>
+
+	<span class="ph-dbtn"><PhoneIcon name="note" /></span>
+	<span class="ph-dbtn"><PhoneIcon name="toc" /></span>
+	<span class="ph-dbtn"><PhoneIcon name="move" /></span>
+
+	<span class="ph-listen"><PhoneIcon name="play" size={17} solid /></span>
+</div>

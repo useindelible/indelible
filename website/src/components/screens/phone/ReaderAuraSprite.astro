@@ -1,0 +1,20 @@
+---
+/**
+ * The reader artwork, emitted once per page as an SVG symbol.
+ *
+ * Every reader frame references it with <use href="#art-mr">, so six
+ * phones on one page cost one copy of the drawing rather than six. Include
+ * this once, near the top of any page that renders a ReaderPhone.
+ */
+import aura from '../../../assets/art/reader-aura.svg?raw';
+---
+
+<svg
+	width="0"
+	height="0"
+	aria-hidden="true"
+	focusable="false"
+	style="position:absolute;pointer-events:none"
+>
+	<defs set:html={aura} />
+</svg>

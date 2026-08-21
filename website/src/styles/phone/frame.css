@@ -1,0 +1,197 @@
+/* ============================================================================
+   Phone frame — the mobile app's device shell and its palette.
+
+   This is a THIRD design system, alongside the marketing tokens and the
+   desktop app's (.app-ui). It is the Compose app's own vocabulary: the radius
+   scale is Shape.kt and the colour columns are Color.kt. Keeping it separate
+   is deliberate — sharing variables with either of the other two would let one
+   surface silently restyle another.
+
+   Everything is `ph-` prefixed and scoped under `.phone`, so these very
+   generic names (--ink, --line, --accent) cannot escape the frame.
+   ========================================================================= */
+
+.phone {
+	/* Shape.kt radius scale. */
+	--r-xs: 4px;
+	--r-sm: 7px;
+	--r-md: 10px;
+	--r-lg: 12px;
+	--r-xl: 14px;
+	--r-2xl: 20px;
+	--r-full: 999px;
+
+	--ph-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue',
+		sans-serif;
+	--ph-serif: 'Literata', Georgia, 'Times New Roman', serif;
+	--ph-mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+
+	--grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+
+	position: relative;
+	width: 390px;
+	height: 844px;
+	display: flex;
+	flex-direction: column;
+	border-radius: 46px;
+	overflow: hidden;
+	isolation: isolate;
+	background: var(--canvas);
+	color: var(--ink);
+	font-family: var(--ph-sans);
+	/* Pinned, not `normal`. The reference uses Geist, which resolves ~1.33;
+	   our substitutes resolve taller and push every label down by 3-5px. */
+	line-height: 1.33;
+}
+
+/* ---- light column (Color.kt) ---- */
+.phone.l {
+	--canvas: #ffffff;
+	--surface: #f6f8fa;
+	--raised: #ffffff;
+	--line: rgba(27, 31, 36, 0.09);
+	--line-2: #d0d7de;
+	--ink: #1f2328;
+	--ink-2: #59636e;
+	--ink-3: #818b98;
+	--accent: #0969da;
+	--accent-hi: #0860ca;
+	--accent-wash: rgba(9, 105, 218, 0.09);
+	--accent-edge: rgba(9, 105, 218, 0.26);
+	--on-accent: #ffffff;
+	--success: #1a7f37;
+	--sheen: rgba(255, 255, 255, 0.9);
+	--veil: rgba(255, 255, 255, 0.84);
+	--lift:
+		0 1px 0 rgba(255, 255, 255, 0.9) inset,
+		0 8px 22px -18px rgba(31, 35, 40, 0.45);
+	--grain-op: 0.035;
+	--grain-blend: multiply;
+	--hl-y: rgba(255, 214, 0, 0.24);
+	--hl-y-edge: rgba(214, 170, 0, 0.55);
+
+	box-shadow:
+		0 46px 100px -44px rgba(0, 0, 0, 0.5),
+		0 0 0 1.5px rgba(0, 0, 0, 0.05),
+		0 0 0 9px #0b0e13,
+		0 0 0 10px rgba(255, 255, 255, 0.06);
+}
+
+/* ---- dark column (Color.kt) ---- */
+.phone.d {
+	--canvas: #0d1117;
+	--surface: #161b22;
+	--raised: #1c2128;
+	--line: rgba(240, 246, 252, 0.08);
+	--line-2: #30363d;
+	--ink: #e6edf3;
+	--ink-2: #8b949e;
+	--ink-3: #6e7681;
+	--accent: #2f81f7;
+	--accent-hi: #388bfd;
+	--accent-wash: rgba(47, 129, 247, 0.14);
+	--accent-edge: rgba(47, 129, 247, 0.34);
+	--on-accent: #ffffff;
+	--success: #3fb950;
+	--sheen: rgba(255, 255, 255, 0.045);
+	--veil: rgba(22, 27, 34, 0.82);
+	--lift:
+		0 1px 0 rgba(240, 246, 252, 0.045) inset,
+		0 10px 28px -20px rgba(1, 4, 9, 0.95);
+	--grain-op: 0.05;
+	--grain-blend: overlay;
+	--hl-y: rgba(227, 179, 65, 0.2);
+	--hl-y-edge: rgba(227, 179, 65, 0.5);
+
+	box-shadow:
+		0 46px 100px -40px rgba(0, 0, 0, 0.85),
+		0 0 0 1.5px rgba(255, 255, 255, 0.06),
+		0 0 0 9px #0b0e13,
+		0 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.phone.andr {
+	border-radius: 34px;
+}
+
+/* ---- device furniture ---- */
+
+.ph-grain {
+	position: absolute;
+	inset: 0;
+	z-index: 70;
+	pointer-events: none;
+	background-image: var(--grain);
+	opacity: var(--grain-op);
+	mix-blend-mode: var(--grain-blend);
+}
+
+.ph-island {
+	position: absolute;
+	top: 13px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 122px;
+	height: 35px;
+	border-radius: var(--r-full);
+	background: #000;
+	z-index: 60;
+}
+
+.ph-punch {
+	position: absolute;
+	top: 13px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 11px;
+	height: 11px;
+	border-radius: var(--r-full);
+	background: #000;
+	z-index: 62;
+	box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.1);
+}
+
+.ph-homeind {
+	position: absolute;
+	bottom: 8px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 134px;
+	height: 5px;
+	border-radius: var(--r-xs);
+	z-index: 58;
+	background: var(--ink);
+	opacity: 0.26;
+}
+
+.phone.andr .ph-homeind {
+	width: 104px;
+	height: 4px;
+	bottom: 7px;
+	opacity: 0.2;
+}
+
+.ph-sbar {
+	height: 54px;
+	flex-shrink: 0;
+	padding: 0 28px 4px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	position: relative;
+	z-index: 52;
+	color: var(--ink);
+}
+
+.ph-sbar .t {
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	font-variant-numeric: tabular-nums;
+}
+
+.ph-sbar .gl {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}

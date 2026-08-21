@@ -1,0 +1,112 @@
+---
+/**
+ * The product wall: what the library actually gives you.
+ *
+ * Alternating feature rows carry the arguments that need a full screen to
+ * make, and a four-cell wall between them covers the ones a cropped fragment
+ * already proves. Every frame is the real component, not a screenshot, so a
+ * change to a screen reaches this section without anyone re-exporting a PNG.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import FeatureRow from './FeatureRow.astro';
+import DeviceDuo from './DeviceDuo.astro';
+import Wall from './Wall.astro';
+import WallCell from './WallCell.astro';
+
+import HomeScreen from '../screens/HomeScreen.astro';
+import SearchScreen from '../screens/SearchScreen.astro';
+import ReaderScreen from '../screens/ReaderScreen.astro';
+import FeedScreen from '../screens/FeedScreen.astro';
+import CollectionsScreen from '../screens/CollectionsScreen.astro';
+import EntityScreen from '../screens/EntityScreen.astro';
+import TagsScreen from '../screens/TagsScreen.astro';
+import SavedViewsScreen from '../screens/SavedViewsScreen.astro';
+
+import HomePhone from '../screens/phone/HomePhone.astro';
+import SearchPhone from '../screens/phone/SearchPhone.astro';
+import ReaderPhone from '../screens/phone/ReaderPhone.astro';
+import FeedPhone from '../screens/phone/FeedPhone.astro';
+---
+
+<Section id="surfaces">
+	<Wrap>
+		<SectionLead
+			title="One library. Every way you actually read."
+			lede="Not a link list with a font change. A dashboard, a reader, semantic search, feeds, collections, extracted entities and saved views, all working on the same archived copy."
+		/>
+
+		<FeatureRow tag="Home" title="Picks up where you stopped">
+			Continue reading with real progress, a daily highlight review, and everything that
+			arrived since you last looked.
+			<DeviceDuo slot="viz" side="right" tilt={2.5}>
+				<HomeScreen slot="main" />
+				<HomePhone slot="detail" dark={false} />
+			</DeviceDuo>
+		</FeatureRow>
+
+		<FeatureRow tag="Search" title="Full text and meaning" flip>
+			Filter with <code>type:</code>, <code>tag:</code>, <code>collection:</code> and date
+			bounds, with matches highlighted in place.
+			<DeviceDuo slot="viz" side="left" tilt={-3}>
+				<SearchScreen slot="main" />
+				<SearchPhone slot="detail" />
+			</DeviceDuo>
+		</FeatureRow>
+
+		<Wall class="minor">
+			<WallCell span={3} index={0} tag="Collections" title="Group by project">
+				Gather sources for one piece of work, then ask questions across only that set.
+				<CollectionsScreen slot="screen" />
+			</WallCell>
+
+			<WallCell span={3} index={1} tag="Entities" title="People, orgs and places">
+				Every mention across your library, linked back to the documents it came from.
+				<EntityScreen slot="screen" />
+			</WallCell>
+
+			<WallCell span={3} index={2} tag="Tags" title="Rename once, everywhere">
+				A real tag manager, plus a trash that gives you the change back.
+				<TagsScreen slot="screen" />
+			</WallCell>
+
+			<WallCell span={3} index={3} tag="Saved views" title="Build a rule once, keep the answer">
+				Compose conditions across type, tag, collection and date, name the result, and it
+				survives reload as a permanent view in the sidebar.
+				<SavedViewsScreen slot="screen" dark />
+			</WallCell>
+		</Wall>
+
+		<FeatureRow tag="Reader" title="The text, kept intact">
+			Headings, figures, tables, code blocks and blockquotes survive extraction. Five
+			highlight colours, notes and tags.
+			<DeviceDuo slot="viz" side="right" tilt={2}>
+				<ReaderScreen slot="main" />
+				<ReaderPhone slot="detail" paper="light" />
+			</DeviceDuo>
+		</FeatureRow>
+
+		<FeatureRow tag="Feeds" title="Your subscriptions, archived on arrival" flip>
+			RSS, Atom and JSON Feed with OPML import. Anything you keep is captured in full, not
+			left as a link to rot.
+			<DeviceDuo slot="viz" side="left" tilt={-2.6}>
+				<FeedScreen slot="main" />
+				<FeedPhone slot="detail" />
+			</DeviceDuo>
+		</FeatureRow>
+	</Wrap>
+</Section>
+
+<style>
+	/* The wall sits between two feature rows, so it needs their rhythm above it
+	   and nothing below — the next row supplies its own. */
+	:global(.wall.minor) {
+		margin-top: 92px;
+	}
+
+	code {
+		font-family: var(--f-m);
+		font-size: 12.5px;
+	}
+</style>

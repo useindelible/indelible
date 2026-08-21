@@ -1,0 +1,145 @@
+---
+/**
+ * One cell in the product wall: a cropped screen above a short caption.
+ *
+ * `span` is in twelfths. The figure crops from the top-left so every cell
+ * shows the part of a screen that identifies it, not its centre.
+ */
+import { reveal } from '../../lib/reveal-attrs';
+import type { RevealVariant } from '../../lib/reveal-attrs';
+
+interface Props {
+	tag: string;
+	title: string;
+	span?: 3 | 4 | 5 | 7 | 12;
+	index?: number;
+	variant?: RevealVariant;
+}
+const { tag, title, span = 4, index = 0, variant = 'scale' } = Astro.props;
+---
+
+<article class:list={['cell', `w${span}`]} {...reveal(variant, index)}>
+	<figure><slot name="screen" /></figure>
+	<div class="cell-b">
+		<span class="cell-tag">{tag}</span>
+		<h3 class="h3">{title}</h3>
+		<p><slot /></p>
+	</div>
+</article>
+
+<style>
+	.cell {
+		grid-column: span 4;
+		display: flex;
+		flex-direction: column;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		background: var(--raised);
+		overflow: hidden;
+		transition:
+			transform var(--d-mid) var(--e-out),
+			box-shadow var(--d-mid) var(--e-out),
+			border-color var(--d-mid) var(--e-out);
+	}
+
+	.cell:hover {
+		transform: translateY(-4px);
+		box-shadow: var(--card);
+		border-color: var(--line-2);
+	}
+
+	.w3 {
+		grid-column: span 3;
+	}
+	.w5 {
+		grid-column: span 5;
+	}
+	.w7 {
+		grid-column: span 7;
+	}
+	.w12 {
+		grid-column: span 12;
+	}
+
+	figure {
+		margin: 0;
+		overflow: hidden;
+		background: var(--bg-2);
+		border-bottom: 1px solid var(--line);
+	}
+
+	/* Screens are CROPPED, not squashed: a legible fragment beats an illegible
+	   whole. The height belongs to the figure, which clips; the frame keeps its
+	   own aspect ratio so the scaler still lays it out at real app size. This
+	   is the live equivalent of the source's object-fit:cover from top left. */
+	figure {
+		height: 190px;
+	}
+
+	figure :global(.screen) {
+		border-radius: 0;
+		border: 0;
+		box-shadow: none;
+	}
+
+	.w7 figure,
+	.w5 figure {
+		height: 330px;
+	}
+
+	.w12 figure {
+		height: 430px;
+	}
+
+	.cell-b {
+		padding: 16px 18px 18px;
+	}
+
+	.cell-b .h3 {
+		margin-bottom: 7px;
+		font-size: 17px;
+	}
+
+	.cell-b p {
+		font-size: 13px;
+		line-height: 1.5;
+		color: var(--dim);
+	}
+
+	.w7 .cell-b,
+	.w5 .cell-b,
+	.w12 .cell-b {
+		padding: 19px 21px 22px;
+	}
+
+	.w7 .cell-b .h3,
+	.w5 .cell-b .h3,
+	.w12 .cell-b .h3 {
+		font-size: 20px;
+	}
+
+	.w7 .cell-b p,
+	.w5 .cell-b p,
+	.w12 .cell-b p {
+		font-size: 14px;
+	}
+
+	@media (max-width: 980px) {
+		.cell,
+		.w3,
+		.w5,
+		.w7 {
+			grid-column: span 6;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.cell,
+		.w3,
+		.w5,
+		.w7,
+		.w12 {
+			grid-column: span 12;
+		}
+	}
+</style>

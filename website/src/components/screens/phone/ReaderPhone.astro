@@ -1,0 +1,97 @@
+---
+/**
+ * The reader on a phone.
+ *
+ * `paper` is one of the shipped ReaderTheme values. The accent stays the brand
+ * blue on every paper: the paper carries the warmth, the accent does not.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import ReaderChrome from './ReaderChrome.astro';
+import ReaderDock from './ReaderDock.astro';
+import { ARTICLE, ARTICLE_BODY, ARTICLE_HEADING } from '../../../data/reader-article';
+
+type Paper = 'light' | 'sepia' | 'dark';
+
+interface Props {
+	paper?: Paper;
+	android?: boolean;
+	class?: string;
+}
+const { paper = 'light', android = false, class: className } = Astro.props;
+
+const PAPER_CLASS: Record<Paper, string> = {
+	light: 'pp-l',
+	sepia: 'pp-s',
+	dark: 'pp-d',
+};
+
+/** Split a paragraph around its highlight so the mark is real markup. */
+function parts(text: string, phrase?: string) {
+	if (!phrase) return { before: text, mark: '', after: '' };
+	const i = text.indexOf(phrase);
+	if (i < 0) throw new Error(`Highlight "${phrase}" not found in paragraph.`);
+	return {
+		before: text.slice(0, i),
+		mark: phrase,
+		after: text.slice(i + phrase.length),
+	};
+}
+---
+
+<PhoneFrame
+	dark={paper === 'dark'}
+	android={android}
+	class={className}
+	frameClass={`ph-rd ${PAPER_CLASS[paper]}`}
+	label={`An article in the Indelible reader, ${paper} theme`}
+>
+	<div class="ph-aura">
+		<svg viewBox="0 0 2172 724" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+			<use href="#art-mr"></use>
+		</svg>
+	</div>
+	<ReaderChrome />
+
+	<div class="ph-rscroll">
+		<header class="ph-masthead">
+			<div class="ph-mhsrc">
+				<span class="ph-mhmark">&#9998;</span>
+				<span class="ph-mhname">{ARTICLE.source}</span>
+			</div>
+			<h1 class="ph-mhtitle">{ARTICLE.title}</h1>
+			<div class="ph-mhmeta">
+				<span>{ARTICLE.author}</span><span class="sp">/</span>
+				<span>{ARTICLE.length}</span><span class="sp">/</span>
+				<span>{ARTICLE.date}</span>
+			</div>
+			<div class="ph-mhrule"></div>
+			<div class="ph-sum">
+				<span class="spark"><PhoneIcon name="spark" size={15} /></span>
+				<span class="lab">Mila summary</span>
+				<PhoneIcon name="chev-d" size={15} />
+			</div>
+		</header>
+
+		<div class="ph-body">
+			{
+				ARTICLE_BODY.map((p, i) => {
+					const { before, mark, after } = parts(p.text, p.highlight?.phrase);
+					return (
+						<>
+							<p>
+								{before}
+								{mark && <span class={`ph-hl ${p.highlight!.colour}`}>{mark}</span>}
+								{after}
+							</p>
+							{i === 1 && <h2 class="ph-h2">{ARTICLE_HEADING}</h2>}
+						</>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<ReaderDock />
+
+</PhoneFrame>

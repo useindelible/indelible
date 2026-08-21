@@ -1,0 +1,103 @@
+---
+/**
+ * Self-hosting versus the managed option.
+ *
+ * The order is deliberate: self-hosting comes first and is the complete
+ * product. The cloud panel must never read as the recommended path.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import Button from '../primitives/Button.astro';
+import Terminal from '../primitives/Terminal.astro';
+import ComingSoon from '../primitives/ComingSoon.astro';
+import { reveal } from '../../lib/reveal-attrs';
+import { SITE, INSTALL_COMMANDS } from '../../data/site';
+---
+
+<Section id="host" tone="raised">
+	<Wrap>
+		<SectionLead
+			eyebrow={`Open source, ${SITE.licence}`}
+			title="Run it yourself, and keep running it."
+			lede="Postgres, the renderer, the worker and the API. One file brings all of it up and serves the web interface on the same port."
+		/>
+
+		<div class="host" {...reveal('scale')}>
+			<div class="panel">
+				<h3>Self-hosted</h3>
+				<p>Your hardware, your data, free forever.</p>
+				<Terminal lines={INSTALL_COMMANDS} label="Install Indelible with Docker" />
+				<div class="cta">
+					<Button href="/docs/self-hosting/install/" arrow>Read the install guide</Button>
+				</div>
+			</div>
+
+			<div class="panel">
+				<h3>Indelible Cloud</h3>
+				<p>
+					Managed hosting, zero setup, always current. For when you would rather
+					not own a server.
+				</p>
+				<div class="cta"><ComingSoon>Indelible Cloud</ComingSoon></div>
+				<p class="fine">
+					Self-hosting stays free and fully featured. The cloud is a convenience,
+					never the only door.
+				</p>
+			</div>
+		</div>
+	</Wrap>
+</Section>
+
+<style>
+	.host {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		border: 1px solid var(--line);
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.panel {
+		padding: 38px;
+	}
+
+	.panel + .panel {
+		border-left: 1px solid var(--line);
+		background: var(--bg-2);
+	}
+
+	h3 {
+		margin-bottom: 10px;
+		font-family: var(--f-d);
+		font-size: 26px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+
+	p {
+		margin-bottom: 22px;
+		font-size: 15px;
+		color: var(--dim);
+	}
+
+	.cta {
+		margin-top: 24px;
+	}
+
+	.fine {
+		margin: 26px 0 0;
+		font-size: 14px;
+	}
+
+	@media (max-width: 860px) {
+		.host {
+			grid-template-columns: 1fr;
+		}
+
+		.panel + .panel {
+			border-left: 0;
+			border-top: 1px solid var(--line);
+		}
+	}
+</style>

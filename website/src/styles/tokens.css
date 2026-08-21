@@ -1,0 +1,105 @@
+/* ============================================================================
+   Design tokens — the vocabulary every component styles against.
+
+   There are deliberately NO colour literals here. Each colour token forwards a
+   --t-* value that themes.css sets, so adding or editing a palette never
+   touches this file and never touches a component. Everything non-colour
+   (type, spacing, motion, elevation geometry) lives here because it does not
+   vary by theme.
+
+   Compatibility: --paper, --ink-soft, --hairline and friends are aliases for
+   starlight-theme.css, which styles the docs. They are pointers, not copies,
+   so the landing page and the docs cannot drift apart.
+   ========================================================================= */
+
+/* The colour tokens are re-declared on any [data-theme-scope] element, not
+   only on :root. A custom property resolves at its DECLARATION site: if
+   `--bg: var(--t-bg)` existed only on :root it would compute once against the
+   root palette, and descendants would inherit that resolved value — so a
+   region re-declaring --t-bg would change nothing. Repeating the mapping here
+   forces it to resolve again inside the scope. */
+:root,
+[data-theme-scope] {
+	/* ---- surfaces ---- */
+	--bg: var(--t-bg);
+	--bg-2: var(--t-bg-2);
+	--raised: var(--t-raised);
+	--raised-2: var(--t-raised-2);
+
+	/* ---- text ---- */
+	--ink: var(--t-ink);
+	--dim: var(--t-dim);
+	--faint: var(--t-faint);
+
+	/* ---- rules ---- */
+	--line: var(--t-line);
+	--line-2: var(--t-line-2);
+
+	/* ---- accent ---- */
+	--accent: var(--t-accent);
+	--accent-dim: var(--t-accent-dim);
+	--on-accent: var(--t-on-accent);
+	--accent-sheen: var(--t-accent-sheen);
+	--accent-sheen-hi: var(--t-accent-sheen-hi);
+	--accent-chip: var(--t-accent-chip);
+	--accent-chip-hi: var(--t-accent-chip-hi);
+	--term-bg-solid: var(--t-term-bg);
+	--term-ink: var(--t-term-ink);
+
+	/* ---- semantic hues: status only, never decoration ---- */
+	--moss: var(--t-moss);
+	--amber: var(--t-amber);
+	--crimson: var(--t-crimson);
+	--sky: var(--t-sky);
+
+	/* ---- elevation ---- */
+	--shot: var(--t-shot);
+	--card: var(--t-card);
+	--r: 3px;
+
+	/* ---- type ---- */
+	--f-d: 'Literata', Georgia, 'Times New Roman', serif;
+	--f-s: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--f-m: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+
+	/* ---- motion ---- */
+	--e-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--e-spring: cubic-bezier(0.32, 1.22, 0.36, 1);
+	--e-soft: cubic-bezier(0.22, 1, 0.36, 1);
+	--d-micro: 0.16s;
+	--d-mid: 0.42s;
+	--d-rev: 0.8s;
+
+	/* ---- layout ---- */
+	--wrap-max: 1240px;
+	--wrap-pad: 34px;
+
+	/* ---- aliases consumed by starlight-theme.css ---- */
+	--paper: var(--bg);
+	--paper-deep: var(--bg-2);
+	--ink-soft: var(--dim);
+	--ink-faint: var(--faint);
+	--hairline: var(--line);
+	--accent-soft: var(--accent-dim);
+	--on-ink: var(--bg);
+	--font-serif: var(--f-d);
+	--font-sans: var(--f-s);
+	--font-mono: var(--f-m);
+	--shadow-shot: var(--shot);
+	--term-bg: var(--bg-2);
+	--term-text: var(--ink);
+	--term-prompt: var(--accent);
+}
+
+/* A scope must also re-establish `color`. Text inherits body's already-resolved
+   colour, not the --ink token, so without this a dark-scoped band on a light
+   page keeps light-theme ink and becomes unreadable. */
+[data-theme-scope] {
+	color: var(--ink);
+}
+
+@media (max-width: 760px) {
+	:root {
+		--wrap-pad: 18px;
+	}
+}

@@ -1,0 +1,178 @@
+---
+/**
+ * The application sidebar. Identical on every screen except which row is
+ * active, which is why it takes only `active`.
+ *
+ * Two rules that keep being re-broken and are deliberate here:
+ * there is no Podcasts row (it is not first-class yet), and there are no
+ * count badges on any row.
+ */
+import Icon from '../Icon.astro';
+import { LIBRARY_NAV, USER } from '../../../data/app';
+
+interface Props {
+	/** Key of the active row; an unknown key means nothing is highlighted. */
+	active?: string;
+}
+const { active = 'articles' } = Astro.props;
+---
+
+<div class="sb">
+	<div class="sb-h">
+		<b>Indelible</b>
+		<span class="hd-ic">
+			<Icon name="hide-sidebar" />
+			<Icon name="add" />
+		</span>
+	</div>
+
+	<div class:list={['sb-i', { on: active === 'home' }]}>
+		<span class="g"><Icon name="home" /></span>Home
+	</div>
+
+	<div class="sb-sec">Library</div>
+	{
+		LIBRARY_NAV.map((item) => (
+			<div class:list={['sb-i', { on: active === item.key }]}>
+				<span class="g">
+					<Icon name={item.key} />
+				</span>
+				{item.label}
+			</div>
+		))
+	}
+
+	<div class="sb-sec">Collections</div>
+	<div class:list={['sb-i', { on: active === 'collections' }]}>
+		<span class="g"><Icon name="collections" /></span>All Collections
+	</div>
+	<div class:list={['sb-i', { on: active === 'trash' }]}>
+		<span class="g"><Icon name="trash" /></span>Trash
+	</div>
+
+	<div class="sb-div"></div>
+
+	<div class:list={['sb-i', { on: active === 'search' }]}>
+		<span class="g"><Icon name="search" /></span>Search
+	</div>
+	<div class:list={['sb-i', { on: active === 'prefs' }]}>
+		<span class="g"><Icon name="preferences" /></span>Preferences
+	</div>
+
+	<div class="sb-u">
+		<span class="av">{USER.initials}</span>
+		<span class="nm">{USER.name}</span>
+		<span class="th">☾</span>
+	</div>
+</div>
+
+<style>
+	.sb {
+		display: flex;
+		flex-direction: column;
+		padding: 12px 8px;
+		background: var(--bg2);
+		border-right: 1px solid var(--bd);
+	}
+
+	.sb-h {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 6px 8px 14px;
+	}
+
+	.sb-h b {
+		font-size: 15px;
+		font-weight: 600;
+		letter-spacing: -0.015em;
+		color: var(--t1);
+	}
+
+	.hd-ic {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		opacity: 0.5;
+		color: var(--t3);
+	}
+
+	.sb-sec {
+		padding: 12px 10px 5px;
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--t3);
+	}
+
+	.sb-i {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		padding: 6px 10px;
+		border-radius: 7px;
+		color: var(--t1);
+		font-size: 13px;
+		line-height: 1.3;
+	}
+
+	.sb-i .g {
+		width: 15px;
+		height: 15px;
+		flex: none;
+		display: grid;
+		place-items: center;
+		opacity: 0.68;
+	}
+
+	.sb-i.on {
+		background: var(--sel2);
+		color: var(--acc);
+		font-weight: 500;
+	}
+
+	.sb-i.on .g {
+		opacity: 1;
+	}
+
+	.sb-div {
+		height: 1px;
+		margin: 9px 10px;
+		background: var(--bd);
+	}
+
+	.sb-u {
+		margin-top: auto;
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		padding: 8px 8px 2px;
+		border-top: 1px solid var(--bd);
+	}
+
+	.av {
+		width: 24px;
+		height: 24px;
+		flex: none;
+		border-radius: 50%;
+		display: grid;
+		place-items: center;
+		font-size: 10px;
+		font-weight: 600;
+		color: #fff;
+		background: linear-gradient(140deg, #7fb0f5, #8442d9);
+	}
+
+	.nm {
+		font-size: 12.5px;
+		font-weight: 500;
+	}
+
+	.th {
+		margin-left: auto;
+		font-size: 12px;
+		color: var(--t3);
+	}
+</style>

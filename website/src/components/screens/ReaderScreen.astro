@@ -1,0 +1,99 @@
+---
+/**
+ * The reader, showing whichever document it is handed.
+ *
+ * The page keeps its own palette (--rpage, --rink) rather than the app's, so
+ * the text sits on paper while the chrome around it stays app-coloured. That
+ * separation is the point of the screen: extraction produces a document, not
+ * a themed panel.
+ *
+ * The document is a prop, not a constant. A 9-minute post and a 336,952-word
+ * novel are the same screen with different data — see data/reader-doc.ts and
+ * data/longread.ts.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ReaderToolbar from './app/ReaderToolbar.astro';
+import ListenBar from './app/ListenBar.astro';
+import RecordPanel from './app/RecordPanel.astro';
+import { READER_DOC } from '../../data/reader-doc';
+import { MILA_SUMMARY_CREDIT } from '../../data/app';
+import type { ReaderDocument } from '../../lib/types';
+
+interface Props {
+	/** Defaults to the short article; pass LONGREAD for the novel. */
+	document?: ReaderDocument;
+	dark?: boolean;
+	/** Shows the Listen transport above the page. */
+	listening?: boolean;
+	class?: string;
+}
+const {
+	document: doc = READER_DOC,
+	dark = false,
+	listening = false,
+	class: className,
+} = Astro.props;
+
+const ticks = Array.from({ length: doc.ticks }, (_, i) => i === doc.tick);
+
+/** Split a paragraph around its emphasis so the italic is real markup. */
+function parts(text: string, phrase?: string) {
+	if (!phrase) return { before: text, em: '', after: '' };
+	const i = text.indexOf(phrase);
+	if (i < 0) throw new Error(`Emphasis "${phrase}" not found in paragraph.`);
+	return { before: text.slice(0, i), em: phrase, after: text.slice(i + phrase.length) };
+}
+---
+
+<ScreenFrame dark={dark} class={className} label={`${doc.title}, open in the Indelible reader`}>
+	<AppShell>
+		<Sidebar active="articles" />
+
+		<div class="rd2">
+			<ReaderToolbar title={doc.title} listening={listening} />
+			{listening && <ListenBar />}
+
+			<div class="rd2-body">
+				{/* Scroll map: one tick per screenful, the current one marked. */}
+				<div class="rd2-map">{ticks.map((on) => <i class:list={{ on }} />)}</div>
+
+				<div class="rd2-page">
+					<h1 class="rd2-h1">{doc.title}</h1>
+					<div class="rd2-meta">
+						<span>{doc.author}</span>
+						<span>{doc.domain}</span>
+						<span>{doc.published}</span>
+						<span>{doc.length}</span>
+					</div>
+
+					{
+						doc.blocks.map((b) => {
+							if (b.kind === 'hr') return <hr class="rd2-hr" />;
+							if (b.kind === 'h2') return <h2 class="rd2-h2">{b.text}</h2>;
+							const { before, em, after } = parts(b.text ?? '', b.emphasis);
+							return (
+								<p class="rd2-p">
+									{before}
+									{em && <em>{em}</em>}
+									{after}
+								</p>
+							);
+						})
+					}
+				</div>
+			</div>
+		</div>
+
+		<RecordPanel
+			title={doc.title}
+			domain={doc.domain}
+			author={doc.record.author.name}
+			authorHandle={doc.record.author.handle}
+			summary={doc.record.summary}
+			summaryBy={MILA_SUMMARY_CREDIT}
+			fields={doc.record.fields}
+		/>
+	</AppShell>
+</ScreenFrame>

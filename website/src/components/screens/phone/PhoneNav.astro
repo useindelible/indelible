@@ -1,0 +1,35 @@
+---
+/** The bottom tab bar. Only the active tab differs between screens. */
+import PhoneIcon from './PhoneIcon.astro';
+import type { PhoneIconName } from '../../../lib/phone-icons';
+
+interface Tab {
+	key: PhoneIconName;
+	label: string;
+}
+const TABS: readonly Tab[] = [
+	{ key: 'home', label: 'Home' },
+	{ key: 'library', label: 'Library' },
+	{ key: 'feed', label: 'Feed' },
+	{ key: 'search', label: 'Search' },
+	{ key: 'you', label: 'You' },
+];
+
+interface Props {
+	active?: PhoneIconName;
+}
+const { active = 'home' } = Astro.props;
+---
+
+<nav class="ph-tabbar">
+	{
+		TABS.map((tab) => (
+			<span class:list={['ph-tab', { on: tab.key === active }]}>
+				<span class="ph-tabic">
+					<PhoneIcon name={tab.key} size={22} />
+				</span>
+				<span class="ph-tablab">{tab.label}</span>
+			</span>
+		))
+	}
+</nav>

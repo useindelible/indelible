@@ -1,0 +1,117 @@
+---
+/**
+ * How documents get in.
+ *
+ * The wide frame below the cards carries the argument the cards cannot: the
+ * extension is a bar the page keeps its width under, not a panel beside it.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import { ROUTES } from '../../data/routes';
+import { reveal } from '../../lib/reveal-attrs';
+---
+
+<Section id="connect">
+	<Wrap>
+		<SectionLead
+			title="Six ways in. None of them a copy and paste."
+			lede="Each route lands the same way: the full page fetched, extracted and stored, with a headless renderer for the sites that fight back."
+		/>
+
+		<div class="routes">
+			{
+				ROUTES.map((route, i) => (
+					<article class="route" {...reveal('up', i)}>
+						<span class={`dot tone-${route.tone}`} aria-hidden="true" />
+						<h3>{route.title}</h3>
+						<p>{route.body}</p>
+					</article>
+				))
+			}
+
+			<div class="wide" {...reveal('clip')}>
+				<slot name="frame" />
+			</div>
+		</div>
+	</Wrap>
+</Section>
+
+<style>
+	.routes {
+		display: grid;
+		grid-template-columns: repeat(12, 1fr);
+		gap: 18px;
+	}
+
+	.route {
+		grid-column: span 3;
+		padding: 22px;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		background: var(--raised);
+		transition:
+			transform var(--d-mid) var(--e-out),
+			border-color var(--d-mid) var(--e-out);
+	}
+
+	.route:hover {
+		transform: translateY(-3px);
+		border-color: var(--line-2);
+	}
+
+	.dot {
+		display: block;
+		width: 26px;
+		height: 26px;
+		margin-bottom: 16px;
+		border-radius: 7px;
+	}
+
+	/* Grouping colour only. These carry no status meaning. */
+	.tone-sky {
+		background: var(--sky);
+	}
+	.tone-crimson {
+		background: var(--crimson);
+	}
+	.tone-amber {
+		background: var(--amber);
+	}
+	.tone-moss {
+		background: var(--moss);
+	}
+
+	h3 {
+		margin-bottom: 6px;
+		font-family: var(--f-d);
+		font-size: 17px;
+		font-weight: 600;
+	}
+
+	p {
+		font-size: 13.5px;
+		line-height: 1.5;
+		color: var(--dim);
+	}
+
+	.wide {
+		grid-column: span 12;
+		margin-top: 6px;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		overflow: hidden;
+	}
+
+	@media (max-width: 1080px) {
+		.route {
+			grid-column: span 6;
+		}
+	}
+
+	@media (max-width: 620px) {
+		.route {
+			grid-column: span 12;
+		}
+	}
+</style>

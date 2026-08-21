@@ -1,0 +1,115 @@
+---
+/**
+ * Mila: an assistant scoped to your own library.
+ *
+ * The four points are claims with evidence attached, not features — each one
+ * names what was actually run and what came back.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import MilaScreen from '../screens/MilaScreen.astro';
+import { MILA_POINTS } from '../../data/mila-points';
+import { reveal } from '../../lib/reveal-attrs';
+---
+
+<Section id="mila">
+	<Wrap>
+		<div class="split">
+			<div>
+				<h2 class="h2">Mila reads what you read.</h2>
+				<p class="lede">
+					An assistant scoped to your own library, running against whichever provider you
+					point it at. Local models on your own machine, or a hosted key. Never ours, because
+					we do not have a server in the path.
+				</p>
+
+				<div class="pts" {...reveal('up')}>
+					{
+						MILA_POINTS.map((point, i) => (
+							<div>
+								<i>{String(i + 1).padStart(2, '0')}</i>
+								<div>
+									<b>{point.title}</b>
+									<p>{point.body}</p>
+								</div>
+							</div>
+						))
+					}
+				</div>
+			</div>
+
+			<div class="split-img" {...reveal('right')}><MilaScreen /></div>
+		</div>
+	</Wrap>
+</Section>
+
+<style>
+	.split {
+		display: grid;
+		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+		gap: 56px;
+		align-items: center;
+	}
+
+	.lede {
+		margin-top: 16px;
+	}
+
+	.pts {
+		display: grid;
+		margin-top: 30px;
+	}
+
+	.pts > div {
+		display: grid;
+		grid-template-columns: 34px 1fr;
+		gap: 0 14px;
+		padding: 16px 0;
+		border-top: 1px solid var(--line);
+	}
+
+	.pts i {
+		padding-top: 3px;
+		font-style: normal;
+		font-family: var(--f-m);
+		font-size: 11px;
+		color: var(--accent);
+	}
+
+	.pts b {
+		display: block;
+		margin-bottom: 3px;
+		font-family: var(--f-d);
+		font-size: 16.5px;
+		font-weight: 600;
+	}
+
+	.pts p {
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--dim);
+	}
+
+	/* The screen is taller than the copy; crop it rather than shrink the type. */
+	.split-img {
+		max-height: 620px;
+		overflow: hidden;
+		border: 1px solid var(--line);
+		border-radius: 6px;
+		background: var(--raised);
+		box-shadow: var(--shot);
+	}
+
+	.split-img :global(.screen) {
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	@media (max-width: 980px) {
+		.split {
+			grid-template-columns: 1fr;
+			gap: 34px;
+		}
+	}
+</style>

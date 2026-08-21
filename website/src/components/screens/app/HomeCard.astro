@@ -1,0 +1,26 @@
+---
+/** One card in a Home rail. */
+import CoverArt from '../CoverArt.astro';
+import { SOURCE_MARKS, type HomeCard } from '../../../data/home-shelf';
+
+interface Props {
+	card: HomeCard;
+}
+const { card } = Astro.props;
+const mark = SOURCE_MARKS[card.mark];
+---
+
+<div class="hm-card">
+	<div class="hm-thumb">
+		<CoverArt name={card.art} />
+		{card.progress !== undefined && <span class="hm-prog" style={`width:${card.progress}%`} />}
+	</div>
+	<div class="hm-b">
+		<div class="hm-meta">
+			<span class="hm-fav" style={`background:${mark.colour}`}>{mark.letter}</span>
+			{card.source}
+		</div>
+		<div class="hm-title">{card.title}</div>
+		<div class="hm-auth">{card.author}</div>
+	</div>
+</div>

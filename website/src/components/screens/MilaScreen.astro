@@ -1,0 +1,104 @@
+---
+/**
+ * Preferences → Mila & AI.
+ *
+ * A three-column preferences layout: the app sidebar, the settings nav, then
+ * the panel. Shown in its default state, with bring-your-own provider off.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import PrefsNav from './app/PrefsNav.astro';
+import { MILA, PROMPT_PRESETS } from '../../data/mila';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = true, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="Mila and AI settings in Indelible">
+	<AppShell layout="nav">
+		<Sidebar active="prefs" />
+
+		<PrefsNav active="Mila & AI" />
+
+		<div class="ml-main">
+			<div class="ml-hero">
+				<span class="ml-orb"></span>
+				<div class="eb">{MILA.eyebrow}</div>
+				<h3>{MILA.greeting}</h3>
+				<p>{MILA.blurb}</p>
+
+				<div class="ml-toggle">
+					<span class="ml-sw"></span>
+					<span>
+						<span class="t">{MILA.toggleTitle}</span>
+						<span class="s">{MILA.toggleSub}</span>
+					</span>
+				</div>
+			</div>
+
+			<div class="ml-sec">Provider<b>{MILA.providerNote}</b></div>
+
+			<div class="ml-card">
+				<div>
+					<div class="t">{MILA.byoTitle}</div>
+					<div class="s">{MILA.byoSub}</div>
+				</div>
+				<span class="sw"></span>
+			</div>
+
+			<div class="ml-card" style="align-items:flex-start">
+				<span class="ml-dot"></span>
+				<div style="flex:1">
+					<div class="t">{MILA.indexTitle}</div>
+					<div class="s">{MILA.indexSub}</div>
+					<div class="ml-bars">
+						{Array.from({ length: MILA.bars }, () => <i />)}
+					</div>
+					<div class="ml-idx">
+						<span><b>{MILA.indexed}</b> of <b>{MILA.indexTotal}</b> items indexed</span>
+						<span class="ml-chip">{MILA.indexChip}</span>
+					</div>
+				</div>
+				<span class="pct">100%</span>
+			</div>
+
+			<div class="ml-sec">Prompt presets<b>{MILA.presetNote}</b></div>
+
+			{
+				PROMPT_PRESETS.map((p) => (
+					<div class="ml-pg">
+						<div class="hd">
+							<span class="sq" style={`background:${p.colour}`} />
+							<div>
+								<div class="t">{p.name}</div>
+								<div class="s">{p.sub}</div>
+							</div>
+							<span class="n">1 preset</span>
+						</div>
+						<div class="ml-pr">
+							<span class="cv">&rsaquo;</span>
+							<span class="nm">{p.builtIn}</span>
+							<span class="tx">{p.prompt}</span>
+							<span class="bd">Default</span>
+							<span class="bd">Built-in</span>
+						</div>
+						<div class="ml-add">Add {p.name.toLowerCase()} preset</div>
+					</div>
+				))
+			}
+		</div>
+	</AppShell>
+</ScreenFrame>
+
+<style>
+	/* The index percentage sits with the bars, not with the card's title row. */
+	.ml-card .pct {
+		align-self: flex-end;
+		font-size: 13px;
+		color: var(--t1);
+	}
+</style>

@@ -1,0 +1,55 @@
+---
+/**
+ * A shell transcript. Lines are data so the prompt is never typed by hand and
+ * cannot drift between copies of the same command.
+ *
+ * One element per line rather than a <pre>: the markup then carries no
+ * significant whitespace, so indentation in the template can never leak into
+ * the rendered command.
+ */
+interface Props {
+	lines: readonly string[];
+	prompt?: string;
+	/** Announced to assistive tech in place of reading the prompt aloud. */
+	label?: string;
+}
+const { lines, prompt = '$', label = 'Terminal commands' } = Astro.props;
+---
+
+<div class="term" role="group" aria-label={label}>
+	{
+		lines.map((line) => (
+			<div class="ln">
+				<span class="p" aria-hidden="true">
+					{prompt}
+				</span>
+				<span class="c">{line}</span>
+			</div>
+		))
+	}
+</div>
+
+<style>
+	.term {
+		padding: 16px 18px;
+		border: 1px solid var(--line-2);
+		border-radius: 4px;
+		background: var(--term-bg-solid);
+		color: var(--term-ink);
+		font-family: var(--f-m);
+		font-size: 13.5px;
+		line-height: 1.75;
+		overflow-x: auto;
+	}
+
+	.ln {
+		display: flex;
+		gap: 9px;
+		white-space: pre;
+	}
+
+	.p {
+		color: var(--moss);
+		user-select: none;
+	}
+</style>

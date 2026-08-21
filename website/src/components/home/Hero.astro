@@ -1,0 +1,122 @@
+---
+/**
+ * The hero: copy on the left, product visual on the right.
+ *
+ * The visual arrives through the `visual` slot rather than being imported
+ * here, so the hero owns layout and typography only and never has to know
+ * which product screens it is showing.
+ */
+import Eyebrow from '../primitives/Eyebrow.astro';
+import HeroStats from './HeroStats.astro';
+import type { Stat } from '../../lib/types';
+import HeroMarquee from './HeroMarquee.astro';
+import Wrap from '../primitives/Wrap.astro';
+import { reveal } from '../../lib/reveal-attrs';
+
+interface Props {
+	eyebrow: string;
+	/** One entry per rendered line; `em` is the accented italic fragment. */
+	headline: { text: string; em?: string }[];
+	lede: string;
+	stats: Stat[];
+	marquee: readonly string[];
+}
+const { eyebrow, headline, lede, stats, marquee } = Astro.props;
+---
+
+<header class="hero">
+	<Wrap>
+		<div class="hero-grid">
+			<div class="hero-copy">
+				<div {...reveal('up', 0)}><Eyebrow>{eyebrow}</Eyebrow></div>
+
+				<h1 class="h1 lines">
+					{
+						headline.map((line, i) => (
+							<span>
+								<i style={`--i:${i + 1}`}>
+									{line.text}
+									{line.em && <em>{line.em}</em>}
+								</i>
+							</span>
+						))
+					}
+				</h1>
+
+				<p class="lede" {...reveal('up', 4)}>{lede}</p>
+
+				<div class="hero-cta" {...reveal('up', 5)}>
+					<slot name="cta" />
+				</div>
+
+				<div {...reveal('up', 6)}><HeroStats stats={stats} /></div>
+			</div>
+
+			<div class="hero-visual" {...reveal('scale', 3)}>
+				<slot name="visual" />
+			</div>
+		</div>
+
+		<div {...reveal('fade')}><HeroMarquee items={marquee} /></div>
+	</Wrap>
+</header>
+
+<style>
+	.hero {
+		position: relative;
+		padding: 124px 0 0;
+		overflow: hidden;
+	}
+
+	/* Ambient accent wash behind the product visual. */
+	.hero::before {
+		content: '';
+		position: absolute;
+		top: -280px;
+		right: -160px;
+		width: 900px;
+		height: 900px;
+		border-radius: 50%;
+		background: radial-gradient(circle, var(--accent-dim), transparent 62%);
+		pointer-events: none;
+	}
+
+	.hero-grid {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+		gap: 44px;
+		align-items: center;
+	}
+
+	.hero-copy {
+		max-width: 560px;
+	}
+
+	.hero-copy .h1 {
+		margin: 22px 0;
+	}
+
+	.hero-cta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		margin-top: 32px;
+	}
+
+	@media (max-width: 1080px) {
+		.hero {
+			padding-top: 96px;
+		}
+
+		.hero-grid {
+			grid-template-columns: 1fr;
+			gap: 52px;
+		}
+
+		.hero-copy {
+			max-width: none;
+		}
+	}
+</style>

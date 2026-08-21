@@ -1,0 +1,47 @@
+---
+/**
+ * The application's three-pane grid: sidebar, list, detail.
+ *
+ * This is a GRID, not a flex row. The detail pane has no flex basis, so as a
+ * flex child it takes the whole row and collapses the middle pane to zero.
+ * Variants only ever override grid-template-columns.
+ */
+interface Props {
+	/** `full` = sidebar + list + detail. `list` drops the detail pane. */
+	layout?: 'full' | 'list' | 'nav' | 'book';
+	class?: string;
+}
+const { layout = 'full', class: className } = Astro.props;
+---
+
+<div class:list={['app', `layout-${layout}`, className]}><slot /></div>
+
+<style>
+	.app {
+		display: grid;
+		height: 900px;
+		background: var(--bg1);
+		color: var(--t1);
+		font-size: 13px;
+		font-family: var(--sfont);
+	}
+
+	/* Detail panel is 300px, sidebar 220px — both measured off the real app. */
+	.layout-full {
+		grid-template-columns: 220px minmax(0, 1fr) 300px;
+	}
+
+	.layout-list {
+		grid-template-columns: 220px minmax(0, 1fr);
+	}
+
+	/* Preferences-style screens put a secondary nav between the two. */
+	.layout-nav {
+		grid-template-columns: 220px 210px minmax(0, 1fr);
+	}
+
+	/* A book trades sidebar width for its chapter list. */
+	.layout-book {
+		grid-template-columns: 325px minmax(0, 1fr) 300px;
+	}
+</style>

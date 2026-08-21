@@ -1,0 +1,42 @@
+---
+/**
+ * The Library view: sidebar, article list, document record.
+ *
+ * Screens are compositions, not markup dumps — everything here comes from
+ * shared app parts and the shared corpus, so changing a document changes it
+ * on every screen that shows it.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import Toolbar from './app/Toolbar.astro';
+import DocRow from './app/DocRow.astro';
+import DetailPanel from './app/DetailPanel.astro';
+import { DOCS } from '../../data/library';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+
+/** Eleven rows fills the 900px frame and leaves the last one cut, which is
+    the cue that the list continues. */
+const rows = DOCS.slice(0, 11);
+---
+
+<ScreenFrame
+	dark={dark}
+	class={className}
+	label={`The Indelible library in the ${dark ? 'dark' : 'light'} theme`}
+>
+	<AppShell>
+		<Sidebar active="articles" />
+		<ListPane count="42 items">
+			<Toolbar title="Articles" />
+			{rows.map((doc, i) => <DocRow doc={doc} selected={i === 0} />)}
+		</ListPane>
+		<DetailPanel doc={DOCS[0]} index={0} />
+	</AppShell>
+</ScreenFrame>

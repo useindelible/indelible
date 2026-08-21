@@ -1,0 +1,25 @@
+---
+/** The in-app navigation bar: menu, title, search and avatar. */
+import PhoneIcon from './PhoneIcon.astro';
+import { USER } from '../../../data/app';
+
+interface Props {
+	title?: string;
+	count?: string;
+}
+const { title, count } = Astro.props;
+---
+
+<div class="ph-navbar">
+	<div class="ph-navleft">
+		<span class="ph-iconbtn"><PhoneIcon name="menu" /></span>
+	</div>
+	<div class="ph-navtitle">
+		{title && <span>{title}</span>}
+		{count && <span class="n">{count}</span>}
+	</div>
+	<div class="ph-navright">
+		<span class="ph-iconbtn"><PhoneIcon name="search" /></span>
+		<span class="ph-avatar">{USER.initials[0]}</span>
+	</div>
+</div>

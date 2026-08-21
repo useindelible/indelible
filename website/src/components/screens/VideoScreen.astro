@@ -1,0 +1,93 @@
+---
+/**
+ * A YouTube video saved with its transcript.
+ *
+ * Same reader chrome as an article, because that is the point: a talk becomes
+ * a document you can search and quote, not a link to somewhere else.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ReaderToolbar from './app/ReaderToolbar.astro';
+import RecordPanel from './app/RecordPanel.astro';
+import { VIDEO, VIDEO_PARAGRAPHS, VIDEO_POSTER, VIDEO_RECORD } from '../../data/video';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="A saved YouTube video with its transcript">
+	<AppShell>
+		{/* No sidebar row is active: a video opened from search belongs to no section. */}
+		<Sidebar active="none" />
+
+		<div class="rd2">
+			<ReaderToolbar title={VIDEO.title} />
+
+			<div class="rd2-body">
+				<div class="rd2-page">
+					<h1 class="rd2-h1">{VIDEO.title}</h1>
+					<div class="rd2-meta">
+						<span>{VIDEO.channel}</span>
+						<span>{VIDEO.domain}</span>
+					</div>
+
+					<div class="vd-embed" role="img" aria-label={VIDEO.posterAlt}>
+						<span class="poster" set:html={VIDEO_POSTER} />
+						<div class="vd-bar">
+							<span class="av">THE<br />BEATLES</span>
+							{/* The two lines are blocks: the shared rule gives .t an ellipsis and
+							    .c a top margin, and neither does anything to an inline span. */}
+							<span class="lines">
+								<span class="t">{VIDEO.overlayTitle}</span>
+								<span class="c">{VIDEO.channel}</span>
+							</span>
+						</div>
+						<span class="vd-play"></span>
+						<span class="vd-watch">Watch on YouTube</span>
+					</div>
+
+					<div class="vd-chan">
+						<span class="av">{VIDEO.channel[0]}</span>
+						<div>
+							<div class="n">{VIDEO.channel}</div>
+							<div class="m">{VIDEO.stats}</div>
+						</div>
+					</div>
+
+					{VIDEO_PARAGRAPHS.map((text) => <p class="rd2-p">{text}</p>)}
+				</div>
+			</div>
+		</div>
+
+		<RecordPanel
+			title={VIDEO_RECORD.title}
+			domain={VIDEO_RECORD.domain}
+			author={VIDEO_RECORD.author}
+			summary={VIDEO_RECORD.summary}
+			fields={VIDEO_RECORD.fields}
+		/>
+	</AppShell>
+</ScreenFrame>
+
+<style>
+	/* Stands in for the <img> the source loads: same box, same crop behaviour. */
+	.poster {
+		position: absolute;
+		inset: 0;
+		display: block;
+	}
+
+	.vd-bar .lines {
+		min-width: 0;
+		display: block;
+	}
+
+	.vd-bar :global(.t),
+	.vd-bar :global(.c) {
+		display: block;
+	}
+</style>

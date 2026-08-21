@@ -1,0 +1,124 @@
+---
+/**
+ * Chrome with the Indelible toolbar injected over the page it just saved.
+ *
+ * The extension injects a bar; the page keeps its full width underneath.
+ * There is no side panel.
+ *
+ * The browser chrome is deliberately a neutral Chrome, not anyone's personal
+ * theme, and the bookmarks are generic.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import BrowserIcon from './extension/BrowserIcon.astro';
+import BrandMark from './extension/BrandMark.astro';
+import IndelibleBar from './extension/IndelibleBar.astro';
+import PublisherMasthead from './extension/PublisherMasthead.astro';
+import { USER } from '../../data/app';
+import { SAVED_PAGE, BOOKMARKS, TABS, ARTICLE_PARAGRAPHS } from '../../data/extension';
+import { EXTENSION_HERO_ART } from '../../data/extension-art';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = true, class: className } = Astro.props;
+---
+
+<ScreenFrame
+	dark={dark}
+	class={className}
+	label="The Indelible browser extension saving an article"
+>
+	<div class="xt">
+		<div class="xt-tabs">
+			<span class="xt-traffic">
+				<i style="background:#FF5F57"></i>
+				<i style="background:#FFBD2E"></i>
+				<i style="background:#28C840"></i>
+			</span>
+			{
+				TABS.map((tab) => (
+					<div class:list={['xt-tab', { on: tab.active }]}>
+						<span class="xt-fav" style={`background:${tab.colour}`}>
+							{tab.letter}
+						</span>
+						<span>{tab.title}</span>
+					</div>
+				))
+			}
+		</div>
+
+		<div class="xt-bar">
+			<div class="xt-nav">
+				<span class="xt-rb"><BrowserIcon name="back" /></span>
+				<span class="xt-rb"><BrowserIcon name="fwd" /></span>
+				<span class="xt-rb"><BrowserIcon name="reload" /></span>
+				<span class="xt-rb"><BrowserIcon name="house" /></span>
+			</div>
+
+			<div class="xt-omni">
+				<BrowserIcon name="tune" />
+				<span class="xt-url"><b>{SAVED_PAGE.host}</b><span>{SAVED_PAGE.slug}</span></span>
+				<BrowserIcon name="noimg" />
+				<BrowserIcon name="star" />
+			</div>
+
+			<div class="xt-slot">
+				<span class="xt-xi" style="background:#3B7DD8"><BrowserIcon name="shield" /></span>
+				<span class="xt-xi" style="background:#6B47C4"><BrowserIcon name="puzzle" /></span>
+				<span class="xt-xi ind"><BrandMark size={16} /><i class="xt-badge"></i></span>
+				<span class="xt-avatar">{USER.initials}</span>
+				<span class="xt-rb"><BrowserIcon name="kebab" solid /></span>
+			</div>
+		</div>
+
+		<div class="xt-bm">
+			{
+				BOOKMARKS.map((b) => (
+					<span class="xt-bmi">
+						<span class="xt-bmd" style={`background:${b.colour}`}>{b.letter}</span>
+						{b.name}
+					</span>
+				))
+			}
+			<span class="xt-bmi"><BrowserIcon name="chevs" /></span>
+			<span class="xt-bmi sp"><BrowserIcon name="folder" />All Bookmarks</span>
+		</div>
+
+		<div class="xt-vp">
+			<IndelibleBar />
+
+			<div class="xt-panel">
+				<div class="xt-ph">Tags<BrowserIcon name="close" /></div>
+				<div class="xt-chips">
+					<span class="xt-chip">interpretability</span>
+					<span class="xt-chip">transformers</span>
+				</div>
+			</div>
+
+			<div class="xt-page">
+				<PublisherMasthead />
+
+				<div class="xt-art">
+					<div class="xt-kick">{SAVED_PAGE.kicker}</div>
+					<h1 class="xt-h1">{SAVED_PAGE.title}</h1>
+					<div class="xt-by">
+						<i></i>{SAVED_PAGE.author}<span>&middot;</span>{SAVED_PAGE.readingTime}
+						<span>&middot;</span>{SAVED_PAGE.date}
+					</div>
+					<div class="xt-fig" set:html={EXTENSION_HERO_ART} />
+					<div class="xt-cap">Image via Unsplash</div>
+
+					{
+						ARTICLE_PARAGRAPHS.map((p) => (
+							<p class="xt-p">
+								{p.text}
+								{p.highlight && <span class="xt-hl">{p.highlight}</span>}
+							</p>
+						))
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+</ScreenFrame>

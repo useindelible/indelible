@@ -1,0 +1,179 @@
+---
+/**
+ * Internal screen gallery.
+ *
+ * Every product screen, rendered at full width against both palettes. This is
+ * the page to open when checking a port against the design source — the
+ * landing page shows each screen once, cropped and scaled, which hides exactly
+ * the mistakes worth catching.
+ *
+ * Not linked from anywhere and marked noindex; it is a workbench, not a page.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Wrap from '../components/primitives/Wrap.astro';
+import LibraryScreen from '../components/screens/LibraryScreen.astro';
+import HomeScreen from '../components/screens/HomeScreen.astro';
+import CollectionsScreen from '../components/screens/CollectionsScreen.astro';
+import SavedViewsScreen from '../components/screens/SavedViewsScreen.astro';
+import TagsScreen from '../components/screens/TagsScreen.astro';
+import EntityScreen from '../components/screens/EntityScreen.astro';
+import SearchScreen from '../components/screens/SearchScreen.astro';
+import FeedScreen from '../components/screens/FeedScreen.astro';
+import ReaderScreen from '../components/screens/ReaderScreen.astro';
+import BookScreen from '../components/screens/BookScreen.astro';
+import VideoScreen from '../components/screens/VideoScreen.astro';
+import MilaScreen from '../components/screens/MilaScreen.astro';
+import NotionScreen from '../components/screens/NotionScreen.astro';
+import ObsidianScreen from '../components/screens/ObsidianScreen.astro';
+import ExtensionScreen from '../components/screens/ExtensionScreen.astro';
+import ReaderPhone from '../components/screens/phone/ReaderPhone.astro';
+import HomePhone from '../components/screens/phone/HomePhone.astro';
+import FeedPhone from '../components/screens/phone/FeedPhone.astro';
+import SearchPhone from '../components/screens/phone/SearchPhone.astro';
+import InboxPhone from '../components/screens/phone/InboxPhone.astro';
+import DrawerPhone from '../components/screens/phone/DrawerPhone.astro';
+import BookPhone from '../components/screens/phone/BookPhone.astro';
+import VideoPhone from '../components/screens/phone/VideoPhone.astro';
+import SavePhone from '../components/screens/phone/SavePhone.astro';
+import ReaderAuraSprite from '../components/screens/phone/ReaderAuraSprite.astro';
+
+const DESKTOP = [
+	{ name: 'Library', C: LibraryScreen },
+	{ name: 'Home', C: HomeScreen },
+	{ name: 'Collections', C: CollectionsScreen },
+	{ name: 'Saved views', C: SavedViewsScreen },
+	{ name: 'Tags', C: TagsScreen },
+	{ name: 'Entity', C: EntityScreen },
+	{ name: 'Search', C: SearchScreen },
+	{ name: 'Feed', C: FeedScreen },
+	{ name: 'Reader', C: ReaderScreen },
+	{ name: 'Book', C: BookScreen },
+	{ name: 'Video', C: VideoScreen },
+	{ name: 'Mila settings', C: MilaScreen },
+	{ name: 'Notion', C: NotionScreen },
+	{ name: 'Obsidian', C: ObsidianScreen },
+];
+---
+
+<BaseLayout
+	title="Screen gallery"
+	description="Internal reference: every product screen at full size."
+	path="/screens"
+	noindex
+>
+	<ReaderAuraSprite />
+
+	<main>
+		<Wrap>
+			<h1>Screen gallery</h1>
+			<p class="note">
+				Internal reference. Each screen is shown light then dark, at the width it is drawn on
+				the landing page.
+			</p>
+
+			{
+				DESKTOP.map(({ name, C }) => (
+					<section>
+						<h2>{name}</h2>
+						<div class="pair">
+							<C />
+							<C dark />
+						</div>
+					</section>
+				))
+			}
+
+			<section>
+				<h2>Reader, listening</h2>
+				<div class="pair">
+					<ReaderScreen listening />
+					<ReaderScreen listening dark />
+				</div>
+			</section>
+
+			<section>
+				<h2>Extension</h2>
+				<div class="one"><ExtensionScreen /></div>
+			</section>
+
+			<section>
+				<h2>Phones</h2>
+				<div class="phones">
+					<ReaderPhone paper="light" />
+					<ReaderPhone paper="dark" />
+					<HomePhone dark={false} />
+					<HomePhone />
+					<FeedPhone />
+					<FeedPhone dark={false} />
+					<SearchPhone />
+					<SearchPhone dark={false} />
+					<InboxPhone />
+					<DrawerPhone />
+					<BookPhone />
+					<VideoPhone />
+					<SavePhone />
+					<ReaderPhone paper="sepia" />
+					<ReaderPhone paper="dark" />
+				</div>
+			</section>
+		</Wrap>
+	</main>
+</BaseLayout>
+
+<style>
+	main {
+		padding: 140px 0 120px;
+	}
+
+	h1 {
+		font-family: var(--f-d);
+		font-size: 40px;
+		font-weight: 500;
+		letter-spacing: -0.02em;
+	}
+
+	.note {
+		margin-top: 8px;
+		color: var(--dim);
+	}
+
+	section {
+		margin-top: 64px;
+	}
+
+	h2 {
+		margin-bottom: 16px;
+		font-family: var(--f-m);
+		font-size: 12px;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	.pair {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 22px;
+	}
+
+	.one {
+		max-width: 900px;
+	}
+
+	.phones {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 28px;
+	}
+
+	.phones :global(.screen) {
+		width: 300px;
+	}
+
+	@media (max-width: 900px) {
+		.pair {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

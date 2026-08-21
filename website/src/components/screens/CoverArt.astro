@@ -1,0 +1,46 @@
+---
+/**
+ * A coded cover.
+ *
+ * The .cvr wrapper is the positioning context every piece of art assumes, and
+ * it is why the same fragment works at a 200px desktop card, an 88px phone
+ * thumb and a 56px hero cover without being re-authored per size.
+ *
+ * Scope the <i> rule to .cvr and nowhere else: a bare rule also catches the
+ * progress bar's own <i> and rips it out of flow.
+ */
+import { COVER_ART, type CoverArtName } from '../../data/cover-art';
+
+interface Props {
+	name: CoverArtName;
+	class?: string;
+}
+const { name, class: className } = Astro.props;
+
+const art = COVER_ART[name];
+if (!art) {
+	throw new Error(
+		`Cover art "${name}" does not exist. Known: ${Object.keys(COVER_ART).join(', ')}`,
+	);
+}
+---
+
+<span class:list={['cvr', className]} set:html={art} />
+
+<style is:global>
+	.cvr {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+	}
+
+	.cvr i {
+		position: absolute;
+		display: block;
+	}
+
+	.hm-art {
+		position: absolute;
+		inset: 0;
+	}
+</style>

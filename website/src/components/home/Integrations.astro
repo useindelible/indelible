@@ -1,0 +1,106 @@
+---
+/**
+ * Export.
+ *
+ * The claim is that leaving is as well built as arriving, so both integrations
+ * are shown as their own settings pages rather than as logos.
+ */
+import Section from '../primitives/Section.astro';
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import NotionScreen from '../screens/NotionScreen.astro';
+import ObsidianScreen from '../screens/ObsidianScreen.astro';
+import { reveal } from '../../lib/reveal-attrs';
+---
+
+<Section flush>
+	<Wrap>
+		<SectionLead
+			title="It leaves as cleanly as it arrives."
+			lede="Export is not an afterthought bolted on for compliance. Both integrations were driven end to end, including refresh, reconnect and recovery."
+		/>
+
+		<div class="two">
+			<article {...reveal('scale', 0)}>
+				<div class="shot"><NotionScreen /></div>
+				<div class="two-b">
+					<b>Notion</b>
+					<p>
+						One managed database, typed properties, stable identifiers. Highlights arrive as
+						callouts with their source offset intact.
+					</p>
+				</div>
+			</article>
+
+			<article {...reveal('scale', 1)}>
+				<div class="shot"><ObsidianScreen /></div>
+				<div class="two-b">
+					<b>Obsidian</b>
+					<p>
+						A native plugin with credentials in SecretStorage. Initial export, then
+						incremental sync that writes only what actually changed.
+					</p>
+				</div>
+			</article>
+		</div>
+	</Wrap>
+</Section>
+
+<style>
+	.two {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+	}
+
+	.two article {
+		overflow: hidden;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		background: var(--raised);
+		transition:
+			transform var(--d-mid) var(--e-out),
+			box-shadow var(--d-mid) var(--e-out);
+	}
+
+	.two article:hover {
+		transform: translateY(-4px);
+		box-shadow: var(--card);
+	}
+
+	/* Cropped from the top: the connection state is the part worth showing. */
+	.shot {
+		height: 320px;
+		overflow: hidden;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.shot :global(.screen) {
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	.two-b {
+		padding: 22px;
+	}
+
+	.two-b b {
+		display: block;
+		margin-bottom: 7px;
+		font-family: var(--f-d);
+		font-size: 19px;
+		font-weight: 600;
+	}
+
+	.two-b p {
+		font-size: 14px;
+		color: var(--dim);
+	}
+
+	@media (max-width: 860px) {
+		.two {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

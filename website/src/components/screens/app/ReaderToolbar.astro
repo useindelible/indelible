@@ -1,0 +1,45 @@
+---
+/**
+ * The reader's top bar: navigation, the document title, and the controls that
+ * act on the text — type size, bookmark, panel toggle, and Listen.
+ */
+import Icon from '../Icon.astro';
+
+interface Props {
+	title: string;
+	/** Swaps the Listen icon for a "Listening" pill. */
+	listening?: boolean;
+}
+const { title, listening = false } = Astro.props;
+---
+
+<div class="rd2-tb">
+	<span class="grp">
+		<Icon name="back-to-library" />
+		<Icon name="previous-item" />
+		<Icon name="next-item" />
+		<span class="mode"><i></i>Reader<Icon name="chevron-down" size={12} /></span>
+	</span>
+
+	<span class="ttl">{title}</span>
+
+	<span class="grp">
+		<span class="aa">Aa</span>
+		<Icon name="add-bookmark" />
+		<span class="pan"><Icon name="hide-detail-panel" /></span>
+		{listening ? <span class="listening">Listening</span> : <Icon name="podcasts" />}
+	</span>
+</div>
+
+<style>
+	.listening {
+		display: inline-flex;
+		align-items: center;
+		padding: 5px 12px;
+		border-radius: 999px;
+		background: var(--acc);
+		color: #fff;
+		font-size: 12px;
+		font-weight: 600;
+	}
+</style>

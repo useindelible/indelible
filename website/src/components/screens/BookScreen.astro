@@ -1,0 +1,117 @@
+---
+/**
+ * The EPUB reader.
+ *
+ * The book's own contents panel takes the place of the app sidebar, which is
+ * what the live reader does — inside a book you navigate by chapter, not by
+ * library section.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import RecordPanel from './app/RecordPanel.astro';
+import Icon from './Icon.astro';
+import { BOOK, BOOK_CHAPTERS, BOOK_COVER, BOOK_RECORD } from '../../data/book';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="A book open in the Indelible EPUB reader">
+	<AppShell layout="book">
+		<div class="bk-side">
+			<div class="bk-head">
+				<span class="bk-cover" set:html={BOOK_COVER} />
+				<div>
+					<div class="bk-ti">{BOOK.title}</div>
+					<div class="bk-au">{BOOK.author}</div>
+					<div class="bk-pg">
+						<span class="t"><i style={`width:${BOOK.progress}%`}></i></span>
+						<span class="n">{BOOK.progress}%</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="bk-tabs">
+				{BOOK.tabs.map((tab, i) => <i class:list={{ on: i === 0 }}>{tab}</i>)}
+			</div>
+
+			<div class="bk-list">
+				{
+					BOOK_CHAPTERS.map((ch) => (
+						<div class:list={['bk-i', { on: ch.current, grp: ch.section }]}>
+							<span class="no">{ch.no}</span>
+							<span class="nm">{ch.name}</span>
+							<span class="pn">{ch.page}</span>
+						</div>
+					))
+				}
+			</div>
+		</div>
+
+		<div class="bk-page">
+			<div class="bk-tb">
+				<span><Icon name="back-to-library" /></span>
+				<span class="ttl">
+					{BOOK.title} <span>&nbsp;&bull;&nbsp; {BOOK.chapterLabel}</span>
+				</span>
+				<span class="pgpill">{BOOK.page}</span>
+				<span class="aa">Aa</span>
+				<span class="mark"><Icon name="add-bookmark" /></span>
+				<span class="pan"><Icon name="hide-detail-panel" /></span>
+			</div>
+
+			<div class="bk-body">
+				<div class="bk-col">
+					<h1 class="bk-h1">MOBY-DICK; or, THE WHALE.</h1>
+					<p class="bk-p">The Project Gutenberg eBook of Moby Dick; Or, The Whale</p>
+					<p class="bk-p">
+						This eBook is for the use of anyone anywhere in the United States and most other
+						parts of the world at no cost and with almost no restrictions whatsoever. You may
+						copy it, give it away or re-use it under the terms of the Project Gutenberg
+						License included with this eBook or online at <a>www.gutenberg.org</a>. If you
+						are not located in the United States, you will have to check the laws of the
+						country where you are located before using this eBook.
+					</p>
+					<p class="bk-p"><b>Title</b>: Moby Dick; Or, The Whale</p>
+					<p class="bk-p"><b>Author</b>: Herman Melville</p>
+					<p class="bk-p">
+						<b>Release date</b>: July 1, 2001 [eBook #2701]<br />Most recently updated:
+						February 10, 2026
+					</p>
+					<p class="bk-p"><b>Language</b>: English</p>
+					<p class="bk-p"><b>Credits</b>: Daniel Lazarus, Jonesey, and David Widger</p>
+				</div>
+			</div>
+
+			<div class="bk-foot">
+				<span>{BOOK.footPrev}</span>
+				<span>{BOOK.footMiddle}</span>
+				<span>{BOOK.footNext}</span>
+			</div>
+		</div>
+
+		<RecordPanel
+			title={BOOK_RECORD.title}
+			domain={BOOK_RECORD.subtitle}
+			summary={BOOK_RECORD.summary}
+			fields={BOOK_RECORD.fields}
+			groups={BOOK_RECORD.groups}
+		/>
+	</AppShell>
+</ScreenFrame>
+
+<style>
+	/* Two toolbar affordances the shared .bk-tb rule does not cover. */
+	.bk-tb .aa {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--t1);
+	}
+
+	.bk-tb .pan {
+		color: var(--acc);
+	}
+</style>

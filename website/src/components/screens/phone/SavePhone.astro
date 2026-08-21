@@ -1,0 +1,127 @@
+---
+/**
+ * Add from URL, over the library.
+ *
+ * A sheet, not a page: saving is something you do on top of what you were
+ * already looking at, and the list stays visible behind the scrim.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import PhoneNav from './PhoneNav.astro';
+import PhoneTopBar from './PhoneTopBar.astro';
+import PhoneRow from './PhoneRow.astro';
+import ProgressBar from './ProgressBar.astro';
+import { PHONE_INBOX_ITEMS } from '../../../data/phone-inbox';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = true, class: className } = Astro.props;
+
+/** Only what shows above the sheet is worth rendering. */
+const BEHIND = PHONE_INBOX_ITEMS.slice(0, 3);
+const URL_DRAFT = 'https://www.theverge.com/ai/ambient-computing';
+---
+
+<PhoneFrame
+	dark={dark}
+	android={android}
+	class={className}
+	label="Saving a page from its URL in Indelible on a phone"
+>
+	<PhoneTopBar title="Library" count="91" />
+
+	<div class="ph-scroll">
+		<div class="ph-lede">
+			<div class="ph-eyebrow">Your library</div>
+			<div class="ph-ledetitle"><h1>Library</h1><span class="n">91</span></div>
+		</div>
+
+		<div class="ph-rows">
+			{
+				BEHIND.map((item) => (
+					<PhoneRow
+						tint={item.tint}
+						emoji={item.emoji}
+						unread={item.unread}
+						source={item.source}
+						length={item.length}
+						title={item.title}
+						summary={item.summary}
+					>
+						{item.progress !== undefined ? (
+							<div class="ph-rprog">
+								<ProgressBar value={item.progress} />
+								<span class="lab">{item.progressLabel}</span>
+							</div>
+						) : (
+							<div class="ph-rfoot">
+								<span class="ph-stamp">{item.stamp}</span>
+							</div>
+						)}
+					</PhoneRow>
+				))
+			}
+		</div>
+	</div>
+
+	<PhoneNav active="library" />
+
+	<div class="ph-scrim"></div>
+
+	<div class="ph-sheet">
+		<div class="ph-grip"></div>
+		<div class="ph-ledetitle sheet-h"><h1>Add from URL</h1></div>
+		<p class="blurb">
+			Submit a public article or page. Indelible archives the full text at save time.
+		</p>
+
+		<div class="ph-lab lab">Article or page URL</div>
+		<div class="ph-field">{URL_DRAFT}<span class="cur"></span></div>
+
+		<div class="chips">
+			<span class="ph-chip on">Inbox</span>
+			<span class="ph-chip"><PhoneIcon name="plus" size={13} /> Tag</span>
+		</div>
+
+		<span class="ph-btn pri submit"><PhoneIcon name="plus" size={16} />Submit URL</span>
+	</div>
+</PhoneFrame>
+
+<style>
+	.sheet-h {
+		margin-top: 0;
+	}
+
+	.sheet-h h1 {
+		font-size: 24px;
+	}
+
+	.blurb {
+		margin-top: 10px;
+		font-size: 13.5px;
+		line-height: 1.5;
+		color: var(--ink-2);
+	}
+
+	.lab {
+		margin-top: 22px;
+	}
+
+	.chips {
+		display: flex;
+		gap: 7px;
+		margin-top: 14px;
+	}
+
+	.submit {
+		display: flex;
+		justify-content: center;
+		height: 44px;
+		margin-top: 18px;
+		border-radius: var(--r-sm);
+		font-size: 14.5px;
+	}
+</style>

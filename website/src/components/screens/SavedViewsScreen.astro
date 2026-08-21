@@ -1,0 +1,54 @@
+---
+/**
+ * A saved view: the filter builder above its results.
+ *
+ * The conjunction column reads "Where" then "And" — muted then accent — and
+ * value pills are accent-tinted while field pills stay neutral. Those are the
+ * app's own distinctions, not decoration.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import Toolbar from './app/Toolbar.astro';
+import DocRow from './app/DocRow.astro';
+import DetailPanel from './app/DetailPanel.astro';
+import Icon from './Icon.astro';
+import { DOCS, SAVED_VIEW_RULE } from '../../data/library';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = true, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="A saved view built from filter conditions">
+	<AppShell>
+		<Sidebar active="articles" />
+		<ListPane count="8 of 42 items match">
+			<Toolbar title="Articles" filters={SAVED_VIEW_RULE.length} />
+
+			<div class="fb">
+				{
+					SAVED_VIEW_RULE.map((c, i) => (
+						<div class="fb-r">
+							<span class:list={['fb-c', { and: i > 0 }]}>{i === 0 ? 'Where' : 'And'}</span>
+							<span class="fb-f">{c.field}<Icon name="chevron-down" size={13} /></span>
+							<span class="fb-o">{c.operator}</span>
+							<span class="fb-v">{c.value}<Icon name="chevron-down" size={13} /></span>
+							<span class="fb-x"><Icon name="remove" size={13} /></span>
+						</div>
+					))
+				}
+				<div class="fb-a">
+					<span class="fb-add"><Icon name="add" size={13} />Add condition</span>
+					<span class="fb-save">Save as view</span>
+				</div>
+			</div>
+
+			{DOCS.slice(0, 8).map((doc, i) => <DocRow doc={doc} selected={i === 0} />)}
+		</ListPane>
+		<DetailPanel doc={DOCS[0]} index={0} />
+	</AppShell>
+</ScreenFrame>

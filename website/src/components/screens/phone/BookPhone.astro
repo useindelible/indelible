@@ -1,0 +1,84 @@
+---
+/**
+ * A book on a phone.
+ *
+ * The same reading surface as the article reader, on sepia paper, with the
+ * chapter in the masthead where an article carries its source.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import ReaderChrome from './ReaderChrome.astro';
+import ReaderDock from './ReaderDock.astro';
+import { PHONE_BOOK, PHONE_BOOK_BODY } from '../../../data/phone-book';
+
+interface Props {
+	android?: boolean;
+	class?: string;
+}
+const { android = true, class: className } = Astro.props;
+
+/** Split a paragraph around its highlight so the mark is real markup. */
+function parts(text: string, phrase?: string) {
+	if (!phrase) return { before: text, mark: '', after: '' };
+	const i = text.indexOf(phrase);
+	if (i < 0) throw new Error(`Highlight "${phrase}" not found in paragraph.`);
+	return { before: text.slice(0, i), mark: phrase, after: text.slice(i + phrase.length) };
+}
+---
+
+<PhoneFrame
+	dark={false}
+	android={android}
+	class={className}
+	frameClass="ph-rd pp-s"
+	label="A book in the Indelible reader on a phone"
+>
+	<ReaderChrome />
+
+	<div class="ph-rscroll">
+		<header class="ph-masthead book">
+			<div class="ph-mhsrc">
+				<span class="ph-mhmark">{PHONE_BOOK.mark}</span>
+				<span class="ph-mhname">{PHONE_BOOK.crumb}</span>
+			</div>
+			<h1 class="ph-mhtitle">{PHONE_BOOK.title}</h1>
+			<div class="ph-mhmeta">
+				<span>{PHONE_BOOK.author}</span><span class="sp">/</span>
+				<span>{PHONE_BOOK.page}</span><span class="sp">/</span>
+				<span>{PHONE_BOOK.remaining}</span>
+			</div>
+			<div class="ph-mhrule"></div>
+		</header>
+
+		<div class="ph-body book">
+			{
+				PHONE_BOOK_BODY.map((b) => {
+					const { before, mark, after } = parts(b.text, b.highlight?.phrase);
+					return b.kind === 'pull' ? (
+						<p class="ph-pull">{b.text}</p>
+					) : (
+						<p>
+							{before}
+							{mark && <span class={`ph-hl ${b.highlight!.colour}`}>{mark}</span>}
+							{after}
+						</p>
+					);
+				})
+			}
+		</div>
+	</div>
+
+	<ReaderDock />
+
+</PhoneFrame>
+
+<style>
+	/* A book has no source chip above the masthead, so it needs the top space
+	   the article reader gets from its floating chrome. */
+	.ph-masthead.book {
+		padding-top: 56px;
+	}
+
+	.ph-body.book {
+		padding-top: 22px;
+	}
+</style>

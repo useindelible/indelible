@@ -1,0 +1,10 @@
+---
+/** A reading-progress bar inside a phone surface. */
+interface Props {
+	value: number;
+	class?: string;
+}
+const { value, class: className } = Astro.props;
+---
+
+<div class:list={['ph-bar', className]}><i style={`width:${value}%`}></i></div>

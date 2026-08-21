@@ -1,0 +1,181 @@
+---
+/**
+ * Built for the long ones.
+ *
+ * A full-bleed reader shot with the numbers that justify it, then a fan of the
+ * three surfaces that are not an article: books, listening, and video.
+ *
+ * The band is scoped to the raised tone rather than its own palette — it is a
+ * change of ground, not of theme.
+ */
+import Wrap from '../primitives/Wrap.astro';
+import SectionLead from '../primitives/SectionLead.astro';
+import ReaderScreen from '../screens/ReaderScreen.astro';
+import BookScreen from '../screens/BookScreen.astro';
+import VideoScreen from '../screens/VideoScreen.astro';
+import { LONGREAD } from '../../data/longread';
+import { reveal } from '../../lib/reveal-attrs';
+
+const FAN = [
+	{
+		tilt: -2.4,
+		title: 'Books',
+		body: 'EPUB and PDF with real chapter navigation, position memory and per-section reading times.',
+	},
+	{
+		tilt: 1.6,
+		title: 'Listen',
+		body: 'A transport strip with speed and voice selection, for the ones you would rather hear.',
+	},
+	{
+		tilt: -1.4,
+		title: 'Video',
+		body: 'YouTube saved with its transcript, so a talk becomes something you can search and quote.',
+	},
+];
+---
+
+<section class="bleed">
+	<Wrap>
+		<SectionLead
+			class="flush"
+			title="Built for the long ones."
+			lede="Saved from the browser extension, a 336,952 word novel was readable in under a second. A summary landed six seconds later, and sixteen linked entities at twenty-two. Nothing about the reader assumes you only save short posts."
+		/>
+	</Wrap>
+
+	{/* Deliberately wider than the measure: the reader is the argument here.
+	    The document is the novel the lede quotes, not a stand-in — its record
+	    carries the 336,952 words the copy above claims. */}
+	<div class="bleed-shot" {...reveal('clip')}>
+		<ReaderScreen document={LONGREAD} />
+	</div>
+
+	<Wrap>
+		<div class="fan">
+			<figure style={`--rot:${FAN[0].tilt}deg`}>
+				<div {...reveal('up', 0)}>
+					<BookScreen />
+					<figcaption><b>{FAN[0].title}</b>{FAN[0].body}</figcaption>
+				</div>
+			</figure>
+
+			<figure style={`--rot:${FAN[1].tilt}deg`}>
+				<div {...reveal('up', 1)}>
+					<ReaderScreen listening />
+					<figcaption><b>{FAN[1].title}</b>{FAN[1].body}</figcaption>
+				</div>
+			</figure>
+
+			<figure style={`--rot:${FAN[2].tilt}deg`}>
+				<div {...reveal('up', 2)}>
+					<VideoScreen />
+					<figcaption><b>{FAN[2].title}</b>{FAN[2].body}</figcaption>
+				</div>
+			</figure>
+		</div>
+	</Wrap>
+</section>
+
+<style>
+	.bleed {
+		padding: 96px 0 0;
+		overflow: hidden;
+		background: var(--bg-2);
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+	}
+
+	.bleed :global(.sec-lead.flush) {
+		margin-bottom: 0;
+	}
+
+	/* Wider than the page measure, and running off the bottom edge on purpose. */
+	.bleed-shot {
+		max-width: 1500px;
+		margin: 52px auto 0;
+		padding: 0 var(--wrap-pad);
+	}
+
+	.bleed-shot :global(.screen) {
+		border-radius: 6px 6px 0 0;
+	}
+
+	/* Three cards overlapped like a hand of cards; the middle one sits proud. */
+	.fan {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		margin-top: 52px;
+		padding: 0 3% 100px;
+	}
+
+	.fan figure {
+		position: relative;
+		margin: 0;
+		transform: rotate(var(--rot, 0deg));
+		transition:
+			transform 0.5s var(--e-spring),
+			z-index 0s 0.1s;
+	}
+
+	.fan figure > div {
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		overflow: hidden;
+		background: var(--raised);
+		box-shadow: var(--card);
+	}
+
+	.fan figure:nth-child(1),
+	.fan figure:nth-child(3) {
+		top: 16px;
+		z-index: 1;
+	}
+
+	.fan figure:nth-child(2) {
+		z-index: 2;
+		margin: -14px -3.5% 0;
+	}
+
+	.fan figure:hover {
+		transform: rotate(0deg) translateY(-10px);
+		z-index: 5;
+	}
+
+	.fan :global(.screen) {
+		border-radius: 0;
+		border: 0;
+		border-bottom: 1px solid var(--line);
+		box-shadow: none;
+	}
+
+	figcaption {
+		padding: 15px 17px;
+		font-size: 13.5px;
+		color: var(--dim);
+	}
+
+	figcaption b {
+		display: block;
+		margin-bottom: 4px;
+		font-family: var(--f-d);
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--ink);
+	}
+
+	@media (max-width: 980px) {
+		.fan {
+			grid-template-columns: 1fr;
+			gap: 18px;
+			padding: 0 0 72px;
+		}
+
+		.fan figure,
+		.fan figure:nth-child(2) {
+			top: 0;
+			margin: 0;
+			transform: none;
+		}
+	}
+</style>

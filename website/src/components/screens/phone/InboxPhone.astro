@@ -1,0 +1,99 @@
+---
+/**
+ * The inbox on a phone: the whole library in one column.
+ *
+ * A row shows either reading progress or a saved stamp, never both — an item
+ * you have opened is described by where you are in it, one you have not by
+ * when it arrived.
+ */
+import PhoneFrame from './PhoneFrame.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import PhoneNav from './PhoneNav.astro';
+import PhoneTopBar from './PhoneTopBar.astro';
+import PhoneRow from './PhoneRow.astro';
+import ProgressBar from './ProgressBar.astro';
+import {
+	PHONE_INBOX_FILTERS,
+	PHONE_INBOX_HEAD,
+	PHONE_INBOX_ITEMS,
+} from '../../../data/phone-inbox';
+
+interface Props {
+	dark?: boolean;
+	android?: boolean;
+	class?: string;
+}
+const { dark = true, android = true, class: className } = Astro.props;
+const { meter } = PHONE_INBOX_HEAD;
+---
+
+<PhoneFrame
+	dark={dark}
+	android={android}
+	class={className}
+	label="The Indelible inbox on a phone"
+>
+	<PhoneTopBar title="Inbox" count={PHONE_INBOX_HEAD.count} />
+
+	<div class="ph-scroll">
+		<div class="ph-lede">
+			<div class="ph-eyebrow">{PHONE_INBOX_HEAD.eyebrow}</div>
+			<div class="ph-ledetitle">
+				<h1>{PHONE_INBOX_HEAD.title}</h1>
+				<span class="n">{PHONE_INBOX_HEAD.count}</span>
+				<span class="ph-chev"><PhoneIcon name="chev-d" size={13} /></span>
+			</div>
+
+			<div class="ph-meter">
+				<i class="u" style={`flex:${meter.unread}`}></i>
+				<i class="r" style={`flex:${meter.reading}`}></i>
+				<i class="f" style={`flex:${meter.done}`}></i>
+			</div>
+			<div class="ph-key">
+				<span><i class="u"></i>{meter.unread} unread</span>
+				<span><i class="r"></i>{meter.reading} reading</span>
+				<span><i class="f"></i>{meter.third}</span>
+			</div>
+		</div>
+
+		<div class="ph-filters">
+			{
+				PHONE_INBOX_FILTERS.map((f) => (
+					<span class:list={['ph-chip', { on: f.on }]}>
+						{f.label} <span class="n">{f.count}</span>
+					</span>
+				))
+			}
+		</div>
+
+		<div class="ph-rows">
+			{
+				PHONE_INBOX_ITEMS.map((item) => (
+					<PhoneRow
+						tint={item.tint}
+						emoji={item.emoji}
+						unread={item.unread}
+						source={item.source}
+						length={item.length}
+						title={item.title}
+						summary={item.summary}
+					>
+						{item.progress !== undefined ? (
+							<div class="ph-rprog">
+								<ProgressBar value={item.progress} />
+								<span class="lab">{item.progressLabel}</span>
+							</div>
+						) : (
+							<div class="ph-rfoot">
+								<span class="ph-stamp">{item.stamp}</span>
+							</div>
+						)}
+					</PhoneRow>
+				))
+			}
+		</div>
+	</div>
+
+	<span class="ph-fab"><PhoneIcon name="plus" size={23} /></span>
+	<PhoneNav active="library" />
+</PhoneFrame>

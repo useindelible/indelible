@@ -1,0 +1,83 @@
+---
+/**
+ * The Feed: entries from subscribed sources, before they become documents.
+ *
+ * The record beside them shows an excerpt rather than a Mila summary, and an
+ * em dash for every field that only fetching the page could fill in.
+ */
+import ScreenFrame from './ScreenFrame.astro';
+import AppShell from './app/AppShell.astro';
+import Sidebar from './app/Sidebar.astro';
+import ListPane from './app/ListPane.astro';
+import RecordPanel from './app/RecordPanel.astro';
+import FeedRow from './app/FeedRow.astro';
+import Icon from './Icon.astro';
+import { FEED_ENTRIES, FEED_RECORD } from '../../data/feed';
+
+interface Props {
+	dark?: boolean;
+	class?: string;
+}
+const { dark = false, class: className } = Astro.props;
+---
+
+<ScreenFrame dark={dark} class={className} label="The Indelible feed of unread entries">
+	<AppShell>
+		<Sidebar active="feed" />
+
+		<ListPane>
+			<div class="fd-h">
+				<h2>Feed</h2>
+				<span class="pill"><Icon name="later" size={14} />Unseen</span>
+				<span class="fd-eye">
+					<svg
+						viewBox="0 0 24 24"
+						width="15"
+						height="15"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						aria-hidden="true"
+					>
+						<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"></path>
+						<circle cx="12" cy="12" r="2.6"></circle>
+					</svg>
+				</span>
+				<span class="fd-mark">Mark all seen</span>
+			</div>
+
+			{FEED_ENTRIES.map((entry, i) => <FeedRow entry={entry} selected={i === 0} />)}
+
+			<div class="grip"></div>
+		</ListPane>
+
+		<RecordPanel
+			title={FEED_RECORD.title}
+			domain={FEED_RECORD.domain}
+			author={FEED_RECORD.author}
+			summary={FEED_RECORD.excerpt}
+			summaryHeading="Excerpt"
+			summaryBy=""
+			fields={FEED_RECORD.fields}
+		>
+			<div class="fd-edit">Edit metadata</div>
+		</RecordPanel>
+	</AppShell>
+</ScreenFrame>
+
+<style>
+	/* The Unseen chip. Same shape as the toolbar's pill, but each screen owns
+	   its own copy — .pill is scoped in every component that draws one, so
+	   there is no shared rule to inherit. */
+	.pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 7px 15px;
+		border-radius: 999px;
+		background: var(--acc);
+		color: #fff;
+		font-size: 13px;
+		font-weight: 600;
+	}
+</style>

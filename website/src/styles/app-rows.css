@@ -1,0 +1,134 @@
+/* ============================================================================
+   List-row primitives for the app screens.
+
+   Global rather than scoped to DocRow because three screens draw a row from
+   the same vocabulary and none of them owns it: the library and collection
+   lists (DocRow), the search results, and the feed. A row is thumbnail,
+   title, excerpt, source line, optional progress track, and an age on the
+   right; a screen adds to that rather than replacing it.
+
+   Everything here reads the .app-ui palette (--t1, --bd, --acc …) declared in
+   screens.css, so a row re-themes with the screen it sits in.
+   ========================================================================= */
+
+.row {
+	position: relative;
+	display: grid;
+	grid-template-columns: 52px 1fr auto;
+	gap: 13px;
+	padding: 12px 18px;
+	align-items: start;
+	border-bottom: 1px solid var(--bd);
+}
+
+.row.on {
+	background: var(--sel);
+}
+
+/* The selected row is marked by a rule down its leading edge, not a border,
+   so it does not shift the row's contents. */
+.row.on::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: var(--acc);
+}
+
+.tb {
+	width: 52px;
+	height: 52px;
+	flex: none;
+	border-radius: 10px;
+	display: grid;
+	place-items: center;
+	font-size: 22px;
+	overflow: hidden;
+}
+
+.rt {
+	font-size: 14.5px;
+	font-weight: 600;
+	line-height: 1.32;
+	letter-spacing: -0.01em;
+	color: var(--t1);
+}
+
+.rx {
+	margin-top: 2px;
+	font-size: 12.8px;
+	line-height: 1.4;
+	color: var(--t2);
+	display: -webkit-box;
+	-webkit-line-clamp: 1;
+	line-clamp: 1;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.rm {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 6px;
+	font-size: 11.5px;
+	color: var(--t3);
+}
+
+/* A letter mark on the site's brand colour, not a fetched icon — a stated
+   approximation the whole page makes. */
+.rm .fav {
+	width: 15px;
+	height: 15px;
+	flex: none;
+	border-radius: 4px;
+	display: grid;
+	place-items: center;
+	font-size: 9px;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	color: #fff;
+}
+
+.rm b {
+	color: var(--t1);
+	font-weight: 500;
+}
+
+.ag {
+	padding-top: 2px;
+	font-size: 11.5px;
+	color: var(--t3);
+	white-space: nowrap;
+}
+
+/* Reading position. A feed entry renders the track empty rather than hiding
+   it, because the entry exists and has simply not been opened. */
+.pg {
+	height: 2px;
+	max-width: 150px;
+	margin-top: 7px;
+	border-radius: 2px;
+	background: var(--bd2);
+	overflow: hidden;
+}
+
+.pg i {
+	display: block;
+	height: 100%;
+	border-radius: 2px;
+	background: var(--acc);
+}
+
+/* Entity chips under a search hit. */
+.withs {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+	font-size: 11.5px;
+	color: var(--t3);
+}

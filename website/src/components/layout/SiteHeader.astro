@@ -1,0 +1,183 @@
+---
+/**
+ * The floating navigation pill.
+ *
+ * It condenses once the page has scrolled past a sentinel element rather than
+ * on a scroll handler, so the site keeps its zero-scroll-listener rule.
+ */
+import Button from '../primitives/Button.astro';
+import Wrap from '../primitives/Wrap.astro';
+import ThemeToggle from './ThemeToggle.svelte';
+import Brand from '../primitives/Brand.astro';
+import { NAV, DOCS_LINK } from '../../data/site';
+---
+
+<span id="top-sentinel" aria-hidden="true"></span>
+
+<nav class="nav" id="nav" aria-label="Primary">
+	<Wrap class="nav-wrap">
+		<div class="nav-shell">
+			<Brand size="sm" />
+
+			<div class="nav-l">
+				{NAV.map((link) => <a href={link.href}>{link.label}</a>)}
+			</div>
+
+			<div class="nav-r">
+				{/* Beside the CTA rather than in the anchor list: it leaves the page,
+				    and it has to survive the width where the anchors are hidden. */}
+				<a class="nav-docs" href={DOCS_LINK.href}>{DOCS_LINK.label}</a>
+				<ThemeToggle client:idle />
+				<Button href="/#host" size="sm" arrow>Get started</Button>
+			</div>
+		</div>
+	</Wrap>
+</nav>
+
+<script>
+	// Sentinel, not a scroll listener: when the top of the document leaves the
+	// viewport the nav condenses.
+	const sentinel = document.getElementById('top-sentinel');
+	const nav = document.getElementById('nav');
+
+	if (sentinel && nav && 'IntersectionObserver' in window) {
+		new IntersectionObserver(
+			([entry]) => nav.classList.toggle('up', !entry.isIntersecting),
+			{ threshold: 0 },
+		).observe(sentinel);
+	}
+</script>
+
+<style>
+	#top-sentinel {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 1px;
+		height: 1px;
+	}
+
+	.nav {
+		position: fixed;
+		inset: 0 0 auto;
+		z-index: 60;
+		padding: 14px 0;
+		pointer-events: none;
+	}
+
+	.nav :global(.nav-wrap) {
+		display: flex;
+		justify-content: center;
+	}
+
+	.nav-shell {
+		pointer-events: auto;
+		display: flex;
+		align-items: center;
+		gap: 26px;
+		height: 56px;
+		padding: 0 8px 0 20px;
+		border-radius: 999px;
+		border: 1px solid var(--line);
+		background: color-mix(in srgb, var(--raised) 74%, transparent);
+		backdrop-filter: blur(20px) saturate(1.5);
+		-webkit-backdrop-filter: blur(20px) saturate(1.5);
+		box-shadow: var(--card);
+		transition:
+			transform 0.55s var(--e-out),
+			box-shadow 0.55s var(--e-out);
+	}
+
+	.nav.up .nav-shell {
+		transform: translateY(-2px) scale(0.985);
+	}
+
+
+	.nav-l {
+		display: flex;
+		align-items: center;
+		gap: 28px;
+		font-size: 14px;
+		color: var(--dim);
+	}
+
+	.nav-l a {
+		position: relative;
+		transition: color var(--d-micro) var(--e-out);
+	}
+
+	.nav-l a:hover {
+		color: var(--ink);
+	}
+
+	.nav-l a::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -5px;
+		height: 1px;
+		background: var(--accent);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.4s var(--e-out);
+	}
+
+	.nav-l a:hover::after {
+		transform: scaleX(1);
+	}
+
+	.nav-r {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+	}
+
+	.nav-docs {
+		position: relative;
+		margin-right: 5px;
+		font-size: 14px;
+		color: var(--dim);
+		transition: color var(--d-micro) var(--e-out);
+	}
+
+	.nav-docs:hover {
+		color: var(--ink);
+	}
+
+	.nav-docs::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -5px;
+		height: 1px;
+		background: var(--accent);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.4s var(--e-out);
+	}
+
+	.nav-docs:hover::after {
+		transform: scaleX(1);
+	}
+
+	@media (max-width: 900px) {
+		/* The section anchors collapse, but Docs does not: it is the only way off
+		   this page, and the footer is too far to be the answer. */
+		.nav-l {
+			display: none;
+		}
+	}
+
+	@media (max-width: 460px) {
+		.nav-shell {
+			gap: 12px;
+			padding-left: 16px;
+		}
+
+		.nav-docs {
+			margin-right: 1px;
+		}
+	}
+</style>

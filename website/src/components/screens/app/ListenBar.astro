@@ -1,0 +1,38 @@
+---
+/**
+ * The Listen transport.
+ *
+ * Ported from the text-to-speech prototype: skip-15 either side of a primary
+ * pause, a live waveform, a scrubber with a thumb, then speed and voice chips
+ * and a stop. The waveform animates; nothing else does.
+ */
+import Icon from '../Icon.astro';
+import { READER_TTS } from '../../../data/reader-doc';
+---
+
+<div class="rd2-tts">
+	<span class="lft">
+		<span class="tb"><Icon name="skip-back-15-seconds" size={24} solid /></span>
+		<span class="tb pri"><Icon name="pause" size={24} solid /></span>
+		<span class="tb"><Icon name="skip-forward-15-seconds" size={24} solid /></span>
+		<span class="wv"><i></i><i></i><i></i><i></i></span>
+	</span>
+
+	<span class="ctr">
+		<span class="trk">
+			<i style={`width:${READER_TTS.position}%`}></i>
+			<b style={`left:${READER_TTS.position}%`}></b>
+		</span>
+		<span class="tm">{READER_TTS.elapsed} / {READER_TTS.total}</span>
+	</span>
+
+	<span class="rgt">
+		<span class="chip">{READER_TTS.speed}<Icon name="chevron-down" size={24} /></span>
+		<span class="chip on">
+			<span class="vd"></span>{READER_TTS.voice}
+			<span class="cm">{READER_TTS.persona}</span>
+			<Icon name="chevron-down" size={24} />
+		</span>
+		<span class="tb stp"><Icon name="stop-listening" size={24} /></span>
+	</span>
+</div>

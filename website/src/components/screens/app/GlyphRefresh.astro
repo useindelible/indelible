@@ -1,0 +1,21 @@
+---
+/** The circular-arrow refresh glyph, at the settings pages' optical size. */
+interface Props {
+	size?: number;
+}
+const { size = 13 } = Astro.props;
+---
+
+<svg
+	viewBox="0 0 24 24"
+	width={size}
+	height={size}
+	fill="none"
+	stroke="currentColor"
+	stroke-width="1.8"
+	stroke-linecap="round"
+	aria-hidden="true"
+>
+	<path d="M20 11a8 8 0 10-2.3 5.7"></path>
+	<path d="M20 5v6h-6"></path>
+</svg>

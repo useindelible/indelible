@@ -1,0 +1,61 @@
+---
+/**
+ * A desktop screen with one phone tucked against its corner.
+ *
+ * Simpler than the hero's constellation: two devices, one overhang. `side`
+ * picks which corner the phone sits on.
+ */
+import { reveal } from '../../lib/reveal-attrs';
+
+interface Props {
+	side?: 'left' | 'right';
+	/** Tilt in degrees, so a row of these does not look mechanical. */
+	tilt?: number;
+}
+const { side = 'right', tilt = 0 } = Astro.props;
+---
+
+<div class="duo">
+	<span class="duo-main" {...reveal('clip')}><slot name="main" /></span>
+	<span class:list={['duo-detail', side]} style={tilt ? `--rot:${tilt}deg` : undefined}>
+		{/* The tilt is on the parent and the entrance on the child, so reduced
+		    motion drops the animation without flattening the composition. */}
+		<span class="duo-pop" {...reveal('pop')}><slot name="detail" /></span>
+	</span>
+</div>
+
+<style>
+	.duo {
+		position: relative;
+	}
+
+	.duo-main {
+		display: block;
+	}
+
+	.duo-detail {
+		position: absolute;
+		width: 23%;
+		bottom: -9%;
+		z-index: 2;
+		transform: rotate(var(--rot, 0deg));
+	}
+
+	.duo-detail.right {
+		right: -3.5%;
+	}
+
+	.duo-detail.left {
+		left: -3.5%;
+	}
+
+	.duo-pop {
+		display: block;
+	}
+
+	@media (max-width: 980px) {
+		.duo-detail {
+			width: 27%;
+		}
+	}
+</style>

@@ -1,0 +1,122 @@
+/* ============================================================================
+   Base layer — reset, document defaults and the type scale.
+
+   Only things that are genuinely global live here. Anything a single section
+   needs belongs in that section component's own scoped <style>.
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	scroll-behavior: smooth;
+	background: var(--bg);
+}
+
+body {
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--f-s);
+	font-size: 16px;
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+	overflow-x: hidden;
+}
+
+img,
+svg {
+	display: block;
+	max-width: 100%;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+::selection {
+	background: var(--accent);
+	color: var(--on-accent);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: 2px;
+}
+
+/* ---- type scale ----------------------------------------------------------
+   Display sizes are fluid; the clamp floors are the mobile sizes and the
+   ceilings are what the design source uses at 1440. */
+
+.h1 {
+	font-family: var(--f-d);
+	font-weight: 300;
+	font-size: clamp(42px, 6.2vw, 82px);
+	line-height: 1;
+	letter-spacing: -0.032em;
+}
+
+.h1 em {
+	font-style: italic;
+	font-weight: 400;
+	color: var(--accent);
+}
+
+.h2 {
+	font-family: var(--f-d);
+	font-weight: 300;
+	font-size: clamp(30px, 4.2vw, 52px);
+	line-height: 1.06;
+	letter-spacing: -0.026em;
+	max-width: 19ch;
+}
+
+.h3 {
+	font-family: var(--f-d);
+	font-weight: 600;
+	font-size: 20px;
+	line-height: 1.25;
+	letter-spacing: -0.012em;
+}
+
+.lede {
+	color: var(--dim);
+	font-size: clamp(16px, 1.6vw, 19px);
+	line-height: 1.55;
+	max-width: 52ch;
+}
+
+.mono {
+	font-family: var(--f-m);
+	font-size: 11.5px;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--faint);
+}
+
+/* Shared by feature rows and wall cells, which are different components, so
+   this cannot live in either one's scoped styles. */
+.cell-tag {
+	display: block;
+	margin-bottom: 9px;
+	font-family: var(--f-m);
+	font-size: 10px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--accent);
+}

@@ -1,0 +1,71 @@
+---
+/**
+ * One row in a phone list.
+ *
+ * Every phone list — home's Quick Reads, the feed, search results — draws the
+ * same row: a thumbnail, a source line, a title, a summary, and a foot. What
+ * varies is the thumbnail's contents and what the foot holds, so both are
+ * slots; the row itself never changes shape.
+ *
+ * A thumbnail carries EITHER coded cover art or a tinted emoji, never both.
+ */
+import CoverArt from '../CoverArt.astro';
+import PhoneIcon from './PhoneIcon.astro';
+import type { CoverArtName } from '../../../data/cover-art';
+
+interface Props {
+	art?: CoverArtName;
+	/** The emoji stand-in used when an item has no cover. */
+	emoji?: string;
+	/** Phone tint token, e.g. "t-indigo". Tints the emoji thumbnail. */
+	tint?: string;
+	/** An unseen feed entry carries a dot on its thumbnail. */
+	unread?: boolean;
+	/** A media kind badge, e.g. "Video". */
+	kind?: string;
+	/** Draws a play affordance over the thumbnail. */
+	play?: boolean;
+	/** Runtime, shown bottom-right of the thumbnail. */
+	duration?: string;
+	source: string;
+	length: string;
+	title: string;
+	/** Plain summary. A search hit passes the `summary` slot instead, so the
+	    matched term can be real markup rather than an injected string. */
+	summary?: string;
+}
+const {
+	art,
+	emoji,
+	tint,
+	unread = false,
+	kind,
+	play = false,
+	duration,
+	source,
+	length,
+	title,
+	summary,
+} = Astro.props;
+---
+
+<article class="ph-row">
+	<span class="ph-thumb" style={tint ? `--tint:var(--${tint})` : undefined}>
+		{unread && <span class="unread" />}
+		{kind && <span class="kind">{kind}</span>}
+		{play && (
+			<span class="play"><PhoneIcon name="play" size={13} solid /></span>
+		)}
+		{duration && <span class="dur">{duration}</span>}
+		{art ? <CoverArt name={art} /> : emoji}
+	</span>
+
+	<div class="ph-rmain">
+		<div class="ph-rmeta">
+			<span class="src">{source}</span><span class="sp">/</span><span>{length}</span>
+		</div>
+		<h3 class="ph-rtitle">{title}</h3>
+		<slot name="summary"><p class="ph-rsum">{summary}</p></slot>
+		<slot />
+	</div>
+</article>

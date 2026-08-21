@@ -1,0 +1,114 @@
+---
+/**
+ * Site footer. Columns are data so the same link never appears with two
+ * different labels in two places.
+ */
+import Wrap from '../primitives/Wrap.astro';
+import Brand from '../primitives/Brand.astro';
+import { SITE, FOOTER } from '../../data/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="foot">
+	<Wrap>
+		<div class="grid">
+			<div class="about">
+				<Brand />
+				<p>
+					Read it later, and actually keep it. Open source, self-hosted,
+					permanent.
+				</p>
+			</div>
+
+			{
+				FOOTER.map((col) => (
+					<nav aria-label={col.heading}>
+						<h2>{col.heading}</h2>
+						{col.links.map((link) => (
+							<a href={link.href}>{link.label}</a>
+						))}
+					</nav>
+				))
+			}
+		</div>
+
+		<div class="base">
+			<span>&copy; {year} {SITE.name}</span>
+			<span>{SITE.licence}</span>
+		</div>
+	</Wrap>
+</footer>
+
+<style>
+	.foot {
+		margin-top: 20px;
+		padding: 56px 0 40px;
+		border-top: 1px solid var(--line);
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: 2fr 1fr 1fr 1fr;
+		gap: 34px;
+	}
+
+	.about :global(.brand) {
+		margin-bottom: 14px;
+	}
+
+	.about p {
+		max-width: 34ch;
+		font-size: 14px;
+		color: var(--dim);
+	}
+
+	h2 {
+		margin-bottom: 15px;
+		font-family: var(--f-m);
+		font-size: 10.5px;
+		font-weight: 400;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	.grid a {
+		display: block;
+		padding: 5px 0;
+		font-size: 14px;
+		color: var(--dim);
+		transition: color var(--d-micro) var(--e-out);
+	}
+
+	.grid a:hover {
+		color: var(--ink);
+	}
+
+	.base {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 16px;
+		margin-top: 44px;
+		padding-top: 22px;
+		border-top: 1px solid var(--line);
+		font-family: var(--f-m);
+		font-size: 11px;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
+
+	@media (max-width: 860px) {
+		.grid {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
