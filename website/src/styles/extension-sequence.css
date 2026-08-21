@@ -3,13 +3,22 @@
 
    Pre-save -> saving -> saved -> highlight -> tags, played once when the frame
    enters view. IntersectionObserver adds .xt-play; there is no scroll listener.
+   See lib/extension-sequence.ts for the arm-then-play order.
 
    The frame's RESTING state is the finished one. Every animation ends on
    exactly those static values with animation-fill-mode:both, so if the script
    never runs — or the reader has prefers-reduced-motion — the screen still
    shows a correct finished frame rather than a stalled first beat.
 
-   Two things learned the hard way and encoded here:
+   Two classes, not one. Attaching the animations only at play time meant the
+   bar sat at its finished height until the observer fired, then snapped shut
+   for the 1200ms delay before sliding in — a half-second flash of the row,
+   before the sequence that introduces it. So the script ARMS the frame as soon
+   as it loads: the animations attach immediately but are held paused at their
+   first frame, which every fill-mode:both keyframe already defines as the
+   pre-save state. .xt-play then simply lets them run.
+
+   Two more things learned the hard way and encoded here:
    - border-box cannot shrink a box below its own padding, so the status pills
      animate their padding inside the keyframes rather than carrying a static
      one, which would leave them 20px wide at rest.
@@ -18,59 +27,67 @@
      the page beneath bleed through.
    ========================================================================= */
 
-.xt-play .xt-spin {
+/* Armed but not yet playing: every animation pinned to its first frame, which
+   is the pre-save state. Nothing here duplicates a hidden state — the
+   keyframes already own it. */
+.xt-armed:not(.xt-play),
+.xt-armed:not(.xt-play) * {
+	animation-play-state: paused;
+}
+
+.xt-armed .xt-spin {
 	animation:xt-spin 800ms linear infinite;
 }
 
-.xt-play .xt-tb {
+.xt-armed .xt-tb {
 	animation:xt-bar 420ms cubic-bezier(.2,.85,.2,1) 1200ms both;
 }
 
-.xt-play .xt-lock,.xt-play .xt-item,.xt-play .xt-grp {
+.xt-armed .xt-lock,.xt-armed .xt-item,.xt-armed .xt-grp {
 	animation:xt-fade 340ms ease 1420ms both;
 }
 
-.xt-play .xt-badge {
+.xt-armed .xt-badge {
 	animation:xt-badge 2700ms linear 1200ms both;
 }
 
-.xt-play .xt-status.a {
+.xt-armed .xt-status.a {
 	animation:xt-pillA 2250ms cubic-bezier(.2,.85,.2,1) 1700ms both;
 }
 
-.xt-play .xt-status.b {
+.xt-armed .xt-status.b {
 	animation:xt-pillB 1500ms cubic-bezier(.2,.85,.2,1) 3900ms both;
 }
 
-.xt-play .xt-count i.a {
+.xt-armed .xt-count i.a {
 	animation:xt-swap 2670ms steps(1,end) 1200ms both;
 }
 
-.xt-play .xt-count i.b {
+.xt-armed .xt-count i.b {
 	animation:xt-swapb 2670ms steps(1,end) 1200ms both;
 }
 
-.xt-play .xt-item .sv {
+.xt-armed .xt-item .sv {
 	animation:xt-fade 420ms ease 3600ms both;
 }
 
-.xt-play .xt-hl {
+.xt-armed .xt-hl {
 	animation:xt-wipe 1200ms cubic-bezier(.35,0,.25,1) 5600ms both;
 }
 
-.xt-play .xt-panel {
+.xt-armed .xt-panel {
 	animation:xt-panel 3400ms cubic-bezier(.2,.85,.2,1) 8000ms both;
 }
 
-.xt-play .xt-chip {
+.xt-armed .xt-chip {
 	animation:xt-chipA 2900ms cubic-bezier(.32,1.22,.36,1) 8500ms both;
 }
 
-.xt-play .xt-chip:nth-child(2) {
+.xt-armed .xt-chip:nth-child(2) {
 	animation:xt-chipB 2500ms cubic-bezier(.32,1.22,.36,1) 8900ms both;
 }
 
-.xt-play .xt-ib.tg {
+.xt-armed .xt-ib.tg {
 	animation:xt-tint 3400ms ease 8000ms both;
 }
 
@@ -131,7 +148,7 @@
   100%{color:var(--xp-t2);background:transparent}}
 
 @media(prefers-reduced-motion:reduce){
-  .xt-play .xt-tb,.xt-play .xt-lock,.xt-play .xt-item,.xt-play .xt-grp,
-  .xt-play .xt-badge,.xt-play .xt-status,.xt-play .xt-count i,
-  .xt-play .xt-hl,.xt-play .xt-panel,.xt-play .xt-chip,
-  .xt-play .xt-ib.tg,.xt-play .xt-spin,.xt-play .xt-item .sv{animation:none!important}}
+  .xt-armed .xt-tb,.xt-armed .xt-lock,.xt-armed .xt-item,.xt-armed .xt-grp,
+  .xt-armed .xt-badge,.xt-armed .xt-status,.xt-armed .xt-count i,
+  .xt-armed .xt-hl,.xt-armed .xt-panel,.xt-armed .xt-chip,
+  .xt-armed .xt-ib.tg,.xt-armed .xt-spin,.xt-armed .xt-item .sv{animation:none!important}}
