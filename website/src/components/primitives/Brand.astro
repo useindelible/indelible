@@ -1,15 +1,23 @@
 ---
 /** The wordmark. Used by the header and the footer, so it lives here once. */
+import Mark from './Mark.astro';
+
 interface Props {
 	size?: 'md' | 'sm';
 	href?: string;
 	class?: string;
 }
 const { size = 'md', href = '/', class: className } = Astro.props;
+
+/* Brand blue, pinned rather than themed. The chrome around it is monochrome,
+   so the mark is the only saturated thing on the page and has to stay the same
+   blue as the favicon, the app and the logo files — a mark that changes colour
+   with the page is a shape, not a mark. */
+const BRAND_BLUE = '#0071e3';
 ---
 
 <a class:list={['brand', `brand-${size}`, className]} href={href}>
-	<span class="mark" aria-hidden="true"></span>
+	<Mark size={size === 'sm' ? 22 : 25} fill={BRAND_BLUE} />
 	<span class="word">Indelible</span>
 </a>
 
@@ -21,24 +29,6 @@ const { size = 'md', href = '/', class: className } = Astro.props;
 		flex: none;
 	}
 
-	.mark {
-		position: relative;
-		width: 25px;
-		height: 25px;
-		border-radius: 7px;
-		background: var(--accent);
-		flex: none;
-	}
-
-	/* The counter is punched with the page ground, so it tracks the theme. */
-	.mark::after {
-		content: '';
-		position: absolute;
-		inset: 8px;
-		border-radius: 50%;
-		background: var(--bg);
-	}
-
 	.word {
 		font-family: var(--f-d);
 		font-size: 19px;
@@ -48,16 +38,6 @@ const { size = 'md', href = '/', class: className } = Astro.props;
 
 	.brand-sm {
 		gap: 10px;
-	}
-
-	.brand-sm .mark {
-		width: 22px;
-		height: 22px;
-		border-radius: 6px;
-	}
-
-	.brand-sm .mark::after {
-		inset: 7px;
 	}
 
 	.brand-sm .word {

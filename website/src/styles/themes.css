@@ -1,5 +1,10 @@
 /* ============================================================================
-   THEMES — the only file in the project that contains a colour literal.
+   THEMES — the only file that contains a colour literal for the PAGE.
+
+   The two product design systems own their own palettes, because they are
+   reproducing real applications rather than following this site: the desktop
+   app's lives in screens.css, the phone's in phone/frame.css. The Indelible
+   mark owns its blue in primitives/Mark.astro's callers, for the same reason.
 
    To change a theme, edit its block. To add one:
 
@@ -27,7 +32,8 @@
    ========================================================================= */
 
 /* ---------------------------------------------------------------- dark ----
-   The default. Warm near-black ground, bone ink, terracotta accent. */
+   The default. Warm near-black ground, bone ink, and an accent that is that
+   same bone — emphasis comes from weight and ground, not hue. */
 :root,
 [data-theme='dark'],
 [data-theme-scope='dark'] {
@@ -43,14 +49,16 @@
 	--t-line: rgba(237, 233, 224, 0.11);
 	--t-line-2: rgba(237, 233, 224, 0.2);
 
-	--t-accent: #ff6b2c;
-	--t-accent-dim: rgba(255, 107, 44, 0.14);
-	--t-on-accent: #ffffff;
+	/* Monochrome: the accent is the ink. The only saturated thing on the page
+	   is the mark, which is pinned to brand blue in Brand.astro. */
+	--t-accent: #ede9e0;
+	--t-accent-dim: rgba(237, 233, 224, 0.11);
+	--t-on-accent: #0d0f0e;
 	/* Highlights drawn ON the accent, so they track --t-on-accent. */
-	--t-accent-sheen: rgba(255, 255, 255, 0.22);
-	--t-accent-sheen-hi: rgba(255, 255, 255, 0.28);
-	--t-accent-chip: rgba(255, 255, 255, 0.2);
-	--t-accent-chip-hi: rgba(255, 255, 255, 0.32);
+	--t-accent-sheen: rgba(13, 15, 14, 0.14);
+	--t-accent-sheen-hi: rgba(13, 15, 14, 0.2);
+	--t-accent-chip: rgba(13, 15, 14, 0.13);
+	--t-accent-chip-hi: rgba(13, 15, 14, 0.22);
 
 	/* The terminal quotes a real shell, so it stays dark in every theme. */
 	--t-term-bg: #0a0c0b;
@@ -72,7 +80,7 @@
 }
 
 /* --------------------------------------------------------------- light ----
-   Warm paper rather than white; the accent darkens to hold contrast on it. */
+   Warm paper rather than white; the accent is the ink it sits beside. */
 [data-theme='light'],
 [data-theme-scope='light'] {
 	--t-bg: #f7f6f3;
@@ -87,14 +95,15 @@
 	--t-line: rgba(20, 20, 15, 0.1);
 	--t-line-2: rgba(20, 20, 15, 0.17);
 
-	--t-accent: #c2410c;
-	--t-accent-dim: rgba(194, 65, 12, 0.09);
-	--t-on-accent: #ffffff;
+	/* Monochrome: the accent is the ink. See the dark block. */
+	--t-accent: #14140f;
+	--t-accent-dim: rgba(20, 20, 15, 0.06);
+	--t-on-accent: #f7f6f3;
 	/* Highlights drawn ON the accent, so they track --t-on-accent. */
-	--t-accent-sheen: rgba(255, 255, 255, 0.22);
-	--t-accent-sheen-hi: rgba(255, 255, 255, 0.28);
-	--t-accent-chip: rgba(255, 255, 255, 0.2);
-	--t-accent-chip-hi: rgba(255, 255, 255, 0.32);
+	--t-accent-sheen: rgba(247, 246, 243, 0.18);
+	--t-accent-sheen-hi: rgba(247, 246, 243, 0.26);
+	--t-accent-chip: rgba(247, 246, 243, 0.16);
+	--t-accent-chip-hi: rgba(247, 246, 243, 0.28);
 
 	/* The terminal quotes a real shell, so it stays dark in every theme. */
 	--t-term-bg: #0a0c0b;

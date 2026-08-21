@@ -7,13 +7,13 @@
  * zero-width and show the finished state.
  */
 import BrowserIcon from './BrowserIcon.astro';
-import BrandMark from './BrandMark.astro';
+import Mark from '../../primitives/Mark.astro';
 import { SAVED_PAGE } from '../../../data/extension';
 ---
 
 <div class="xt-tb">
 	<div class="xt-lock">
-		<BrandMark size={18} />
+		<Mark size={18} fill="var(--acc)" />
 		<span class="xt-open">Open reader<BrowserIcon name="chev-r" /></span>
 		<span class="xt-count"><i class="a">0</i><i class="b">1</i></span>
 	</div>

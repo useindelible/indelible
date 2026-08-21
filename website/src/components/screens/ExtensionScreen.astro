@@ -10,7 +10,7 @@
  */
 import ScreenFrame from './ScreenFrame.astro';
 import BrowserIcon from './extension/BrowserIcon.astro';
-import BrandMark from './extension/BrandMark.astro';
+import Mark from '../primitives/Mark.astro';
 import IndelibleBar from './extension/IndelibleBar.astro';
 import PublisherMasthead from './extension/PublisherMasthead.astro';
 import { USER } from '../../data/app';
@@ -66,7 +66,7 @@ const { dark = true, class: className } = Astro.props;
 			<div class="xt-slot">
 				<span class="xt-xi" style="background:#3B7DD8"><BrowserIcon name="shield" /></span>
 				<span class="xt-xi" style="background:#6B47C4"><BrowserIcon name="puzzle" /></span>
-				<span class="xt-xi ind"><BrandMark size={16} /><i class="xt-badge"></i></span>
+				<span class="xt-xi ind"><Mark size={16} fill="var(--acc)" /><i class="xt-badge"></i></span>
 				<span class="xt-avatar">{USER.initials}</span>
 				<span class="xt-rb"><BrowserIcon name="kebab" solid /></span>
 			</div>

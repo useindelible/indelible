@@ -1,0 +1,48 @@
+---
+/**
+ * The Indelible mark — a vault door: four spokes pressed toward a pupil.
+ *
+ * This is the simplified cut, the one the brand sheet labels "favicon". The
+ * full drawing carries a ring of eight 3.4px rivets that silt up below roughly
+ * 64px, so anything small enough to sit in a toolbar or a nav pill uses this.
+ * Geometry is kept in step with public/favicon.svg, which has to stay a
+ * standalone file because browsers fetch it directly.
+ *
+ * `fill` is required rather than defaulted: the site chrome paints the mark in
+ * fixed brand blue regardless of theme, while the product mocks paint it in
+ * whichever accent that mock's own palette is using. Neither is a sensible
+ * default for the other.
+ */
+interface Props {
+	size?: number;
+	fill: string;
+	/** The cut-out spokes and centre. White on every ground the mark sits on. */
+	counter?: string;
+}
+const { size = 22, fill, counter = '#ffffff' } = Astro.props;
+---
+
+<svg
+	class="mark"
+	viewBox="0 0 200 200"
+	width={size}
+	height={size}
+	aria-hidden="true"
+>
+	<rect x="20" y="20" width="160" height="160" rx="42" fill={fill}></rect>
+	<g fill={counter}>
+		<rect x="88" y="38" width="24" height="52" rx="10"></rect>
+		<rect x="88" y="110" width="24" height="52" rx="10"></rect>
+		<rect x="38" y="88" width="52" height="24" rx="10"></rect>
+		<rect x="110" y="88" width="52" height="24" rx="10"></rect>
+	</g>
+	<circle cx="100" cy="100" r="26" fill={counter}></circle>
+	<circle cx="100" cy="100" r="11" fill={fill}></circle>
+</svg>
+
+<style>
+	.mark {
+		display: block;
+		flex: none;
+	}
+</style>
