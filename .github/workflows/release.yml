@@ -46,7 +46,7 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" *.zip extension-checksums-sha256.txt
 
   android:
-    name: Android APK
+    name: Android APK + AAB
     needs: create-release
     runs-on: ubuntu-latest
     # Holds the signing secrets; deployable only from v* tags, and pauses for
@@ -72,7 +72,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon :composeApp:assembleRelease
+        run: ./gradlew --no-daemon :composeApp:assembleRelease :composeApp:bundleRelease
       - name: Attach APK with checksum
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,3 +81,13 @@ jobs:
           cp "$apk" "indelible-$GITHUB_REF_NAME.apk"
           sha256sum "indelible-$GITHUB_REF_NAME.apk" > "indelible-$GITHUB_REF_NAME.apk.sha256"
           gh release upload "$GITHUB_REF_NAME" "indelible-$GITHUB_REF_NAME.apk" "indelible-$GITHUB_REF_NAME.apk.sha256"
+      # Play requires an Android App Bundle for new apps; the APK above stays
+      # as the sideload artifact for people installing outside the store.
+      - name: Attach AAB with checksum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          aab="composeApp/build/outputs/bundle/release/composeApp-release.aab"
+          cp "$aab" "indelible-$GITHUB_REF_NAME.aab"
+          sha256sum "indelible-$GITHUB_REF_NAME.aab" > "indelible-$GITHUB_REF_NAME.aab.sha256"
+          gh release upload "$GITHUB_REF_NAME" "indelible-$GITHUB_REF_NAME.aab" "indelible-$GITHUB_REF_NAME.aab.sha256"

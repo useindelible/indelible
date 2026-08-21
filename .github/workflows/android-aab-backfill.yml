@@ -1,0 +1,64 @@
+# One-off backfill: build the signed Android App Bundle and attach it to an
+# existing release that predates AAB support in release.yml.
+#
+# Safe to re-run. It never creates or moves a tag, and it refuses to upload if
+# the built versionName does not match the target release, so it cannot attach
+# a bundle from unrelated source.
+name: Android AAB Backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to attach the .aab to
+        required: true
+        default: v0.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    name: Build and attach AAB
+    runs-on: ubuntu-latest
+    environment: release
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Refuse if this source does not match the target release
+        run: |
+          want="${{ inputs.release_tag }}"; want="${want#v}"
+          have="$(grep -oE 'versionName = "[^"]+"' composeApp/build.gradle.kts | head -1 | cut -d'"' -f2)"
+          echo "target release=$want  built versionName=$have"
+          [ "$want" = "$have" ] || { echo "::error::versionName '$have' does not match release '$want'"; exit 1; }
+
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Decode signing keystore
+        run: printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build signed AAB
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :composeApp:bundleRelease
+
+      - name: Attach AAB with checksum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          aab="composeApp/build/outputs/bundle/release/composeApp-release.aab"
+          cp "$aab" "indelible-$TAG.aab"
+          sha256sum "indelible-$TAG.aab" > "indelible-$TAG.aab.sha256"
+          gh release upload "$TAG" "indelible-$TAG.aab" "indelible-$TAG.aab.sha256" --clobber
