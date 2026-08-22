@@ -95,6 +95,34 @@ function assertZipExists(browser) {
   assert(existsSync(path), `Missing ${browser} store zip: ${path}`)
 }
 
+function assertSourceArchive() {
+  const path = join(root, '.output', `ind-extension-${version}-sources.zip`)
+  assert(existsSync(path), `Missing source zip: ${path}`)
+
+  const entries = new Set(
+    execFileSync('unzip', ['-Z1', path], {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    })
+      .trim()
+      .split('\n'),
+  )
+  assert(entries.has('extension/package.json'), 'Source zip must preserve extension/package.json')
+  assert(
+    entries.has('shared/highlight-source.ts'),
+    'Source zip must include the shared highlight source dependency',
+  )
+  for (const entry of entries) {
+    assert(
+      entry.startsWith('extension/') ||
+        entry === 'shared/' ||
+        entry === 'shared/highlight-source.ts',
+      `Source zip contains an unrelated repository path: ${entry}`,
+    )
+  }
+}
+
 function assertFirefoxLint() {
   const output = execFileSync(
     'npx',
@@ -131,10 +159,7 @@ assertFirefoxManifest(firefoxManifest)
 assertZipExists('chrome')
 assertZipExists('edge')
 assertZipExists('firefox')
-assert(
-  existsSync(join(root, '.output', `ind-extension-${version}-sources.zip`)),
-  'Missing source zip',
-)
+assertSourceArchive()
 assertFirefoxLint()
 
 console.log('Store artifacts verified: chrome-mv3, edge-mv3, firefox-mv3')

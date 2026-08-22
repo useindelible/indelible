@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt'
+import { fileURLToPath } from 'node:url'
 
 const CHROME_STORE_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnz12VolmGtYuSdW14kP2' +
@@ -11,6 +12,21 @@ const CHROME_STORE_PUBLIC_KEY =
 
 export default defineConfig({
   srcDir: '.',
+  zip: {
+    sourcesRoot: fileURLToPath(new URL('..', import.meta.url)),
+    includeSources: [
+      'extension/*',
+      'extension/entrypoints/**',
+      'extension/lib/**',
+      'extension/public/**',
+      'extension/scripts/**',
+      'extension/tests/**',
+      'shared/highlight-source.ts',
+    ],
+    excludeSources: [
+      '**/*',
+    ],
+  },
   dev: {
     server: { port: 3457 },
   },
