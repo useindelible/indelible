@@ -1,0 +1,87 @@
+{
+  "action_title": {
+    "message": "Indelible"
+  },
+  "command_save_page": {
+    "message": "Enregistrer la page actuelle dans Indelible"
+  },
+  "ext_description": {
+    "message": "Enregistrez, archivez et organisez du contenu web avec Indelible"
+  },
+  "ext_name": {
+    "message": "Indelible"
+  },
+  "menu_save_highlight": {
+    "message": "Enregistrer le surlignage dans Indelible"
+  },
+  "menu_save_page": {
+    "message": "Enregistrer dans Indelible"
+  },
+  "notify_failed": {
+    "message": "Échec de l’enregistrement dans Indelible : $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "notify_saved": {
+    "message": "Enregistré dans Indelible"
+  },
+  "notify_saving": {
+    "message": "Enregistrement dans Indelible : $STEP$",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "notify_step_extracting": {
+    "message": "Extraction du contenu"
+  },
+  "notify_step_singlefile": {
+    "message": "Création de l’archive"
+  },
+  "notify_step_thumbnail": {
+    "message": "Capture de la vignette"
+  },
+  "notify_step_uploading": {
+    "message": "Téléversement de l’archive"
+  },
+  "notify_title": {
+    "message": "Indelible"
+  },
+  "toolbar_highlights_one": {
+    "message": "$COUNT$ surlignage",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "toolbar_highlights_other": {
+    "message": "$COUNT$ surlignages",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "toolbar_saved_ago": {
+    "message": "enregistré $WHEN$",
+    "placeholders": {
+      "when": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_archive": {
+    "message": "Archives"
+  },
+  "triage_inbox": {
+    "message": "Boîte de réception"
+  },
+  "triage_later": {
+    "message": "Plus tard"
+  }
+}

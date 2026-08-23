@@ -1,5 +1,6 @@
 import type { ToolbarState } from './full-archive-toolbar'
 import { escapeAttr, escapeHtml, safeHttpUrl } from './html'
+import { relativeTime, t, tPlural } from './i18n'
 
 const BRAND_MARK = `<svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><rect width="200" height="200" rx="42" fill="#0071E3"/><circle cx="100" cy="100" r="80" stroke="#fff" stroke-width="1.875" opacity=".32"/><g fill="#fff" opacity=".62"><circle cx="100" cy="32.5" r="4.25"/><circle cx="147.5" cy="52.5" r="4.25"/><circle cx="167.5" cy="100" r="4.25"/><circle cx="147.5" cy="147.5" r="4.25"/><circle cx="100" cy="167.5" r="4.25"/><circle cx="52.5" cy="147.5" r="4.25"/><circle cx="32.5" cy="100" r="4.25"/><circle cx="52.5" cy="52.5" r="4.25"/></g><g fill="#fff"><rect x="92.5" y="35" width="15" height="50" rx="7.5"/><rect x="92.5" y="115" width="15" height="50" rx="7.5"/><rect x="35" y="92.5" width="50" height="15" rx="7.5"/><rect x="115" y="92.5" width="50" height="15" rx="7.5"/></g><circle cx="100" cy="100" r="23.75" fill="#fff"/><circle cx="100" cy="100" r="8.75" fill="#0071E3"/></svg>`
 const IC_TAG = `<svg class="ic" viewBox="0 0 16 16"><path d="M2.4 2.4h4.6a1 1 0 0 1 .7.3l4.3 4.3a1 1 0 0 1 0 1.4l-3.4 3.4a1 1 0 0 1-1.4 0L3 8.1a1 1 0 0 1-.6-.7V2.4z"/><circle cx="4.6" cy="4.6" r="0.9" fill="currentColor" stroke="none"/><path d="M12.7 10.5v3.6M10.9 12.3h3.6"/></svg>`
@@ -17,9 +18,9 @@ const TI_ARCHIVE = `<svg class="ti-ic" viewBox="0 0 16 16"><rect x="2.5" y="4.5"
 const TI_CHECK = `<svg class="ti-check" viewBox="0 0 14 14"><path d="M2 7l3.5 3.5 6.5-7"/></svg>`
 
 export function triageLabel(state: string | undefined): string {
-  if (state === 'inbox') return 'Inbox'
-  if (state === 'archive') return 'Archive'
-  return 'Later'
+  if (state === 'inbox') return t('triage_inbox')
+  if (state === 'archive') return t('triage_archive')
+  return t('triage_later')
 }
 
 export function triageIcon(state: string | undefined): string {
@@ -30,25 +31,13 @@ export function triageIcon(state: string | undefined): string {
   return IC_CLOCK
 }
 
-function formatRelativeTime(iso: string | undefined): string {
-  if (!iso) return ''
-  const ms = Date.now() - new Date(iso).getTime()
-  const sec = Math.floor(ms / 1000)
-  if (sec < 60) return 'just now'
-  const min = Math.floor(sec / 60)
-  if (min < 60) return `${min}m ago`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr}h ago`
-  return `${Math.floor(hr / 24)}d ago`
-}
-
 export function toolbarMarkup(state: ToolbarState): string {
   const entry = state.entry
   const highlightCount = state.highlights?.length ?? 0
   const readerUrl = safeHttpUrl(state.readerUrl)
   const triage = entry?.triage_state ?? 'later'
-  const savedAt = entry?.saved_at ? formatRelativeTime(entry.saved_at) : ''
-  const domainMeta = [domainFromUrl(entry?.url), savedAt ? `saved ${savedAt}` : '']
+  const savedAt = entry?.saved_at ? relativeTime(entry.saved_at) : ''
+  const domainMeta = [domainFromUrl(entry?.url), savedAt ? t('toolbar_saved_ago', savedAt) : '']
     .filter(Boolean)
     .join(' · ')
 
@@ -87,9 +76,9 @@ export function toolbarMarkup(state: ToolbarState): string {
 
   const triageMenu = `
     <div class="triage-menu" style="display:none">
-      <button class="triage-item${triage === 'inbox' ? ' active' : ''}" data-value="inbox">${TI_INBOX}<span>Inbox</span>${TI_CHECK}<span class="spacer"></span></button>
-      <button class="triage-item${triage === 'later' ? ' active' : ''}" data-value="later">${TI_CLOCK}<span>Later</span>${TI_CHECK}<span class="spacer"></span></button>
-      <button class="triage-item${triage === 'archive' ? ' active' : ''}" data-value="archive">${TI_ARCHIVE}<span>Archive</span>${TI_CHECK}<span class="spacer"></span></button>
+      <button class="triage-item${triage === 'inbox' ? ' active' : ''}" data-value="inbox">${TI_INBOX}<span>${escapeHtml(triageLabel('inbox'))}</span>${TI_CHECK}<span class="spacer"></span></button>
+      <button class="triage-item${triage === 'later' ? ' active' : ''}" data-value="later">${TI_CLOCK}<span>${escapeHtml(triageLabel('later'))}</span>${TI_CHECK}<span class="spacer"></span></button>
+      <button class="triage-item${triage === 'archive' ? ' active' : ''}" data-value="archive">${TI_ARCHIVE}<span>${escapeHtml(triageLabel('archive'))}</span>${TI_CHECK}<span class="spacer"></span></button>
     </div>`
 
   let barContent: string
@@ -100,7 +89,7 @@ export function toolbarMarkup(state: ToolbarState): string {
         <div class="left-lockup">
           ${BRAND_MARK}
           <a class="btn-text" href="${readerUrl}" target="_blank" rel="noopener noreferrer">Open reader${IC_ARROW_RIGHT}</a>
-          ${highlightCount > 0 ? `<span class="count-pill">${highlightCount}</span>` : ''}
+          ${highlightCount > 0 ? `<span class="count-pill">${escapeHtml(tPlural('toolbar_highlights', highlightCount))}</span>` : ''}
         </div>
         <div class="item">
           <span class="t">${escapeHtml(entry?.title ?? 'Saved page')}</span>
@@ -119,7 +108,7 @@ export function toolbarMarkup(state: ToolbarState): string {
           <span class="vr"></span>
           <button class="dropdown js-triage">
             <span class="triage-ic">${triageIcon(triage)}</span>
-            <span class="triage-label">${triageLabel(triage)}</span>
+            <span class="triage-label">${escapeHtml(triageLabel(triage))}</span>
             ${IC_CHEVRON_DOWN}
           </button>
           <button class="ic-btn js-minimize" title="Minimize">${IC_CHEVRON_UP}</button>
