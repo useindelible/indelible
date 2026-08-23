@@ -349,3 +349,108 @@ fn unsupported_pdf_encryption_is_not_reported_as_password_protection() {
         "unexpected error: {error:?}"
     );
 }
+
+/// Minimal single-page PDF whose Info dictionary carries `raw_title` verbatim,
+/// written as a hex string. `DocumentBuilder::title` re-encodes whatever it is
+/// given, so a hand-written file is the only way to control the exact bytes a
+/// reader sees for `/Title`.
+fn pdf_with_raw_info_title(raw_title: &[u8]) -> Vec<u8> {
+    let hex: String = raw_title.iter().map(|byte| format!("{byte:02X}")).collect();
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>".to_string(),
+        format!("<< /Title <{hex}> >>"),
+    ];
+
+    let mut pdf = Vec::from("%PDF-1.7\n");
+    let mut offsets = Vec::with_capacity(objects.len());
+    for (index, body) in objects.iter().enumerate() {
+        offsets.push(pdf.len());
+        pdf.extend_from_slice(format!("{} 0 obj\n{body}\nendobj\n", index + 1).as_bytes());
+    }
+
+    // The xref table indexes byte offsets of every object, so it can only be
+    // written once the bodies above are laid out.
+    let startxref = pdf.len();
+    let size = objects.len() + 1;
+    pdf.extend_from_slice(format!("xref\n0 {size}\n0000000000 65535 f \n").as_bytes());
+    for offset in offsets {
+        pdf.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    pdf.extend_from_slice(
+        format!(
+            "trailer\n<< /Size {size} /Root 1 0 R /Info 4 0 R >>\nstartxref\n{startxref}\n%%EOF\n"
+        )
+        .as_bytes(),
+    );
+    pdf
+}
+
+fn utf16be(text: &str) -> Vec<u8> {
+    let mut out = vec![0xFE_u8, 0xFF];
+    for unit in text.encode_utf16() {
+        out.extend_from_slice(&unit.to_be_bytes());
+    }
+    out
+}
+
+fn utf16le(text: &str) -> Vec<u8> {
+    let mut out = vec![0xFF_u8, 0xFE];
+    for unit in text.encode_utf16() {
+        out.extend_from_slice(&unit.to_le_bytes());
+    }
+    out
+}
+
+async fn title_of(raw_info_title: &[u8]) -> String {
+    DocumentFileUploadProcessor
+        .process_upload(request(
+            "book.pdf",
+            "application/pdf",
+            pdf_with_raw_info_title(raw_info_title),
+            10 * 1024 * 1024,
+        ))
+        .await
+        .unwrap()
+        .title
+}
+
+#[tokio::test]
+async fn pdf_utf16be_title_decodes_without_nul_bytes() {
+    let expected = "System Design Interview An Insider\u{2019}s Guide";
+    let title = title_of(&utf16be(expected)).await;
+    assert!(
+        !title.contains('\0'),
+        "NUL would be rejected by Postgres: {title:?}"
+    );
+    assert_eq!(title, expected);
+}
+
+#[tokio::test]
+async fn pdf_utf16le_title_decodes() {
+    let expected = "Designing Data\u{2011}Intensive Applications";
+    assert_eq!(title_of(&utf16le(expected)).await, expected);
+}
+
+#[tokio::test]
+async fn pdf_pdfdocencoding_punctuation_decodes() {
+    // 0x84 is EM DASH in PDFDocEncoding. As a lone byte it is invalid UTF-8,
+    // so reading the string as UTF-8 turns it into U+FFFD.
+    let raw = b"Clean Code \x84 A Handbook";
+    assert_eq!(title_of(raw).await, "Clean Code \u{2014} A Handbook");
+}
+
+#[tokio::test]
+async fn pdf_ascii_title_still_round_trips() {
+    let expected = "Cracking the Coding Interview";
+    assert_eq!(title_of(expected.as_bytes()).await, expected);
+}
+
+#[tokio::test]
+async fn pdf_raw_utf8_title_is_accepted_leniently() {
+    // Spec-violating but common in the wild: UTF-8 bytes with no BOM. The
+    // crate decoder tries UTF-8 before falling back to PDFDocEncoding.
+    let expected = "Caf\u{e9} Culture";
+    assert_eq!(title_of(expected.as_bytes()).await, expected);
+}
