@@ -21,7 +21,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release -p ind-renderer && \
     cp /app/target/release/ind-renderer /usr/local/bin/ind-renderer
 
-FROM chromedp/headless-shell:latest
+# Pinned so a release rebuild gets the same Chrome as the main-channel build
+# of the same commit. Bump deliberately alongside renderer testing.
+FROM chromedp/headless-shell:151.0.7922.109
 
 RUN apt-get update && apt-get install -y \
     fonts-liberation \
