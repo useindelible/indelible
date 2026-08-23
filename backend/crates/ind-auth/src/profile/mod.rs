@@ -37,7 +37,7 @@ fn validate_update_profile_request(req: &UpdateProfileRequest) -> Result<(), Aut
         validation::optional_avatar_reference(avatar_url)
             .map_err(|err| validation_error("avatar_url", err))?;
     }
-    if let Some(locale) = req.locale.as_deref() {
+    if let Some(Some(locale)) = req.locale.as_ref() {
         validation::optional_locale(locale).map_err(|err| validation_error("locale", err))?;
     }
     if let Some(timezone) = req.timezone.as_deref() {

@@ -33,7 +33,7 @@ pub trait UserRepository: Send + Sync + Any {
         id: UserId,
         display_name: String,
         avatar_url: Option<String>,
-        locale: String,
+        locale: Option<String>,
         timezone: String,
         theme: Theme,
     ) -> Result<User, AppError>;

@@ -253,7 +253,7 @@ pub struct UserProfile {
     pub email: String,
     pub display_name: String,
     pub avatar_url: Option<String>,
-    pub locale: String,
+    pub locale: Option<String>,
     pub timezone: String,
     pub theme: Theme,
     pub email_verified: bool,
@@ -267,7 +267,7 @@ pub struct UserProfile {
 pub struct UpdateProfileRequest {
     pub display_name: Option<String>,
     pub avatar_url: Option<Option<String>>,
-    pub locale: Option<String>,
+    pub locale: Option<Option<String>>,
     pub timezone: Option<String>,
     pub theme: Option<Theme>,
 }

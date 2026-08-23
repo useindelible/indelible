@@ -52,7 +52,7 @@ impl AuthService {
             password_hash: Some(password_hash),
             display_name: req.display_name,
             avatar_url: None,
-            locale: "en".to_string(),
+            locale: None,
             timezone: "UTC".to_string(),
             theme: Default::default(),
             // There is no outbound mail transport, so the verification token

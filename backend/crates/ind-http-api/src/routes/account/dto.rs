@@ -23,7 +23,8 @@ pub struct ProfileResponse {
     pub display_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
-    pub locale: String,
+    #[schema(value_type = Option<String>, required = true, nullable)]
+    pub locale: Option<String>,
     pub timezone: String,
     pub theme: String,
     pub email_verified: bool,
@@ -49,8 +50,10 @@ pub struct UpdateProfileRequest {
     #[schema(value_type = Option<String>, nullable)]
     #[validate(custom(function = "crate::validation::optional_avatar_reference"))]
     pub avatar_url: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_optional_nullable")]
+    #[schema(value_type = Option<String>, nullable)]
     #[validate(custom(function = "crate::validation::optional_locale"))]
-    pub locale: Option<String>,
+    pub locale: Option<Option<String>>,
     #[validate(custom(function = "crate::validation::optional_timezone"))]
     pub timezone: Option<String>,
     #[validate(custom(function = "crate::validation::optional_theme"))]
@@ -84,8 +87,34 @@ pub fn deserialize_optional_nullable<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    let val: Option<Option<String>> = Option::deserialize(deserializer)?;
-    Ok(val)
+    use serde::de::Visitor;
+
+    struct NullableStringVisitor;
+
+    impl<'de> Visitor<'de> for NullableStringVisitor {
+        type Value = Option<Option<String>>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("null or a string")
+        }
+
+        fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            Ok(Some(None))
+        }
+
+        fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            Ok(Some(None))
+        }
+
+        fn visit_some<D2: serde::Deserializer<'de>>(
+            self,
+            deserializer: D2,
+        ) -> Result<Self::Value, D2::Error> {
+            Ok(Some(Some(String::deserialize(deserializer)?)))
+        }
+    }
+
+    deserializer.deserialize_option(NullableStringVisitor)
 }
 
 impl ProfileResponse {

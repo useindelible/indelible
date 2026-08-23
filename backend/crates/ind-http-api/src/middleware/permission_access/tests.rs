@@ -29,7 +29,7 @@ fn principal(credential: ApiCredential, email_verified: bool) -> Principal {
             password_hash: None,
             display_name: "Reader".to_string(),
             avatar_url: None,
-            locale: "en".to_string(),
+            locale: None,
             timezone: "UTC".to_string(),
             theme: Theme::System,
             email_verified,

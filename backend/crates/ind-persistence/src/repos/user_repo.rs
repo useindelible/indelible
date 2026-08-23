@@ -25,7 +25,7 @@ struct UserRow {
     password_hash: Option<String>,
     display_name: String,
     avatar_url: Option<String>,
-    locale: String,
+    locale: Option<String>,
     timezone: String,
     theme: String,
     email_verified: bool,
@@ -340,7 +340,7 @@ impl UserRepository for PgUserRepository {
         id: UserId,
         display_name: String,
         avatar_url: Option<String>,
-        locale: String,
+        locale: Option<String>,
         timezone: String,
         theme: Theme,
     ) -> Result<User, AppError> {
@@ -355,7 +355,7 @@ impl UserRepository for PgUserRepository {
             id.into_uuid(),
             display_name,
             avatar_url.as_deref(),
-            locale,
+            locale.as_deref(),
             timezone,
             theme_to_str(theme),
         )

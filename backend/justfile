@@ -54,7 +54,7 @@ db-status:
 # Requires a running Postgres (see .env for DATABASE_URL).
 # Run this after adding or changing any sqlx query_as!/query! calls.
 db-prepare:
-    SQLX_OFFLINE=false cargo sqlx prepare --workspace
+    SQLX_OFFLINE=false cargo sqlx prepare --workspace -- --all-targets --all-features
 
 # --- Run ---
 
