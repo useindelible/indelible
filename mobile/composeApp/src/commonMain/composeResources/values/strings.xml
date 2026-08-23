@@ -1,6 +1,17 @@
 <resources>
     <string name="app_name">Indelible</string>
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_close">Close</string>
     <string name="common_coming_soon">Coming soon</string>
+    <string name="common_continue">Continue</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_done">Done</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_error_generic">Something went wrong. Please try again.</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_save">Save</string>
     <string name="feed_save">Save</string>
     <string name="feed_saved">Saved</string>
     <string name="feed_seen">Seen</string>

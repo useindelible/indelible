@@ -1,6 +1,17 @@
 <resources>
     <string name="app_name">Indelible</string>
+    <string name="common_back">Retour</string>
+    <string name="common_cancel">Annuler</string>
+    <string name="common_close">Fermer</string>
     <string name="common_coming_soon">Bientôt disponible</string>
+    <string name="common_continue">Continuer</string>
+    <string name="common_delete">Supprimer</string>
+    <string name="common_done">Terminé</string>
+    <string name="common_edit">Modifier</string>
+    <string name="common_error_generic">Une erreur est survenue. Veuillez réessayer.</string>
+    <string name="common_loading">Chargement…</string>
+    <string name="common_retry">Réessayer</string>
+    <string name="common_save">Enregistrer</string>
     <string name="feed_save">Enregistrer</string>
     <string name="feed_saved">Enregistré</string>
     <string name="feed_seen">Vu</string>
