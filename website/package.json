@@ -6,10 +6,12 @@
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",
+		"test:seo": "pnpm build && node scripts/verify-seo-build.mjs",
 		"preview": "astro preview",
 		"check": "astro check"
 	},
 	"dependencies": {
+		"@astrojs/sitemap": "^3.7.3",
 		"@astrojs/starlight": "^0.41.5",
 		"@astrojs/svelte": "^9.0.1",
 		"@fontsource-variable/ibm-plex-sans": "^5.3.0",

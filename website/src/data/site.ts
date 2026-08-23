@@ -32,7 +32,10 @@ export const NAV: readonly NavLink[] = [
  * it sits beside the CTA so it survives the width where the anchor list is
  * hidden. Before it existed the only route to the docs was the footer.
  */
-export const DOCS_LINK: NavLink = { label: 'Docs', href: '/docs/' };
+export const DOCS_LINK: NavLink = {
+	label: 'Docs',
+	href: '/docs/getting-started/introduction/',
+};
 
 /** The quick-start, verbatim from the self-hosting docs. */
 export const INSTALL_COMMANDS: readonly string[] = [
