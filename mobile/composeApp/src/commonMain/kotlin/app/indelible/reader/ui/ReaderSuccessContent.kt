@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,7 +33,6 @@ import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.TagData
 import app.indelible.reader.playback.PlaybackState
-import app.indelible.reader.ui.components.showContentsPill
 import app.indelible.reader.ui.components.HighlightSheet
 import app.indelible.reader.ui.components.HighlightTagSheet
 import app.indelible.reader.ui.components.MilaReaderDrawer
@@ -44,13 +41,20 @@ import app.indelible.reader.ui.components.ReaderDock
 import app.indelible.reader.ui.components.ReaderDockPanels
 import app.indelible.reader.ui.components.ReaderFloatingControls
 import app.indelible.reader.ui.components.TtsMiniBar
+import app.indelible.reader.ui.components.showContentsPill
 import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.ReaderViewModel
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_copied_clipboard
+import indelible.composeapp.generated.resources.reader_link_copied
+import indelible.composeapp.generated.resources.reader_link_missing
+import indelible.composeapp.generated.resources.reader_voice_fallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 internal data class SelectedTextInfo(
     val text: String,
@@ -91,6 +95,9 @@ internal fun ReaderSuccessContent(
 ) {
     val uriHandler = LocalUriHandler.current
     val clipboardManager = LocalClipboardManager.current
+    val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
+    val linkCopiedMessage = stringResource(Res.string.reader_link_copied)
+    val linkMissingMessage = stringResource(Res.string.reader_link_missing)
 
     val readerIsDark =
         state.preferences.background == ReaderBackground.SLATE ||
@@ -216,7 +223,8 @@ internal fun ReaderSuccessContent(
                     voiceName =
                         viewModel.voices
                             .firstOrNull { it.id == playbackState.voiceId }
-                            ?.name ?: "Voice",
+                            ?.let { stringResource(it.nameRes) }
+                            ?: stringResource(Res.string.reader_voice_fallback),
                     isPlaying = playbackState.isPlaying,
                     progressFraction = playbackState.progressFraction,
                     onTogglePlay = { viewModel.togglePlayback() },
@@ -252,9 +260,9 @@ internal fun ReaderSuccessContent(
                 val url = state.item.canonicalUrl ?: state.item.url
                 if (url != null) {
                     clipboardManager.setText(AnnotatedString(url))
-                    coroutineScope.launch { snackbarHostState.showSnackbar("Link copied to clipboard") }
+                    coroutineScope.launch { snackbarHostState.showSnackbar(linkCopiedMessage) }
                 } else {
-                    coroutineScope.launch { snackbarHostState.showSnackbar("No link to share") }
+                    coroutineScope.launch { snackbarHostState.showSnackbar(linkMissingMessage) }
                 }
             },
         )
@@ -286,7 +294,7 @@ internal fun ReaderSuccessContent(
                     clipboardManager.setText(AnnotatedString(highlight.textContent))
                     onTappedHighlightChanged(null)
                     coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Copied to clipboard")
+                        snackbarHostState.showSnackbar(copiedMessage)
                     }
                 },
                 onDismiss = { onTappedHighlightChanged(null) },

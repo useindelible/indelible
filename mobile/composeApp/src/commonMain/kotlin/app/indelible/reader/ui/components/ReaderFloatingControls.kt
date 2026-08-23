@@ -24,6 +24,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.ReaderIcons
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.reader_action_more
+import indelible.composeapp.generated.resources.reader_action_save_to_library
+import indelible.composeapp.generated.resources.reader_contents
+import org.jetbrains.compose.resources.stringResource
 
 // The pill reads over live prose rather than a blanked strip, so it carries its own
 // legibility. A true backdrop blur cannot reach the article — that is a platform view
@@ -64,27 +70,27 @@ fun ReaderFloatingControls(
     ) {
         FloatingPill(
             icon = ReaderIcons.Back,
-            contentDescription = "Back",
+            contentDescription = stringResource(Res.string.common_back),
             onClick = onBack,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step10)) {
             if (canSave) {
                 FloatingPill(
                     icon = ReaderIcons.Save,
-                    contentDescription = "Save to library",
+                    contentDescription = stringResource(Res.string.reader_action_save_to_library),
                     onClick = onSave,
                 )
             }
             if (showContents) {
                 FloatingPill(
                     icon = ReaderIcons.Contents,
-                    contentDescription = "Contents",
+                    contentDescription = stringResource(Res.string.reader_contents),
                     onClick = onContents,
                 )
             }
             FloatingPill(
                 icon = ReaderIcons.More,
-                contentDescription = "More",
+                contentDescription = stringResource(Res.string.reader_action_more),
                 onClick = onMore,
             )
         }
@@ -106,13 +112,11 @@ private fun FloatingPill(
                 .background(
                     color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = PILL_VEIL_ALPHA),
                     shape = CircleShape,
-                )
-                .border(
+                ).border(
                     width = IndelibleSpacing.hairline,
                     color = MaterialTheme.colorScheme.outlineVariant,
                     shape = CircleShape,
-                )
-                .clickable(onClick = onClick),
+                ).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

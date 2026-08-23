@@ -31,6 +31,14 @@ import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.ReaderIcons
 import app.indelible.ui.theme.SerifFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_ask_mila
+import indelible.composeapp.generated.resources.reader_action_highlight
+import indelible.composeapp.generated.resources.reader_action_listen
+import indelible.composeapp.generated.resources.reader_action_move
+import indelible.composeapp.generated.resources.reader_action_note
+import indelible.composeapp.generated.resources.reader_action_text_options
+import org.jetbrains.compose.resources.stringResource
 
 // An open tool reads as a filled wash. The previous 4dp dot under the glyph was too
 // quiet to answer "which panel is open" at a glance.
@@ -70,12 +78,12 @@ fun ReaderDock(
             DockZone {
                 DockButton(
                     active = activePanel == DataPanel.HL,
-                    contentDescription = "Highlight",
+                    contentDescription = stringResource(Res.string.reader_action_highlight),
                     onClick = { select(DataPanel.HL) },
                 ) { DockIcon(ReaderIcons.Highlight) }
                 DockButton(
                     active = activePanel == DataPanel.NOTE,
-                    contentDescription = "Note",
+                    contentDescription = stringResource(Res.string.reader_action_note),
                     onClick = { select(DataPanel.NOTE) },
                 ) { DockIcon(ReaderIcons.Note) }
             }
@@ -85,13 +93,13 @@ fun ReaderDock(
             DockZone {
                 DockButton(
                     active = activePanel == DataPanel.MOVE,
-                    contentDescription = "Move",
+                    contentDescription = stringResource(Res.string.reader_action_move),
                     onClick = { select(DataPanel.MOVE) },
                 ) { DockIcon(ReaderIcons.Move) }
                 DockRule()
                 DockButton(
                     active = activePanel == DataPanel.AA,
-                    contentDescription = "Text options",
+                    contentDescription = stringResource(Res.string.reader_action_text_options),
                     onClick = { select(DataPanel.AA) },
                 ) {
                     Text(
@@ -107,7 +115,7 @@ fun ReaderDock(
             // reading tool, so it carries the accent at rest and no group of its own.
             DockButton(
                 active = activePanel == DataPanel.MILA,
-                contentDescription = "Ask Mila",
+                contentDescription = stringResource(Res.string.reader_action_ask_mila),
                 accented = true,
                 onClick = { select(DataPanel.MILA) },
             ) { DockIcon(ReaderIcons.Mila) }
@@ -173,8 +181,7 @@ private fun DockButton(
                     } else {
                         Color.Transparent
                     },
-                )
-                .clickable(onClickLabel = contentDescription, onClick = onClick),
+                ).clickable(onClickLabel = contentDescription, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         CompositionLocalProvider(LocalContentColor provides foreground) {
@@ -191,7 +198,7 @@ private fun DockListenButton(onClick: () -> Unit) {
                 .height(IndelibleSpacing.step40)
                 .clip(IndelibleShape.sm)
                 .background(MaterialTheme.colorScheme.primary)
-                .clickable(onClickLabel = "Listen", onClick = onClick)
+                .clickable(onClickLabel = stringResource(Res.string.reader_action_listen), onClick = onClick)
                 .padding(start = IndelibleSpacing.step12, end = IndelibleSpacing.step14),
         horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
         verticalAlignment = Alignment.CenterVertically,
@@ -203,7 +210,7 @@ private fun DockListenButton(onClick: () -> Unit) {
             modifier = Modifier.size(IndelibleSpacing.step16),
         )
         Text(
-            text = "Listen",
+            text = stringResource(Res.string.reader_action_listen),
             fontSize = 13.5.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onPrimary,

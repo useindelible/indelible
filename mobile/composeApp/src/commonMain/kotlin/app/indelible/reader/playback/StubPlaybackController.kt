@@ -1,5 +1,16 @@
 package app.indelible.reader.playback
 
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_voice_ava
+import indelible.composeapp.generated.resources.reader_voice_ava_tagline
+import indelible.composeapp.generated.resources.reader_voice_iris
+import indelible.composeapp.generated.resources.reader_voice_iris_tagline
+import indelible.composeapp.generated.resources.reader_voice_mara
+import indelible.composeapp.generated.resources.reader_voice_mara_tagline
+import indelible.composeapp.generated.resources.reader_voice_ren
+import indelible.composeapp.generated.resources.reader_voice_ren_tagline
+import indelible.composeapp.generated.resources.reader_voice_theo
+import indelible.composeapp.generated.resources.reader_voice_theo_tagline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -134,11 +145,11 @@ class StubPlaybackController(
 
         val VOICES =
             listOf(
-                ReaderVoice("ava", "Ava", "Warm · Narrative"),
-                ReaderVoice("ren", "Ren", "Crisp · Neutral"),
-                ReaderVoice("mara", "Mara", "Bright · Expressive"),
-                ReaderVoice("theo", "Theo", "Low · Measured"),
-                ReaderVoice("iris", "Iris", "Soft · Calm"),
+                ReaderVoice("ava", Res.string.reader_voice_ava, Res.string.reader_voice_ava_tagline),
+                ReaderVoice("ren", Res.string.reader_voice_ren, Res.string.reader_voice_ren_tagline),
+                ReaderVoice("mara", Res.string.reader_voice_mara, Res.string.reader_voice_mara_tagline),
+                ReaderVoice("theo", Res.string.reader_voice_theo, Res.string.reader_voice_theo_tagline),
+                ReaderVoice("iris", Res.string.reader_voice_iris, Res.string.reader_voice_iris_tagline),
             )
     }
 }

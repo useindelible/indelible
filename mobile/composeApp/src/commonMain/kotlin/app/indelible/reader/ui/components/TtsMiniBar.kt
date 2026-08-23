@@ -31,6 +31,13 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_open_player
+import indelible.composeapp.generated.resources.reader_action_pause
+import indelible.composeapp.generated.resources.reader_action_play
+import indelible.composeapp.generated.resources.reader_action_stop
+import indelible.composeapp.generated.resources.reader_now_playing
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Non-modal floating player pill shown while narration plays and the Listen sheet
@@ -58,8 +65,10 @@ fun TtsMiniBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable(onClickLabel = "Open player", onClick = onExpand)
-                    .padding(horizontal = IndelibleSpacing.step8, vertical = IndelibleSpacing.step6),
+                    .clickable(
+                        onClickLabel = stringResource(Res.string.reader_action_open_player),
+                        onClick = onExpand,
+                    ).padding(horizontal = IndelibleSpacing.step8, vertical = IndelibleSpacing.step6),
             horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -80,7 +89,7 @@ fun TtsMiniBar(
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Now playing · $voiceName",
+                    text = stringResource(Res.string.reader_now_playing, voiceName),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
@@ -96,19 +105,22 @@ fun TtsMiniBar(
             }
             MiniBarButton(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription =
+                    stringResource(
+                        if (isPlaying) Res.string.reader_action_pause else Res.string.reader_action_play,
+                    ),
                 tint = MaterialTheme.colorScheme.primary,
                 onClick = onTogglePlay,
             )
             MiniBarButton(
                 icon = Icons.Filled.KeyboardArrowUp,
-                contentDescription = "Open player",
+                contentDescription = stringResource(Res.string.reader_action_open_player),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = onExpand,
             )
             MiniBarButton(
                 icon = Icons.Filled.Close,
-                contentDescription = "Stop",
+                contentDescription = stringResource(Res.string.reader_action_stop),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = onClose,
             )

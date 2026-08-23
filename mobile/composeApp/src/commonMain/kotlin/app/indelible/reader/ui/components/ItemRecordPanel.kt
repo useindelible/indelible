@@ -25,11 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -47,7 +44,22 @@ import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.SerifFontFamily
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_highlights_count
+import indelible.composeapp.generated.resources.reader_info_actions
+import indelible.composeapp.generated.resources.reader_info_entities
+import indelible.composeapp.generated.resources.reader_info_info
+import indelible.composeapp.generated.resources.reader_info_note
+import indelible.composeapp.generated.resources.reader_info_note_add
+import indelible.composeapp.generated.resources.reader_info_note_edit
+import indelible.composeapp.generated.resources.reader_info_note_empty
+import indelible.composeapp.generated.resources.reader_info_share_link
+import indelible.composeapp.generated.resources.reader_info_summary
+import indelible.composeapp.generated.resources.reader_info_tags
+import indelible.composeapp.generated.resources.reader_tags_requires_library
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Read-only record for the current item, opened from the reader's "Item details".
@@ -81,9 +93,9 @@ fun ItemRecordPanel(
         // Share moved here when the reader's top bar was removed: it is an action on
         // the item, and the item record is where the item's actions live.
         if ((item.canonicalUrl ?: item.url) != null) {
-            RecordSection("Actions") {
+            RecordSection(stringResource(Res.string.reader_info_actions)) {
                 IndelibleButton(
-                    text = "Share link",
+                    text = stringResource(Res.string.reader_info_share_link),
                     onClick = onShare,
                     style = IndelibleButtonStyle.Secondary,
                     modifier = Modifier.fillMaxWidth(),
@@ -91,12 +103,12 @@ fun ItemRecordPanel(
             }
         }
 
-        RecordSection("Info") {
+        RecordSection(stringResource(Res.string.reader_info_info)) {
             InfoGrid(item = item, progress = progress)
         }
 
         item.summary?.takeIf { it.isNotBlank() }?.let { summary ->
-            RecordSection("Summary") {
+            RecordSection(stringResource(Res.string.reader_info_summary)) {
                 Text(
                     text = summary,
                     style = MaterialTheme.typography.bodyLarge.copy(fontFamily = SerifFontFamily),
@@ -106,16 +118,16 @@ fun ItemRecordPanel(
         }
 
         if (entities.isNotEmpty()) {
-            RecordSection("Entities") {
+            RecordSection(stringResource(Res.string.reader_info_entities)) {
                 EntityGroups(entities)
             }
         }
 
-        RecordSection("Note") {
+        RecordSection(stringResource(Res.string.reader_info_note)) {
             NoteCard(note = note, onEditNote = onEditNote)
         }
 
-        RecordSection("Tags") {
+        RecordSection(stringResource(Res.string.reader_info_tags)) {
             RecordTagsSection(
                 saved = item.saved,
                 tags = tags,
@@ -126,7 +138,9 @@ fun ItemRecordPanel(
         }
 
         if (highlights.isNotEmpty()) {
-            RecordSection("Highlights", count = highlights.size) {
+            RecordSection(
+                pluralStringResource(Res.plurals.reader_highlights_count, highlights.size, highlights.size),
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step14)) {
                     highlights.forEach { HighlightRow(it) }
                 }
@@ -142,14 +156,13 @@ fun ItemRecordPanel(
 @Composable
 private fun RecordSection(
     title: String,
-    count: Int? = null,
     content: @Composable () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
     ) {
-        SectionLabel(title = title, count = count)
+        SectionLabel(title = title)
         content()
     }
 }
@@ -173,28 +186,15 @@ private fun RecordTagsSection(
     } else {
         ReaderSaveToLibraryPrompt(
             onSave = onSaveToLibrary,
-            message = "Save this item to your library to add tags.",
+            message = stringResource(Res.string.reader_tags_requires_library),
         )
     }
 }
 
 @Composable
-private fun SectionLabel(
-    title: String,
-    count: Int?,
-) {
-    val accent = MaterialTheme.colorScheme.primary
-    val label =
-        buildAnnotatedString {
-            append(title.uppercase())
-            if (count != null) {
-                withStyle(SpanStyle(color = accent)) {
-                    append(" · $count")
-                }
-            }
-        }
+private fun SectionLabel(title: String) {
     Text(
-        text = label,
+        text = title,
         style = monoLabelStyle(),
         color = IndelibleTheme.colors.textTertiary,
     )
@@ -307,7 +307,7 @@ private fun NoteCard(
         verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step10),
     ) {
         Text(
-            text = if (hasNote) note else "No note yet.",
+            text = if (hasNote) note else stringResource(Res.string.reader_info_note_empty),
             style = MaterialTheme.typography.bodyLarge.copy(fontFamily = SerifFontFamily),
             color = if (hasNote) MaterialTheme.colorScheme.onSurface else IndelibleTheme.colors.textTertiary,
         )
@@ -322,7 +322,10 @@ private fun NoteCard(
                 modifier = Modifier.size(IndelibleSpacing.step12),
             )
             Text(
-                text = if (hasNote) "Tap to edit" else "Add a note",
+                text =
+                    stringResource(
+                        if (hasNote) Res.string.reader_info_note_edit else Res.string.reader_info_note_add,
+                    ),
                 style =
                     MaterialTheme.typography.labelSmall.copy(
                         fontFamily = geistMonoFontFamily(),

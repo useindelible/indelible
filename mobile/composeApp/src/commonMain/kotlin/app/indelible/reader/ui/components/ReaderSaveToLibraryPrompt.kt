@@ -15,6 +15,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_save_to_library
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Shown in library-gated reader surfaces (triage, item tags) for a feed document that has not
@@ -42,7 +45,7 @@ fun ReaderSaveToLibraryPrompt(
             textAlign = TextAlign.Center,
         )
         IndelibleButton(
-            text = "Save to Library",
+            text = stringResource(Res.string.reader_action_save_to_library),
             onClick = onSave,
             compact = true,
         )

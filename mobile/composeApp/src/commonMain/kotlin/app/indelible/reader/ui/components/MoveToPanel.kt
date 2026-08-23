@@ -23,6 +23,13 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_move_archive
+import indelible.composeapp.generated.resources.reader_move_current_cd
+import indelible.composeapp.generated.resources.reader_move_inbox
+import indelible.composeapp.generated.resources.reader_move_later
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Move panel: relocates the article between the three triage buckets. The row
@@ -40,7 +47,7 @@ fun MoveToPanel(
         moveTargets.forEach { target ->
             MoveRow(
                 icon = target.icon,
-                label = target.label,
+                label = stringResource(target.labelRes),
                 selected = current == target.apiValue,
                 onClick = { onMove(target.apiValue) },
             )
@@ -50,16 +57,16 @@ fun MoveToPanel(
 
 private data class MoveTarget(
     val apiValue: String,
-    val label: String,
+    val labelRes: StringResource,
     val icon: ImageVector,
 )
 
 private val moveTargets: List<MoveTarget>
     get() =
         listOf(
-            MoveTarget("inbox", "Inbox", IndelibleIcons.Inbox),
-            MoveTarget("later", "Later", IndelibleIcons.Clock),
-            MoveTarget("archive", "Archive", IndelibleIcons.Archive),
+            MoveTarget("inbox", Res.string.reader_move_inbox, IndelibleIcons.Inbox),
+            MoveTarget("later", Res.string.reader_move_later, IndelibleIcons.Clock),
+            MoveTarget("archive", Res.string.reader_move_archive, IndelibleIcons.Archive),
         )
 
 @Composable
@@ -95,7 +102,7 @@ private fun MoveRow(
         if (selected) {
             Icon(
                 imageVector = Icons.Filled.Check,
-                contentDescription = "Current location",
+                contentDescription = stringResource(Res.string.reader_move_current_cd),
                 tint = accent,
                 modifier = Modifier.size(IndelibleSpacing.step20),
             )

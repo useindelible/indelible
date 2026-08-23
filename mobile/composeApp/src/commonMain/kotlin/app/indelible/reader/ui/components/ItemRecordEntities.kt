@@ -22,7 +22,14 @@ import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_entities_organizations
+import indelible.composeapp.generated.resources.reader_entities_other
+import indelible.composeapp.generated.resources.reader_entities_people
+import indelible.composeapp.generated.resources.reader_entities_topics
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Mila-extracted entities for the item record, grouped by type so people read
@@ -35,23 +42,23 @@ internal fun EntityGroups(entities: List<DocumentEntity>) {
     val known = ENTITY_GROUPS.map { it.first }.toSet()
     val other = entities.filter { it.entityType.lowercase() !in known }
     val groups =
-        ENTITY_GROUPS.mapNotNull { (type, label) -> byType[type]?.let { label to it } } +
-            if (other.isEmpty()) emptyList() else listOf("Other" to other)
+        ENTITY_GROUPS.mapNotNull { (type, labelRes) -> byType[type]?.let { labelRes to it } } +
+            if (other.isEmpty()) emptyList() else listOf(Res.string.reader_entities_other to other)
 
     Column(verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step14)) {
-        groups.forEach { (label, group) -> EntityGroup(label = label, entities = group) }
+        groups.forEach { (labelRes, group) -> EntityGroup(labelRes = labelRes, entities = group) }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EntityGroup(
-    label: String,
+    labelRes: StringResource,
     entities: List<DocumentEntity>,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8)) {
         Text(
-            text = label.uppercase(),
+            text = stringResource(labelRes),
             style = monoLabelStyle(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -99,9 +106,9 @@ private fun EntityChip(entity: DocumentEntity) {
 /** Group order mirrors the reader prototype: people, then organizations, then topics. */
 private val ENTITY_GROUPS =
     listOf(
-        "person" to "People",
-        "organization" to "Organizations",
-        "topic" to "Topics",
+        "person" to Res.string.reader_entities_people,
+        "organization" to Res.string.reader_entities_organizations,
+        "topic" to Res.string.reader_entities_topics,
     )
 
 // ============================================================

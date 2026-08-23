@@ -24,14 +24,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.LocaleFormatters
+import app.indelible.core.i18n.LocalizedDateStyle
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_info_length
+import indelible.composeapp.generated.resources.reader_info_progress
+import indelible.composeapp.generated.resources.reader_info_published
+import indelible.composeapp.generated.resources.reader_info_saved
+import indelible.composeapp.generated.resources.reader_info_source
+import indelible.composeapp.generated.resources.reader_info_type
+import indelible.composeapp.generated.resources.reader_minutes_short
+import indelible.composeapp.generated.resources.reader_progress_percent
+import indelible.composeapp.generated.resources.reader_type_article
+import indelible.composeapp.generated.resources.reader_type_book
+import indelible.composeapp.generated.resources.reader_type_pdf
+import indelible.composeapp.generated.resources.reader_type_unknown
+import indelible.composeapp.generated.resources.reader_type_video
+import indelible.composeapp.generated.resources.reader_words_count
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 /**
  * The item-record "Info" table: hairline-divided rows of mono keys against
@@ -47,22 +64,28 @@ internal fun InfoGrid(
     Column(modifier = Modifier.fillMaxWidth()) {
         InfoDivider()
         item.domain?.takeIf { it.isNotBlank() }?.let { domain ->
-            InfoRow("Source") { InfoValueText(domain, color = accent) }
+            InfoRow(stringResource(Res.string.reader_info_source)) { InfoValueText(domain, color = accent) }
             InfoDivider()
         }
-        InfoRow("Type") { InfoValueText(item.itemType.replaceFirstChar { it.uppercaseChar() }) }
+        InfoRow(stringResource(Res.string.reader_info_type)) {
+            InfoValueText(stringResource(itemTypeLabelRes(item.itemType)))
+        }
         InfoDivider()
         item.publishedAt?.let {
-            InfoRow("Published") { InfoValueText(formatRecordDate(it)) }
+            InfoRow(stringResource(Res.string.reader_info_published)) {
+                InfoValueText(LocaleFormatters.date(it, LocalizedDateStyle.MEDIUM))
+            }
             InfoDivider()
         }
-        InfoRow("Saved") { InfoValueText(formatRecordDate(item.savedAt)) }
+        InfoRow(stringResource(Res.string.reader_info_saved)) {
+            InfoValueText(LocaleFormatters.date(item.savedAt, LocalizedDateStyle.MEDIUM))
+        }
         InfoDivider()
         lengthValue(item)?.let { (lead, mut) ->
-            InfoRow("Length") { LengthValue(lead = lead, mut = mut) }
+            InfoRow(stringResource(Res.string.reader_info_length)) { LengthValue(lead = lead, mut = mut) }
             InfoDivider()
         }
-        InfoRow("Progress") { ProgressValue(progress) }
+        InfoRow(stringResource(Res.string.reader_info_progress)) { ProgressValue(progress) }
         InfoDivider()
     }
 }
@@ -86,7 +109,7 @@ private fun InfoRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = label.uppercase(),
+            text = label,
             style = monoLabelStyle(),
             color = IndelibleTheme.colors.textTertiary,
         )
@@ -129,7 +152,6 @@ private fun LengthValue(
 }
 
 private const val PERCENT_MAX = 100f
-private const val THOUSANDS_GROUP_SIZE = 3
 
 @Composable
 private fun ProgressValue(progress: Float) {
@@ -156,26 +178,28 @@ private fun ProgressValue(progress: Float) {
             )
         }
         Text(
-            text = "${progress.roundToInt()}%",
+            text = stringResource(Res.string.reader_progress_percent, progress.roundToInt()),
             style = infoValueStyle(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
-private val MONTH_ABBREVIATIONS =
-    listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-
-private fun formatRecordDate(instant: Instant): String {
-    val dt = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    val month = MONTH_ABBREVIATIONS.getOrElse(dt.monthNumber - 1) { "" }
-    return "$month ${dt.dayOfMonth}, ${dt.year}"
-}
-
 /** Splits the length metadata into a leading "N min" and a muted "X words" tail. */
+@Composable
 private fun lengthValue(item: ReaderDocument): Pair<String, String?>? {
-    val minutes = item.readingTimeMinutes?.let { "$it min" }
-    val words = item.wordCount?.let { "${it.withThousands()} words" }
+    val minutes =
+        item.readingTimeMinutes?.let {
+            pluralStringResource(Res.plurals.reader_minutes_short, it, it)
+        }
+    val words =
+        item.wordCount?.let {
+            pluralStringResource(
+                Res.plurals.reader_words_count,
+                it,
+                LocaleFormatters.number(it.toLong()),
+            )
+        }
     return when {
         minutes != null -> minutes to words
         words != null -> words to null
@@ -183,12 +207,11 @@ private fun lengthValue(item: ReaderDocument): Pair<String, String?>? {
     }
 }
 
-private fun Int.withThousands(): String {
-    val digits = toString()
-    return buildString {
-        for (i in digits.indices) {
-            if (i > 0 && (digits.length - i) % THOUSANDS_GROUP_SIZE == 0) append(',')
-            append(digits[i])
-        }
+private fun itemTypeLabelRes(itemType: String): StringResource =
+    when (itemType.lowercase()) {
+        "article" -> Res.string.reader_type_article
+        "video" -> Res.string.reader_type_video
+        "pdf" -> Res.string.reader_type_pdf
+        "book", "epub" -> Res.string.reader_type_book
+        else -> Res.string.reader_type_unknown
     }
-}

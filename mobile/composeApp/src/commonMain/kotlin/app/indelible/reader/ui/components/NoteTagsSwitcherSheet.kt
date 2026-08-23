@@ -42,13 +42,26 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_add_tag
+import indelible.composeapp.generated.resources.reader_action_note
+import indelible.composeapp.generated.resources.reader_action_remove_tag
+import indelible.composeapp.generated.resources.reader_action_save_note
+import indelible.composeapp.generated.resources.reader_create_tag
+import indelible.composeapp.generated.resources.reader_note_article
+import indelible.composeapp.generated.resources.reader_note_saved_with_article
+import indelible.composeapp.generated.resources.reader_tags
+import indelible.composeapp.generated.resources.reader_tags_empty
+import indelible.composeapp.generated.resources.reader_tags_requires_library
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 private enum class NoteTagsTab(
-    val label: String,
+    val labelRes: StringResource,
 ) {
-    NOTE("Note"),
-    TAGS("Tags"),
+    NOTE(Res.string.reader_action_note),
+    TAGS(Res.string.reader_tags),
 }
 
 /**
@@ -79,7 +92,7 @@ fun NoteTagsSwitcherSheet(
                     onClick = { selectedTab = tab },
                     shape = SegmentedButtonDefaults.itemShape(index, tabs.size),
                 ) {
-                    Text(text = tab.label, style = MaterialTheme.typography.bodySmall)
+                    Text(text = stringResource(tab.labelRes), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -98,7 +111,7 @@ fun NoteTagsSwitcherSheet(
                 } else {
                     ReaderSaveToLibraryPrompt(
                         onSave = onSaveToLibrary,
-                        message = "Save this item to your library to add tags.",
+                        message = stringResource(Res.string.reader_tags_requires_library),
                     )
                 }
         }
@@ -115,7 +128,7 @@ private fun NoteEditor(
         IndelibleTextField(
             value = draft,
             onValueChange = { draft = it },
-            label = "Article note",
+            label = stringResource(Res.string.reader_note_article),
             singleLine = false,
             minLines = 4,
             imeAction = ImeAction.Default,
@@ -127,12 +140,12 @@ private fun NoteEditor(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Saved with this article",
+                text = stringResource(Res.string.reader_note_saved_with_article),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             IndelibleButton(
-                text = "Save note",
+                text = stringResource(Res.string.reader_action_save_note),
                 onClick = { onSaveNote(draft) },
                 compact = true,
                 enabled = draft != note,
@@ -260,7 +273,7 @@ private fun TagSuggestionList(
         }
         if (suggestions.isEmpty() && !canCreateNew && query.isEmpty() && !hasTags) {
             Text(
-                text = "No tags yet. Type to create one.",
+                text = stringResource(Res.string.reader_tags_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = IndelibleSpacing.step16),
@@ -288,7 +301,7 @@ private fun AddTagButton(onClick: () -> Unit) {
             modifier = Modifier.size(IndelibleSpacing.step16),
         )
         Text(
-            text = "Add tag",
+            text = stringResource(Res.string.reader_action_add_tag),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -329,7 +342,7 @@ private fun AppliedTagChip(
         ) {
             Icon(
                 Icons.Filled.Close,
-                contentDescription = "Remove tag",
+                contentDescription = stringResource(Res.string.reader_action_remove_tag),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(IndelibleSpacing.step14),
             )
@@ -360,7 +373,7 @@ private fun TagSuggestionRow(
             modifier = Modifier.size(IndelibleSpacing.step20),
         )
         Text(
-            text = if (isCreate) "Create \"$name\"" else name,
+            text = if (isCreate) stringResource(Res.string.reader_create_tag, name) else name,
             style = MaterialTheme.typography.bodyMedium,
             color = if (isCreate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),

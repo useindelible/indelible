@@ -15,8 +15,11 @@ import app.indelible.reader.model.TagData
 import app.indelible.reader.ui.components.HighlightToolbar
 import app.indelible.reader.viewmodel.ReaderViewModel
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_copied_clipboard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun BoxScope.HighlightToolbarOverlay(
@@ -30,6 +33,7 @@ internal fun BoxScope.HighlightToolbarOverlay(
     onAvailableTagsChanged: (List<TagData>) -> Unit,
     onTagSheetHighlightIdChanged: (String?) -> Unit,
 ) {
+    val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
     // sel.rect.y is a CSS viewport-relative pixel from getBoundingClientRect().
     // CSS pixels from a standard-viewport WebView equal dp, so use .dp
     // directly — .toDp() would incorrectly divide by display density.
@@ -72,7 +76,7 @@ internal fun BoxScope.HighlightToolbarOverlay(
             clipboardManager.setText(AnnotatedString(sel.text))
             onSelectedTextChanged(null)
             coroutineScope.launch {
-                snackbarHostState.showSnackbar("Copied to clipboard")
+                snackbarHostState.showSnackbar(copiedMessage)
             }
         },
         modifier =

@@ -28,6 +28,9 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_selected
+import org.jetbrains.compose.resources.stringResource
 
 /** Selectable list of narration voices, each with a colored initial avatar. */
 @Composable
@@ -76,21 +79,21 @@ private fun VoiceRow(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = voice.name.take(1),
+                text = stringResource(voice.nameRes).take(1),
                 style = MaterialTheme.typography.titleSmall,
                 color = IndelibleTheme.colors.onSuccess,
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = voice.name,
+                text = stringResource(voice.nameRes),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = voice.tagline,
+                text = stringResource(voice.taglineRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -100,7 +103,7 @@ private fun VoiceRow(
         if (selected) {
             Icon(
                 imageVector = Icons.Filled.Check,
-                contentDescription = "Selected",
+                contentDescription = stringResource(Res.string.reader_action_selected),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(IndelibleSpacing.step20),
             )

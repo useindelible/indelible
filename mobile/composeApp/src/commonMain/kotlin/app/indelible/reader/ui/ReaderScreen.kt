@@ -20,6 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.indelible.core.i18n.resolve
+import app.indelible.core.i18n.resolveString
 import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
@@ -81,7 +83,7 @@ fun ReaderScreen(
         viewModel.effects.collect { effect ->
             when (effect) {
                 is ReaderEffect.NavigateBack -> onNavigateBack()
-                is ReaderEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is ReaderEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
                 is ReaderEffect.ScrollToPercent -> scrollToPercent = effect.percent
                 is ReaderEffect.ScrollToAnchor ->
                     anchorScroll =
@@ -109,7 +111,7 @@ fun ReaderScreen(
     ) { paddingValues ->
         when (val state = uiState) {
             is ReaderUiState.Loading -> ReaderLoadingState(Modifier.padding(paddingValues))
-            is ReaderUiState.Error -> ReaderErrorState(state.message, Modifier.padding(paddingValues))
+            is ReaderUiState.Error -> ReaderErrorState(state.message.resolve(), Modifier.padding(paddingValues))
             is ReaderUiState.Success -> {
                 ReaderSuccessContent(
                     state = state,

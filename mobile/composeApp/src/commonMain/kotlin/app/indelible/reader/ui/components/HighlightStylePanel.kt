@@ -28,6 +28,13 @@ import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightStyle
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_color
+import indelible.composeapp.generated.resources.reader_style
+import indelible.composeapp.generated.resources.reader_style_default_description
+import indelible.composeapp.generated.resources.reader_style_fill
+import indelible.composeapp.generated.resources.reader_style_underline
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Highlight panel: picks the default color and paint style for new highlights.
@@ -43,14 +50,14 @@ fun HighlightStylePanel(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionLabel("Color")
+        SectionLabel(stringResource(Res.string.reader_color))
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
         Row(horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12)) {
             HighlightColor.entries.forEach { color ->
                 ColorChoice(
                     color = highlightColorToCompose(color),
                     selected = selectedColor == color,
-                    contentDescription = color.apiValue,
+                    contentDescription = stringResource(highlightColorLabelRes(color)),
                     onClick = { onColorSelected(color) },
                 )
             }
@@ -58,10 +65,9 @@ fun HighlightStylePanel(
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
 
-        SectionLabel("Style")
+        SectionLabel(stringResource(Res.string.reader_style))
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
         val styles = HighlightStyle.entries.toTypedArray()
-        val styleLabels = arrayOf("Fill", "Underline")
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             styles.forEachIndexed { index, candidate ->
                 SegmentedButton(
@@ -69,7 +75,17 @@ fun HighlightStylePanel(
                     onClick = { onStyleSelected(candidate) },
                     shape = SegmentedButtonDefaults.itemShape(index, styles.size),
                 ) {
-                    Text(text = styleLabels[index], style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text =
+                            stringResource(
+                                if (candidate == HighlightStyle.FILL) {
+                                    Res.string.reader_style_fill
+                                } else {
+                                    Res.string.reader_style_underline
+                                },
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
             }
         }
@@ -77,7 +93,7 @@ fun HighlightStylePanel(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
 
         Text(
-            text = "Sets the default color for new highlights.",
+            text = stringResource(Res.string.reader_style_default_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

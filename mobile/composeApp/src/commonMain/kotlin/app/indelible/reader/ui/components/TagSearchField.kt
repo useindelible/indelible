@@ -26,6 +26,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_tags_search_create
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Shared search/create field used by [TagEditor] and [HighlightTagSheetContent].
@@ -84,7 +87,7 @@ internal fun TagSearchField(
             decorationBox = { innerTextField ->
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search or create tag…",
+                        text = stringResource(Res.string.reader_tags_search_create),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

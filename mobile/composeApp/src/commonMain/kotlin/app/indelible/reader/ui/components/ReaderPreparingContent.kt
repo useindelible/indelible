@@ -13,11 +13,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.reader.viewmodel.ReaderRetryStatus
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
-import app.indelible.reader.viewmodel.ReaderRetryStatus
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_preparing_body
+import indelible.composeapp.generated.resources.reader_preparing_cooldown
+import indelible.composeapp.generated.resources.reader_preparing_cooling_down
+import indelible.composeapp.generated.resources.reader_preparing_queued
+import indelible.composeapp.generated.resources.reader_preparing_queued_body
+import indelible.composeapp.generated.resources.reader_preparing_queuing
+import indelible.composeapp.generated.resources.reader_preparing_queuing_body
+import indelible.composeapp.generated.resources.reader_preparing_retry
+import indelible.composeapp.generated.resources.reader_preparing_retry_seconds
+import indelible.composeapp.generated.resources.reader_preparing_title
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Shown when the readable render has not landed within the reader's poll budget (common when a
@@ -39,7 +52,7 @@ fun ReaderPreparingContent(
             verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
         ) {
             Text(
-                text = "Still preparing this article",
+                text = stringResource(Res.string.reader_preparing_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
@@ -47,13 +60,18 @@ fun ReaderPreparingContent(
             Text(
                 text =
                     when (retryStatus) {
-                        ReaderRetryStatus.QUEUING -> "Queuing another processing attempt."
-                        ReaderRetryStatus.QUEUED -> "Reprocessing is queued."
+                        ReaderRetryStatus.QUEUING -> stringResource(Res.string.reader_preparing_queuing_body)
+                        ReaderRetryStatus.QUEUED -> stringResource(Res.string.reader_preparing_queued_body)
                         ReaderRetryStatus.COOLDOWN ->
-                            retryAfterSeconds?.let { "Retry available in $it seconds." }
-                                ?: "Reprocessing is already running."
+                            retryAfterSeconds?.toInt()?.let { seconds ->
+                                pluralStringResource(
+                                    Res.plurals.reader_preparing_retry_seconds,
+                                    seconds,
+                                    seconds,
+                                )
+                            } ?: stringResource(Res.string.reader_preparing_cooldown)
                         ReaderRetryStatus.IDLE ->
-                            "The readable version is taking a moment to render. Try again shortly."
+                            stringResource(Res.string.reader_preparing_body)
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -62,10 +80,10 @@ fun ReaderPreparingContent(
             IndelibleButton(
                 text =
                     when (retryStatus) {
-                        ReaderRetryStatus.QUEUING -> "Queuing"
-                        ReaderRetryStatus.QUEUED -> "Queued"
-                        ReaderRetryStatus.COOLDOWN -> "Cooling down"
-                        ReaderRetryStatus.IDLE -> "Retry"
+                        ReaderRetryStatus.QUEUING -> stringResource(Res.string.reader_preparing_queuing)
+                        ReaderRetryStatus.QUEUED -> stringResource(Res.string.reader_preparing_queued)
+                        ReaderRetryStatus.COOLDOWN -> stringResource(Res.string.reader_preparing_cooling_down)
+                        ReaderRetryStatus.IDLE -> stringResource(Res.string.reader_preparing_retry)
                     },
                 onClick = onRetry,
                 enabled = retryStatus == ReaderRetryStatus.IDLE,

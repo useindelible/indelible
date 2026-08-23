@@ -35,7 +35,17 @@ import app.indelible.reader.model.HighlightLocator
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_add_note
+import indelible.composeapp.generated.resources.reader_action_add_tags
+import indelible.composeapp.generated.resources.reader_action_copy
+import indelible.composeapp.generated.resources.reader_action_delete
+import indelible.composeapp.generated.resources.reader_action_edit_note
+import indelible.composeapp.generated.resources.reader_color
+import indelible.composeapp.generated.resources.reader_tags_count
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +108,7 @@ private fun HighlightSheetContent(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
         Text(
-            text = "Color",
+            text = stringResource(Res.string.reader_color),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -134,20 +144,28 @@ private fun HighlightSheetContent(
 
         SheetAction(
             icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-            label = if (highlight.note != null) "Edit Note" else "Add Note",
+            label =
+                stringResource(
+                    if (highlight.note != null) Res.string.reader_action_edit_note else Res.string.reader_action_add_note,
+                ),
             onClick = onEditNote,
         )
 
         val tagCount = highlight.tags.size
         SheetAction(
             icon = { Icon(IndelibleIcons.Tag, contentDescription = null) },
-            label = if (tagCount > 0) "Tags ($tagCount)" else "Add Tags",
+            label =
+                if (tagCount > 0) {
+                    pluralStringResource(Res.plurals.reader_tags_count, tagCount, tagCount)
+                } else {
+                    stringResource(Res.string.reader_action_add_tags)
+                },
             onClick = onTagsSelected,
         )
 
         SheetAction(
             icon = { Icon(Icons.Filled.ContentCopy, contentDescription = null) },
-            label = "Copy",
+            label = stringResource(Res.string.reader_action_copy),
             onClick = onCopy,
         )
 
@@ -159,7 +177,7 @@ private fun HighlightSheetContent(
                     tint = MaterialTheme.colorScheme.error,
                 )
             },
-            label = "Delete",
+            label = stringResource(Res.string.reader_action_delete),
             labelColor = MaterialTheme.colorScheme.error,
             onClick = onDelete,
         )
@@ -233,8 +251,9 @@ private fun previewHighlight(color: String = "Yellow") =
         id = "hlt_preview",
         documentId = "doc_preview",
         color = color,
-        textContent = "The rapid advancement of open-source AI models has fundamentally changed" +
-            " the competitive landscape.",
+        textContent =
+            "The rapid advancement of open-source AI models has fundamentally changed" +
+                " the competitive landscape.",
         locator = HighlightLocator(type = "html", startOffset = 0, endOffset = 95),
         tags = emptyList(),
         createdAt = Instant.parse("2024-01-15T12:00:00Z"),

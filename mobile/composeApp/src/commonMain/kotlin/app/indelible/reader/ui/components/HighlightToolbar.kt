@@ -24,15 +24,26 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.indelible.reader.model.HighlightColor
+import app.indelible.ui.platform.rememberHapticTick
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.HighlightBlueBorder
 import app.indelible.ui.theme.HighlightGreenBorder
 import app.indelible.ui.theme.HighlightPinkBorder
 import app.indelible.ui.theme.HighlightPurpleBorder
 import app.indelible.ui.theme.HighlightYellowBorder
-import app.indelible.ui.platform.rememberHapticTick
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_copy
+import indelible.composeapp.generated.resources.reader_action_note
+import indelible.composeapp.generated.resources.reader_action_tag
+import indelible.composeapp.generated.resources.reader_color_blue
+import indelible.composeapp.generated.resources.reader_color_green
+import indelible.composeapp.generated.resources.reader_color_pink
+import indelible.composeapp.generated.resources.reader_color_purple
+import indelible.composeapp.generated.resources.reader_color_yellow
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HighlightToolbar(
@@ -61,7 +72,7 @@ fun HighlightToolbar(
             HighlightColor.entries.forEach { color ->
                 ColorDot(
                     color = highlightColorToCompose(color),
-                    contentDescription = color.apiValue,
+                    contentDescription = stringResource(highlightColorLabelRes(color)),
                     onClick = {
                         hapticTick()
                         onColorSelected(color)
@@ -78,7 +89,7 @@ fun HighlightToolbar(
                         .background(MaterialTheme.colorScheme.outlineVariant),
             )
 
-            ToolbarTextButton(label = "Copy", onClick = onCopySelected)
+            ToolbarTextButton(label = stringResource(Res.string.reader_action_copy), onClick = onCopySelected)
 
             Row(
                 modifier =
@@ -96,13 +107,13 @@ fun HighlightToolbar(
                     modifier = Modifier.size(12.dp),
                 )
                 Text(
-                    text = "Tag",
+                    text = stringResource(Res.string.reader_action_tag),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            ToolbarTextButton(label = "Note", onClick = onNoteSelected)
+            ToolbarTextButton(label = stringResource(Res.string.reader_action_note), onClick = onNoteSelected)
         }
     }
 }
@@ -159,6 +170,15 @@ fun highlightColorToCompose(color: HighlightColor): Color =
         HighlightColor.GREEN -> HighlightGreenBorder
         HighlightColor.PINK -> HighlightPinkBorder
         HighlightColor.PURPLE -> HighlightPurpleBorder
+    }
+
+internal fun highlightColorLabelRes(color: HighlightColor): StringResource =
+    when (color) {
+        HighlightColor.YELLOW -> Res.string.reader_color_yellow
+        HighlightColor.BLUE -> Res.string.reader_color_blue
+        HighlightColor.GREEN -> Res.string.reader_color_green
+        HighlightColor.PINK -> Res.string.reader_color_pink
+        HighlightColor.PURPLE -> Res.string.reader_color_purple
     }
 
 fun highlightColorNameToCompose(colorName: String): Color =

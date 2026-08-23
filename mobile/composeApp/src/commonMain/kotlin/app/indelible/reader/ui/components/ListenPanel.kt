@@ -45,6 +45,16 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_back_15_seconds
+import indelible.composeapp.generated.resources.reader_action_forward_15_seconds
+import indelible.composeapp.generated.resources.reader_action_pause
+import indelible.composeapp.generated.resources.reader_action_play
+import indelible.composeapp.generated.resources.reader_sleep
+import indelible.composeapp.generated.resources.reader_sleep_minutes
+import indelible.composeapp.generated.resources.reader_voice_fallback
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 // Playback speed and sleep-timer option menus: the values are the user-facing choices.
 @Suppress("MagicNumber")
@@ -76,7 +86,11 @@ fun ListenPanel(
     modifier: Modifier = Modifier,
 ) {
     var voicesExpanded by remember { mutableStateOf(false) }
-    val currentVoiceName = voices.firstOrNull { it.id == state.voiceId }?.name ?: "Voice"
+    val currentVoiceName =
+        voices
+            .firstOrNull { it.id == state.voiceId }
+            ?.let { stringResource(it.nameRes) }
+            ?: stringResource(Res.string.reader_voice_fallback)
 
     Column(modifier = modifier.fillMaxWidth()) {
         NowPlayingCard(title = title, source = source)
@@ -142,7 +156,10 @@ fun ListenPanel(
                 onClick = { voicesExpanded = !voicesExpanded },
             )
             PlayerChip(
-                label = state.sleepTimerMinutes?.let { "${it}m" } ?: "Sleep",
+                label =
+                    state.sleepTimerMinutes?.let {
+                        pluralStringResource(Res.plurals.reader_sleep_minutes, it, it)
+                    } ?: stringResource(Res.string.reader_sleep),
                 leadingIcon = Icons.Filled.Bedtime,
                 accent = state.sleepTimerMinutes != null,
                 onClick = { onSetSleepTimer(nextSleep(state.sleepTimerMinutes)) },
@@ -233,7 +250,17 @@ private fun SkipButton(
             Modifier
                 .size(IndelibleSpacing.touchTarget)
                 .clip(CircleShape)
-                .clickable(onClickLabel = if (forward) "Forward 15 seconds" else "Back 15 seconds", onClick = onClick),
+                .clickable(
+                    onClickLabel =
+                        stringResource(
+                            if (forward) {
+                                Res.string.reader_action_forward_15_seconds
+                            } else {
+                                Res.string.reader_action_back_15_seconds
+                            },
+                        ),
+                    onClick = onClick,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -268,7 +295,13 @@ private fun PlayButton(
                 .size(IndelibleSpacing.step64)
                 .clip(CircleShape)
                 .background(gradient)
-                .clickable(onClickLabel = if (isPlaying) "Pause" else "Play", onClick = onClick),
+                .clickable(
+                    onClickLabel =
+                        stringResource(
+                            if (isPlaying) Res.string.reader_action_pause else Res.string.reader_action_play,
+                        ),
+                    onClick = onClick,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

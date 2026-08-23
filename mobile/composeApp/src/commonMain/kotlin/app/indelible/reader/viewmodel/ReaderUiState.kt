@@ -1,5 +1,6 @@
 package app.indelible.reader.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.HighlightData
@@ -50,7 +51,7 @@ sealed class ReaderUiState {
     ) : ReaderUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : ReaderUiState()
 }
 
@@ -58,7 +59,7 @@ sealed class ReaderEffect {
     data object NavigateBack : ReaderEffect()
 
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : ReaderEffect()
 
     data class ScrollToPercent(
