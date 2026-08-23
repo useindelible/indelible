@@ -1,8 +1,14 @@
 package app.indelible.auth.viewmodel
 
 import app.indelible.auth.repository.ApiAuthRepository
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_email_required
+import indelible.composeapp.generated.resources.auth_login_invalid_credentials
+import indelible.composeapp.generated.resources.auth_logout_revoke_failed
+import indelible.composeapp.generated.resources.auth_password_required
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -23,7 +29,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -138,7 +143,10 @@ class AuthViewModelTest {
             viewModel.loginState.first { !it.isLoading && it.serverError != null }
 
             assertIs<AuthState.Unauthenticated>(viewModel.authState.value)
-            assertEquals("Invalid email or password", viewModel.loginState.value.serverError)
+            assertEquals(
+                UiMessage(Res.string.auth_login_invalid_credentials),
+                viewModel.loginState.value.serverError,
+            )
         }
 
     @Test
@@ -371,7 +379,10 @@ class AuthViewModelTest {
             assertNull(tokenStorage.getToken())
             assertNull(tokenStorage.getRefreshToken())
             assertNull(tokenStorage.getExpiresAt())
-            assertNotNull(viewModel.loginState.value.serverError)
+            assertEquals(
+                UiMessage(Res.string.auth_logout_revoke_failed),
+                viewModel.loginState.value.serverError,
+            )
         }
 
     @Test
@@ -416,8 +427,8 @@ class AuthViewModelTest {
             advanceUntilIdle()
 
             assertEquals(0, loginRequests)
-            assertEquals("Email is required", viewModel.loginState.value.emailError)
-            assertEquals("Password is required", viewModel.loginState.value.passwordError)
+            assertEquals(UiMessage(Res.string.auth_email_required), viewModel.loginState.value.emailError)
+            assertEquals(UiMessage(Res.string.auth_password_required), viewModel.loginState.value.passwordError)
         }
 
     private fun authResponseJson(

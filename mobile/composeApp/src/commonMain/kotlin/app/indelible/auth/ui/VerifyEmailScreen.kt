@@ -18,7 +18,14 @@ import androidx.compose.ui.unit.dp
 import app.indelible.auth.ui.components.AuthButton
 import app.indelible.auth.ui.components.AuthCard
 import app.indelible.auth.viewmodel.AuthViewModel
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_check_email
+import indelible.composeapp.generated.resources.auth_resend_email
+import indelible.composeapp.generated.resources.auth_resend_email_countdown
+import indelible.composeapp.generated.resources.auth_verification_body
+import indelible.composeapp.generated.resources.auth_verification_sent_to
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 
 private const val RESEND_COOLDOWN_SECONDS = 60
 private const val COOLDOWN_TICK_MS = 1000L
@@ -43,7 +50,7 @@ fun VerifyEmailScreen(
 
     AuthCard {
         Text(
-            text = "Check your email",
+            text = stringResource(Res.string.auth_check_email),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -52,7 +59,7 @@ fun VerifyEmailScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "We sent a verification link to:",
+            text = stringResource(Res.string.auth_verification_sent_to),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -71,9 +78,7 @@ fun VerifyEmailScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text =
-                "Click the link in the email to verify your account. " +
-                    "This page will update automatically once verified.",
+            text = stringResource(Res.string.auth_verification_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -88,11 +93,11 @@ fun VerifyEmailScreen(
                 enabled = false,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
-                Text("Resend email ($resendCooldown s)")
+                Text(stringResource(Res.string.auth_resend_email_countdown, resendCooldown))
             }
         } else {
             AuthButton(
-                text = "Resend email",
+                text = stringResource(Res.string.auth_resend_email),
                 onClick = {
                     viewModel.resendVerification { success ->
                         if (success) {

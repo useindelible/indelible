@@ -18,7 +18,19 @@ import app.indelible.auth.ui.components.AuthCard
 import app.indelible.auth.ui.components.AuthTextField
 import app.indelible.auth.ui.components.OAuthButton
 import app.indelible.auth.viewmodel.AuthViewModel
+import app.indelible.core.i18n.resolve
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.app_name
+import indelible.composeapp.generated.resources.auth_already_have_account
+import indelible.composeapp.generated.resources.auth_confirm_password_label
+import indelible.composeapp.generated.resources.auth_create_account
+import indelible.composeapp.generated.resources.auth_create_first_account
+import indelible.composeapp.generated.resources.auth_create_your_account
+import indelible.composeapp.generated.resources.auth_display_name_label
+import indelible.composeapp.generated.resources.auth_email_label
+import indelible.composeapp.generated.resources.auth_password_label
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RegisterScreen(
@@ -32,7 +44,7 @@ fun RegisterScreen(
 
     AuthCard {
         Text(
-            text = "Indelible",
+            text = stringResource(Res.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -42,7 +54,14 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
             Text(
-                text = if (setupRequired) "Create the first account to get started" else "Create your account",
+                text =
+                    stringResource(
+                        if (setupRequired) {
+                            Res.string.auth_create_first_account
+                        } else {
+                            Res.string.auth_create_your_account
+                        },
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -53,7 +72,7 @@ fun RegisterScreen(
 
             if (registerState.serverError != null) {
                 Text(
-                    text = registerState.serverError.orEmpty(),
+                    text = registerState.serverError?.resolve().orEmpty(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
@@ -65,8 +84,8 @@ fun RegisterScreen(
             AuthTextField(
                 value = registerState.displayName,
                 onValueChange = viewModel::updateRegisterDisplayName,
-                label = "Display Name",
-                error = registerState.displayNameError,
+                label = stringResource(Res.string.auth_display_name_label),
+                error = registerState.displayNameError?.resolve(),
             )
 
             Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
@@ -74,8 +93,8 @@ fun RegisterScreen(
             AuthTextField(
                 value = registerState.email,
                 onValueChange = viewModel::updateRegisterEmail,
-                label = "Email",
-                error = registerState.emailError,
+                label = stringResource(Res.string.auth_email_label),
+                error = registerState.emailError?.resolve(),
                 keyboardType = KeyboardType.Email,
             )
 
@@ -84,8 +103,8 @@ fun RegisterScreen(
             AuthTextField(
                 value = registerState.password,
                 onValueChange = viewModel::updateRegisterPassword,
-                label = "Password",
-                error = registerState.passwordError,
+                label = stringResource(Res.string.auth_password_label),
+                error = registerState.passwordError?.resolve(),
                 isPassword = true,
             )
 
@@ -94,8 +113,8 @@ fun RegisterScreen(
             AuthTextField(
                 value = registerState.confirmPassword,
                 onValueChange = viewModel::updateRegisterConfirmPassword,
-                label = "Confirm Password",
-                error = registerState.confirmPasswordError,
+                label = stringResource(Res.string.auth_confirm_password_label),
+                error = registerState.confirmPasswordError?.resolve(),
                 isPassword = true,
                 imeAction = ImeAction.Done,
                 onImeAction = { viewModel.register() },
@@ -104,7 +123,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(IndelibleSpacing.step24))
 
             AuthButton(
-                text = "Create Account",
+                text = stringResource(Res.string.auth_create_account),
                 onClick = { viewModel.register() },
                 isLoading = registerState.isLoading,
             )
@@ -124,7 +143,7 @@ fun RegisterScreen(
             onClick = onNavigateToLogin,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
-            Text("Already have an account? Sign in")
+            Text(stringResource(Res.string.auth_already_have_account))
         }
     }
 }

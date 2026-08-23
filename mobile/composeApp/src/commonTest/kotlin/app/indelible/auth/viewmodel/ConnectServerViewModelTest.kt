@@ -1,8 +1,11 @@
 package app.indelible.auth.viewmodel
 
 import app.indelible.auth.server.ServerHealthChecker
-import app.indelible.auth.server.ServerUrlForm
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.storage.InMemoryTokenStorage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_server_address_required
+import indelible.composeapp.generated.resources.auth_server_unreachable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -96,7 +99,7 @@ class ConnectServerViewModelTest {
             val vm = viewModel()
             vm.updateUrl("   ")
             vm.connect()
-            assertEquals(ServerUrlForm.EMPTY_ADDRESS_MESSAGE, vm.state.value.error)
+            assertEquals(UiMessage(Res.string.auth_server_address_required), vm.state.value.error)
             assertTrue(health.checkedUrls.isEmpty())
             assertNull(storage.getServerUrl())
         }
@@ -159,7 +162,7 @@ class ConnectServerViewModelTest {
             val vm = viewModel()
             vm.updateUrl("https://indelible.acme.dev")
             vm.connect()
-            assertEquals(ConnectServerViewModel.UNREACHABLE_MESSAGE, vm.state.value.error)
+            assertEquals(UiMessage(Res.string.auth_server_unreachable), vm.state.value.error)
             assertNull(storage.getServerUrl())
             assertNull(vm.connectedUrl.value)
             assertIs<ServerSetupState.Required>(vm.setupState.value)

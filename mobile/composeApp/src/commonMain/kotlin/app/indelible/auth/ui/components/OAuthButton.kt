@@ -8,6 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_continue_with_provider
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun OAuthButton(
@@ -23,7 +26,7 @@ fun OAuthButton(
                 .height(IndelibleSpacing.touchTarget),
     ) {
         Text(
-            text = "Continue with $providerName",
+            text = stringResource(Res.string.auth_continue_with_provider, providerName),
             style = MaterialTheme.typography.bodyMedium,
         )
     }

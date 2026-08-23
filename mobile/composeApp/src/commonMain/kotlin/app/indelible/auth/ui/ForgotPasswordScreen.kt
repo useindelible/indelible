@@ -18,6 +18,15 @@ import app.indelible.auth.ui.components.AuthButton
 import app.indelible.auth.ui.components.AuthCard
 import app.indelible.auth.ui.components.AuthTextField
 import app.indelible.auth.viewmodel.AuthViewModel
+import app.indelible.core.i18n.resolve
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_back_to_login
+import indelible.composeapp.generated.resources.auth_email_label
+import indelible.composeapp.generated.resources.auth_reset_password_body
+import indelible.composeapp.generated.resources.auth_reset_password_sent
+import indelible.composeapp.generated.resources.auth_reset_password_title
+import indelible.composeapp.generated.resources.auth_send_reset_link
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ForgotPasswordScreen(
@@ -28,7 +37,7 @@ fun ForgotPasswordScreen(
 
     AuthCard {
         Text(
-            text = "Reset Password",
+            text = stringResource(Res.string.auth_reset_password_title),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -38,9 +47,7 @@ fun ForgotPasswordScreen(
 
         if (state.isSubmitted) {
             Text(
-                text =
-                    "If an account exists with that email, " +
-                        "you will receive a password reset link.",
+                text = stringResource(Res.string.auth_reset_password_sent),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -53,11 +60,11 @@ fun ForgotPasswordScreen(
                 onClick = onNavigateToLogin,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
-                Text("Back to login")
+                Text(stringResource(Res.string.auth_back_to_login))
             }
         } else {
             Text(
-                text = "Enter your email address and we'll send you a link to reset your password.",
+                text = stringResource(Res.string.auth_reset_password_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -68,7 +75,7 @@ fun ForgotPasswordScreen(
 
             if (state.serverError != null) {
                 Text(
-                    text = state.serverError.orEmpty(),
+                    text = state.serverError?.resolve().orEmpty(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
@@ -80,8 +87,8 @@ fun ForgotPasswordScreen(
             AuthTextField(
                 value = state.email,
                 onValueChange = viewModel::updateForgotPasswordEmail,
-                label = "Email",
-                error = state.emailError,
+                label = stringResource(Res.string.auth_email_label),
+                error = state.emailError?.resolve(),
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Done,
                 onImeAction = { viewModel.forgotPassword() },
@@ -90,7 +97,7 @@ fun ForgotPasswordScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             AuthButton(
-                text = "Send Reset Link",
+                text = stringResource(Res.string.auth_send_reset_link),
                 onClick = { viewModel.forgotPassword() },
                 isLoading = state.isLoading,
             )
@@ -101,7 +108,7 @@ fun ForgotPasswordScreen(
                 onClick = onNavigateToLogin,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
-                Text("Back to login")
+                Text(stringResource(Res.string.auth_back_to_login))
             }
         }
     }

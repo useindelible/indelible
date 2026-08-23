@@ -14,10 +14,24 @@ import app.indelible.auth.oauth.isExpired
 import app.indelible.auth.oauth.parseOAuthCallback
 import app.indelible.auth.oauth.pendingFlowExpiry
 import app.indelible.auth.repository.AuthRepository
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.AuthUser
 import app.indelible.core.model.toAuthUser
+import app.indelible.core.network.ApiException
 import app.indelible.core.network.resolvedServerUrl
 import app.indelible.core.storage.TokenStorage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_login_failed
+import indelible.composeapp.generated.resources.auth_login_invalid_credentials
+import indelible.composeapp.generated.resources.auth_logout_revoke_failed
+import indelible.composeapp.generated.resources.auth_oauth_browser_failed
+import indelible.composeapp.generated.resources.auth_oauth_code_missing
+import indelible.composeapp.generated.resources.auth_oauth_expired
+import indelible.composeapp.generated.resources.auth_oauth_failed
+import indelible.composeapp.generated.resources.auth_oauth_state_mismatch
+import indelible.composeapp.generated.resources.auth_password_reset_failed
+import indelible.composeapp.generated.resources.auth_register_failed
+import indelible.composeapp.generated.resources.auth_session_load_failed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,7 +47,7 @@ private sealed class OAuthValidationResult {
     data object ParseFailed : OAuthValidationResult()
 
     data class Rejected(
-        val message: String,
+        val message: UiMessage,
     ) : OAuthValidationResult()
 
     data class Proceed(
@@ -130,7 +144,7 @@ class AuthViewModel(
                     _loginState.value =
                         _loginState.value.copy(
                             isLoading = false,
-                            serverError = error.message ?: "Login failed",
+                            serverError = loginFailureMessage(error),
                         )
                 }
         }
@@ -174,12 +188,12 @@ class AuthViewModel(
             )
             oauthBrowserLauncher
                 .launch(startUrl)
-                .onFailure { error ->
+                .onFailure {
                     tokenStorage.clearPendingOAuthFlow()
                     _loginState.value =
                         _loginState.value.copy(
                             isLoading = false,
-                            serverError = error.message ?: "Could not open sign-in browser",
+                            serverError = UiMessage(Res.string.auth_oauth_browser_failed),
                         )
                 }
         }
@@ -220,20 +234,20 @@ class AuthViewModel(
         val pending = tokenStorage.getPendingOAuthFlow()
         if (pending == null || isExpired(pending)) {
             tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected("Sign-in session expired. Please try again.")
+            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_expired))
         }
         if (callback.state != pending.appState) {
             tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected("Sign-in state mismatch. Please try again.")
+            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_state_mismatch))
         }
         if (callback.error != null) {
             tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected(callback.errorDescription ?: "SSO sign-in failed")
+            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_failed))
         }
         val code = callback.code
         if (code.isNullOrBlank()) {
             tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected("Missing sign-in code")
+            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_code_missing))
         }
         return OAuthValidationResult.Proceed(code = code, verifier = pending.verifier)
     }
@@ -258,14 +272,16 @@ class AuthViewModel(
                     .onFailure {
                         _authState.value = AuthState.Unauthenticated
                         _loginState.value =
-                            _loginState.value.copy(serverError = "Could not load signed-in user")
+                            _loginState.value.copy(
+                                serverError = UiMessage(Res.string.auth_session_load_failed),
+                            )
                     }
-            }.onFailure { error ->
+            }.onFailure {
                 tokenStorage.clearPendingOAuthFlow()
                 _loginState.value =
                     _loginState.value.copy(
                         isLoading = false,
-                        serverError = error.message ?: "SSO sign-in failed",
+                        serverError = UiMessage(Res.string.auth_oauth_failed),
                     )
                 lastHandledOAuthCallbackUrl = url
             }
@@ -318,11 +334,11 @@ class AuthViewModel(
                     response.expiresAt?.let { tokenStorage.saveExpiresAt(it) }
                     _registerState.value = _registerState.value.copy(isLoading = false)
                     handleAuthenticatedUser(response.toAuthUser())
-                }.onFailure { error ->
+                }.onFailure {
                     _registerState.value =
                         _registerState.value.copy(
                             isLoading = false,
-                            serverError = error.message ?: "Registration failed",
+                            serverError = UiMessage(Res.string.auth_register_failed),
                         )
                 }
         }
@@ -350,12 +366,21 @@ class AuthViewModel(
                     isLoading = true,
                     serverError = null,
                 )
-            repository.forgotPassword(state.email)
-            _forgotPasswordState.value =
-                _forgotPasswordState.value.copy(
-                    isLoading = false,
-                    isSubmitted = true,
-                )
+            repository
+                .forgotPassword(state.email)
+                .onSuccess {
+                    _forgotPasswordState.value =
+                        _forgotPasswordState.value.copy(
+                            isLoading = false,
+                            isSubmitted = true,
+                        )
+                }.onFailure {
+                    _forgotPasswordState.value =
+                        _forgotPasswordState.value.copy(
+                            isLoading = false,
+                            serverError = UiMessage(Res.string.auth_password_reset_failed),
+                        )
+                }
         }
     }
 
@@ -391,7 +416,7 @@ class AuthViewModel(
             logoutResult.exceptionOrNull()?.let {
                 _loginState.value =
                     LoginState(
-                        serverError = "Signed out on this device, but we could not revoke the server session.",
+                        serverError = UiMessage(Res.string.auth_logout_revoke_failed),
                     )
             }
         }
@@ -469,7 +494,15 @@ class AuthViewModel(
         _forgotPasswordState.value = ForgotPasswordState()
     }
 
+    private fun loginFailureMessage(error: Throwable): UiMessage =
+        if (error is ApiException && error.statusCode == UNAUTHORIZED_STATUS) {
+            UiMessage(Res.string.auth_login_invalid_credentials)
+        } else {
+            UiMessage(Res.string.auth_login_failed)
+        }
+
     companion object {
+        private const val UNAUTHORIZED_STATUS = 401
         private const val VERIFICATION_POLL_INTERVAL_MS = 5000L
     }
 }

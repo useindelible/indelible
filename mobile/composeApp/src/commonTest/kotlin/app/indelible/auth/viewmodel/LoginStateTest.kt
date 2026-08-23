@@ -1,5 +1,10 @@
 package app.indelible.auth.viewmodel
 
+import app.indelible.core.i18n.UiMessage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_email_invalid
+import indelible.composeapp.generated.resources.auth_email_required
+import indelible.composeapp.generated.resources.auth_password_required
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -18,35 +23,35 @@ class LoginStateTest {
     fun emptyEmailFails() {
         val error = LoginState.validateEmail("")
         assertNotNull(error)
-        assertEquals("Email is required", error)
+        assertEquals(UiMessage(Res.string.auth_email_required), error)
     }
 
     @Test
     fun blankEmailFails() {
         val error = LoginState.validateEmail("   ")
         assertNotNull(error)
-        assertEquals("Email is required", error)
+        assertEquals(UiMessage(Res.string.auth_email_required), error)
     }
 
     @Test
     fun invalidEmailFormatFails() {
         val error = LoginState.validateEmail("notanemail")
         assertNotNull(error)
-        assertEquals("Invalid email format", error)
+        assertEquals(UiMessage(Res.string.auth_email_invalid), error)
     }
 
     @Test
     fun emailMissingDomainFails() {
         val error = LoginState.validateEmail("user@")
         assertNotNull(error)
-        assertEquals("Invalid email format", error)
+        assertEquals(UiMessage(Res.string.auth_email_invalid), error)
     }
 
     @Test
     fun emailMissingTldFails() {
         val error = LoginState.validateEmail("user@example")
         assertNotNull(error)
-        assertEquals("Invalid email format", error)
+        assertEquals(UiMessage(Res.string.auth_email_invalid), error)
     }
 
     @Test
@@ -63,7 +68,7 @@ class LoginStateTest {
         val validated = state.validate()
         assertNull(validated.emailError)
         assertNotNull(validated.passwordError)
-        assertEquals("Password is required", validated.passwordError)
+        assertEquals(UiMessage(Res.string.auth_password_required), validated.passwordError)
     }
 
     @Test
@@ -98,7 +103,7 @@ class LoginStateTest {
             LoginState(
                 email = "user@example.com",
                 password = "password123",
-                serverError = "some server error",
+                serverError = UiMessage(Res.string.auth_password_required),
             )
         val validated = state.validate()
         assertNull(validated.serverError)

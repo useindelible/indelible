@@ -1,5 +1,9 @@
 package app.indelible.auth.server
 
+import app.indelible.core.i18n.UiMessage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_server_address_invalid
+import indelible.composeapp.generated.resources.auth_server_address_required
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -41,14 +45,14 @@ class ServerUrlFormTest {
     fun blankInputIsInvalid() {
         val result = ServerUrlForm.validate("   ")
         assertIs<ServerUrlValidation.Invalid>(result)
-        assertEquals(ServerUrlForm.EMPTY_ADDRESS_MESSAGE, result.message)
+        assertEquals(UiMessage(Res.string.auth_server_address_required), result.message)
     }
 
     @Test
     fun unparseableInputIsInvalid() {
         val result = ServerUrlForm.validate("ht tp://broken host")
         assertIs<ServerUrlValidation.Invalid>(result)
-        assertEquals(ServerUrlForm.INVALID_ADDRESS_MESSAGE, result.message)
+        assertEquals(UiMessage(Res.string.auth_server_address_invalid), result.message)
     }
 
     @Test
