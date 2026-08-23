@@ -15,6 +15,15 @@ import app.indelible.onboarding.ui.components.StepCard
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_continue
+import indelible.composeapp.generated.resources.onboarding_add_content_email_tip
+import indelible.composeapp.generated.resources.onboarding_add_content_share_tip
+import indelible.composeapp.generated.resources.onboarding_add_content_subtitle
+import indelible.composeapp.generated.resources.onboarding_add_content_title
+import indelible.composeapp.generated.resources.onboarding_add_content_url_label
+import indelible.composeapp.generated.resources.onboarding_skip
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AddContentStep(
@@ -25,14 +34,14 @@ fun AddContentStep(
     modifier: Modifier = Modifier,
 ) {
     StepCard(
-        title = "Add Your First Content",
-        subtitle = "Save a link to get started",
+        title = stringResource(Res.string.onboarding_add_content_title),
+        subtitle = stringResource(Res.string.onboarding_add_content_subtitle),
         modifier = modifier,
     ) {
         IndelibleTextField(
             value = urlInput,
             onValueChange = onUrlChange,
-            label = "Paste a URL",
+            label = stringResource(Res.string.onboarding_add_content_url_label),
         )
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
@@ -47,9 +56,7 @@ fun AddContentStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text =
-                    "You can also share any link to Indelible from your browser or any app " +
-                        "using the system share sheet.",
+                text = stringResource(Res.string.onboarding_add_content_share_tip),
                 style = MaterialTheme.typography.bodyMedium, // subheadline: 13sp/400
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.padding(IndelibleSpacing.step16),
@@ -67,7 +74,7 @@ fun AddContentStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = "Forward emails to your personal ingest address to save them automatically.",
+                text = stringResource(Res.string.onboarding_add_content_email_tip),
                 style = MaterialTheme.typography.bodyMedium, // subheadline: 13sp/400
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(IndelibleSpacing.step16),
@@ -76,7 +83,7 @@ fun AddContentStep(
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step32))
 
-        IndelibleButton(text = "Continue", onClick = onContinue)
+        IndelibleButton(text = stringResource(Res.string.common_continue), onClick = onContinue)
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
@@ -85,7 +92,7 @@ fun AddContentStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = "Skip",
+                text = stringResource(Res.string.onboarding_skip),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

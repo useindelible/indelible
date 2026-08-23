@@ -3,10 +3,19 @@ package app.indelible.onboarding.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.AuthRepository
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.StepData
 import app.indelible.onboarding.repository.OnboardingRepository
 import app.indelible.share.SaveResult
 import app.indelible.share.SaveUrlUseCase
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.onboarding_add_content_invalid_url
+import indelible.composeapp.generated.resources.onboarding_add_content_session_expired
+import indelible.composeapp.generated.resources.onboarding_error_complete_step
+import indelible.composeapp.generated.resources.onboarding_error_load
+import indelible.composeapp.generated.resources.onboarding_error_save_content
+import indelible.composeapp.generated.resources.onboarding_error_save_profile
+import indelible.composeapp.generated.resources.onboarding_error_skip
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +39,6 @@ class OnboardingViewModel(
                         response.steps.map { dto ->
                             OnboardingStep(
                                 number = dto.step,
-                                name = dto.name,
                                 completed = dto.completed,
                             )
                         }
@@ -50,11 +58,11 @@ class OnboardingViewModel(
                             isLoading = false,
                             isCompleted = response.completed,
                         )
-                }.onFailure { error ->
+                }.onFailure {
                     _state.value =
                         _state.value.copy(
                             isLoading = false,
-                            error = error.message ?: "Failed to load onboarding status",
+                            error = UiMessage(Res.string.onboarding_error_load),
                             steps = defaultSteps(),
                         )
                 }
@@ -80,7 +88,6 @@ class OnboardingViewModel(
                         response.steps.map { dto ->
                             OnboardingStep(
                                 number = dto.step,
-                                name = dto.name,
                                 completed = dto.completed,
                             )
                         }
@@ -91,11 +98,11 @@ class OnboardingViewModel(
                             isCompleted = response.completed,
                         )
                     onSuccess()
-                }.onFailure { error ->
+                }.onFailure {
                     _state.value =
                         _state.value.copy(
                             isStepLoading = false,
-                            error = error.message ?: "Failed to complete step",
+                            error = UiMessage(Res.string.onboarding_error_complete_step),
                         )
                 }
         }
@@ -118,11 +125,11 @@ class OnboardingViewModel(
                 .updateProfile(displayName, theme)
                 .onSuccess {
                     completeStep(1, onSuccess = onSuccess)
-                }.onFailure { error ->
+                }.onFailure {
                     _state.value =
                         _state.value.copy(
                             isStepLoading = false,
-                            error = error.message ?: "Failed to save your profile",
+                            error = UiMessage(Res.string.onboarding_error_save_profile),
                         )
                 }
         }
@@ -151,19 +158,19 @@ class OnboardingViewModel(
                     _state.value =
                         _state.value.copy(
                             isStepLoading = false,
-                            error = "Enter a valid link to save, or skip this step.",
+                            error = UiMessage(Res.string.onboarding_add_content_invalid_url),
                         )
                 SaveResult.AuthRequired ->
                     _state.value =
                         _state.value.copy(
                             isStepLoading = false,
-                            error = "Your session expired. Sign in again to continue.",
+                            error = UiMessage(Res.string.onboarding_add_content_session_expired),
                         )
                 is SaveResult.Error ->
                     _state.value =
                         _state.value.copy(
                             isStepLoading = false,
-                            error = result.message,
+                            error = UiMessage(Res.string.onboarding_error_save_content),
                         )
             }
         }
@@ -179,7 +186,6 @@ class OnboardingViewModel(
                         response.steps.map { dto ->
                             OnboardingStep(
                                 number = dto.step,
-                                name = dto.name,
                                 completed = dto.completed,
                             )
                         }
@@ -189,11 +195,11 @@ class OnboardingViewModel(
                             isStepLoading = false,
                             isCompleted = response.completed,
                         )
-                }.onFailure { error ->
+                }.onFailure {
                     _state.value =
                         _state.value.copy(
                             isStepLoading = false,
-                            error = error.message ?: "Failed to skip onboarding",
+                            error = UiMessage(Res.string.onboarding_error_skip),
                         )
                 }
         }
@@ -252,7 +258,7 @@ class OnboardingViewModel(
     companion object {
         fun defaultSteps(): List<OnboardingStep> =
             OnboardingPage.entries.mapNotNull {
-                it.backendStep?.let { step -> OnboardingStep(step, it.pageName, false) }
+                it.backendStep?.let { step -> OnboardingStep(step, false) }
             }
     }
 }

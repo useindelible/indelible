@@ -17,6 +17,17 @@ import app.indelible.onboarding.viewmodel.ThemeChoice
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_continue
+import indelible.composeapp.generated.resources.onboarding_account_display_name
+import indelible.composeapp.generated.resources.onboarding_account_subtitle
+import indelible.composeapp.generated.resources.onboarding_account_theme
+import indelible.composeapp.generated.resources.onboarding_account_title
+import indelible.composeapp.generated.resources.onboarding_skip
+import indelible.composeapp.generated.resources.onboarding_theme_auto
+import indelible.composeapp.generated.resources.onboarding_theme_dark
+import indelible.composeapp.generated.resources.onboarding_theme_light
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AccountSetupStep(
@@ -28,20 +39,20 @@ fun AccountSetupStep(
     modifier: Modifier = Modifier,
 ) {
     StepCard(
-        title = "Set Up Your Profile",
-        subtitle = "Personalize your Indelible experience",
+        title = stringResource(Res.string.onboarding_account_title),
+        subtitle = stringResource(Res.string.onboarding_account_subtitle),
         modifier = modifier,
     ) {
         IndelibleTextField(
             value = displayName,
             onValueChange = viewModel::updateDisplayName,
-            label = "Display Name",
+            label = stringResource(Res.string.onboarding_account_display_name),
         )
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
 
         Text(
-            text = "Theme",
+            text = stringResource(Res.string.onboarding_account_theme),
             style = MaterialTheme.typography.titleSmall, // callout: 14sp/600
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -59,9 +70,9 @@ fun AccountSetupStep(
                     label = {
                         Text(
                             when (theme) {
-                                ThemeChoice.LIGHT -> "Light"
-                                ThemeChoice.DARK -> "Dark"
-                                ThemeChoice.AUTO -> "Auto"
+                                ThemeChoice.LIGHT -> stringResource(Res.string.onboarding_theme_light)
+                                ThemeChoice.DARK -> stringResource(Res.string.onboarding_theme_dark)
+                                ThemeChoice.AUTO -> stringResource(Res.string.onboarding_theme_auto)
                             },
                             style = MaterialTheme.typography.bodyMedium, // subheadline
                         )
@@ -72,7 +83,7 @@ fun AccountSetupStep(
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step32))
 
-        IndelibleButton(text = "Continue", onClick = onContinue)
+        IndelibleButton(text = stringResource(Res.string.common_continue), onClick = onContinue)
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
@@ -81,7 +92,7 @@ fun AccountSetupStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = "Skip",
+                text = stringResource(Res.string.onboarding_skip),
                 style = MaterialTheme.typography.bodyMedium, // subheadline
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

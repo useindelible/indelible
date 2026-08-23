@@ -9,6 +9,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -19,13 +20,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.indelible.core.i18n.resolve
 import app.indelible.core.model.StepData
 import app.indelible.onboarding.ui.components.PagerIndicator
 import app.indelible.onboarding.viewmodel.OnboardingPage
 import app.indelible.onboarding.viewmodel.OnboardingState
 import app.indelible.onboarding.viewmodel.OnboardingViewModel
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.onboarding_skip_all
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 private const val PAGE_COUNT = 6
 
@@ -90,6 +95,18 @@ fun OnboardingFlow(
                     .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            state.error?.let { error ->
+                Text(
+                    text = error.resolve(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = IndelibleSpacing.screenPaddingH),
+                )
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier =
@@ -128,7 +145,7 @@ private fun OnboardingTopBar(
     ) {
         if (pagerState.currentPage < PAGE_COUNT - 1) {
             TextButton(onClick = onSkip) {
-                Text("Skip All")
+                Text(stringResource(Res.string.onboarding_skip_all))
             }
         }
     }

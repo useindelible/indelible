@@ -17,6 +17,15 @@ import app.indelible.onboarding.viewmodel.DEFAULT_SUGGESTED_FEEDS
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_continue
+import indelible.composeapp.generated.resources.onboarding_feeds_custom
+import indelible.composeapp.generated.resources.onboarding_feeds_subtitle
+import indelible.composeapp.generated.resources.onboarding_feeds_suggested
+import indelible.composeapp.generated.resources.onboarding_feeds_title
+import indelible.composeapp.generated.resources.onboarding_feeds_url_label
+import indelible.composeapp.generated.resources.onboarding_skip
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun FeedsStep(
@@ -29,12 +38,12 @@ fun FeedsStep(
     modifier: Modifier = Modifier,
 ) {
     StepCard(
-        title = "RSS Feeds",
-        subtitle = "Subscribe to your favorite sources",
+        title = stringResource(Res.string.onboarding_feeds_title),
+        subtitle = stringResource(Res.string.onboarding_feeds_subtitle),
         modifier = modifier,
     ) {
         Text(
-            text = "Suggested Feeds",
+            text = stringResource(Res.string.onboarding_feeds_suggested),
             style = MaterialTheme.typography.titleSmall,
         )
 
@@ -57,7 +66,7 @@ fun FeedsStep(
                 )
             }
             Text(
-                text = feed.description,
+                text = stringResource(feed.descriptionRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
@@ -68,7 +77,7 @@ fun FeedsStep(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
         Text(
-            text = "Add a custom feed",
+            text = stringResource(Res.string.onboarding_feeds_custom),
             style = MaterialTheme.typography.titleSmall, // callout: 14sp/600
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -78,12 +87,12 @@ fun FeedsStep(
         IndelibleTextField(
             value = rssUrlInput,
             onValueChange = onRssUrlChange,
-            label = "RSS Feed URL",
+            label = stringResource(Res.string.onboarding_feeds_url_label),
         )
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step32))
 
-        IndelibleButton(text = "Continue", onClick = onContinue)
+        IndelibleButton(text = stringResource(Res.string.common_continue), onClick = onContinue)
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
@@ -92,7 +101,7 @@ fun FeedsStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = "Skip",
+                text = stringResource(Res.string.onboarding_skip),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
