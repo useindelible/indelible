@@ -225,7 +225,9 @@ jobs:
 
   mobile-ios:
     name: Mobile (iOS compile)
-    runs-on: macos-14
+    # The Xcode project is format 77, which needs Xcode 16.3+; macos-14 tops
+    # out at Xcode 15.4.
+    runs-on: macos-15
     defaults:
       run:
         working-directory: mobile
