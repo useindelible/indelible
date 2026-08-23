@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
@@ -95,7 +96,7 @@ private fun EntityChip(entity: DocumentEntity) {
         )
         if (entity.itemCount > 1) {
             Text(
-                text = entity.itemCount.toString(),
+                text = LocaleFormatters.number(entity.itemCount),
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = geistMonoFontFamily()),
                 color = IndelibleTheme.colors.textTertiary,
             )

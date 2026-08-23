@@ -659,6 +659,12 @@
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
     </plurals>
+    <string name="reader_speed_075">0.75×</string>
+    <string name="reader_speed_100">1.0×</string>
+    <string name="reader_speed_125">1.25×</string>
+    <string name="reader_speed_150">1.5×</string>
+    <string name="reader_speed_175">1.75×</string>
+    <string name="reader_speed_200">2.0×</string>
     <string name="reader_style">Style</string>
     <string name="reader_style_default_description">Sets the default color for new highlights.</string>
     <string name="reader_style_fill">Fill</string>

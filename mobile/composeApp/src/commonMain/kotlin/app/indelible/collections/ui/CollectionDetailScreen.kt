@@ -45,6 +45,7 @@ import app.indelible.collections.ui.components.CollectionScreenTopBar
 import app.indelible.collections.ui.components.PaginationEffect
 import app.indelible.collections.viewmodel.CollectionDetailState
 import app.indelible.collections.viewmodel.CollectionDetailViewModel
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.i18n.resolve
 import app.indelible.library.ui.components.LibraryItemRow
 import app.indelible.ui.theme.IndelibleIcons
@@ -376,7 +377,7 @@ private fun SubCollectionChip(
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "${collection.itemCount}",
+            text = LocaleFormatters.number(collection.itemCount),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

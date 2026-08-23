@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.reader.model.TagData
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
@@ -380,7 +381,7 @@ private fun TagSuggestionRow(
         )
         if (!isCreate && count != null) {
             Text(
-                text = count.toString(),
+                text = LocaleFormatters.number(count.toLong()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -380,6 +380,7 @@ val i18nCheck by tasks.registering {
         files(
             fileTree(layout.projectDirectory.dir("src/commonMain/kotlin")) { include("**/*.kt") },
             fileTree(layout.projectDirectory.dir("src/androidMain/kotlin")) { include("**/*.kt") },
+            fileTree(layout.projectDirectory.dir("src/iosMain/kotlin")) { include("**/*.kt") },
         )
     val shareExtensionRoot = rootProject.layout.projectDirectory.dir("iosApp/IndelibleShareExtension")
     val shareEnglishFile = shareExtensionRoot.file("en.lproj/Localizable.strings")
@@ -665,8 +666,13 @@ val i18nCheck by tasks.registering {
                     }
                 }
             }
-            Regex("""if\s*\([^)]*\)\s*"s"\s*else\s*""""").findAll(masked).forEach { match ->
-                errors += "${file.path}:${lineNumberAt(masked, match.range.first)}: manual English plural suffix"
+            listOf(
+                Regex("if\\s*\\([^)]*\\)\\s*\"s\"\\s*else\\s*\"\""),
+                Regex("if\\s*\\([^)]*\\)\\s*\"\"\\s*else\\s*\"s\""),
+            ).forEach { pattern ->
+                pattern.findAll(masked).forEach { match ->
+                    errors += "${file.path}:${lineNumberAt(masked, match.range.first)}: manual English plural suffix"
+                }
             }
             Regex("""(?:stringResource|pluralStringResource|resolve)\([^)]*\)\s*\.(?:lowercase|uppercase|capitalize)\(""")
                 .findAll(masked)
@@ -674,6 +680,17 @@ val i18nCheck by tasks.registering {
                     errors +=
                         "${file.path}:${lineNumberAt(masked, match.range.first)}: " +
                         "case transformation applied to localized text"
+                }
+            Regex(
+                """\b(?:text|title|subtitle|label|hint|message|eyebrow|contentDescription)\s*=\s*""" +
+                    """[^,\n]*\.(?:lowercase|uppercase|capitalize)\(""",
+            )
+                .findAll(masked)
+                .forEach { match ->
+                    val lineNumber = lineNumberAt(masked, match.range.first)
+                    if (!hasDurableIgnore(originalLines[lineNumber - 1])) {
+                        errors += "${file.path}:$lineNumber: case transformation applied to visible text"
+                    }
                 }
             if (file.name in setOf("ReaderHtmlMarkup.kt", "ReaderHtmlTemplate.kt")) {
                 Regex(""">\s*[A-Za-z][^<\n]{1,}<""").findAll(masked).forEach { match ->
@@ -689,6 +706,7 @@ val i18nCheck by tasks.registering {
             listOf(
                 Regex("""\b(?:Text|Button)\(\s*"([^"]+)"""),
                 Regex("""\.accessibilityLabel\(\s*"([^"]+)"""),
+                Regex("\\bStatusRow\\(\\s*key:\\s*\"([^\"]+)\""),
             )
         shareSwiftFiles.files.sortedBy(File::getPath).forEach { file ->
             val original = file.readText()

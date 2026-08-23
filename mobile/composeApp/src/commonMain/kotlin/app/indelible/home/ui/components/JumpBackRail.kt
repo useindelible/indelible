@@ -105,7 +105,7 @@ private fun JumpBackCard(
 
         if (!item.domain.isNullOrBlank()) {
             Text(
-                text = item.domain.uppercase(),
+                text = item.domain.uppercase(), // i18n-ignore: server-provided domain presentation
                 style = homeEyebrowStyle(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

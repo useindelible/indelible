@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.i18n.resolve
 import app.indelible.library.ui.components.LibraryItemRow
 import app.indelible.reader.model.TagData
@@ -402,7 +403,7 @@ private fun SubTagChip(
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "$rolledUpItemCount",
+            text = LocaleFormatters.number(rolledUpItemCount),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.model.LibraryCounts
 import app.indelible.library.viewmodel.ContentTypeFilter
 import app.indelible.ui.theme.AppTheme
@@ -125,7 +126,7 @@ private fun ContentTypeChip(
         )
         if (count != null) {
             Text(
-                text = count.toString(),
+                text = LocaleFormatters.number(count.toLong()),
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = geistMonoFontFamily()),
                 color = contentColor.copy(alpha = CHIP_COUNT_ALPHA),
             )

@@ -44,7 +44,7 @@ fun UserAvatar(
     ) {
         // Initial letter is always the base layer — shows on load, error, or no image
         Text(
-            text = displayName.firstOrNull()?.uppercase() ?: "?",
+            text = displayName.firstOrNull()?.uppercase() ?: "?", // i18n-ignore: user-provided name initial
             style = textStyle,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             textAlign = TextAlign.Center,

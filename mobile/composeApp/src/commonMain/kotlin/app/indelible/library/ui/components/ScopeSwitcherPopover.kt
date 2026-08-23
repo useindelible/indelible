@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.library.viewmodel.LibraryScope
 import app.indelible.library.viewmodel.TriageFilter
 import app.indelible.sidebar.model.Collection
@@ -349,7 +350,7 @@ private fun ScopePopCount(
                 .padding(horizontal = IndelibleSpacing.step8, vertical = IndelibleSpacing.step2),
     ) {
         Text(
-            text = count.toString(),
+            text = LocaleFormatters.number(count.toLong()),
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = geistMonoFontFamily()),
             color = foreground,
         )

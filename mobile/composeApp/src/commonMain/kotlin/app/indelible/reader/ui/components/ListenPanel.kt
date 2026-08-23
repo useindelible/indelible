@@ -52,14 +52,29 @@ import indelible.composeapp.generated.resources.reader_action_pause
 import indelible.composeapp.generated.resources.reader_action_play
 import indelible.composeapp.generated.resources.reader_sleep
 import indelible.composeapp.generated.resources.reader_sleep_minutes
+import indelible.composeapp.generated.resources.reader_speed_075
+import indelible.composeapp.generated.resources.reader_speed_100
+import indelible.composeapp.generated.resources.reader_speed_125
+import indelible.composeapp.generated.resources.reader_speed_150
+import indelible.composeapp.generated.resources.reader_speed_175
+import indelible.composeapp.generated.resources.reader_speed_200
 import indelible.composeapp.generated.resources.reader_voice_fallback
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 // Playback speed and sleep-timer option menus: the values are the user-facing choices.
 @Suppress("MagicNumber")
 private val speedSteps = listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
-private val speedLabels = listOf("0.75×", "1.0×", "1.25×", "1.5×", "1.75×", "2.0×")
+private val speedLabelResources =
+    listOf(
+        Res.string.reader_speed_075,
+        Res.string.reader_speed_100,
+        Res.string.reader_speed_125,
+        Res.string.reader_speed_150,
+        Res.string.reader_speed_175,
+        Res.string.reader_speed_200,
+    )
 
 @Suppress("MagicNumber")
 private val sleepSteps = listOf<Int?>(null, 15, 30, 60)
@@ -144,7 +159,7 @@ fun ListenPanel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PlayerChip(
-                label = speedLabelFor(state.speed),
+                label = stringResource(speedLabelResourceFor(state.speed)),
                 accent = true,
                 onClick = { onSetSpeed(nextSpeed(state.speed)) },
             )
@@ -198,7 +213,7 @@ private fun NowPlayingCard(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = source.take(1).uppercase(),
+                text = source.take(1).uppercase(), // i18n-ignore: user-provided source initial
                 style = MaterialTheme.typography.titleLarge,
                 color = IndelibleTheme.colors.onSuccess,
             )
@@ -355,9 +370,9 @@ private fun PlayerChip(
     }
 }
 
-private fun speedLabelFor(speed: Float): String {
+private fun speedLabelResourceFor(speed: Float): StringResource {
     val index = speedSteps.indexOfFirst { kotlin.math.abs(it - speed) < SPEED_EPSILON }
-    return speedLabels[index.coerceIn(0, speedLabels.lastIndex)]
+    return speedLabelResources[index.coerceIn(0, speedLabelResources.lastIndex)]
 }
 
 private fun nextSpeed(current: Float): Float {
