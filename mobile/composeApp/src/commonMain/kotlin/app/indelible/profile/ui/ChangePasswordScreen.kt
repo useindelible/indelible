@@ -35,11 +35,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.resolveString
 import app.indelible.profile.viewmodel.ChangePasswordEffect
 import app.indelible.profile.viewmodel.ChangePasswordViewModel
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.profile_change_password
+import indelible.composeapp.generated.resources.profile_confirm_password
+import indelible.composeapp.generated.resources.profile_current_password
+import indelible.composeapp.generated.resources.profile_new_password
+import indelible.composeapp.generated.resources.profile_password_min_length
+import indelible.composeapp.generated.resources.profile_password_mismatch
+import org.jetbrains.compose.resources.stringResource
 
 private const val MIN_PASSWORD_LENGTH = 8
 
@@ -56,11 +66,13 @@ fun ChangePasswordScreen(
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    val minimumLengthError = stringResource(Res.string.profile_password_min_length, MIN_PASSWORD_LENGTH)
+    val mismatchError = stringResource(Res.string.profile_password_mismatch)
 
     val newPasswordError by remember {
         derivedStateOf {
             if (newPassword.isNotEmpty() && newPassword.length < MIN_PASSWORD_LENGTH) {
-                "Must be at least $MIN_PASSWORD_LENGTH characters"
+                minimumLengthError
             } else {
                 null
             }
@@ -69,7 +81,7 @@ fun ChangePasswordScreen(
     val confirmPasswordError by remember {
         derivedStateOf {
             if (confirmPassword.isNotEmpty() && confirmPassword != newPassword) {
-                "Passwords do not match"
+                mismatchError
             } else {
                 null
             }
@@ -86,7 +98,7 @@ fun ChangePasswordScreen(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is ChangePasswordEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is ChangePasswordEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
                 is ChangePasswordEffect.NavigateBack -> onNavigateBack()
             }
         }
@@ -98,7 +110,7 @@ fun ChangePasswordScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Change Password",
+                        text = stringResource(Res.string.profile_change_password),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -106,7 +118,7 @@ fun ChangePasswordScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -144,7 +156,7 @@ fun ChangePasswordScreen(
                     IndelibleTextField(
                         value = currentPassword,
                         onValueChange = { currentPassword = it },
-                        label = "Current Password",
+                        label = stringResource(Res.string.profile_current_password),
                         isPassword = true,
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Next,
@@ -153,7 +165,7 @@ fun ChangePasswordScreen(
                     IndelibleTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
-                        label = "New Password",
+                        label = stringResource(Res.string.profile_new_password),
                         isPassword = true,
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Next,
@@ -163,7 +175,7 @@ fun ChangePasswordScreen(
                     IndelibleTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        label = "Confirm New Password",
+                        label = stringResource(Res.string.profile_confirm_password),
                         isPassword = true,
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
@@ -172,7 +184,7 @@ fun ChangePasswordScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     IndelibleButton(
-                        text = "Change Password",
+                        text = stringResource(Res.string.profile_change_password),
                         onClick = { viewModel.changePassword(currentPassword, newPassword) },
                         isLoading = isLoading,
                         enabled = canSubmit,

@@ -29,6 +29,19 @@ import app.indelible.profile.ui.components.SettingsRow
 import app.indelible.profile.ui.components.SettingsSection
 import app.indelible.profile.ui.components.UserAvatar
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.profile_account
+import indelible.composeapp.generated.resources.profile_account_description
+import indelible.composeapp.generated.resources.profile_ai
+import indelible.composeapp.generated.resources.profile_ai_description
+import indelible.composeapp.generated.resources.profile_content
+import indelible.composeapp.generated.resources.profile_content_description
+import indelible.composeapp.generated.resources.profile_preferences
+import indelible.composeapp.generated.resources.profile_preferences_description
+import indelible.composeapp.generated.resources.profile_settings
+import indelible.composeapp.generated.resources.profile_title
+import indelible.composeapp.generated.resources.profile_user_fallback
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ProfileTab(
@@ -53,7 +66,7 @@ fun ProfileTab(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
         Text(
-            text = "Profile",
+            text = stringResource(Res.string.profile_title),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(horizontal = IndelibleSpacing.step16),
         )
@@ -61,7 +74,7 @@ fun ProfileTab(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
         ProfileHero(
-            displayName = user?.displayName ?: "User",
+            displayName = user?.displayName ?: stringResource(Res.string.profile_user_fallback),
             email = user?.email ?: "",
             avatarUrl = user?.avatarUrl,
             avatarBytes = avatarBytes,
@@ -70,25 +83,25 @@ fun ProfileTab(
 
         HorizontalDivider()
 
-        SettingsSection(title = "Settings") {
+        SettingsSection(title = stringResource(Res.string.profile_settings)) {
             SettingsRow(
-                label = "Preferences",
-                sublabel = "Appearance, Reader, Triage & Workflow",
+                label = stringResource(Res.string.profile_preferences),
+                sublabel = stringResource(Res.string.profile_preferences_description),
                 onClick = onNavigateToPreferences,
             )
             SettingsRow(
-                label = "Mila & AI",
-                sublabel = "Enable Mila, provider, model, prompt presets",
+                label = stringResource(Res.string.profile_ai),
+                sublabel = stringResource(Res.string.profile_ai_description),
                 onClick = onNavigateToAi,
             )
             SettingsRow(
-                label = "Content",
-                sublabel = "Feeds, email ingest, add to library",
+                label = stringResource(Res.string.profile_content),
+                sublabel = stringResource(Res.string.profile_content_description),
                 onClick = onNavigateToIntegrations,
             )
             SettingsRow(
-                label = "Account",
-                sublabel = "Password, Storage, Sign out",
+                label = stringResource(Res.string.profile_account),
+                sublabel = stringResource(Res.string.profile_account_description),
                 onClick = onNavigateToAccount,
             )
         }

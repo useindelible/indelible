@@ -40,7 +40,17 @@ import app.indelible.profile.viewmodel.AddLibraryViewModel
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.profile_add_library_title
+import indelible.composeapp.generated.resources.profile_email_copied
+import indelible.composeapp.generated.resources.profile_email_ingest
+import indelible.composeapp.generated.resources.profile_email_ingest_body
+import indelible.composeapp.generated.resources.profile_save_library
+import indelible.composeapp.generated.resources.profile_tap_copy
+import indelible.composeapp.generated.resources.profile_url
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +65,7 @@ fun AddLibraryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
+    val emailCopiedMessage = stringResource(Res.string.profile_email_copied)
 
     LaunchedEffect(viewModel) {
         viewModel.reset()
@@ -71,7 +82,7 @@ fun AddLibraryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Add to Library",
+                        text = stringResource(Res.string.profile_add_library_title),
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
@@ -79,7 +90,7 @@ fun AddLibraryScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -96,21 +107,21 @@ fun AddLibraryScreen(
         ) {
             Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
-            SettingsSection(title = "Save to Library") {
+            SettingsSection(title = stringResource(Res.string.profile_save_library)) {
                 IndelibleTextField(
                     value = url,
                     onValueChange = {
                         url = it
                         viewModel.clearError()
                     },
-                    label = "URL",
+                    label = stringResource(Res.string.profile_url),
                     error = uiState.errorMessage?.resolve(),
                     enabled = !uiState.isSubmitting,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
                 IndelibleButton(
-                    text = "Save to Library",
+                    text = stringResource(Res.string.profile_save_library),
                     onClick = { viewModel.save(url) },
                     isLoading = uiState.isSubmitting,
                     enabled = url.isNotBlank(),
@@ -120,7 +131,7 @@ fun AddLibraryScreen(
             if (ingestLibraryEmail != null) {
                 Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
 
-                SettingsSection(title = "Email Ingest") {
+                SettingsSection(title = stringResource(Res.string.profile_email_ingest)) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.extraLarge,
@@ -138,12 +149,12 @@ fun AddLibraryScreen(
                                     .clickable {
                                         clipboardManager.setText(AnnotatedString(ingestLibraryEmail))
                                         coroutineScope.launch {
-                                            snackbarHostState.showSnackbar("Email copied to clipboard")
+                                            snackbarHostState.showSnackbar(emailCopiedMessage)
                                         }
                                     }.padding(IndelibleSpacing.step16),
                         ) {
                             Text(
-                                text = "Forward emails to save articles directly to your library.",
+                                text = stringResource(Res.string.profile_email_ingest_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -155,7 +166,7 @@ fun AddLibraryScreen(
                             )
                             Spacer(modifier = Modifier.height(IndelibleSpacing.step4))
                             Text(
-                                text = "Tap to copy",
+                                text = stringResource(Res.string.profile_tap_copy),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

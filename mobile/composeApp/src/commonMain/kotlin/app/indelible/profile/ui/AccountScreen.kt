@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.resolveString
 import app.indelible.profile.ui.components.SettingsRow
 import app.indelible.profile.ui.components.SettingsSection
 import app.indelible.profile.viewmodel.AccountEffect
@@ -44,6 +45,22 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_cancel
+import indelible.composeapp.generated.resources.profile_account
+import indelible.composeapp.generated.resources.profile_change_password
+import indelible.composeapp.generated.resources.profile_danger_zone
+import indelible.composeapp.generated.resources.profile_delete_account
+import indelible.composeapp.generated.resources.profile_delete_confirm_instruction
+import indelible.composeapp.generated.resources.profile_delete_confirm_label
+import indelible.composeapp.generated.resources.profile_delete_description
+import indelible.composeapp.generated.resources.profile_export_data_first
+import indelible.composeapp.generated.resources.profile_sign_out
+import indelible.composeapp.generated.resources.profile_sign_out_confirm
+import indelible.composeapp.generated.resources.profile_storage_usage
+import indelible.composeapp.generated.resources.profile_storage_usage_description
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +80,7 @@ fun AccountScreen(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is AccountEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is AccountEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
                 is AccountEffect.AccountDeleted -> onAccountDeleted()
             }
         }
@@ -72,18 +89,20 @@ fun AccountScreen(
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Sign Out") },
-            text = { Text("Are you sure you want to sign out?") },
+            title = { Text(stringResource(Res.string.profile_sign_out)) },
+            text = { Text(stringResource(Res.string.profile_sign_out_confirm)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showSignOutDialog = false
                         onSignOut()
                     },
-                ) { Text("Sign Out") }
+                ) { Text(stringResource(Res.string.profile_sign_out)) }
             },
             dismissButton = {
-                TextButton(onClick = { showSignOutDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showSignOutDialog = false }) {
+                    Text(stringResource(Res.string.common_cancel))
+                }
             },
         )
     }
@@ -104,7 +123,7 @@ fun AccountScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Account",
+                        text = stringResource(Res.string.profile_account),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -112,7 +131,7 @@ fun AccountScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -144,7 +163,7 @@ private fun AccountSettingsCard(
     onNavigateToChangePassword: () -> Unit,
     onSignOutClick: () -> Unit,
 ) {
-    SettingsSection(title = "Account") {
+    SettingsSection(title = stringResource(Res.string.profile_account)) {
         Card(
             modifier =
                 Modifier
@@ -159,20 +178,20 @@ private fun AccountSettingsCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             SettingsRow(
-                label = "Storage Usage",
-                sublabel = "Library + archives",
+                label = stringResource(Res.string.profile_storage_usage),
+                sublabel = stringResource(Res.string.profile_storage_usage_description),
                 onClick = {},
                 value = "—",
                 showChevron = false,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             SettingsRow(
-                label = "Change Password",
+                label = stringResource(Res.string.profile_change_password),
                 onClick = onNavigateToChangePassword,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             SettingsRow(
-                label = "Sign Out",
+                label = stringResource(Res.string.profile_sign_out),
                 onClick = onSignOutClick,
                 showChevron = false,
                 labelColor = MaterialTheme.colorScheme.error,
@@ -182,10 +201,8 @@ private fun AccountSettingsCard(
 }
 
 @Composable
-private fun DangerZoneCard(
-    onDeleteAccountClick: () -> Unit,
-) {
-    SettingsSection(title = "Danger Zone") {
+private fun DangerZoneCard(onDeleteAccountClick: () -> Unit) {
+    SettingsSection(title = stringResource(Res.string.profile_danger_zone)) {
         Card(
             modifier =
                 Modifier
@@ -207,25 +224,24 @@ private fun DangerZoneCard(
                 verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step10),
             ) {
                 Text(
-                    text = "Delete Account",
+                    text = stringResource(Res.string.profile_delete_account),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.error,
                 )
                 Text(
-                    text = "Permanently removes your account, library, and all archives. " +
-                        "This action cannot be undone.",
+                    text = stringResource(Res.string.profile_delete_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8)) {
                     IndelibleButton(
-                        text = "Export Data First",
+                        text = stringResource(Res.string.profile_export_data_first),
                         onClick = {},
                         style = IndelibleButtonStyle.Secondary,
                         compact = true,
                     )
                     IndelibleButton(
-                        text = "Delete Account",
+                        text = stringResource(Res.string.profile_delete_account),
                         onClick = onDeleteAccountClick,
                         style = IndelibleButtonStyle.OutlinedDestructive,
                         compact = true,
@@ -246,18 +262,18 @@ private fun DeleteAccountDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Account") },
+        title = { Text(stringResource(Res.string.profile_delete_account)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8)) {
                 Text(
-                    text = "This action is permanent and cannot be undone. Type DELETE to confirm.",
+                    text = stringResource(Res.string.profile_delete_confirm_instruction),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 IndelibleTextField(
                     value = input,
                     onValueChange = { input = it },
-                    label = "Type DELETE to confirm",
+                    label = stringResource(Res.string.profile_delete_confirm_label),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -268,7 +284,7 @@ private fun DeleteAccountDialog(
                 enabled = input == required,
             ) {
                 Text(
-                    text = "Delete Account",
+                    text = stringResource(Res.string.profile_delete_account),
                     color =
                         if (input == required) {
                             MaterialTheme.colorScheme.error
@@ -279,7 +295,7 @@ private fun DeleteAccountDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.common_cancel)) }
         },
     )
 }
