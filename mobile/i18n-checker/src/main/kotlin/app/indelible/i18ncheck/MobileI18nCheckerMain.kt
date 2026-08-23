@@ -164,7 +164,11 @@ class MobileI18nChecker(
         if (!isDirectory) emptyList() else walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
 
     private fun placeholders(value: String): List<String> =
-        Regex("""%(?:\d+\$)?[A-Za-z@]""").findAll(value).map { it.value }.sorted().toList()
+        Regex("""%(?:\d+\$)?[A-Za-z@]""")
+            .findAll(value)
+            .map { it.value }
+            .sorted()
+            .toList()
 
     private companion object {
         val ALLOWED_PREFIXES =

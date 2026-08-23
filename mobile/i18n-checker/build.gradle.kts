@@ -18,7 +18,7 @@ extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
 val checkMobileI18n by tasks.registering(JavaExec::class) {
     group = "verification"
     description = "Checks mobile localization catalogs and known user-visible source sinks."
-    dependsOn(tasks.test, tasks.named("detekt"))
+    dependsOn(tasks.test, tasks.named("detekt"), tasks.named("ktlintCheck"))
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass = "app.indelible.i18ncheck.MobileI18nCheckerMainKt"
 

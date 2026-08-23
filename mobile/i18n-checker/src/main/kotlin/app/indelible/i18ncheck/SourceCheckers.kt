@@ -74,13 +74,15 @@ class KotlinSourceChecker : AutoCloseable {
 
     @OptIn(K1Deprecation::class)
     private fun createPsiFactory(): KtPsiFactory {
-        val configuration = CompilerConfiguration().apply {
-            put(CommonConfigurationKeys.MODULE_NAME, "mobile-i18n-check")
-            put(
-                CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY,
-                org.jetbrains.kotlin.cli.common.messages.MessageCollector.NONE,
-            )
-        }
+        val configuration =
+            CompilerConfiguration().apply {
+                put(CommonConfigurationKeys.MODULE_NAME, "mobile-i18n-check")
+                put(
+                    CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY,
+                    org.jetbrains.kotlin.cli.common.messages.MessageCollector.NONE,
+                )
+            }
+
         @Suppress("DEPRECATION")
         val environment =
             KotlinCoreEnvironment.createForProduction(
@@ -106,7 +108,8 @@ class KotlinSourceChecker : AutoCloseable {
                 PsiTreeUtil
                     .collectElementsOfType(file, KtNameReferenceExpression::class.java)
                     .any { reference ->
-                        reference.text == propertyName && reference.textRange != property.nameIdentifier?.textRange &&
+                        reference.text == propertyName &&
+                            reference.textRange != property.nameIdentifier?.textRange &&
                             (reference.visibleValueArgument() != null || reference.visibleProperty() != null)
                     }
             }
@@ -152,9 +155,12 @@ class KotlinSourceChecker : AutoCloseable {
         var isPreview = false
         while (current != null && !isPreview) {
             isPreview =
-                current is KtAnnotated && current.annotationEntries.any { it.shortName?.asString() == "Preview" } ||
-                current is KtNamedFunction && current.hasPreviewFixtureName() ||
-                current is KtProperty && current.hasPreviewFixtureName()
+                current is KtAnnotated &&
+                current.annotationEntries.any { it.shortName?.asString() == "Preview" } ||
+                current is KtNamedFunction &&
+                current.hasPreviewFixtureName() ||
+                current is KtProperty &&
+                current.hasPreviewFixtureName()
             current = current.parent
         }
         return isPreview
@@ -194,10 +200,11 @@ class KotlinSourceChecker : AutoCloseable {
                 Regex("""if\s*\([^)]*\)\s*\\?"s\\?"\s*else\s*\\?"\\?"""),
                 Regex("""if\s*\([^)]*\)\s*\\?"\\?"\s*else\s*\\?"s\\?"""),
             )
-        val LOCALIZED_CASE_PATTERN = Regex(
-            """(?:stringResource|pluralStringResource|resolve)\([^)]*\)""" +
-                """\s*\.(?:lowercase|uppercase|capitalize)\(""",
-        )
+        val LOCALIZED_CASE_PATTERN =
+            Regex(
+                """(?:stringResource|pluralStringResource|resolve)\([^)]*\)""" +
+                    """\s*\.(?:lowercase|uppercase|capitalize)\(""",
+            )
         val VISIBLE_HTML_PATTERN = Regex(""">\s*[A-Za-z][^<\n]{1,}<""")
     }
 }
