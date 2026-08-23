@@ -7,7 +7,7 @@ use ind_ingest::prepared_content::AssetBackedPreparedContentProvider;
 use ind_persistence::repos::{
     PgDocumentAssetRepository, PgDocumentRepository, PgMilaConfigRepository,
 };
-use ind_test_support::{DocumentFactory, spawn_app};
+use ind_test_support::{DocumentFactory, TestAppOptions, spawn_app, spawn_app_with_options};
 use reqwest::StatusCode;
 use reqwest::multipart::{Form, Part};
 
@@ -401,4 +401,61 @@ fn build_minimal_pdf(text: &str) -> Vec<u8> {
         format!("trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
     );
     pdf
+}
+
+/// Small enough that a test can cross it without streaming the 50 MiB default.
+const SMALL_UPLOAD_LIMIT: usize = 64 * 1024;
+
+#[tokio::test]
+async fn upload_limits_reports_the_configured_maximum() {
+    let app = spawn_app_with_options(TestAppOptions {
+        max_upload_bytes: SMALL_UPLOAD_LIMIT,
+        ..TestAppOptions::default()
+    })
+    .await;
+    let session = app.create_web_session().await;
+    let client = app.authed_client(&session);
+
+    let body = assert_json_response(
+        client.get("/api/v1/library/uploads/limits").await,
+        StatusCode::OK,
+    )
+    .await;
+
+    assert_eq!(
+        body["max_upload_bytes"].as_u64(),
+        Some(SMALL_UPLOAD_LIMIT as u64)
+    );
+}
+
+#[tokio::test]
+async fn upload_limits_enforces_the_configured_maximum() {
+    let app = spawn_app_with_options(TestAppOptions {
+        max_upload_bytes: SMALL_UPLOAD_LIMIT,
+        ..TestAppOptions::default()
+    })
+    .await;
+    let session = app.create_web_session().await;
+    let client = app.authed_client(&session);
+
+    let form = Form::new().part(
+        "file",
+        Part::bytes(vec![0u8; SMALL_UPLOAD_LIMIT + 1])
+            .file_name("too-big.pdf")
+            .mime_str("application/pdf")
+            .expect("valid mime"),
+    );
+
+    let response = client.post_multipart("/api/v1/library/uploads", form).await;
+
+    assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+}
+
+#[tokio::test]
+async fn upload_limits_requires_authentication() {
+    let app = spawn_app().await;
+
+    let response = app.get("/api/v1/library/uploads/limits").await;
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }

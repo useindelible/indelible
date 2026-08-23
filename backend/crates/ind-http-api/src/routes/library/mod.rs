@@ -38,7 +38,7 @@ pub use mutations::{
     delete_library_entry, empty_trash, get_entry_tags, list_trash, purge_entry, restore_entry,
     set_entry_tags, toggle_favorite, toggle_shortlist, triage_entry,
 };
-pub use upload::upload_file;
+pub use upload::{UploadLimitsResponse, upload_file, upload_limits};
 
 fn require_library_ops(state: &AppState) -> Result<&dyn LibraryOperations, ApiError> {
     state
@@ -154,6 +154,7 @@ pub fn library_routes(max_upload_bytes: usize) -> Router<AppState> {
     Router::new()
         .route("/api/v1/library", get(list_library).post(save_url))
         .route("/api/v1/library/uploads", post(upload_file))
+        .route("/api/v1/library/uploads/limits", get(upload_limits))
         .route("/api/v1/library/query", post(query_library))
         .route("/api/v1/library/from-delivery", post(save_from_delivery))
         .route("/api/v1/library/count", get(count_library))

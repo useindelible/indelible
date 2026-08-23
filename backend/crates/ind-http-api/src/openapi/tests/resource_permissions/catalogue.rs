@@ -41,6 +41,7 @@ pub(super) const LIBRARY_OPERATIONS: &[OperationContract] = &[
     OperationContract::new("get", "/api/v1/library", "library:read"),
     OperationContract::new("post", "/api/v1/library", "library:write"),
     OperationContract::new("post", "/api/v1/library/uploads", "library:write"),
+    OperationContract::new("get", "/api/v1/library/uploads/limits", "library:write"),
     OperationContract::new("post", "/api/v1/library/query", "library:read"),
     OperationContract::new("post", "/api/v1/library/from-delivery", "library:write"),
     OperationContract::new("get", "/api/v1/library/count", "library:read"),
