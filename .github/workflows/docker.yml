@@ -1,7 +1,9 @@
 name: Docker
 
-# Two paths in: merges to main publish latest + sha tags once CI succeeds, and
-# release tags publish semver tags directly. A tag is cut from a commit that
+# Two release channels. Merges to main publish `dev` + a short commit SHA once
+# CI succeeds; stable `vX.Y.Z` tags publish semver tags and move `latest`.
+# Pre-release tags (`v0.2.0-rc1`) publish only their exact version, so `latest`
+# always means the newest stable release. A tag is cut from a commit that
 # already passed CI on main, so tag builds do not wait on a second CI run.
 #
 # Images are multi-arch. Each architecture builds on its own native runner and
@@ -123,13 +125,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # `type=sha` would read github.sha, which on workflow_run is the default
+      # branch head at event time, not necessarily the commit CI tested and the
+      # build job checked out. Derive the tag from the same ref as the checkout.
+      - name: Resolve built commit
+        id: src
+        env:
+          BUILT_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: echo "short=${BUILT_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          # latest=auto attaches `latest` only to a tag that parses as stable
+          # semver, so a malformed or pre-release tag can never move it. A
+          # hand-rolled ref check cannot express "valid semver".
+          flavor: |
+            latest=auto
           tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
-            type=sha,prefix=,format=short
+            type=raw,value=dev,enable=${{ github.event_name == 'workflow_run' }}
+            type=raw,value=${{ steps.src.outputs.short }},priority=100
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 

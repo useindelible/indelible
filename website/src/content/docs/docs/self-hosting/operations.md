@@ -94,14 +94,18 @@ Take a database dump before upgrading. Migrations are forward-only; rolling
 back to an older image after a migration has run is not supported, so the dump
 is your way back.
 
-### Pinning versions
+### Release channels
 
-Every release publishes semver tags alongside `latest`:
+Every stable release publishes semver tags and moves `latest`. Merges to
+`main` publish `dev` and a short commit SHA and never move `latest`, so
+`latest` always means the newest stable release. Pre-releases such as
+`0.2.0-rc1` publish only their exact tag.
 
 ```yaml
 image: ghcr.io/useindelible/ind-api:0.1.0   # exact release
 image: ghcr.io/useindelible/ind-api:0.1     # latest patch of 0.1
-image: ghcr.io/useindelible/ind-api:latest  # tip of main
+image: ghcr.io/useindelible/ind-api:latest  # newest stable release
+image: ghcr.io/useindelible/ind-api:dev     # tip of main; unreleased, may break
 ```
 
 For production, pin `ind-api`, `ind-worker`, and `ind-renderer` to the same
