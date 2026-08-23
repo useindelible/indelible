@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.UriHandler
+import app.indelible.core.i18n.LocaleFormatters
+import app.indelible.core.i18n.LocalizedDateStyle
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderContentMode
@@ -22,6 +24,12 @@ import app.indelible.reader.viewmodel.ReaderContentStatus
 import app.indelible.reader.viewmodel.ReaderRetryStatus
 import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.ReaderViewModel
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_ask_follow_up
+import indelible.composeapp.generated.resources.reader_minutes_short
+import indelible.composeapp.generated.resources.reader_summary_label
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun ReaderContentArea(
@@ -186,6 +194,22 @@ private fun ReaderArticleWebView(
     viewModel: ReaderViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val readingTimeMinutes = if (isVideo) null else state.item.readingTimeMinutes
+    val localization =
+        ReaderHtmlLocalization(
+            publishedDate =
+                if (isVideo) {
+                    null
+                } else {
+                    state.item.publishedAt?.let { LocaleFormatters.date(it, LocalizedDateStyle.MEDIUM) }
+                },
+            readingTime =
+                readingTimeMinutes?.let { minutes ->
+                    pluralStringResource(Res.plurals.reader_minutes_short, minutes, minutes)
+                },
+            summaryLabel = stringResource(Res.string.reader_summary_label),
+            askFollowUpLabel = stringResource(Res.string.reader_ask_follow_up),
+        )
     HtmlReaderView(
         htmlContent = html,
         highlights = state.highlights,
@@ -212,8 +236,7 @@ private fun ReaderArticleWebView(
         articleTitle = state.item.title,
         articleAuthor = if (isVideo) null else state.item.author,
         articleDomain = if (isVideo) null else state.item.domain,
-        articlePublishedAt = if (isVideo) null else state.item.publishedAt,
-        articleReadingTimeMinutes = if (isVideo) null else state.item.readingTimeMinutes,
+        localization = localization,
         summaryHtml = state.item.summary,
         // summaryPoints left empty: the library reader exposes only
         // a single summary string, no structured key-points array.

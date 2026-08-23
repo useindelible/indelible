@@ -7,6 +7,7 @@ import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.ReaderPreferences
 import app.indelible.reader.model.TextAlign
 import app.indelible.reader.model.Typeface
+import app.indelible.reader.ui.ReaderHtmlLocalization
 import app.indelible.reader.ui.ReaderHtmlTemplate
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -28,15 +29,24 @@ class ReaderHtmlTemplateTest {
     }
 
     @Test
-    fun build_renders_published_date_as_full_month_name() {
+    fun build_uses_preformatted_localized_metadata() {
         val html =
             ReaderHtmlTemplate.build(
                 articleHtml = "<p>x</p>",
                 preferences = ReaderPreferences(),
                 highlights = emptyList(),
-                articlePublishedAt = Instant.parse("2024-03-05T12:00:00Z"),
+                articleTitle = "Un article",
+                localization =
+                    ReaderHtmlLocalization(
+                        publishedDate = "5 mars 2024",
+                        readingTime = "1 minute",
+                        summaryLabel = "Résumé Mila",
+                        askFollowUpLabel = "Poser une question",
+                    ),
             )
-        assertContains(html, "March 5, 2024")
+        assertContains(html, "5 mars 2024")
+        assertContains(html, "1 minute")
+        assertFalse(html.contains("March 5, 2024"))
     }
 
     @Test

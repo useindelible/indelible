@@ -47,6 +47,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.UiMessage
+import app.indelible.core.i18n.resolve
 import app.indelible.mila.data.ChatMessage
 import app.indelible.mila.data.ChatScope
 import app.indelible.mila.data.SourceRef
@@ -56,9 +58,19 @@ import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_retry
+import indelible.composeapp.generated.resources.mila_all_items
+import indelible.composeapp.generated.resources.mila_empty_hint
+import indelible.composeapp.generated.resources.mila_input_placeholder
+import indelible.composeapp.generated.resources.mila_not_configured_body
+import indelible.composeapp.generated.resources.mila_not_configured_title
+import indelible.composeapp.generated.resources.mila_send_cd
+import indelible.composeapp.generated.resources.mila_set_up
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Reusable Mila chat surface: scope chip, message thread, error row, and composer.
@@ -197,20 +209,20 @@ fun MilaNotConfigured(
         )
         Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
         Text(
-            text = "Mila isn't set up",
+            text = stringResource(Res.string.mila_not_configured_title),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
         Text(
-            text = "Connect an AI provider in settings to start chatting with Mila about your saved content.",
+            text = stringResource(Res.string.mila_not_configured_body),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
         IndelibleButton(
-            text = "Set up Mila",
+            text = stringResource(Res.string.mila_set_up),
             onClick = onSetup,
         )
     }
@@ -227,7 +239,7 @@ private fun ScopeChipRow(scope: ChatScope) {
                 Icons.Filled.Folder to (scope.displayTitle ?: scope.collectionId).take(MAX_CHIP_TITLE_LENGTH)
 
             is ChatScope.CrossItem ->
-                Icons.Filled.AutoAwesome to "All items"
+                Icons.Filled.AutoAwesome to stringResource(Res.string.mila_all_items)
         }
 
     Row(
@@ -288,7 +300,7 @@ private fun EmptyHint() {
             )
             Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
             Text(
-                text = "Ask Mila anything about this content",
+                text = stringResource(Res.string.mila_empty_hint),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -299,7 +311,7 @@ private fun EmptyHint() {
 
 @Composable
 private fun ErrorRow(
-    error: String,
+    error: UiMessage,
     onRetry: () -> Unit,
 ) {
     Row(
@@ -315,13 +327,13 @@ private fun ErrorRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = error,
+            text = error.resolve(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f),
         )
         IndelibleButton(
-            text = "Retry",
+            text = stringResource(Res.string.common_retry),
             onClick = onRetry,
             style = IndelibleButtonStyle.Text,
         )
@@ -375,7 +387,7 @@ private fun InputRow(
             )
             if (inputText.isEmpty()) {
                 Text(
-                    text = "Ask Mila anything…",
+                    text = stringResource(Res.string.mila_input_placeholder),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -397,7 +409,7 @@ private fun InputRow(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "Send",
+                contentDescription = stringResource(Res.string.mila_send_cd),
                 modifier = Modifier.size(IndelibleSpacing.step20),
                 tint =
                     if (canSend) {

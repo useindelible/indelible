@@ -1,0 +1,12 @@
+"common_cancel" = "Annuler";
+"common_save" = "Enregistrer";
+"share_already_saved" = "Déjà enregistré";
+"share_error" = "Impossible d’enregistrer ce lien. Veuillez réessayer.";
+"share_inbox_default" = "Boîte de réception (par défaut)";
+"share_invalid_url" = "Cette adresse ne semble pas être une URL valide";
+"share_offline" = "Enregistré hors ligne — la synchronisation se fera lorsque vous serez connecté";
+"share_open_indelible" = "Ouvrir Indelible";
+"share_saved" = "Enregistré";
+"share_saving" = "Enregistrement…";
+"share_sign_in" = "Connectez-vous d’abord à Indelible";
+"share_title" = "Enregistrer dans Indelible";

@@ -35,6 +35,13 @@ import app.indelible.mila.ui.components.MilaNotConfigured
 import app.indelible.mila.viewmodel.MilaChatEffect
 import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.mila_collection_chat
+import indelible.composeapp.generated.resources.mila_cross_item_chat
+import indelible.composeapp.generated.resources.mila_document_chat
+import indelible.composeapp.generated.resources.mila_title
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +71,7 @@ fun MilaChatScreen(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Mila",
+                            text = stringResource(Res.string.mila_title),
                             style = MaterialTheme.typography.titleLarge,
                         )
                         ScopeSubtitle(scope = viewModel.scope)
@@ -74,7 +81,7 @@ fun MilaChatScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -137,11 +144,11 @@ fun MilaChatScreen(
 
 @Composable
 private fun ScopeSubtitle(scope: ChatScope) {
-    val (icon, text) =
+    val (icon, labelRes) =
         when (scope) {
-            is ChatScope.SingleDocument -> Icons.Filled.Description to "Document chat"
-            is ChatScope.Collection -> Icons.Filled.Folder to "Collection chat"
-            is ChatScope.CrossItem -> Icons.Filled.AutoAwesome to "Cross-item chat"
+            is ChatScope.SingleDocument -> Icons.Filled.Description to Res.string.mila_document_chat
+            is ChatScope.Collection -> Icons.Filled.Folder to Res.string.mila_collection_chat
+            is ChatScope.CrossItem -> Icons.Filled.AutoAwesome to Res.string.mila_cross_item_chat
         }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -155,7 +162,7 @@ private fun ScopeSubtitle(scope: ChatScope) {
         )
         Spacer(modifier = Modifier.width(IndelibleSpacing.step4))
         Text(
-            text = text,
+            text = stringResource(labelRes),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

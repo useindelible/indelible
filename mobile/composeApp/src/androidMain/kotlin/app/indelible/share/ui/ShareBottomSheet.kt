@@ -27,10 +27,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.resolve
 import app.indelible.share.viewmodel.ShareUiState
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_save
+import indelible.composeapp.generated.resources.share_already_saved
+import indelible.composeapp.generated.resources.share_inbox_default
+import indelible.composeapp.generated.resources.share_invalid_url
+import indelible.composeapp.generated.resources.share_offline
+import indelible.composeapp.generated.resources.share_open_indelible
+import indelible.composeapp.generated.resources.share_saved
+import indelible.composeapp.generated.resources.share_sign_in
+import indelible.composeapp.generated.resources.share_title
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +91,7 @@ private fun ShareSheetHeader(url: String) {
         )
         Spacer(modifier = Modifier.width(IndelibleSpacing.step8))
         Text(
-            text = "Save to Indelible",
+            text = stringResource(Res.string.share_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -99,7 +111,7 @@ private fun ShareSheetHeader(url: String) {
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
     Text(
-        text = "Inbox (default)",
+        text = stringResource(Res.string.share_inbox_default),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -140,7 +152,7 @@ private fun ShareStateContent(
     when (uiState) {
         is ShareUiState.Idle, is ShareUiState.Saving -> {
             IndelibleButton(
-                text = "Save",
+                text = stringResource(Res.string.common_save),
                 onClick = onSave,
                 isLoading = uiState is ShareUiState.Saving,
             )
@@ -149,25 +161,32 @@ private fun ShareStateContent(
             ShareStatusRow(
                 icon = Icons.Default.CheckCircle,
                 iconTint = MaterialTheme.colorScheme.primary,
-                text = if (uiState is ShareUiState.AlreadySaved) "Already saved" else "Saved!",
+                text =
+                    stringResource(
+                        if (uiState is ShareUiState.AlreadySaved) {
+                            Res.string.share_already_saved
+                        } else {
+                            Res.string.share_saved
+                        },
+                    ),
             )
         }
         is ShareUiState.Queued -> {
             ShareStatusRow(
                 icon = Icons.Default.WifiOff,
                 iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                text = "Saved offline — will sync when online",
+                text = stringResource(Res.string.share_offline),
             )
         }
         is ShareUiState.AuthRequired -> {
             Text(
-                text = "Sign in to Indelible first",
+                text = stringResource(Res.string.share_sign_in),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.error,
             )
             Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
             IndelibleButton(
-                text = "Open Indelible",
+                text = stringResource(Res.string.share_open_indelible),
                 onClick = onSignIn,
             )
         }
@@ -175,7 +194,7 @@ private fun ShareStateContent(
             ShareStatusRow(
                 icon = Icons.Default.Error,
                 iconTint = MaterialTheme.colorScheme.error,
-                text = "This doesn't look like a valid URL",
+                text = stringResource(Res.string.share_invalid_url),
                 textColor = MaterialTheme.colorScheme.error,
             )
         }
@@ -183,7 +202,7 @@ private fun ShareStateContent(
             ShareStatusRow(
                 icon = Icons.Default.Error,
                 iconTint = MaterialTheme.colorScheme.error,
-                text = uiState.message,
+                text = uiState.message.resolve(),
                 textColor = MaterialTheme.colorScheme.error,
             )
         }

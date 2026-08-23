@@ -22,7 +22,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderPreferences
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -45,8 +44,7 @@ actual fun HtmlReaderView(
     articleTitle: String,
     articleAuthor: String?,
     articleDomain: String?,
-    articlePublishedAt: Instant?,
-    articleReadingTimeMinutes: Int?,
+    localization: ReaderHtmlLocalization,
     summaryHtml: String?,
     summaryPoints: List<String>,
     onSummaryAction: (String) -> Unit,
@@ -83,25 +81,25 @@ actual fun HtmlReaderView(
             preferences,
             highlights,
             isDarkMode,
+            localization,
             summaryHtml,
             summaryPoints,
             topContentPaddingPx,
             artwork,
         ) {
             ReaderHtmlTemplate.build(
-                htmlContent,
-                preferences,
-                highlights,
-                isDarkMode,
-                articleTitle,
-                articleAuthor,
-                articleDomain,
-                articlePublishedAt,
-                articleReadingTimeMinutes,
-                summaryHtml,
-                summaryPoints,
-                topContentPaddingPx,
-                artwork,
+                articleHtml = htmlContent,
+                preferences = preferences,
+                highlights = highlights,
+                localization = localization,
+                isDarkMode = isDarkMode,
+                articleTitle = articleTitle,
+                articleAuthor = articleAuthor,
+                articleDomain = articleDomain,
+                summaryHtml = summaryHtml,
+                summaryPoints = summaryPoints,
+                topContentPaddingPx = topContentPaddingPx,
+                artwork = artwork,
             )
         }
 

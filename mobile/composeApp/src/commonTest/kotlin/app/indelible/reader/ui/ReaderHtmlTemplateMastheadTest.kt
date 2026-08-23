@@ -15,6 +15,13 @@ class ReaderHtmlTemplateMastheadTest {
         author: String?,
         domain: String?,
         summary: String?,
+        localization: ReaderHtmlLocalization =
+            ReaderHtmlLocalization(
+                publishedDate = null,
+                readingTime = null,
+                summaryLabel = "Mila summary",
+                askFollowUpLabel = "Ask a follow-up",
+            ),
     ) = ReaderHtmlTemplate.build(
         articleHtml = "<p>body</p>",
         preferences = ReaderPreferences(),
@@ -23,6 +30,7 @@ class ReaderHtmlTemplateMastheadTest {
         articleAuthor = author,
         articleDomain = domain,
         summaryHtml = summary,
+        localization = localization,
     )
 
     @Test
@@ -49,5 +57,29 @@ class ReaderHtmlTemplateMastheadTest {
 
         assertFalse(html.contains("<header class=\"masthead\">"), "video should not render a masthead")
         assertFalse(html.contains("reader-summary-handle"), "no summary means no handle")
+    }
+
+    @Test
+    fun frenchLabelsAreUsedAndEscaped() {
+        val html =
+            build(
+                title = "Un article",
+                author = "Une autrice",
+                domain = "example.fr",
+                summary = "Résumé",
+                localization =
+                    ReaderHtmlLocalization(
+                        publishedDate = "5 mars 2024",
+                        readingTime = "7 min",
+                        summaryLabel = "Résumé Mila <fiable>",
+                        askFollowUpLabel = "Poser une question & poursuivre",
+                    ),
+            )
+
+        assertTrue(html.contains("5 mars 2024"))
+        assertTrue(html.contains("7 min"))
+        assertTrue(html.contains("Résumé Mila &lt;fiable&gt;"))
+        assertTrue(html.contains("Poser une question &amp; poursuivre"))
+        assertFalse(html.contains("Résumé Mila <fiable>"))
     }
 }

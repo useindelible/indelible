@@ -1,5 +1,6 @@
 package app.indelible.share.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.SaveLibraryEntryResponse
 
 sealed class ShareUiState {
@@ -18,7 +19,7 @@ sealed class ShareUiState {
     data object AuthRequired : ShareUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : ShareUiState()
 
     data object InvalidUrl : ShareUiState()

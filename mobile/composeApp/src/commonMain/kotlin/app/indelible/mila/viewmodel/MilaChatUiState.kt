@@ -1,5 +1,6 @@
 package app.indelible.mila.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.mila.data.ChatMessage
 
 data class MilaChatUiState(
@@ -9,7 +10,7 @@ data class MilaChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isStreaming: Boolean = false,
     val inputText: String = "",
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 sealed class MilaChatEffect {
