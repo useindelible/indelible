@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import app.indelible.auth.navigation.AuthNavigation
 import app.indelible.auth.viewmodel.AuthState
 import app.indelible.core.di.rememberAppContainer
+import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.image.newImageLoader
 import app.indelible.core.preferences.ThemePreference
 import app.indelible.core.storage.TokenStorage
@@ -27,6 +28,7 @@ fun App(
     tokenStorage: TokenStorage,
     userPreferencesStorage: UserPreferencesStorage,
     pendingSaveRepository: PendingSaveRepository,
+    appLanguageSettings: AppLanguageSettings? = null,
     onReady: () -> Unit = {},
 ) {
     val appContainer = rememberAppContainer(tokenStorage, userPreferencesStorage, pendingSaveRepository)
@@ -78,6 +80,7 @@ fun App(
                             authViewModel = authViewModel,
                             appContainer = appContainer,
                             userPreferencesViewModel = userPreferencesViewModel,
+                            appLanguageSettings = appLanguageSettings,
                         )
                     }
                 }

@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import app.indelible.auth.viewmodel.AuthState
 import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.core.di.AppContainer
+import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.preferences.DefaultViewPreference
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import io.ktor.http.encodeURLQueryComponent
@@ -87,6 +88,7 @@ fun MainNavigation(
     authViewModel: AuthViewModel,
     appContainer: AppContainer,
     userPreferencesViewModel: UserPreferencesViewModel,
+    appLanguageSettings: AppLanguageSettings?,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -247,6 +249,7 @@ fun MainNavigation(
                     milaSettingsRepository = appContainer.milaSettingsRepository,
                     ingestEmail = ingestEmail,
                     ingestLibraryEmail = ingestLibraryEmail,
+                    appLanguageSettings = appLanguageSettings,
                 )
                 milaChatRoutes(navController, appContainer.milaRepository)
             }

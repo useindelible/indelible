@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.indelible.api.generated.models.MilaPromptPresetResponse
-import app.indelible.api.generated.models.TestMilaConfigResponse
+import app.indelible.core.i18n.resolve
 import app.indelible.profile.ui.components.PreferenceDropdownRow
 import app.indelible.profile.ui.components.SettingsRow
 import app.indelible.profile.ui.components.SettingsSection
@@ -49,6 +49,35 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_save
+import indelible.composeapp.generated.resources.mila_action_chat
+import indelible.composeapp.generated.resources.mila_action_entities
+import indelible.composeapp.generated.resources.mila_action_summary
+import indelible.composeapp.generated.resources.mila_action_tags
+import indelible.composeapp.generated.resources.mila_action_unknown
+import indelible.composeapp.generated.resources.mila_api_base_url
+import indelible.composeapp.generated.resources.mila_api_key
+import indelible.composeapp.generated.resources.mila_api_key_keep
+import indelible.composeapp.generated.resources.mila_chat_model
+import indelible.composeapp.generated.resources.mila_connection_failed_title
+import indelible.composeapp.generated.resources.mila_connection_successful
+import indelible.composeapp.generated.resources.mila_delete_preset_cd
+import indelible.composeapp.generated.resources.mila_enable
+import indelible.composeapp.generated.resources.mila_enable_description
+import indelible.composeapp.generated.resources.mila_models
+import indelible.composeapp.generated.resources.mila_preset_add
+import indelible.composeapp.generated.resources.mila_preset_builtin
+import indelible.composeapp.generated.resources.mila_preset_default
+import indelible.composeapp.generated.resources.mila_presets
+import indelible.composeapp.generated.resources.mila_provider
+import indelible.composeapp.generated.resources.mila_rebuild_embeddings
+import indelible.composeapp.generated.resources.mila_test_connection
+import indelible.composeapp.generated.resources.mila_title
+import indelible.composeapp.generated.resources.profile_ai
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 private val COMMON_CHAT_MODELS =
     listOf(
@@ -80,7 +109,7 @@ fun AiSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mila & AI",
+                        text = stringResource(Res.string.profile_ai),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -88,7 +117,7 @@ fun AiSettingsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -116,21 +145,18 @@ fun AiSettingsScreen(
                     .padding(top = paddingValues.calculateTopPadding())
                     .verticalScroll(rememberScrollState()),
         ) {
-            // ── Mila ──────────────────────────────────────────────────────
-            SettingsSection(title = "Mila") {
+            SettingsSection(title = stringResource(Res.string.mila_title)) {
                 ToggleRow(
-                    label = "Enable Mila",
-                    sublabel = "AI summaries, auto-tags, and reading assistant",
+                    label = stringResource(Res.string.mila_enable),
+                    sublabel = stringResource(Res.string.mila_enable_description),
                     checked = state.enabled,
                     onCheckedChange = { viewModel.toggleEnabled(it) },
                 )
             }
 
-            // ── Provider ──────────────────────────────────────────────────
             ProviderConfigSection(state = state, viewModel = viewModel)
 
-            // ── Models ────────────────────────────────────────────────────
-            SettingsSection(title = "Models") {
+            SettingsSection(title = stringResource(Res.string.mila_models)) {
                 val modelOptions =
                     buildList {
                         addAll(COMMON_CHAT_MODELS)
@@ -139,7 +165,7 @@ fun AiSettingsScreen(
                         }
                     }
                 PreferenceDropdownRow(
-                    label = "Chat Model",
+                    label = stringResource(Res.string.mila_chat_model),
                     currentValue = state.chatModel,
                     displayName = { it },
                     options = modelOptions,
@@ -147,14 +173,12 @@ fun AiSettingsScreen(
                 )
             }
 
-            // ── Prompt Presets ─────────────────────────────────────────────
             PromptPresetListSection(
                 state = state,
                 onNavigateToPreset = onNavigateToPreset,
                 viewModel = viewModel,
             )
 
-            // ── Save ──────────────────────────────────────────────────────
             Column(
                 modifier =
                     Modifier.padding(
@@ -165,13 +189,20 @@ fun AiSettingsScreen(
             ) {
                 if (state.saveError != null) {
                     Text(
-                        text = state.saveError!!,
+                        text = state.saveError!!.resolve(),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
                 IndelibleButton(
-                    text = if (state.reindexConfirmationRequired) "Rebuild embeddings" else "Save",
+                    text =
+                        stringResource(
+                            if (state.reindexConfirmationRequired) {
+                                Res.string.mila_rebuild_embeddings
+                            } else {
+                                Res.string.common_save
+                            },
+                        ),
                     onClick = { viewModel.save() },
                     isLoading = state.isSaving,
                 )
@@ -187,7 +218,7 @@ private fun ProviderConfigSection(
     state: AiSettingsUiState,
     viewModel: AiSettingsViewModel,
 ) {
-    SettingsSection(title = "Provider") {
+    SettingsSection(title = stringResource(Res.string.mila_provider)) {
         Column(
             modifier =
                 Modifier
@@ -201,21 +232,32 @@ private fun ProviderConfigSection(
             IndelibleTextField(
                 value = state.apiBase,
                 onValueChange = { viewModel.updateApiBase(it) },
-                label = "API Base URL",
+                label = stringResource(Res.string.mila_api_base_url),
                 imeAction = ImeAction.Next,
             )
             IndelibleTextField(
                 value = state.apiKey,
                 onValueChange = { viewModel.updateApiKey(it) },
-                label = if (state.hasApiKey) "API Key (leave blank to keep)" else "API Key",
+                label =
+                    stringResource(
+                        if (state.hasApiKey) Res.string.mila_api_key_keep else Res.string.mila_api_key,
+                    ),
                 isPassword = true,
                 imeAction = ImeAction.Done,
             )
             if (state.testResult != null) {
-                TestResultBanner(result = state.testResult)
+                TestResultBanner(
+                    isSuccess = state.testResult.success,
+                    error = state.testResult.error,
+                )
+            } else if (state.testError != null) {
+                TestResultBanner(
+                    isSuccess = false,
+                    error = state.testError.resolve(),
+                )
             }
             IndelibleButton(
-                text = "Test Connection",
+                text = stringResource(Res.string.mila_test_connection),
                 onClick = { viewModel.testConnection() },
                 isLoading = state.isTesting,
                 style = IndelibleButtonStyle.Text,
@@ -231,7 +273,7 @@ private fun PromptPresetListSection(
     onNavigateToPreset: (presetId: String?) -> Unit,
     viewModel: AiSettingsViewModel,
 ) {
-    SettingsSection(title = "Prompt Presets") {
+    SettingsSection(title = stringResource(Res.string.mila_presets)) {
         Column(
             modifier =
                 Modifier
@@ -255,7 +297,7 @@ private fun PromptPresetListSection(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
             SettingsRow(
-                label = "+ Add Preset",
+                label = stringResource(Res.string.mila_preset_add),
                 onClick = { onNavigateToPreset(null) },
                 showChevron = false,
                 labelColor = MaterialTheme.colorScheme.primary,
@@ -265,8 +307,10 @@ private fun PromptPresetListSection(
 }
 
 @Composable
-private fun TestResultBanner(result: TestMilaConfigResponse) {
-    val isSuccess = result.success
+private fun TestResultBanner(
+    isSuccess: Boolean,
+    error: String?,
+) {
     val bgColor =
         if (isSuccess) {
             MaterialTheme.colorScheme.primaryContainer
@@ -299,13 +343,20 @@ private fun TestResultBanner(result: TestMilaConfigResponse) {
         )
         Column {
             Text(
-                text = if (isSuccess) "Connection successful" else "Connection failed",
+                text =
+                    stringResource(
+                        if (isSuccess) {
+                            Res.string.mila_connection_successful
+                        } else {
+                            Res.string.mila_connection_failed_title
+                        },
+                    ),
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
             )
-            if (!result.error.isNullOrBlank()) {
+            if (!error.isNullOrBlank()) {
                 Text(
-                    text = result.error,
+                    text = error,
                     style = MaterialTheme.typography.bodySmall,
                     color = textColor,
                 )
@@ -340,9 +391,13 @@ private fun PromptPresetRow(
                 horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step4),
                 verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step4),
             ) {
-                PresetChip(label = preset.action)
-                if (preset.isDefault) PresetChip(label = "default", isPrimary = true)
-                if (preset.isBuiltIn) PresetChip(label = "built-in")
+                PresetChip(label = presetActionLabel(preset.action))
+                if (preset.isDefault) {
+                    PresetChip(label = stringResource(Res.string.mila_preset_default), isPrimary = true)
+                }
+                if (preset.isBuiltIn) {
+                    PresetChip(label = stringResource(Res.string.mila_preset_builtin))
+                }
             }
         }
         if (!preset.isBuiltIn) {
@@ -352,7 +407,7 @@ private fun PromptPresetRow(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
-                    contentDescription = "Delete preset",
+                    contentDescription = stringResource(Res.string.mila_delete_preset_cd),
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(IndelibleSpacing.step20),
                 )
@@ -360,6 +415,18 @@ private fun PromptPresetRow(
         }
     }
 }
+
+@Composable
+internal fun presetActionLabel(action: String): String = stringResource(presetActionLabelRes(action))
+
+private fun presetActionLabelRes(action: String): StringResource =
+    when (action) {
+        "summary" -> Res.string.mila_action_summary
+        "tags" -> Res.string.mila_action_tags
+        "entities" -> Res.string.mila_action_entities
+        "chat" -> Res.string.mila_action_chat
+        else -> Res.string.mila_action_unknown
+    }
 
 @Composable
 private fun PresetChip(

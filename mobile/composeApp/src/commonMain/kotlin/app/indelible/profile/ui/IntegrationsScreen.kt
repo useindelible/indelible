@@ -42,8 +42,26 @@ import app.indelible.profile.ui.components.SettingsSection
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.integrations_active
+import indelible.composeapp.generated.resources.integrations_add_library
+import indelible.composeapp.generated.resources.integrations_add_library_description
+import indelible.composeapp.generated.resources.integrations_add_rss_feed
+import indelible.composeapp.generated.resources.integrations_add_rss_feed_description
+import indelible.composeapp.generated.resources.integrations_content
+import indelible.composeapp.generated.resources.integrations_copied
+import indelible.composeapp.generated.resources.integrations_copy
+import indelible.composeapp.generated.resources.integrations_email_ingest
+import indelible.composeapp.generated.resources.integrations_feed
+import indelible.composeapp.generated.resources.integrations_ingest_addresses
+import indelible.composeapp.generated.resources.integrations_ingest_description
+import indelible.composeapp.generated.resources.integrations_library
+import indelible.composeapp.generated.resources.integrations_manage_feeds
+import indelible.composeapp.generated.resources.integrations_manage_feeds_description
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 private const val COPY_FEEDBACK_DELAY_MS = 2000L
 
@@ -64,7 +82,7 @@ fun IntegrationsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Content",
+                        text = stringResource(Res.string.integrations_content),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -72,7 +90,7 @@ fun IntegrationsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -86,27 +104,27 @@ fun IntegrationsScreen(
                     .padding(top = paddingValues.calculateTopPadding())
                     .verticalScroll(rememberScrollState()),
         ) {
-            SettingsSection(title = "Content") {
+            SettingsSection(title = stringResource(Res.string.integrations_content)) {
                 SettingsRow(
-                    label = "Add to Library",
-                    sublabel = "Save a URL or paste article text",
+                    label = stringResource(Res.string.integrations_add_library),
+                    sublabel = stringResource(Res.string.integrations_add_library_description),
                     onClick = onNavigateToAddLibrary,
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsRow(
-                    label = "Add RSS Feed",
-                    sublabel = "Subscribe to blogs and newsletters",
+                    label = stringResource(Res.string.integrations_add_rss_feed),
+                    sublabel = stringResource(Res.string.integrations_add_rss_feed_description),
                     onClick = onNavigateToAddFeed,
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsRow(
-                    label = "Manage Feeds",
-                    sublabel = "Edit or remove feed subscriptions",
+                    label = stringResource(Res.string.integrations_manage_feeds),
+                    sublabel = stringResource(Res.string.integrations_manage_feeds_description),
                     onClick = onNavigateToFeeds,
                 )
             }
 
-            SettingsSection(title = "Email Ingest") {
+            SettingsSection(title = stringResource(Res.string.integrations_email_ingest)) {
                 IngestCard(
                     libraryEmail = ingestLibraryEmail,
                     feedEmail = ingestEmail,
@@ -153,27 +171,27 @@ private fun IngestCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Ingest Addresses",
+                    text = stringResource(Res.string.integrations_ingest_addresses),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 if (hasAnyEmail) {
-                    SuccessBadge(label = "Active")
+                    SuccessBadge(label = stringResource(Res.string.integrations_active))
                 }
             }
 
             Text(
-                text = "Forward emails to save to Library, or route to Feed to subscribe as an entry.",
+                text = stringResource(Res.string.integrations_ingest_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step0)) {
                 if (libraryEmail != null) {
-                    IngestRow(label = "Library", address = libraryEmail)
+                    IngestRow(label = stringResource(Res.string.integrations_library), address = libraryEmail)
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
                 if (feedEmail != null) {
-                    IngestRow(label = "Feed", address = feedEmail)
+                    IngestRow(label = stringResource(Res.string.integrations_feed), address = feedEmail)
                 }
             }
         }
@@ -199,7 +217,7 @@ private fun IngestRow(
         horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step10),
     ) {
         Text(
-            text = label.uppercase(),
+            text = label,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(IndelibleSpacing.step48),
@@ -213,7 +231,10 @@ private fun IngestRow(
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
         CopyPillButton(
-            label = if (copied) "Copied" else "Copy",
+            label =
+                stringResource(
+                    if (copied) Res.string.integrations_copied else Res.string.integrations_copy,
+                ),
             onClick = {
                 clipboard.setText(AnnotatedString(address))
                 scope.launch {
@@ -263,7 +284,7 @@ private fun SuccessBadge(
         color = successColor.copy(alpha = 0.12f),
     ) {
         Text(
-            text = label.uppercase(),
+            text = label,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
             color = successColor,
             modifier = Modifier.padding(horizontal = IndelibleSpacing.step10, vertical = IndelibleSpacing.step4),
