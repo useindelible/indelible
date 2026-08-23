@@ -41,6 +41,9 @@ import app.indelible.profile.ui.components.UserAvatar
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_item_count
+import org.jetbrains.compose.resources.pluralStringResource
 import app.indelible.ui.theme.geistMonoFontFamily
 
 /**
@@ -178,7 +181,7 @@ private fun ScopeCountPill(count: Int) {
                 .padding(horizontal = IndelibleSpacing.step10, vertical = IndelibleSpacing.step4),
     ) {
         Text(
-            text = count.toString(),
+            text = pluralStringResource(Res.plurals.library_item_count, count, count),
             style = MaterialTheme.typography.bodyMedium.copy(fontFamily = geistMonoFontFamily()),
             color = MaterialTheme.colorScheme.primary,
         )

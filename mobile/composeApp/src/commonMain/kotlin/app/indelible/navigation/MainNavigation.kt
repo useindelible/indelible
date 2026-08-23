@@ -22,6 +22,7 @@ import app.indelible.core.di.AppContainer
 import app.indelible.core.preferences.DefaultViewPreference
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import io.ktor.http.encodeURLQueryComponent
+import org.jetbrains.compose.resources.stringResource
 
 object MainRoutes {
     const val COLLECTIONS = "collections"
@@ -140,6 +141,7 @@ fun MainNavigation(
                         // REVIEW remains a reachable route but is intentionally absent from the bar;
                         // the prototype tab set is Home, Library, Feed, Search, Profile.
                         TabItem.entries.filter { it != TabItem.REVIEW }.forEach { tab ->
+                            val label = stringResource(tab.labelRes)
                             val selected =
                                 currentDestination?.hierarchy?.any {
                                     it.route == tab.route
@@ -159,10 +161,10 @@ fun MainNavigation(
                                 icon = {
                                     Icon(
                                         imageVector = tab.icon,
-                                        contentDescription = tab.label,
+                                        contentDescription = label,
                                     )
                                 },
-                                label = { Text(tab.label) },
+                                label = { Text(label) },
                             )
                         }
                     }

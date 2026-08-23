@@ -49,8 +49,15 @@ import app.indelible.sidebar.model.Collection
 import app.indelible.sidebar.model.SmartList
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_coming_soon
+import indelible.composeapp.generated.resources.library_scope_archive
+import indelible.composeapp.generated.resources.library_scope_inbox
+import indelible.composeapp.generated.resources.library_scope_later
+import indelible.composeapp.generated.resources.library_url_queued
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 private const val PAGINATION_TRIGGER_ROWS = 5
 
@@ -79,6 +86,8 @@ fun LibraryScreen(
     val coroutineScope = rememberCoroutineScope()
     var popoverOpen by remember { mutableStateOf(false) }
     var addUrlSheetOpen by remember { mutableStateOf(false) }
+    val comingSoonMessage = stringResource(Res.string.common_coming_soon)
+    val urlQueuedMessage = stringResource(Res.string.library_url_queued)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -94,7 +103,7 @@ fun LibraryScreen(
                 AddLibraryEffect.Saved -> {
                     addUrlSheetOpen = false
                     viewModel.refresh()
-                    snackbarHostState.showSnackbar("URL queued for ingestion")
+                    snackbarHostState.showSnackbar(urlQueuedMessage)
                 }
             }
         }
@@ -133,7 +142,7 @@ fun LibraryScreen(
                     avatarBytes = avatarBytes,
                     onMenuClick = onMenuClick,
                     onScopeClick = { popoverOpen = !popoverOpen },
-                    onSortClick = { coroutineScope.launch { snackbarHostState.showSnackbar("Coming soon") } },
+                    onSortClick = { coroutineScope.launch { snackbarHostState.showSnackbar(comingSoonMessage) } },
                     onProfileClick = onProfileClick,
                 )
 
@@ -227,12 +236,20 @@ fun LibraryScreen(
     }
 }
 
+@Composable
 private fun scopeTitle(
     scope: LibraryScope,
     triageFilter: app.indelible.library.viewmodel.TriageFilter,
 ): String =
     when (scope) {
-        is LibraryScope.Triage -> triageFilter.name.lowercase().replaceFirstChar { it.uppercase() }
+        is LibraryScope.Triage ->
+            stringResource(
+                when (triageFilter) {
+                    app.indelible.library.viewmodel.TriageFilter.INBOX -> Res.string.library_scope_inbox
+                    app.indelible.library.viewmodel.TriageFilter.LATER -> Res.string.library_scope_later
+                    app.indelible.library.viewmodel.TriageFilter.ARCHIVE -> Res.string.library_scope_archive
+                },
+            )
         is LibraryScope.Collection -> scope.name
         is LibraryScope.SmartList -> scope.name
     }

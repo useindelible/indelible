@@ -1,6 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.w3c.dom.Element
+import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -361,4 +364,100 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+val i18nCheck by tasks.registering {
+    group = "verification"
+    description = "Checks Compose resource translations against the English source catalog."
+
+    val resourcesRoot = layout.projectDirectory.dir("src/commonMain/composeResources")
+    val sourceFile = resourcesRoot.file("values/strings.xml")
+    val translationFiles =
+        resourcesRoot.asFileTree.matching {
+            include("values-*/strings.xml")
+        }
+    inputs.file(sourceFile)
+    inputs.files(translationFiles)
+
+    doLast {
+        val errors = mutableListOf<String>()
+
+        fun readCatalog(file: File): Map<String, Map<String, String>> {
+            val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+            val catalog = linkedMapOf<String, Map<String, String>>()
+            val children = document.documentElement.childNodes
+
+            for (index in 0 until children.length) {
+                val element = children.item(index) as? Element ?: continue
+                if (element.tagName !in setOf("string", "plurals")) continue
+                val name = element.getAttribute("name")
+                val resourceKey = "${element.tagName}:$name"
+                if (name.isBlank()) errors += "${file.path}: resource name must not be empty"
+                if (resourceKey in catalog) errors += "${file.path}: duplicate resource $resourceKey"
+
+                val values = linkedMapOf<String, String>()
+                if (element.tagName == "string") {
+                    values["value"] = element.textContent.trim()
+                } else {
+                    val items = element.childNodes
+                    for (itemIndex in 0 until items.length) {
+                        val item = items.item(itemIndex) as? Element ?: continue
+                        if (item.tagName != "item") continue
+                        val quantity = item.getAttribute("quantity")
+                        if (quantity in values) {
+                            errors += "${file.path}: duplicate $resourceKey quantity $quantity"
+                        }
+                        values[quantity] = item.textContent.trim()
+                    }
+                }
+                if (values.isEmpty() || values.values.any(String::isBlank)) {
+                    errors += "${file.path}: $resourceKey must not contain empty values"
+                }
+                catalog[resourceKey] = values
+            }
+
+            return catalog
+        }
+
+        fun placeholders(value: String): List<String> =
+            Regex("""%\d+\$[A-Za-z]""").findAll(value).map { it.value }.sorted().toList()
+
+        val source = readCatalog(sourceFile.asFile)
+        translationFiles.files.sortedBy(File::getPath).forEach { file ->
+            val translation = readCatalog(file)
+            val locale = file.parentFile.name.removePrefix("values-")
+            val extra = translation.keys - source.keys
+            if (extra.isNotEmpty()) errors += "$locale: unknown resources ${extra.sorted().joinToString()}"
+            if (locale == "fr") {
+                val missing = source.keys - translation.keys
+                if (missing.isNotEmpty()) errors += "fr: missing resources ${missing.sorted().joinToString()}"
+            }
+
+            (source.keys intersect translation.keys).forEach { key ->
+                val sourceValues = source.getValue(key)
+                val translatedValues = translation.getValue(key)
+                if (sourceValues.keys != translatedValues.keys) {
+                    errors += "$locale: plural quantities differ for $key"
+                }
+                (sourceValues.keys intersect translatedValues.keys).forEach { quantity ->
+                    if (placeholders(sourceValues.getValue(quantity)) != placeholders(translatedValues.getValue(quantity))) {
+                        errors += "$locale: placeholders differ for $key ($quantity)"
+                    }
+                }
+            }
+        }
+
+        if (errors.isNotEmpty()) {
+            throw GradleException(errors.joinToString(prefix = "Mobile i18n check failed:\n- ", separator = "\n- "))
+        }
+        logger.lifecycle(
+            "Mobile i18n check passed ({} source resources, {} translations)",
+            source.size,
+            translationFiles.files.size,
+        )
+    }
+}
+
+tasks.named("check") {
+    dependsOn(i18nCheck)
 }

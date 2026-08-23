@@ -23,6 +23,10 @@ import app.indelible.profile.ui.components.UserAvatar
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_open_menu_cd
+import indelible.composeapp.generated.resources.home_search_cd
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Transparent home top bar: drawer menu on the left, search + profile avatar on
@@ -49,7 +53,7 @@ fun HomeAppBar(
         IconButton(onClick = onMenuClick) {
             Icon(
                 imageVector = Icons.Filled.Menu,
-                contentDescription = "Open menu",
+                contentDescription = stringResource(Res.string.home_open_menu_cd),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
@@ -57,7 +61,7 @@ fun HomeAppBar(
         IconButton(onClick = onSearchClick) {
             Icon(
                 imageVector = Icons.Filled.Search,
-                contentDescription = "Search",
+                contentDescription = stringResource(Res.string.home_search_cd),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }

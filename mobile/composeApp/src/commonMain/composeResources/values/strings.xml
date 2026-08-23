@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">Indelible</string>
+    <string name="common_coming_soon">Coming soon</string>
+    <string name="feed_save">Save</string>
+    <string name="feed_saved">Saved</string>
+    <string name="feed_seen">Seen</string>
+    <string name="home_open_menu_cd">Open menu</string>
+    <string name="home_search_cd">Search</string>
+    <string name="library_scope_archive">Archive</string>
+    <string name="library_scope_inbox">Inbox</string>
+    <string name="library_scope_later">Later</string>
+    <string name="library_url_queued">URL queued for ingestion</string>
+    <string name="nav_feed">Feed</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_review">Review</string>
+    <string name="nav_search">Search</string>
+    <string name="relative_time_future">in %1$s</string>
+    <string name="relative_time_now">just now</string>
+    <string name="relative_time_past">%1$s ago</string>
+    <plurals name="relative_time_day">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="relative_time_hour">
+        <item quantity="one">%1$d hr</item>
+        <item quantity="other">%1$d hrs</item>
+    </plurals>
+    <plurals name="relative_time_minute">
+        <item quantity="one">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="relative_time_month">
+        <item quantity="one">%1$d mo</item>
+        <item quantity="other">%1$d mos</item>
+    </plurals>
+    <plurals name="relative_time_week">
+        <item quantity="one">%1$d wk</item>
+        <item quantity="other">%1$d wks</item>
+    </plurals>
+    <plurals name="relative_time_year">
+        <item quantity="one">%1$d yr</item>
+        <item quantity="other">%1$d yrs</item>
+    </plurals>
+    <plurals name="library_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+</resources>

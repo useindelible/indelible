@@ -245,7 +245,7 @@ Requirements:
 - All shapes from `MaterialTheme.shapes.*` or `IndelibleShape.*`
 - All spacing from `IndelibleSpacing.*`
 - `modifier: Modifier = Modifier` as the first named parameter after required props
-- No hardcoded strings that belong in a `stringResource` — stub with `TODO` if resources aren't set up yet
+- User-facing copy belongs in `composeApp/src/commonMain/composeResources/values/strings.xml`; render it with `stringResource` or `pluralStringResource` instead of hardcoding it
 
 Template:
 
