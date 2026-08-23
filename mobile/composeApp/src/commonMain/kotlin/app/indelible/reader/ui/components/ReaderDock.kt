@@ -103,7 +103,7 @@ fun ReaderDock(
                     onClick = { select(DataPanel.AA) },
                 ) {
                     Text(
-                        text = "Aa",
+                        text = "Aa", // i18n-ignore: typography settings glyph
                         fontFamily = SerifFontFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,

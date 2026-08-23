@@ -28,8 +28,8 @@ import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.home_minutes_left
-import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.pluralStringResource
+import kotlin.math.roundToInt
 
 private val cardWidth = IndelibleSpacing.step96 + IndelibleSpacing.step56
 private val coverHeight = IndelibleSpacing.step96 + IndelibleSpacing.step2

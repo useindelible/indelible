@@ -41,6 +41,7 @@ import app.indelible.profile.ui.components.UserAvatar
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import app.indelible.ui.theme.geistMonoFontFamily
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.library_item_count
 import indelible.composeapp.generated.resources.library_open_navigation_cd
@@ -48,7 +49,6 @@ import indelible.composeapp.generated.resources.library_sort_filter_cd
 import indelible.composeapp.generated.resources.library_your_library
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-import app.indelible.ui.theme.geistMonoFontFamily
 
 /**
  * Library header (prototype `.appbar` + `.head`): a slim action bar (menu, sort,
@@ -215,8 +215,7 @@ private fun ScopeChevron(open: Boolean) {
                             style = Stroke(width = sw),
                         )
                     }
-                }
-                .clip(CircleShape)
+                }.clip(CircleShape)
                 .background(background),
         contentAlignment = Alignment.Center,
     ) {

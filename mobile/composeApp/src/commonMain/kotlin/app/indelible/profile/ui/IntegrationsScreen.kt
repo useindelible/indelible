@@ -26,10 +26,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -128,10 +128,11 @@ fun IntegrationsScreen(
                 IngestCard(
                     libraryEmail = ingestLibraryEmail,
                     feedEmail = ingestEmail,
-                    modifier = Modifier.padding(
-                        horizontal = IndelibleSpacing.step16,
-                        vertical = IndelibleSpacing.step8,
-                    ),
+                    modifier =
+                        Modifier.padding(
+                            horizontal = IndelibleSpacing.step16,
+                            vertical = IndelibleSpacing.step8,
+                        ),
                 )
             }
 

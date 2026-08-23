@@ -328,8 +328,12 @@ private fun ItemActionsSection(
                             Res.string.library_action_add_favorite
                         },
                     ),
-                tint = if (item.isFavorite) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint =
+                    if (item.isFavorite) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
         }
         IconButton(onClick = onToggleShortlist) {
@@ -343,8 +347,12 @@ private fun ItemActionsSection(
                             Res.string.library_action_add_shortlist
                         },
                     ),
-                tint = if (item.isShortlisted) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint =
+                    if (item.isShortlisted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
         }
         val openUrl = item.canonicalUrl ?: item.url
@@ -460,23 +468,24 @@ private fun PipelineStatusSectionPreviewDark() {
     }
 }
 
-private fun previewItemDetail() = ItemDetail(
-    id = "lib_preview1",
-    documentId = "doc_preview1",
-    itemType = "article",
-    triageState = "inbox",
-    isFavorite = true,
-    isShortlisted = false,
-    title = "The Future of Open-Source AI Models",
-    excerpt = "A deep dive into what the next generation of open models will look like",
-    url = "https://techcrunch.com/article",
-    canonicalUrl = "https://techcrunch.com/article",
-    domain = "techcrunch.com",
-    author = "Sarah Chen",
-    publishedAt = Instant.parse("2024-01-15T00:00:00Z"),
-    language = "en",
-    source = "url",
-    savedAt = Instant.parse("2024-01-15T12:00:00Z"),
-    createdAt = Instant.parse("2024-01-15T12:00:00Z"),
-    updatedAt = Instant.parse("2024-01-15T12:00:00Z"),
-)
+private fun previewItemDetail() =
+    ItemDetail(
+        id = "lib_preview1",
+        documentId = "doc_preview1",
+        itemType = "article",
+        triageState = "inbox",
+        isFavorite = true,
+        isShortlisted = false,
+        title = "The Future of Open-Source AI Models",
+        excerpt = "A deep dive into what the next generation of open models will look like",
+        url = "https://techcrunch.com/article",
+        canonicalUrl = "https://techcrunch.com/article",
+        domain = "techcrunch.com",
+        author = "Sarah Chen",
+        publishedAt = Instant.parse("2024-01-15T00:00:00Z"),
+        language = "en",
+        source = "url",
+        savedAt = Instant.parse("2024-01-15T12:00:00Z"),
+        createdAt = Instant.parse("2024-01-15T12:00:00Z"),
+        updatedAt = Instant.parse("2024-01-15T12:00:00Z"),
+    )

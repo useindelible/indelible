@@ -2,19 +2,19 @@ package app.indelible.core.i18n
 
 import androidx.compose.runtime.Composable
 import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.relative_time_day
-import indelible.composeapp.generated.resources.relative_time_future
-import indelible.composeapp.generated.resources.relative_time_hour
-import indelible.composeapp.generated.resources.relative_time_minute
-import indelible.composeapp.generated.resources.relative_time_month
-import indelible.composeapp.generated.resources.relative_time_now
-import indelible.composeapp.generated.resources.relative_time_past
-import indelible.composeapp.generated.resources.relative_time_week
-import indelible.composeapp.generated.resources.relative_time_year
-import kotlin.math.absoluteValue
+import indelible.composeapp.generated.resources.common_relative_time_day
+import indelible.composeapp.generated.resources.common_relative_time_future
+import indelible.composeapp.generated.resources.common_relative_time_hour
+import indelible.composeapp.generated.resources.common_relative_time_minute
+import indelible.composeapp.generated.resources.common_relative_time_month
+import indelible.composeapp.generated.resources.common_relative_time_now
+import indelible.composeapp.generated.resources.common_relative_time_past
+import indelible.composeapp.generated.resources.common_relative_time_week
+import indelible.composeapp.generated.resources.common_relative_time_year
 import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.absoluteValue
 
 enum class RelativeTimeUnit {
     NOW,
@@ -58,21 +58,21 @@ fun relativeTimeText(
     now: Instant,
 ): String {
     val value = relativeTimeValue(instant, now)
-    if (value.unit == RelativeTimeUnit.NOW) return stringResource(Res.string.relative_time_now)
+    if (value.unit == RelativeTimeUnit.NOW) return stringResource(Res.string.common_relative_time_now)
 
     val duration =
         when (value.unit) {
-            RelativeTimeUnit.MINUTE -> pluralStringResource(Res.plurals.relative_time_minute, value.amount, value.amount)
-            RelativeTimeUnit.HOUR -> pluralStringResource(Res.plurals.relative_time_hour, value.amount, value.amount)
-            RelativeTimeUnit.DAY -> pluralStringResource(Res.plurals.relative_time_day, value.amount, value.amount)
-            RelativeTimeUnit.WEEK -> pluralStringResource(Res.plurals.relative_time_week, value.amount, value.amount)
-            RelativeTimeUnit.MONTH -> pluralStringResource(Res.plurals.relative_time_month, value.amount, value.amount)
-            RelativeTimeUnit.YEAR -> pluralStringResource(Res.plurals.relative_time_year, value.amount, value.amount)
+            RelativeTimeUnit.MINUTE -> pluralStringResource(Res.plurals.common_relative_time_minute, value.amount, value.amount)
+            RelativeTimeUnit.HOUR -> pluralStringResource(Res.plurals.common_relative_time_hour, value.amount, value.amount)
+            RelativeTimeUnit.DAY -> pluralStringResource(Res.plurals.common_relative_time_day, value.amount, value.amount)
+            RelativeTimeUnit.WEEK -> pluralStringResource(Res.plurals.common_relative_time_week, value.amount, value.amount)
+            RelativeTimeUnit.MONTH -> pluralStringResource(Res.plurals.common_relative_time_month, value.amount, value.amount)
+            RelativeTimeUnit.YEAR -> pluralStringResource(Res.plurals.common_relative_time_year, value.amount, value.amount)
             RelativeTimeUnit.NOW -> error("handled above")
         }
 
     return stringResource(
-        if (value.future) Res.string.relative_time_future else Res.string.relative_time_past,
+        if (value.future) Res.string.common_relative_time_future else Res.string.common_relative_time_past,
         duration,
     )
 }

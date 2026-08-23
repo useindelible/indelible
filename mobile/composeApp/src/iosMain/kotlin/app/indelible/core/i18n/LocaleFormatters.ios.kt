@@ -23,13 +23,13 @@ actual object LocaleFormatters {
         return formatter.stringFromDate(instant.toNSDate())
     }
 
-    actual fun number(value: Long): String =
-        NSNumberFormatter().stringFromNumber(NSNumber(longLong = value)) ?: value.toString()
+    actual fun number(value: Long): String = NSNumberFormatter().stringFromNumber(NSNumber(longLong = value)) ?: value.toString()
 }
 
-private fun Instant.toNSDate(): NSDate = NSDate(
-    timeIntervalSinceReferenceDate =
-        toEpochMilliseconds().toDouble() / 1_000 - APPLE_REFERENCE_DATE_UNIX_SECONDS,
-)
+private fun Instant.toNSDate(): NSDate =
+    NSDate(
+        timeIntervalSinceReferenceDate =
+            toEpochMilliseconds().toDouble() / 1_000 - APPLE_REFERENCE_DATE_UNIX_SECONDS,
+    )
 
 private const val APPLE_REFERENCE_DATE_UNIX_SECONDS = 978_307_200.0

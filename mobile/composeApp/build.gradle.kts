@@ -368,7 +368,7 @@ compose.desktop {
 
 val i18nCheck by tasks.registering {
     group = "verification"
-    description = "Checks Compose resource translations against the English source catalog."
+    description = "Checks mobile localization catalogs and production source coverage."
 
     val resourcesRoot = layout.projectDirectory.dir("src/commonMain/composeResources")
     val sourceFile = resourcesRoot.file("values/strings.xml")
@@ -376,24 +376,60 @@ val i18nCheck by tasks.registering {
         resourcesRoot.asFileTree.matching {
             include("values-*/strings.xml")
         }
+    val kotlinSourceFiles =
+        files(
+            fileTree(layout.projectDirectory.dir("src/commonMain/kotlin")) { include("**/*.kt") },
+            fileTree(layout.projectDirectory.dir("src/androidMain/kotlin")) { include("**/*.kt") },
+        )
+    val shareExtensionRoot = rootProject.layout.projectDirectory.dir("iosApp/IndelibleShareExtension")
+    val shareEnglishFile = shareExtensionRoot.file("en.lproj/Localizable.strings")
+    val shareFrenchFile = shareExtensionRoot.file("fr.lproj/Localizable.strings")
+    val shareSwiftFiles = fileTree(shareExtensionRoot) { include("**/*.swift") }
     inputs.file(sourceFile)
     inputs.files(translationFiles)
+    inputs.files(kotlinSourceFiles)
+    inputs.file(shareEnglishFile)
+    inputs.file(shareFrenchFile)
+    inputs.files(shareSwiftFiles)
 
     doLast {
         val errors = mutableListOf<String>()
+        val allowedPrefixes =
+            setOf(
+                "common_",
+                "auth_",
+                "onboarding_",
+                "nav_",
+                "home_",
+                "library_",
+                "sidebar_",
+                "feed_",
+                "search_",
+                "collections_",
+                "tags_",
+                "trash_",
+                "profile_",
+                "prefs_",
+                "integrations_",
+                "reader_",
+                "mila_",
+                "share_",
+            )
 
-        fun readCatalog(file: File): Map<String, Map<String, String>> {
+        fun readCatalog(file: File): Map<String, Pair<String, Map<String, String>>> {
             val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
-            val catalog = linkedMapOf<String, Map<String, String>>()
+            val catalog = linkedMapOf<String, Pair<String, Map<String, String>>>()
             val children = document.documentElement.childNodes
 
             for (index in 0 until children.length) {
                 val element = children.item(index) as? Element ?: continue
                 if (element.tagName !in setOf("string", "plurals")) continue
                 val name = element.getAttribute("name")
-                val resourceKey = "${element.tagName}:$name"
                 if (name.isBlank()) errors += "${file.path}: resource name must not be empty"
-                if (resourceKey in catalog) errors += "${file.path}: duplicate resource $resourceKey"
+                if (name in catalog) errors += "${file.path}: duplicate resource $name"
+                if (allowedPrefixes.none(name::startsWith)) {
+                    errors += "${file.path}: unsupported resource prefix for $name"
+                }
 
                 val values = linkedMapOf<String, String>()
                 if (element.tagName == "string") {
@@ -405,22 +441,28 @@ val i18nCheck by tasks.registering {
                         if (item.tagName != "item") continue
                         val quantity = item.getAttribute("quantity")
                         if (quantity in values) {
-                            errors += "${file.path}: duplicate $resourceKey quantity $quantity"
+                            errors += "${file.path}: duplicate $name quantity $quantity"
                         }
                         values[quantity] = item.textContent.trim()
                     }
                 }
                 if (values.isEmpty() || values.values.any(String::isBlank)) {
-                    errors += "${file.path}: $resourceKey must not contain empty values"
+                    errors += "${file.path}: $name must not contain empty values"
                 }
-                catalog[resourceKey] = values
+                catalog[name] = element.tagName to values
+            }
+
+            val keys = catalog.keys.toList()
+            if (keys != keys.sorted()) {
+                val firstMismatch = keys.zip(keys.sorted()).first { (actual, expected) -> actual != expected }
+                errors += "${file.path}: resources must be alphabetically sorted; found ${firstMismatch.first} before ${firstMismatch.second}"
             }
 
             return catalog
         }
 
         fun placeholders(value: String): List<String> =
-            Regex("""%\d+\$[A-Za-z]""").findAll(value).map { it.value }.sorted().toList()
+            Regex("""%(?:\d+\$)?[A-Za-z@]""").findAll(value).map { it.value }.sorted().toList()
 
         val source = readCatalog(sourceFile.asFile)
         translationFiles.files.sortedBy(File::getPath).forEach { file ->
@@ -434,8 +476,11 @@ val i18nCheck by tasks.registering {
             }
 
             (source.keys intersect translation.keys).forEach { key ->
-                val sourceValues = source.getValue(key)
-                val translatedValues = translation.getValue(key)
+                val (sourceType, sourceValues) = source.getValue(key)
+                val (translatedType, translatedValues) = translation.getValue(key)
+                if (sourceType != translatedType) {
+                    errors += "$locale: resource type differs for $key"
+                }
                 if (sourceValues.keys != translatedValues.keys) {
                     errors += "$locale: plural quantities differ for $key"
                 }
@@ -447,13 +492,229 @@ val i18nCheck by tasks.registering {
             }
         }
 
+        fun readStringsCatalog(file: File): Map<String, String> {
+            val entryPattern = Regex("""^\s*"([^"]+)"\s*=\s*"((?:\\.|[^"])*)";\s*$""")
+            val catalog = linkedMapOf<String, String>()
+            file.readLines().forEachIndexed { index, line ->
+                val trimmed = line.trim()
+                if (trimmed.isEmpty() || trimmed.startsWith("//") || trimmed.startsWith("/*")) return@forEachIndexed
+                val match = entryPattern.matchEntire(line)
+                if (match == null) {
+                    errors += "${file.path}:${index + 1}: invalid Localizable.strings entry"
+                    return@forEachIndexed
+                }
+                val key = match.groupValues[1]
+                val value = match.groupValues[2]
+                if (key in catalog) errors += "${file.path}:${index + 1}: duplicate resource $key"
+                if (value.isBlank()) errors += "${file.path}:${index + 1}: $key must not be blank"
+                if (allowedPrefixes.none(key::startsWith)) {
+                    errors += "${file.path}:${index + 1}: unsupported resource prefix for $key"
+                }
+                catalog[key] = value
+            }
+            if (catalog.keys.toList() != catalog.keys.sorted()) {
+                errors += "${file.path}: resources must be alphabetically sorted"
+            }
+            return catalog
+        }
+
+        val shareEnglish = readStringsCatalog(shareEnglishFile.asFile)
+        val shareFrench = readStringsCatalog(shareFrenchFile.asFile)
+        val missingShareKeys = shareEnglish.keys - shareFrench.keys
+        val extraShareKeys = shareFrench.keys - shareEnglish.keys
+        if (missingShareKeys.isNotEmpty()) errors += "iOS share fr: missing resources ${missingShareKeys.sorted().joinToString()}"
+        if (extraShareKeys.isNotEmpty()) errors += "iOS share fr: unknown resources ${extraShareKeys.sorted().joinToString()}"
+        (shareEnglish.keys intersect shareFrench.keys).forEach { key ->
+            if (placeholders(shareEnglish.getValue(key)) != placeholders(shareFrench.getValue(key))) {
+                errors += "iOS share fr: placeholders differ for $key"
+            }
+        }
+
+        fun maskComments(sourceText: String): String {
+            val output = sourceText.toCharArray()
+            var index = 0
+            var inString = false
+            var inChar = false
+            var inTripleString = false
+            var inBlockComment = false
+            while (index < sourceText.length) {
+                if (inBlockComment) {
+                    if (sourceText.startsWith("*/", index)) {
+                        output[index] = ' '
+                        output[index + 1] = ' '
+                        index += 2
+                        inBlockComment = false
+                    } else {
+                        if (output[index] != '\n') output[index] = ' '
+                        index++
+                    }
+                    continue
+                }
+                if (!inString && !inChar && !inTripleString && sourceText.startsWith("//", index)) {
+                    while (index < sourceText.length && sourceText[index] != '\n') output[index++] = ' '
+                    continue
+                }
+                if (!inString && !inChar && !inTripleString && sourceText.startsWith("/*", index)) {
+                    output[index] = ' '
+                    output[index + 1] = ' '
+                    index += 2
+                    inBlockComment = true
+                    continue
+                }
+                if (!inString && !inChar && sourceText.startsWith("\"\"\"", index)) {
+                    inTripleString = !inTripleString
+                    index += 3
+                    continue
+                }
+                if (!inTripleString && !inChar && sourceText[index] == '"' && (index == 0 || sourceText[index - 1] != '\\')) {
+                    inString = !inString
+                } else if (!inTripleString && !inString && sourceText[index] == '\'' &&
+                    (index == 0 || sourceText[index - 1] != '\\')
+                ) {
+                    inChar = !inChar
+                }
+                index++
+            }
+            return output.concatToString()
+        }
+
+        fun maskPreviewBodies(sourceText: String): String {
+            val output = sourceText.toCharArray()
+            Regex("""@(?:[A-Za-z0-9_.]+\.)?Preview\b""").findAll(sourceText).forEach { preview ->
+                val functionStart = sourceText.indexOf("fun ", preview.range.last + 1)
+                if (functionStart == -1) return@forEach
+                val bodyStart = sourceText.indexOf('{', functionStart)
+                if (bodyStart == -1) return@forEach
+                var depth = 0
+                var bodyEnd = -1
+                for (index in bodyStart until sourceText.length) {
+                    when (sourceText[index]) {
+                        '{' -> depth++
+                        '}' -> {
+                            depth--
+                            if (depth == 0) {
+                                bodyEnd = index
+                                break
+                            }
+                        }
+                    }
+                }
+                if (bodyEnd != -1) {
+                    for (index in preview.range.first..bodyEnd) {
+                        if (output[index] != '\n') output[index] = ' '
+                    }
+                }
+            }
+            return output.concatToString()
+        }
+
+        fun maskPreviewFixtures(sourceText: String): String {
+            if ("Preview" !in sourceText) return sourceText
+            val output = sourceText.toCharArray()
+            val fixturePattern = Regex("""(?m)^private\s+(?:fun|val)\s+(?:preview|sample)[A-Za-z0-9_]*""")
+            val topLevelDeclaration = Regex("""(?m)^(?:@|private\s|internal\s|public\s|fun\s|class\s|object\s)""")
+            fixturePattern.findAll(sourceText).forEach { fixture ->
+                val nextDeclaration =
+                    topLevelDeclaration.find(sourceText, fixture.range.last + 1)?.range?.first ?: sourceText.length
+                for (index in fixture.range.first until nextDeclaration) {
+                    if (output[index] != '\n') output[index] = ' '
+                }
+            }
+            return output.concatToString()
+        }
+
+        val kotlinSinkPatterns =
+            listOf(
+                Regex("""\b(?:Text|BasicText)\s*\(\s*"([^"]*[A-Za-z][^"]*)"""),
+                Regex("""\b(?:text|title|subtitle|label|hint|message|eyebrow|contentDescription|onClickLabel|error)\s*=\s*"([^"]*[A-Za-z][^"]*)"""),
+                Regex("""\b(?:showSnackbar|ShowSnackbar)\s*\(\s*"([^"]*[A-Za-z][^"]*)"""),
+                Regex("""\b(?:displayName|description)\s*(?:=|get\(\)\s*=)\s*"([^"]*[A-Za-z][^"]*)"""),
+            )
+        val brandValues = setOf("Indelible", "Mila", "MILA", "Ollama", "OpenAI", "RSS", "OPML", "PDF", "EPUB")
+
+        fun hasDurableIgnore(originalLine: String): Boolean {
+            val marker = Regex("""//\s*i18n-ignore:\s*(.+)$""").find(originalLine) ?: return false
+            if (marker.groupValues[1].trim().length < 8) {
+                errors += "i18n-ignore reason is too short: ${originalLine.trim()}"
+            }
+            return true
+        }
+
+        fun lineNumberAt(
+            sourceText: String,
+            offset: Int,
+        ): Int = sourceText.take(offset).count { it == '\n' } + 1
+
+        kotlinSourceFiles.files.sortedBy(File::getPath).forEach { file ->
+            val original = file.readText()
+            val masked = maskPreviewBodies(maskPreviewFixtures(maskComments(original)))
+            val originalLines = original.lines()
+            kotlinSinkPatterns.forEach { pattern ->
+                pattern.findAll(masked).forEach matchLoop@{ match ->
+                    val literalOffset = match.range.first + match.value.indexOf('"')
+                    val lineNumber = lineNumberAt(masked, literalOffset)
+                    if (hasDurableIgnore(originalLines[lineNumber - 1])) return@matchLoop
+                    val value = match.groupValues[1]
+                    val staticValue = value.replace(Regex("""\$\{[^}]+}|\$[A-Za-z_][A-Za-z0-9_]*"""), "")
+                    val prefix = masked.take(match.range.first).takeLast(500)
+                    val animationLabel =
+                        "label" in match.value &&
+                            listOf("animate", "rememberInfiniteTransition").any(prefix::contains)
+                    if (!animationLabel && staticValue.any(Char::isLetter) && value !in brandValues) {
+                        errors += "${file.path}:$lineNumber: raw user-visible literal '$value'"
+                    }
+                }
+            }
+            Regex("""if\s*\([^)]*\)\s*"s"\s*else\s*""""").findAll(masked).forEach { match ->
+                errors += "${file.path}:${lineNumberAt(masked, match.range.first)}: manual English plural suffix"
+            }
+            Regex("""(?:stringResource|pluralStringResource|resolve)\([^)]*\)\s*\.(?:lowercase|uppercase|capitalize)\(""")
+                .findAll(masked)
+                .forEach { match ->
+                    errors +=
+                        "${file.path}:${lineNumberAt(masked, match.range.first)}: " +
+                        "case transformation applied to localized text"
+                }
+            if (file.name in setOf("ReaderHtmlMarkup.kt", "ReaderHtmlTemplate.kt")) {
+                Regex(""">\s*[A-Za-z][^<\n]{1,}<""").findAll(masked).forEach { match ->
+                    val lineNumber = lineNumberAt(masked, match.range.first)
+                    if (!hasDurableIgnore(originalLines[lineNumber - 1])) {
+                        errors += "${file.path}:$lineNumber: raw visible embedded HTML"
+                    }
+                }
+            }
+        }
+
+        val swiftVisiblePatterns =
+            listOf(
+                Regex("""\b(?:Text|Button)\(\s*"([^"]+)"""),
+                Regex("""\.accessibilityLabel\(\s*"([^"]+)"""),
+            )
+        shareSwiftFiles.files.sortedBy(File::getPath).forEach { file ->
+            val original = file.readText()
+            val masked = maskComments(original)
+            val originalLines = original.lines()
+            swiftVisiblePatterns.forEach { pattern ->
+                pattern.findAll(masked).forEach matchLoop@{ match ->
+                    val literalOffset = match.range.first + match.value.indexOf('"')
+                    val lineNumber = lineNumberAt(masked, literalOffset)
+                    if (hasDurableIgnore(originalLines[lineNumber - 1])) return@matchLoop
+                    val value = match.groupValues[1]
+                    if (value !in shareEnglish && value !in brandValues) {
+                        errors += "${file.path}:$lineNumber: raw Swift user-visible literal '$value'"
+                    }
+                }
+            }
+        }
+
         if (errors.isNotEmpty()) {
             throw GradleException(errors.joinToString(prefix = "Mobile i18n check failed:\n- ", separator = "\n- "))
         }
         logger.lifecycle(
-            "Mobile i18n check passed ({} source resources, {} translations)",
+            "Mobile i18n check passed ({} Compose resources, {} translations, {} iOS share resources)",
             source.size,
             translationFiles.files.size,
+            shareEnglish.size,
         )
     }
 }

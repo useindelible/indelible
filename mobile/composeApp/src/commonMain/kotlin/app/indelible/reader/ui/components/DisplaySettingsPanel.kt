@@ -95,7 +95,7 @@ private fun TextSizeSection(
         horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
     ) {
         Text(
-            text = "A",
+            text = "A", // i18n-ignore: typography size glyph
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -107,7 +107,7 @@ private fun TextSizeSection(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = "A",
+            text = "A", // i18n-ignore: typography size glyph
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

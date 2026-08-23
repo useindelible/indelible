@@ -69,8 +69,7 @@ private fun greetingText(greeting: Greeting): String =
         Greeting.EVENING -> stringResource(Res.string.home_greeting_evening)
     }
 
-private fun todayLabel(): String =
-    LocaleFormatters.date(Clock.System.now(), LocalizedDateStyle.WEEKDAY_MONTH_DAY)
+private fun todayLabel(): String = LocaleFormatters.date(Clock.System.now(), LocalizedDateStyle.WEEKDAY_MONTH_DAY)
 
 @Preview
 @Composable

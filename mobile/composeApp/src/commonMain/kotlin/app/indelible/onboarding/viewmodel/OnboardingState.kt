@@ -2,13 +2,13 @@ package app.indelible.onboarding.viewmodel
 
 import app.indelible.core.i18n.UiMessage
 import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.onboarding_ai_none
+import indelible.composeapp.generated.resources.onboarding_ai_ollama
+import indelible.composeapp.generated.resources.onboarding_ai_openai
 import indelible.composeapp.generated.resources.onboarding_feeds_description_ars
 import indelible.composeapp.generated.resources.onboarding_feeds_description_hacker_news
 import indelible.composeapp.generated.resources.onboarding_feeds_description_verge
 import indelible.composeapp.generated.resources.onboarding_feeds_description_wired
-import indelible.composeapp.generated.resources.onboarding_ai_none
-import indelible.composeapp.generated.resources.onboarding_ai_ollama
-import indelible.composeapp.generated.resources.onboarding_ai_openai
 import indelible.composeapp.generated.resources.onboarding_step_account
 import indelible.composeapp.generated.resources.onboarding_step_add_content
 import indelible.composeapp.generated.resources.onboarding_step_ai
@@ -48,7 +48,6 @@ enum class OnboardingPage(
     FEEDS(Res.string.onboarding_step_feeds, 3),
     AI_SETUP(Res.string.onboarding_step_ai, 4),
     READY(Res.string.onboarding_step_ready, 5),
-    ;
 }
 
 enum class ThemeChoice {
@@ -74,22 +73,22 @@ data class SuggestedFeed(
 val DEFAULT_SUGGESTED_FEEDS =
     listOf(
         SuggestedFeed(
-            title = "Hacker News",
+            title = "Hacker News", // i18n-ignore: curated publication name
             url = "https://news.ycombinator.com/rss",
             descriptionRes = Res.string.onboarding_feeds_description_hacker_news,
         ),
         SuggestedFeed(
-            title = "Ars Technica",
+            title = "Ars Technica", // i18n-ignore: curated publication name
             url = "https://feeds.arstechnica.com/arstechnica/index",
             descriptionRes = Res.string.onboarding_feeds_description_ars,
         ),
         SuggestedFeed(
-            title = "The Verge",
+            title = "The Verge", // i18n-ignore: curated publication name
             url = "https://www.theverge.com/rss/index.xml",
             descriptionRes = Res.string.onboarding_feeds_description_verge,
         ),
         SuggestedFeed(
-            title = "Wired",
+            title = "Wired", // i18n-ignore: curated publication name
             url = "https://www.wired.com/feed/rss",
             descriptionRes = Res.string.onboarding_feeds_description_wired,
         ),

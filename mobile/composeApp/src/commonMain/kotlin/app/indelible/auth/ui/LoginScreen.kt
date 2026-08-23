@@ -23,7 +23,6 @@ import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.core.i18n.resolve
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.app_name
 import indelible.composeapp.generated.resources.auth_change_server
 import indelible.composeapp.generated.resources.auth_email_label
 import indelible.composeapp.generated.resources.auth_forgot_password
@@ -31,6 +30,7 @@ import indelible.composeapp.generated.resources.auth_password_label
 import indelible.composeapp.generated.resources.auth_sign_in
 import indelible.composeapp.generated.resources.auth_sign_in_prompt
 import indelible.composeapp.generated.resources.auth_sign_up_prompt
+import indelible.composeapp.generated.resources.common_app_name
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -47,7 +47,7 @@ fun LoginScreen(
 
     AuthCard {
         Text(
-            text = stringResource(Res.string.app_name),
+            text = stringResource(Res.string.common_app_name),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),

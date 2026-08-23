@@ -21,7 +21,6 @@ import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.core.i18n.resolve
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.app_name
 import indelible.composeapp.generated.resources.auth_already_have_account
 import indelible.composeapp.generated.resources.auth_confirm_password_label
 import indelible.composeapp.generated.resources.auth_create_account
@@ -30,6 +29,7 @@ import indelible.composeapp.generated.resources.auth_create_your_account
 import indelible.composeapp.generated.resources.auth_display_name_label
 import indelible.composeapp.generated.resources.auth_email_label
 import indelible.composeapp.generated.resources.auth_password_label
+import indelible.composeapp.generated.resources.common_app_name
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -44,7 +44,7 @@ fun RegisterScreen(
 
     AuthCard {
         Text(
-            text = stringResource(Res.string.app_name),
+            text = stringResource(Res.string.common_app_name),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),

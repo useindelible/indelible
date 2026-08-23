@@ -128,8 +128,7 @@ fun ScopeSwitcherPopover(
                         start = IndelibleSpacing.step16,
                         top = IndelibleSpacing.step96 + IndelibleSpacing.step16,
                         bottom = IndelibleSpacing.step16,
-                    )
-                    .fillMaxWidth(POPOVER_WIDTH_FRACTION),
+                    ).fillMaxWidth(POPOVER_WIDTH_FRACTION),
         ) {
             ScopePopoverCard(
                 currentScope = currentScope,
@@ -317,8 +316,7 @@ private fun ScopePopIcon(
                             style = Stroke(width = sw),
                         )
                     }
-                }
-                .clip(IndelibleShape.md)
+                }.clip(IndelibleShape.md)
                 .background(boxBackground),
         contentAlignment = Alignment.Center,
     ) {
@@ -337,8 +335,11 @@ private fun ScopePopCount(
     active: Boolean,
 ) {
     val background =
-        if (active) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceContainerHigh
+        if (active) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        }
     val foreground = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier =

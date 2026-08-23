@@ -236,4 +236,14 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
-      - run: ./gradlew --no-daemon :composeApp:compileKotlinIosSimulatorArm64
+      - run: ./gradlew --no-daemon :composeApp:compileKotlinIosSimulatorArm64 :composeApp:linkDebugFrameworkIosSimulatorArm64
+      - name: Compile iOS share extension
+        run: >-
+          xcodebuild
+          -project iosApp/iosApp.xcodeproj
+          -target IndelibleShareExtension
+          -configuration Debug
+          -sdk iphonesimulator
+          FRAMEWORK_SEARCH_PATHS='${{ github.workspace }}/mobile/composeApp/build/bin/iosSimulatorArm64/debugFramework'
+          CODE_SIGNING_ALLOWED=NO
+          build
