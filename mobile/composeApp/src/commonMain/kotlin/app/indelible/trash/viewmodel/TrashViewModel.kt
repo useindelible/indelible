@@ -2,8 +2,11 @@ package app.indelible.trash.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryItem
 import app.indelible.trash.repository.TrashRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.trash_error_load
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +19,7 @@ data class TrashState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
     val showEmptyConfirm: Boolean = false,
     val isEmptying: Boolean = false,
     val restoringItemIds: Set<String> = emptySet(),
@@ -48,8 +51,8 @@ class TrashViewModel(
                             isLoading = false,
                         )
                     }
-                }.onFailure { e ->
-                    _state.update { it.copy(isLoading = false, error = e.message) }
+                }.onFailure {
+                    _state.update { it.copy(isLoading = false, error = UiMessage(Res.string.trash_error_load)) }
                 }
         }
     }

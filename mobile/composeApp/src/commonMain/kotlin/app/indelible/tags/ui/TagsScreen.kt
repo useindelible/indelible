@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import app.indelible.core.i18n.resolve
 import app.indelible.reader.model.TagData
 import app.indelible.tags.viewmodel.TagScope
 import app.indelible.tags.viewmodel.TagsState
@@ -54,6 +55,20 @@ import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.paletteBucketIndex
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_retry
+import indelible.composeapp.generated.resources.tags_clear_filter_cd
+import indelible.composeapp.generated.resources.tags_filter_placeholder
+import indelible.composeapp.generated.resources.tags_highlight_count
+import indelible.composeapp.generated.resources.tags_item_count
+import indelible.composeapp.generated.resources.tags_no_match
+import indelible.composeapp.generated.resources.tags_none
+import indelible.composeapp.generated.resources.tags_scope_document
+import indelible.composeapp.generated.resources.tags_scope_highlight
+import indelible.composeapp.generated.resources.tags_title
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,12 +125,14 @@ fun TagsScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
-                            text = state.error ?: "Something went wrong",
+                            text = state.error?.resolve().orEmpty(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                         )
                         Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
-                        TextButton(onClick = { viewModel.load() }) { Text("Retry") }
+                        TextButton(onClick = { viewModel.load() }) {
+                            Text(stringResource(Res.string.common_retry))
+                        }
                     }
                 }
 
@@ -152,12 +169,12 @@ private fun TagsTopBar(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(Res.string.common_back),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
         Text(
-            text = "Tags",
+            text = stringResource(Res.string.tags_title),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.weight(1f),
         )
@@ -197,7 +214,7 @@ private fun TagsContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No tags match \"${state.filter}\"",
+                        text = stringResource(Res.string.tags_no_match, state.filter),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -210,7 +227,7 @@ private fun TagsContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No tags yet",
+                        text = stringResource(Res.string.tags_none),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -248,12 +265,12 @@ internal fun TagScopeSegmentedControl(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TagScopeItem(
-            label = "Doc",
+            label = stringResource(Res.string.tags_scope_document),
             selected = scope == TagScope.DOC,
             onClick = { onScopeToggle(TagScope.DOC) },
         )
         TagScopeItem(
-            label = "Highlight",
+            label = stringResource(Res.string.tags_scope_highlight),
             selected = scope == TagScope.HIGHLIGHT,
             onClick = { onScopeToggle(TagScope.HIGHLIGHT) },
         )
@@ -330,7 +347,7 @@ private fun TagFilterBar(
             decorationBox = { innerTextField ->
                 if (value.isEmpty()) {
                     Text(
-                        text = "Filter tags...",
+                        text = stringResource(Res.string.tags_filter_placeholder),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -345,7 +362,7 @@ private fun TagFilterBar(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Clear filter",
+                    contentDescription = stringResource(Res.string.tags_clear_filter_cd),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(IndelibleSpacing.step16),
                 )
@@ -364,11 +381,11 @@ internal fun TagRow(
 ) {
     val dotColor = IndelibleTheme.colors.tagColors[tagColorIndex(tag.color, tag.id)]
     // Matches web getTagCount: highlight uses direct count, doc/all use rolled-up item count.
-    val (count, countLabel) =
+    val (count, countResource) =
         when (scope) {
-            TagScope.HIGHLIGHT -> tag.highlightCount to "highlight"
-            TagScope.DOC -> rolledUpItemCount to "item"
-            TagScope.ALL -> (rolledUpItemCount + tag.highlightCount) to "item"
+            TagScope.HIGHLIGHT -> tag.highlightCount to Res.plurals.tags_highlight_count
+            TagScope.DOC -> rolledUpItemCount to Res.plurals.tags_item_count
+            TagScope.ALL -> (rolledUpItemCount + tag.highlightCount) to Res.plurals.tags_item_count
         }
 
     Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
@@ -398,7 +415,7 @@ internal fun TagRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "$count $countLabel${if (count == 1L) "" else "s"}",
+                text = pluralStringResource(countResource, count.toInt(), count),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

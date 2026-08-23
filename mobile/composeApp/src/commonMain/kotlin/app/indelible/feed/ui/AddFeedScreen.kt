@@ -52,6 +52,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.resolveString
 import app.indelible.core.platform.rememberFilePicker
 import app.indelible.feed.viewmodel.AddFeedEffect
 import app.indelible.feed.viewmodel.AddFeedUiState
@@ -61,7 +62,23 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.feed_action_copied
+import indelible.composeapp.generated.resources.feed_action_copy
+import indelible.composeapp.generated.resources.feed_add_newsletter_body
+import indelible.composeapp.generated.resources.feed_add_newsletter_title
+import indelible.composeapp.generated.resources.feed_add_opml_hint
+import indelible.composeapp.generated.resources.feed_add_opml_select
+import indelible.composeapp.generated.resources.feed_add_opml_title
+import indelible.composeapp.generated.resources.feed_add_subscribe_title
+import indelible.composeapp.generated.resources.feed_add_title
+import indelible.composeapp.generated.resources.feed_add_url_label
+import indelible.composeapp.generated.resources.feed_email_copied
+import indelible.composeapp.generated.resources.feed_label
+import indelible.composeapp.generated.resources.feed_subscribe
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 private const val DASHED_BORDER_DASH = 10f
 private const val DASHED_BORDER_GAP = 7f
@@ -80,11 +97,12 @@ fun AddFeedScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
+    val emailCopiedMessage = stringResource(Res.string.feed_email_copied)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is AddFeedEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is AddFeedEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
                 is AddFeedEffect.NavigateBack -> onNavigateBack()
             }
         }
@@ -96,7 +114,7 @@ fun AddFeedScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Add RSS Feed",
+                        text = stringResource(Res.string.feed_add_title),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -104,7 +122,7 @@ fun AddFeedScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -119,7 +137,7 @@ fun AddFeedScreen(
                     .padding(top = paddingValues.calculateTopPadding())
                     .verticalScroll(rememberScrollState()),
         ) {
-            SettingsSection(title = "Subscribe to Feed") {
+            SettingsSection(title = stringResource(Res.string.feed_add_subscribe_title)) {
                 Card(
                     modifier =
                         Modifier
@@ -143,11 +161,11 @@ fun AddFeedScreen(
                         IndelibleTextField(
                             value = rssUrl,
                             onValueChange = { rssUrl = it },
-                            label = "Feed URL",
+                            label = stringResource(Res.string.feed_add_url_label),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         IndelibleButton(
-                            text = "Subscribe",
+                            text = stringResource(Res.string.feed_subscribe),
                             onClick = { viewModel.subscribe(rssUrl) },
                             isLoading = uiState is AddFeedUiState.Loading,
                             enabled = rssUrl.isNotBlank(),
@@ -156,7 +174,7 @@ fun AddFeedScreen(
                 }
             }
 
-            SettingsSection(title = "Import OPML") {
+            SettingsSection(title = stringResource(Res.string.feed_add_opml_title)) {
                 val opmlPicker =
                     rememberFilePicker(
                         mimeTypes = listOf("text/xml", "application/xml", "*/*"),
@@ -171,7 +189,7 @@ fun AddFeedScreen(
                 )
             }
 
-            SettingsSection(title = "Newsletter Email") {
+            SettingsSection(title = stringResource(Res.string.feed_add_newsletter_title)) {
                 Card(
                     modifier =
                         Modifier
@@ -193,7 +211,7 @@ fun AddFeedScreen(
                         verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step10),
                     ) {
                         Text(
-                            text = "Subscribe via email \u2014 newsletters sent here are saved as feed entries.",
+                            text = stringResource(Res.string.feed_add_newsletter_body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -204,7 +222,7 @@ fun AddFeedScreen(
                                 onCopy = {
                                     clipboardManager.setText(AnnotatedString(ingestEmail))
                                     coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Email copied to clipboard")
+                                        snackbarHostState.showSnackbar(emailCopiedMessage)
                                     }
                                 },
                             )
@@ -266,12 +284,12 @@ private fun OpmlDropZone(
                     modifier = Modifier.size(IndelibleSpacing.step28),
                 )
                 Text(
-                    text = "Select OPML file",
+                    text = stringResource(Res.string.feed_add_opml_select),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = ".opml or .xml \u00b7 imports all feeds at once",
+                    text = stringResource(Res.string.feed_add_opml_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )
@@ -295,7 +313,7 @@ private fun NewsletterIngestRow(
         horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step10),
     ) {
         Text(
-            text = "FEED",
+            text = stringResource(Res.string.feed_label),
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(IndelibleSpacing.step48),
@@ -327,7 +345,10 @@ private fun NewsletterIngestRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = if (copied) "Copied" else "Copy",
+                    text =
+                        stringResource(
+                            if (copied) Res.string.feed_action_copied else Res.string.feed_action_copy,
+                        ),
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 )
             }

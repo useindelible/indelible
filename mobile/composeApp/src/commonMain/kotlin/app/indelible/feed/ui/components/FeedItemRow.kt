@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.em
-import app.indelible.core.model.ThumbnailColor
 import app.indelible.core.i18n.relativeTimeText
+import app.indelible.core.model.ThumbnailColor
 import app.indelible.feed.model.FeedItemWithState
 import app.indelible.ui.platform.rememberHapticTick
 import app.indelible.ui.theme.AppTheme
@@ -236,10 +236,10 @@ private fun feedEyebrow(item: FeedItemWithState): String {
         feedDomain(item.url)?.let { append(it.uppercase()) }
         val timestamp = item.publishedAt ?: item.fetchedAt
         if (isNotEmpty()) append(" · ")
-        append(relativeTimeText(timestamp, now).uppercase())
+        append(relativeTimeText(timestamp, now))
         if (item.state == STATE_SEEN) {
             append(" · ")
-            append(stringResource(Res.string.feed_seen).uppercase())
+            append(stringResource(Res.string.feed_seen))
         }
     }
 }

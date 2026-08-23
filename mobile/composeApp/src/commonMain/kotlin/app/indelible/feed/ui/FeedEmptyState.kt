@@ -30,12 +30,28 @@ import app.indelible.ui.components.dashedZeroBorder
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_action_add
+import indelible.composeapp.generated.resources.feed_empty_first_body
+import indelible.composeapp.generated.resources.feed_empty_first_caption
+import indelible.composeapp.generated.resources.feed_empty_first_kicker
+import indelible.composeapp.generated.resources.feed_empty_first_title
+import indelible.composeapp.generated.resources.feed_empty_seen_body
+import indelible.composeapp.generated.resources.feed_empty_seen_caption
+import indelible.composeapp.generated.resources.feed_empty_seen_kicker
+import indelible.composeapp.generated.resources.feed_empty_seen_title
+import indelible.composeapp.generated.resources.feed_empty_unseen_body
+import indelible.composeapp.generated.resources.feed_empty_unseen_caption
+import indelible.composeapp.generated.resources.feed_empty_unseen_kicker
+import indelible.composeapp.generated.resources.feed_empty_unseen_title
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 private data class EmptyFeedCopy(
-    val kicker: String,
-    val title: String,
-    val body: String,
-    val caption: String,
+    val kicker: StringResource,
+    val title: StringResource,
+    val body: StringResource,
+    val caption: StringResource,
 )
 
 @Composable
@@ -80,26 +96,26 @@ internal fun FeedEmptyState(
             Spacer(modifier = Modifier.width(IndelibleSpacing.step14))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = copy.kicker,
+                    text = stringResource(copy.kicker),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step4))
                 Text(
-                    text = copy.title,
+                    text = stringResource(copy.title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step6))
                 Text(
-                    text = copy.body,
+                    text = stringResource(copy.body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (!hasSubscriptions) {
                     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
                     IndelibleButton(
-                        text = "Add a feed",
+                        text = stringResource(Res.string.feed_action_add),
                         onClick = onAddFeed,
                         compact = true,
                     )
@@ -113,7 +129,7 @@ internal fun FeedEmptyState(
         )
         Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
         Text(
-            text = copy.caption,
+            text = stringResource(copy.caption),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -129,24 +145,24 @@ private fun emptyFeedCopy(
     when {
         !hasSubscriptions ->
             EmptyFeedCopy(
-                kicker = "First source",
-                title = "Follow a source and new articles appear here",
-                body = "Add a site or feed URL. Indelible finds the feed and keeps new posts together.",
-                caption = "New posts land in this list",
+                kicker = Res.string.feed_empty_first_kicker,
+                title = Res.string.feed_empty_first_title,
+                body = Res.string.feed_empty_first_body,
+                caption = Res.string.feed_empty_first_caption,
             )
         filter == FeedFilter.UNSEEN ->
             EmptyFeedCopy(
-                kicker = "You're up to date",
-                title = "No unseen posts",
-                body = "New posts from your sources will appear here.",
-                caption = "New posts land in this list",
+                kicker = Res.string.feed_empty_unseen_kicker,
+                title = Res.string.feed_empty_unseen_title,
+                body = Res.string.feed_empty_unseen_body,
+                caption = Res.string.feed_empty_unseen_caption,
             )
         else ->
             EmptyFeedCopy(
-                kicker = "No history yet",
-                title = "Seen posts stay available here",
-                body = "Items you mark as seen remain easy to find.",
-                caption = "Seen posts fill this list",
+                kicker = Res.string.feed_empty_seen_kicker,
+                title = Res.string.feed_empty_seen_title,
+                body = Res.string.feed_empty_seen_body,
+                caption = Res.string.feed_empty_seen_caption,
             )
     }
 

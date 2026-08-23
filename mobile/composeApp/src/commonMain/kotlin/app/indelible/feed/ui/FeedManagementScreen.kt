@@ -45,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.resolve
+import app.indelible.core.i18n.resolveString
 import app.indelible.feed.model.FeedSubscription
 import app.indelible.feed.model.UpdateSubscriptionRequest
 import app.indelible.feed.ui.components.SubscriptionRow
@@ -55,6 +57,22 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.feed_action_add_short
+import indelible.composeapp.generated.resources.feed_action_auto_save
+import indelible.composeapp.generated.resources.feed_action_pause
+import indelible.composeapp.generated.resources.feed_action_resume
+import indelible.composeapp.generated.resources.feed_action_save_changes
+import indelible.composeapp.generated.resources.feed_manage_delete
+import indelible.composeapp.generated.resources.feed_manage_edit
+import indelible.composeapp.generated.resources.feed_manage_no_results
+import indelible.composeapp.generated.resources.feed_manage_no_subscriptions
+import indelible.composeapp.generated.resources.feed_manage_search
+import indelible.composeapp.generated.resources.feed_manage_title
+import indelible.composeapp.generated.resources.feed_manage_title_label
+import indelible.composeapp.generated.resources.search_clear_cd
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +91,7 @@ fun FeedManagementScreen(
         viewModel.effects.collect { effect ->
             when (effect) {
                 is FeedManagementEffect.ShowSnackbar ->
-                    snackbarHostState.showSnackbar(effect.message)
+                    snackbarHostState.showSnackbar(effect.message.resolveString())
             }
         }
     }
@@ -84,7 +102,7 @@ fun FeedManagementScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Manage Feeds",
+                        text = stringResource(Res.string.feed_manage_title),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -92,7 +110,7 @@ fun FeedManagementScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -115,7 +133,7 @@ fun FeedManagementScreen(
 
                 is FeedManagementUiState.Error -> {
                     Text(
-                        text = state.message,
+                        text = state.message.resolve(),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center),
@@ -200,7 +218,7 @@ private fun SearchBar(
                 decorationBox = { innerTextField ->
                     if (query.isEmpty()) {
                         Text(
-                            text = "Search feeds\u2026",
+                            text = stringResource(Res.string.feed_manage_search),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -215,7 +233,7 @@ private fun SearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Clear search",
+                        contentDescription = stringResource(Res.string.search_clear_cd),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -268,7 +286,7 @@ private fun FeedManagementContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No subscriptions yet",
+                        text = stringResource(Res.string.feed_manage_no_subscriptions),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -284,7 +302,7 @@ private fun FeedManagementContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No results for \"$searchQuery\"",
+                        text = stringResource(Res.string.feed_manage_no_results, searchQuery),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -333,7 +351,7 @@ private fun FeedManagementContent(
         }
 
         IndelibleButton(
-            text = "+ Add Feed",
+            text = stringResource(Res.string.feed_action_add_short),
             style = IndelibleButtonStyle.Secondary,
             onClick = onNavigateToAddFeed,
             modifier =
@@ -358,7 +376,7 @@ private fun AutoSaveToggleRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Auto-save to Library",
+            text = stringResource(Res.string.feed_action_auto_save),
             style = MaterialTheme.typography.bodyLarge,
         )
         Switch(
@@ -376,7 +394,10 @@ private fun SubscriptionSheetActions(
     onSave: (UpdateSubscriptionRequest) -> Unit,
 ) {
     IndelibleButton(
-        text = if (isPaused) "Resume" else "Pause",
+        text =
+            stringResource(
+                if (isPaused) Res.string.feed_action_resume else Res.string.feed_action_pause,
+            ),
         onClick = {
             val newStatus = if (isPaused) "active" else "paused"
             onSave(
@@ -390,7 +411,7 @@ private fun SubscriptionSheetActions(
     )
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
     IndelibleButton(
-        text = "Save Changes",
+        text = stringResource(Res.string.feed_action_save_changes),
         onClick = {
             onSave(
                 UpdateSubscriptionRequest(
@@ -429,7 +450,7 @@ private fun EditSubscriptionSheet(
                     .padding(bottom = IndelibleSpacing.screenPaddingV),
         ) {
             Text(
-                text = "Edit Subscription",
+                text = stringResource(Res.string.feed_manage_edit),
                 style = MaterialTheme.typography.headlineMedium,
             )
             Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
@@ -437,7 +458,7 @@ private fun EditSubscriptionSheet(
             IndelibleTextField(
                 value = titleInput,
                 onValueChange = { titleInput = it },
-                label = "Title",
+                label = stringResource(Res.string.feed_manage_title_label),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
@@ -457,7 +478,7 @@ private fun EditSubscriptionSheet(
             Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
             IndelibleButton(
-                text = "Delete Subscription",
+                text = stringResource(Res.string.feed_manage_delete),
                 onClick = onDelete,
                 style = IndelibleButtonStyle.Destructive,
             )

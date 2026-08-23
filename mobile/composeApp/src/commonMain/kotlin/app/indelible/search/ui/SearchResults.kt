@@ -24,10 +24,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.indelible.core.i18n.resolve
 import app.indelible.search.ui.components.SearchResultRow
 import app.indelible.search.viewmodel.SearchState
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.search_no_results
+import indelible.composeapp.generated.resources.search_no_results_hint
+import indelible.composeapp.generated.resources.search_result_count
+import indelible.composeapp.generated.resources.search_result_count_more
 import kotlinx.coroutines.flow.distinctUntilChanged
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 private const val PAGINATION_TRIGGER_ROWS = 5
 
@@ -50,7 +58,7 @@ internal fun ResultsContent(
         state.error != null -> {
             Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = state.error,
+                    text = state.error.resolve(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -74,13 +82,13 @@ internal fun ResultsContent(
                     )
                     Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
                     Text(
-                        text = "No results found",
+                        text = stringResource(Res.string.search_no_results),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
                     Text(
-                        text = "Try different keywords, or use filters like tag: or type:",
+                        text = stringResource(Res.string.search_no_results_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -131,7 +139,16 @@ private fun ResultsList(
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         item {
             Text(
-                text = "${state.results.size}${if (state.hasMore) "+" else ""} results",
+                text =
+                    pluralStringResource(
+                        if (state.hasMore) {
+                            Res.plurals.search_result_count_more
+                        } else {
+                            Res.plurals.search_result_count
+                        },
+                        state.results.size,
+                        state.results.size,
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier =

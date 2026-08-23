@@ -1,5 +1,6 @@
 package app.indelible.search.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.search.model.RecentSearch
 import app.indelible.search.model.SearchResult
 import app.indelible.search.model.SearchSuggestion
@@ -16,7 +17,7 @@ data class SearchState(
     val isRefreshing: Boolean = false,
     val isLoadingRecent: Boolean = false,
     val hasMore: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 sealed class SearchEffect {
@@ -25,6 +26,6 @@ sealed class SearchEffect {
     ) : SearchEffect()
 
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : SearchEffect()
 }

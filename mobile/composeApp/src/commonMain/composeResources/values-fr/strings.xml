@@ -291,4 +291,172 @@
         <item quantity="one">%1$d élément</item>
         <item quantity="other">%1$d éléments</item>
     </plurals>
+    <string name="feed_action_add">Ajouter un flux</string>
+    <string name="feed_action_add_short">Ajouter un flux</string>
+    <string name="feed_action_auto_save">Enregistrer automatiquement dans la bibliothèque</string>
+    <string name="feed_action_copy">Copier</string>
+    <string name="feed_action_copied">Copié</string>
+    <string name="feed_action_edit">Modifier</string>
+    <string name="feed_action_manage_cd">Gérer les sources</string>
+    <string name="feed_action_mark_all_seen">Tout marquer comme vu</string>
+    <string name="feed_action_more_cd">Plus d’options</string>
+    <string name="feed_action_open_navigation_cd">Ouvrir la navigation</string>
+    <string name="feed_action_pause">Mettre en pause</string>
+    <string name="feed_action_pause_cd">Mettre le flux en pause</string>
+    <string name="feed_action_resume">Reprendre</string>
+    <string name="feed_action_resume_cd">Réactiver le flux</string>
+    <string name="feed_action_save_changes">Enregistrer les modifications</string>
+    <string name="feed_action_save_library_cd">Enregistrer dans la bibliothèque</string>
+    <string name="feed_action_unsubscribe">Se désabonner</string>
+    <string name="feed_add_newsletter_body">Abonnez-vous par e-mail : les newsletters envoyées ici seront enregistrées dans vos flux.</string>
+    <string name="feed_add_newsletter_title">E-mail des newsletters</string>
+    <string name="feed_add_opml_hint">.opml ou .xml · importe tous les flux à la fois</string>
+    <string name="feed_add_opml_select">Sélectionner un fichier OPML</string>
+    <string name="feed_add_opml_title">Importer un fichier OPML</string>
+    <string name="feed_add_subscribe_title">S’abonner à un flux</string>
+    <string name="feed_add_title">Ajouter un flux RSS</string>
+    <string name="feed_add_url_label">URL du flux</string>
+    <string name="feed_email_copied">Adresse e-mail copiée</string>
+    <string name="feed_empty_first_body">Ajoutez l’URL d’un site ou d’un flux. Indelible trouve le flux et regroupe les nouveaux articles.</string>
+    <string name="feed_empty_first_caption">Les nouveaux articles apparaîtront ici</string>
+    <string name="feed_empty_first_kicker">Première source</string>
+    <string name="feed_empty_first_title">Suivez une source pour voir ses nouveaux articles ici</string>
+    <string name="feed_empty_seen_body">Les contenus marqués comme vus restent faciles à retrouver.</string>
+    <string name="feed_empty_seen_caption">Les articles vus apparaîtront ici</string>
+    <string name="feed_empty_seen_kicker">Aucun historique</string>
+    <string name="feed_empty_seen_title">Les articles vus restent disponibles ici</string>
+    <string name="feed_empty_unseen_body">Les nouveaux articles de vos sources apparaîtront ici.</string>
+    <string name="feed_empty_unseen_caption">Les nouveaux articles apparaîtront ici</string>
+    <string name="feed_empty_unseen_kicker">Vous êtes à jour</string>
+    <string name="feed_empty_unseen_title">Aucun article non vu</string>
+    <string name="feed_error_delete">Impossible de supprimer l’abonnement. Veuillez réessayer.</string>
+    <string name="feed_error_import_opml">Impossible d’importer le fichier OPML. Veuillez réessayer.</string>
+    <string name="feed_error_load">Impossible de charger les flux. Veuillez réessayer.</string>
+    <string name="feed_error_load_more">Impossible de charger plus de contenus. Veuillez réessayer.</string>
+    <string name="feed_error_load_subscriptions">Impossible de charger les abonnements. Veuillez réessayer.</string>
+    <string name="feed_error_mark_all_seen">Impossible de tout marquer comme vu. Veuillez réessayer.</string>
+    <string name="feed_error_mark_seen">Impossible de marquer ce contenu comme vu. Veuillez réessayer.</string>
+    <string name="feed_error_open">Impossible d’ouvrir ce contenu. Veuillez réessayer.</string>
+    <string name="feed_error_save">Impossible d’enregistrer le contenu. Veuillez réessayer.</string>
+    <string name="feed_error_subscribe">Impossible de s’abonner au flux. Veuillez réessayer.</string>
+    <string name="feed_error_update">Impossible de modifier l’abonnement. Veuillez réessayer.</string>
+    <string name="feed_filter_seen">Vus</string>
+    <string name="feed_filter_show">Afficher</string>
+    <string name="feed_filter_unseen">Non vus</string>
+    <string name="feed_label">Flux</string>
+    <string name="feed_manage_delete">Supprimer l’abonnement</string>
+    <string name="feed_manage_edit">Modifier l’abonnement</string>
+    <string name="feed_manage_no_results">Aucun résultat pour « %1$s »</string>
+    <string name="feed_manage_no_subscriptions">Aucun abonnement</string>
+    <string name="feed_manage_search">Rechercher des flux…</string>
+    <string name="feed_manage_title">Gérer les flux</string>
+    <string name="feed_manage_title_label">Titre</string>
+    <string name="feed_opml_import_result">Import terminé · flux : %1$d · ignorés : %2$d · erreurs : %3$d</string>
+    <string name="feed_status_all_seen">Tous les contenus sont marqués comme vus</string>
+    <string name="feed_status_active">Actif</string>
+    <string name="feed_status_error">Erreur</string>
+    <string name="feed_status_paused">En pause</string>
+    <string name="feed_status_saved_library">Enregistré dans la bibliothèque</string>
+    <string name="feed_subscribe">S’abonner</string>
+    <string name="feed_your_feed">Vos flux</string>
+    <plurals name="feed_source_count">
+        <item quantity="one">Vos flux · %1$d source</item>
+        <item quantity="other">Vos flux · %1$d sources</item>
+    </plurals>
+    <plurals name="feed_source_count_approximate">
+        <item quantity="one">Vos flux · plus de %1$d source</item>
+        <item quantity="other">Vos flux · plus de %1$d sources</item>
+    </plurals>
+    <string name="search_action_clear_all">Tout effacer</string>
+    <string name="search_clear_cd">Effacer la recherche</string>
+    <string name="search_error_load_more">Impossible de charger plus de résultats. Veuillez réessayer.</string>
+    <string name="search_error_refresh">Impossible d’actualiser les résultats. Veuillez réessayer.</string>
+    <string name="search_error_search">Impossible d’effectuer la recherche. Veuillez réessayer.</string>
+    <string name="search_filter_syntax">Syntaxe des filtres</string>
+    <string name="search_no_results">Aucun résultat</string>
+    <string name="search_no_results_hint">Essayez d’autres mots-clés ou des filtres comme tag: ou type:</string>
+    <string name="search_placeholder">Rechercher dans votre bibliothèque…</string>
+    <string name="search_recent">Recherches récentes</string>
+    <plurals name="search_result_count">
+        <item quantity="one">%1$d résultat</item>
+        <item quantity="other">%1$d résultats</item>
+    </plurals>
+    <plurals name="search_result_count_more">
+        <item quantity="one">Plus de %1$d résultat</item>
+        <item quantity="other">Plus de %1$d résultats</item>
+    </plurals>
+    <plurals name="search_relative_minutes">
+        <item quantity="one">Il y a %1$d min</item>
+        <item quantity="other">Il y a %1$d min</item>
+    </plurals>
+    <plurals name="search_relative_hours">
+        <item quantity="one">Il y a %1$d heure</item>
+        <item quantity="other">Il y a %1$d heures</item>
+    </plurals>
+    <plurals name="search_relative_days">
+        <item quantity="one">Il y a %1$d jour</item>
+        <item quantity="other">Il y a %1$d jours</item>
+    </plurals>
+    <plurals name="search_relative_weeks">
+        <item quantity="one">Il y a %1$d semaine</item>
+        <item quantity="other">Il y a %1$d semaines</item>
+    </plurals>
+    <string name="collections_error_load">Impossible de charger les collections. Veuillez réessayer.</string>
+    <string name="collections_error_load_detail">Impossible de charger cette collection. Veuillez réessayer.</string>
+    <string name="collections_error_refresh">Impossible d’actualiser les collections. Veuillez réessayer.</string>
+    <string name="collections_items">Contenus</string>
+    <string name="collections_no_items">Aucun contenu dans cette collection</string>
+    <string name="collections_none">Aucune collection</string>
+    <string name="collections_title">Collections</string>
+    <string name="collections_untitled">Collection</string>
+    <string name="collections_stats">Contenus : %1$d · sous-collections : %2$d</string>
+    <plurals name="collections_count">
+        <item quantity="one">%1$d collection</item>
+        <item quantity="other">%1$d collections</item>
+    </plurals>
+    <plurals name="collections_item_count">
+        <item quantity="one">%1$d contenu</item>
+        <item quantity="other">%1$d contenus</item>
+    </plurals>
+    <plurals name="collections_subcollection_count">
+        <item quantity="one">%1$d sous-collection</item>
+        <item quantity="other">%1$d sous-collections</item>
+    </plurals>
+    <string name="tags_clear_filter_cd">Effacer le filtre</string>
+    <string name="tags_error_load">Impossible de charger les étiquettes. Veuillez réessayer.</string>
+    <string name="tags_error_load_detail">Impossible de charger cette étiquette. Veuillez réessayer.</string>
+    <string name="tags_filter_placeholder">Filtrer les étiquettes…</string>
+    <string name="tags_items">Contenus</string>
+    <string name="tags_no_items">Aucun contenu avec cette étiquette</string>
+    <string name="tags_no_match">Aucune étiquette ne correspond à « %1$s »</string>
+    <string name="tags_none">Aucune étiquette</string>
+    <string name="tags_scope_document">Document</string>
+    <string name="tags_scope_highlight">Surlignage</string>
+    <string name="tags_stats">Contenus : %1$d · surlignages : %2$d · sous-étiquettes : %3$d</string>
+    <string name="tags_title">Étiquettes</string>
+    <plurals name="tags_highlight_count">
+        <item quantity="one">%1$d surlignage</item>
+        <item quantity="other">%1$d surlignages</item>
+    </plurals>
+    <plurals name="tags_item_count">
+        <item quantity="one">%1$d contenu</item>
+        <item quantity="other">%1$d contenus</item>
+    </plurals>
+    <plurals name="tags_subtag_count">
+        <item quantity="one">%1$d sous-étiquette</item>
+        <item quantity="other">%1$d sous-étiquettes</item>
+    </plurals>
+    <string name="trash_action_empty">Vider la corbeille</string>
+    <string name="trash_action_restore">Restaurer</string>
+    <string name="trash_confirm_title">Vider la corbeille ?</string>
+    <plurals name="trash_confirm_body">
+        <item quantity="one">%1$d contenu sera définitivement supprimé. Cette action est irréversible.</item>
+        <item quantity="other">Les %1$d contenus seront définitivement supprimés. Cette action est irréversible.</item>
+    </plurals>
+    <string name="trash_deleted">Supprimé</string>
+    <string name="trash_deleted_date">Supprimé le %1$s</string>
+    <string name="trash_empty">La corbeille est vide</string>
+    <string name="trash_error_load">Impossible de charger la corbeille. Veuillez réessayer.</string>
+    <string name="trash_expiry_notice">Les contenus sont définitivement supprimés après 30 jours</string>
+    <string name="trash_title">Corbeille</string>
 </resources>

@@ -43,12 +43,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import app.indelible.api.generated.models.CollectionResponse
 import app.indelible.collections.ui.components.CollectionScreenTopBar
 import app.indelible.collections.ui.components.PaginationEffect
-import app.indelible.collections.viewmodel.CollectionDetailViewModel
 import app.indelible.collections.viewmodel.CollectionDetailState
+import app.indelible.collections.viewmodel.CollectionDetailViewModel
+import app.indelible.core.i18n.resolve
 import app.indelible.library.ui.components.LibraryItemRow
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.collections_item_count
+import indelible.composeapp.generated.resources.collections_items
+import indelible.composeapp.generated.resources.collections_no_items
+import indelible.composeapp.generated.resources.collections_stats
+import indelible.composeapp.generated.resources.collections_untitled
+import indelible.composeapp.generated.resources.common_retry
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +82,7 @@ fun CollectionDetailScreen(
         modifier = modifier,
         topBar = {
             CollectionScreenTopBar(
-                title = state.collection?.name ?: "Collection",
+                title = state.collection?.name ?: stringResource(Res.string.collections_untitled),
                 onBack = onNavigateBack,
             )
         },
@@ -100,12 +110,14 @@ fun CollectionDetailScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = state.error ?: "Something went wrong",
+                        text = state.error?.resolve().orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
                     Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
-                    TextButton(onClick = { viewModel.load() }) { Text("Retry") }
+                    TextButton(onClick = { viewModel.load() }) {
+                        Text(stringResource(Res.string.common_retry))
+                    }
                 }
             }
 
@@ -159,7 +171,7 @@ private fun CollectionDetailContent(
         if (state.items.isNotEmpty() || state.isLoadingMoreItems) {
             item(key = "items-header") {
                 Text(
-                    text = "Items",
+                    text = stringResource(Res.string.collections_items),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
@@ -191,7 +203,7 @@ private fun CollectionDetailContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No items in this collection",
+                        text = stringResource(Res.string.collections_no_items),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -278,13 +290,15 @@ private fun CollectionHeroHeader(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            // Stats: "N items · M sub-collections"
             val statsText =
-                buildString {
-                    append("${collection.itemCount} item${if (collection.itemCount == 1L) "" else "s"}")
-                    if (childCount > 0) {
-                        append(" · $childCount sub-collection${if (childCount == 1) "" else "s"}")
-                    }
+                if (childCount > 0) {
+                    stringResource(Res.string.collections_stats, collection.itemCount, childCount)
+                } else {
+                    pluralStringResource(
+                        Res.plurals.collections_item_count,
+                        collection.itemCount.toInt(),
+                        collection.itemCount,
+                    )
                 }
             Text(
                 text = statsText,

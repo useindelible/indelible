@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.api.generated.models.CollectionResponse
 import app.indelible.collections.repository.CollectionsRepository
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryItem
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.collections_error_load_detail
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +22,7 @@ data class CollectionDetailState(
     val isRefreshing: Boolean = false,
     val isLoadingMoreItems: Boolean = false,
     val hasMoreItems: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 class CollectionDetailViewModel(
@@ -42,11 +45,6 @@ class CollectionDetailViewModel(
             val childrenResult = repository.listCollectionChildren(collectionId)
             val itemsResult = repository.listCollectionItems(collectionId, cursor = null)
 
-            val error =
-                collectionResult.exceptionOrNull()?.message
-                    ?: childrenResult.exceptionOrNull()?.message
-                    ?: itemsResult.exceptionOrNull()?.message
-
             itemCursor = itemsResult.getOrNull()?.page?.nextCursor
 
             _state.update {
@@ -56,7 +54,12 @@ class CollectionDetailViewModel(
                     items = itemsResult.getOrNull()?.data ?: it.items,
                     hasMoreItems = itemsResult.getOrNull()?.page?.hasMore ?: false,
                     isLoading = false,
-                    error = if (collectionResult.isFailure) error else null,
+                    error =
+                        if (collectionResult.isFailure) {
+                            UiMessage(Res.string.collections_error_load_detail)
+                        } else {
+                            null
+                        },
                 )
             }
         }

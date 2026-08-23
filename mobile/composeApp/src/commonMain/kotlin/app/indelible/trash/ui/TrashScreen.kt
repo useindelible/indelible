@@ -40,6 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import app.indelible.core.i18n.LocaleFormatters
+import app.indelible.core.i18n.LocalizedDateStyle
+import app.indelible.core.i18n.resolve
 import app.indelible.core.model.LibraryItem
 import app.indelible.core.model.ThumbnailColor
 import app.indelible.trash.viewmodel.TrashState
@@ -47,11 +50,24 @@ import app.indelible.trash.viewmodel.TrashViewModel
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_cancel
+import indelible.composeapp.generated.resources.common_retry
+import indelible.composeapp.generated.resources.trash_action_empty
+import indelible.composeapp.generated.resources.trash_action_restore
+import indelible.composeapp.generated.resources.trash_confirm_body
+import indelible.composeapp.generated.resources.trash_confirm_title
+import indelible.composeapp.generated.resources.trash_deleted
+import indelible.composeapp.generated.resources.trash_deleted_date
+import indelible.composeapp.generated.resources.trash_empty
+import indelible.composeapp.generated.resources.trash_expiry_notice
+import indelible.composeapp.generated.resources.trash_title
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 private const val PAGINATION_TRIGGER_ROWS = 5
 private const val THUMBNAIL_OPACITY = 0.5f
@@ -119,12 +135,14 @@ fun TrashScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
-                            text = state.error ?: "Something went wrong",
+                            text = state.error?.resolve().orEmpty(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                         )
                         Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
-                        TextButton(onClick = { viewModel.load() }) { Text("Retry") }
+                        TextButton(onClick = { viewModel.load() }) {
+                            Text(stringResource(Res.string.common_retry))
+                        }
                     }
                 }
 
@@ -148,25 +166,24 @@ private fun EmptyTrashDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Empty Trash?") },
+        title = { Text(stringResource(Res.string.trash_confirm_title)) },
         text = {
             Text(
-                text = "All $itemCount item${if (itemCount == 1) "" else "s"}" +
-                    " will be permanently deleted. This cannot be undone.",
+                text = pluralStringResource(Res.plurals.trash_confirm_body, itemCount, itemCount),
                 style = MaterialTheme.typography.bodyMedium,
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(
-                    text = "Empty Trash",
+                    text = stringResource(Res.string.trash_action_empty),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.common_cancel))
             }
         },
     )
@@ -192,12 +209,12 @@ private fun TrashTopBar(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(Res.string.common_back),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
         Text(
-            text = "Trash",
+            text = stringResource(Res.string.trash_title),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.weight(1f),
         )
@@ -213,7 +230,7 @@ private fun TrashTopBar(
                     )
                 } else {
                     Text(
-                        text = "Empty Trash",
+                        text = stringResource(Res.string.trash_action_empty),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -235,7 +252,7 @@ private fun TrashItemList(
     ) {
         item {
             WarningBanner(
-                message = "Items are permanently deleted after 30 days",
+                message = stringResource(Res.string.trash_expiry_notice),
                 modifier =
                     Modifier.padding(
                         horizontal = IndelibleSpacing.step16,
@@ -254,7 +271,7 @@ private fun TrashItemList(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Trash is empty",
+                        text = stringResource(Res.string.trash_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -368,7 +385,7 @@ private fun TrashItemRow(
                     )
                 } else {
                     Text(
-                        text = "Restore",
+                        text = stringResource(Res.string.trash_action_restore),
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -421,17 +438,13 @@ private fun thumbnailBackground(thumbnailColor: ThumbnailColor) =
         ThumbnailColor.PINK -> MaterialTheme.colorScheme.error.copy(alpha = 0.20f)
     }
 
-private const val MONTH_ABBREVIATION_LENGTH = 3
-
-private fun formatDeletedDate(instant: Instant?): String {
-    if (instant == null) return "Deleted"
-    return runCatching {
-        val dt = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-        val month =
-            dt.month.name
-                .lowercase()
-                .replaceFirstChar { it.uppercase() }
-                .take(MONTH_ABBREVIATION_LENGTH)
-        "Deleted $month ${dt.dayOfMonth}, ${dt.year}"
-    }.getOrElse { "Deleted" }
-}
+@Composable
+private fun formatDeletedDate(instant: Instant?): String =
+    if (instant == null) {
+        stringResource(Res.string.trash_deleted)
+    } else {
+        stringResource(
+            Res.string.trash_deleted_date,
+            LocaleFormatters.date(instant, LocalizedDateStyle.MEDIUM),
+        )
+    }

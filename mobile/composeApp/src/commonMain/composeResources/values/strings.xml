@@ -291,4 +291,172 @@
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
+    <string name="feed_action_add">Add a feed</string>
+    <string name="feed_action_add_short">Add feed</string>
+    <string name="feed_action_auto_save">Auto-save to library</string>
+    <string name="feed_action_copy">Copy</string>
+    <string name="feed_action_copied">Copied</string>
+    <string name="feed_action_edit">Edit</string>
+    <string name="feed_action_manage_cd">Manage sources</string>
+    <string name="feed_action_mark_all_seen">Mark all as seen</string>
+    <string name="feed_action_more_cd">More options</string>
+    <string name="feed_action_open_navigation_cd">Open navigation</string>
+    <string name="feed_action_pause">Pause</string>
+    <string name="feed_action_pause_cd">Pause feed</string>
+    <string name="feed_action_resume">Resume</string>
+    <string name="feed_action_resume_cd">Resume feed</string>
+    <string name="feed_action_save_changes">Save changes</string>
+    <string name="feed_action_save_library_cd">Save to library</string>
+    <string name="feed_action_unsubscribe">Unsubscribe</string>
+    <string name="feed_add_newsletter_body">Subscribe via email — newsletters sent here are saved as feed entries.</string>
+    <string name="feed_add_newsletter_title">Newsletter email</string>
+    <string name="feed_add_opml_hint">.opml or .xml · imports all feeds at once</string>
+    <string name="feed_add_opml_select">Select OPML file</string>
+    <string name="feed_add_opml_title">Import OPML</string>
+    <string name="feed_add_subscribe_title">Subscribe to feed</string>
+    <string name="feed_add_title">Add RSS feed</string>
+    <string name="feed_add_url_label">Feed URL</string>
+    <string name="feed_email_copied">Email copied to clipboard</string>
+    <string name="feed_empty_first_body">Add a site or feed URL. Indelible finds the feed and keeps new posts together.</string>
+    <string name="feed_empty_first_caption">New posts land in this list</string>
+    <string name="feed_empty_first_kicker">First source</string>
+    <string name="feed_empty_first_title">Follow a source and new articles appear here</string>
+    <string name="feed_empty_seen_body">Items you mark as seen remain easy to find.</string>
+    <string name="feed_empty_seen_caption">Seen posts fill this list</string>
+    <string name="feed_empty_seen_kicker">No history yet</string>
+    <string name="feed_empty_seen_title">Seen posts stay available here</string>
+    <string name="feed_empty_unseen_body">New posts from your sources will appear here.</string>
+    <string name="feed_empty_unseen_caption">New posts land in this list</string>
+    <string name="feed_empty_unseen_kicker">You’re up to date</string>
+    <string name="feed_empty_unseen_title">No unseen posts</string>
+    <string name="feed_error_delete">Couldn’t delete the subscription. Please try again.</string>
+    <string name="feed_error_import_opml">Couldn’t import the OPML file. Please try again.</string>
+    <string name="feed_error_load">Couldn’t load the feed. Please try again.</string>
+    <string name="feed_error_load_more">Couldn’t load more feed items. Please try again.</string>
+    <string name="feed_error_load_subscriptions">Couldn’t load subscriptions. Please try again.</string>
+    <string name="feed_error_mark_all_seen">Couldn’t mark all items as seen. Please try again.</string>
+    <string name="feed_error_mark_seen">Couldn’t mark the item as seen. Please try again.</string>
+    <string name="feed_error_open">Couldn’t open this item. Please try again.</string>
+    <string name="feed_error_save">Couldn’t save the item. Please try again.</string>
+    <string name="feed_error_subscribe">Couldn’t subscribe to the feed. Please try again.</string>
+    <string name="feed_error_update">Couldn’t update the subscription. Please try again.</string>
+    <string name="feed_filter_seen">Seen</string>
+    <string name="feed_filter_show">Show</string>
+    <string name="feed_filter_unseen">Unseen</string>
+    <string name="feed_label">Feed</string>
+    <string name="feed_manage_delete">Delete subscription</string>
+    <string name="feed_manage_edit">Edit subscription</string>
+    <string name="feed_manage_no_results">No results for “%1$s”</string>
+    <string name="feed_manage_no_subscriptions">No subscriptions yet</string>
+    <string name="feed_manage_search">Search feeds…</string>
+    <string name="feed_manage_title">Manage feeds</string>
+    <string name="feed_manage_title_label">Title</string>
+    <string name="feed_opml_import_result">Import complete · feeds: %1$d · skipped: %2$d · errors: %3$d</string>
+    <string name="feed_status_all_seen">All items marked as seen</string>
+    <string name="feed_status_active">Active</string>
+    <string name="feed_status_error">Error</string>
+    <string name="feed_status_paused">Paused</string>
+    <string name="feed_status_saved_library">Saved to library</string>
+    <string name="feed_subscribe">Subscribe</string>
+    <string name="feed_your_feed">Your feed</string>
+    <plurals name="feed_source_count">
+        <item quantity="one">Your feed · %1$d source</item>
+        <item quantity="other">Your feed · %1$d sources</item>
+    </plurals>
+    <plurals name="feed_source_count_approximate">
+        <item quantity="one">Your feed · %1$d+ source</item>
+        <item quantity="other">Your feed · %1$d+ sources</item>
+    </plurals>
+    <string name="search_action_clear_all">Clear all</string>
+    <string name="search_clear_cd">Clear search</string>
+    <string name="search_error_load_more">Couldn’t load more results. Please try again.</string>
+    <string name="search_error_refresh">Couldn’t refresh the results. Please try again.</string>
+    <string name="search_error_search">Couldn’t search your library. Please try again.</string>
+    <string name="search_filter_syntax">Filter syntax</string>
+    <string name="search_no_results">No results found</string>
+    <string name="search_no_results_hint">Try different keywords, or use filters like tag: or type:</string>
+    <string name="search_placeholder">Search your library…</string>
+    <string name="search_recent">Recent searches</string>
+    <plurals name="search_result_count">
+        <item quantity="one">%1$d result</item>
+        <item quantity="other">%1$d results</item>
+    </plurals>
+    <plurals name="search_result_count_more">
+        <item quantity="one">%1$d+ result</item>
+        <item quantity="other">%1$d+ results</item>
+    </plurals>
+    <plurals name="search_relative_minutes">
+        <item quantity="one">%1$d min ago</item>
+        <item quantity="other">%1$d min ago</item>
+    </plurals>
+    <plurals name="search_relative_hours">
+        <item quantity="one">%1$d hour ago</item>
+        <item quantity="other">%1$d hours ago</item>
+    </plurals>
+    <plurals name="search_relative_days">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <plurals name="search_relative_weeks">
+        <item quantity="one">%1$d week ago</item>
+        <item quantity="other">%1$d weeks ago</item>
+    </plurals>
+    <string name="collections_error_load">Couldn’t load collections. Please try again.</string>
+    <string name="collections_error_load_detail">Couldn’t load this collection. Please try again.</string>
+    <string name="collections_error_refresh">Couldn’t refresh collections. Please try again.</string>
+    <string name="collections_items">Items</string>
+    <string name="collections_no_items">No items in this collection</string>
+    <string name="collections_none">No collections yet</string>
+    <string name="collections_title">Collections</string>
+    <string name="collections_untitled">Collection</string>
+    <string name="collections_stats">Items: %1$d · sub-collections: %2$d</string>
+    <plurals name="collections_count">
+        <item quantity="one">%1$d collection</item>
+        <item quantity="other">%1$d collections</item>
+    </plurals>
+    <plurals name="collections_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="collections_subcollection_count">
+        <item quantity="one">%1$d sub-collection</item>
+        <item quantity="other">%1$d sub-collections</item>
+    </plurals>
+    <string name="tags_clear_filter_cd">Clear filter</string>
+    <string name="tags_error_load">Couldn’t load tags. Please try again.</string>
+    <string name="tags_error_load_detail">Couldn’t load this tag. Please try again.</string>
+    <string name="tags_filter_placeholder">Filter tags…</string>
+    <string name="tags_items">Items</string>
+    <string name="tags_no_items">No items with this tag</string>
+    <string name="tags_no_match">No tags match “%1$s”</string>
+    <string name="tags_none">No tags yet</string>
+    <string name="tags_scope_document">Document</string>
+    <string name="tags_scope_highlight">Highlight</string>
+    <string name="tags_stats">Items: %1$d · highlights: %2$d · sub-tags: %3$d</string>
+    <string name="tags_title">Tags</string>
+    <plurals name="tags_highlight_count">
+        <item quantity="one">%1$d highlight</item>
+        <item quantity="other">%1$d highlights</item>
+    </plurals>
+    <plurals name="tags_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="tags_subtag_count">
+        <item quantity="one">%1$d sub-tag</item>
+        <item quantity="other">%1$d sub-tags</item>
+    </plurals>
+    <string name="trash_action_empty">Empty trash</string>
+    <string name="trash_action_restore">Restore</string>
+    <string name="trash_confirm_title">Empty trash?</string>
+    <plurals name="trash_confirm_body">
+        <item quantity="one">%1$d item will be permanently deleted. This cannot be undone.</item>
+        <item quantity="other">All %1$d items will be permanently deleted. This cannot be undone.</item>
+    </plurals>
+    <string name="trash_deleted">Deleted</string>
+    <string name="trash_deleted_date">Deleted %1$s</string>
+    <string name="trash_empty">Trash is empty</string>
+    <string name="trash_error_load">Couldn’t load the trash. Please try again.</string>
+    <string name="trash_expiry_notice">Items are permanently deleted after 30 days</string>
+    <string name="trash_title">Trash</string>
 </resources>

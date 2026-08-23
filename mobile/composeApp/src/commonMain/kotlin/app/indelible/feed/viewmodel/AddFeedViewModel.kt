@@ -2,8 +2,13 @@ package app.indelible.feed.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.feed.model.FeedSubscription
 import app.indelible.feed.repository.FeedRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_error_import_opml
+import indelible.composeapp.generated.resources.feed_error_subscribe
+import indelible.composeapp.generated.resources.feed_opml_import_result
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,13 +29,13 @@ sealed class AddFeedUiState {
     ) : AddFeedUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : AddFeedUiState()
 }
 
 sealed class AddFeedEffect {
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : AddFeedEffect()
 
     data object NavigateBack : AddFeedEffect()
@@ -55,10 +60,10 @@ class AddFeedViewModel(
                 .onSuccess { subscription ->
                     _uiState.value = AddFeedUiState.Success(subscription)
                     _effects.emit(AddFeedEffect.NavigateBack)
-                }.onFailure { error ->
+                }.onFailure {
                     _uiState.value = AddFeedUiState.Idle
                     _effects.emit(
-                        AddFeedEffect.ShowSnackbar(error.message ?: "Failed to subscribe"),
+                        AddFeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_subscribe)),
                     )
                 }
         }
@@ -74,17 +79,17 @@ class AddFeedViewModel(
                 .importOpml(fileBytes, fileName)
                 .onSuccess { result ->
                     _uiState.value = AddFeedUiState.Idle
-                    val message =
-                        buildString {
-                            append("Imported ${result.created} feed")
-                            if (result.created != 1) append("s")
-                            if (result.skipped > 0) append(", ${result.skipped} skipped")
-                            if (result.errors.isNotEmpty()) append(", ${result.errors.size} error(s)")
-                        }
-                    _effects.emit(AddFeedEffect.ShowSnackbar(message))
-                }.onFailure { error ->
+                    _effects.emit(
+                        AddFeedEffect.ShowSnackbar(
+                            UiMessage(
+                                Res.string.feed_opml_import_result,
+                                listOf(result.created, result.skipped, result.errors.size),
+                            ),
+                        ),
+                    )
+                }.onFailure {
                     _uiState.value = AddFeedUiState.Idle
-                    _effects.emit(AddFeedEffect.ShowSnackbar(error.message ?: "Failed to import OPML"))
+                    _effects.emit(AddFeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_import_opml)))
                 }
         }
     }

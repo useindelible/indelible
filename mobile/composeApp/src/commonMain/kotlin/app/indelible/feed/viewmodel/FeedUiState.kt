@@ -1,5 +1,6 @@
 package app.indelible.feed.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.feed.model.FeedItemWithState
 
 enum class FeedFilter(
@@ -24,13 +25,13 @@ sealed class FeedUiState {
     ) : FeedUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : FeedUiState()
 }
 
 sealed class FeedEffect {
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : FeedEffect()
 
     data object NavigateToAddFeed : FeedEffect()

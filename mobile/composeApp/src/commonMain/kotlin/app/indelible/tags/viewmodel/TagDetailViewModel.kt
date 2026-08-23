@@ -2,9 +2,12 @@ package app.indelible.tags.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryItem
 import app.indelible.reader.model.TagData
 import app.indelible.tags.repository.TagsRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.tags_error_load_detail
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +23,7 @@ data class TagDetailState(
     val isRefreshing: Boolean = false,
     val isLoadingMoreItems: Boolean = false,
     val hasMoreItems: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 class TagDetailViewModel(
@@ -60,7 +63,12 @@ class TagDetailViewModel(
                     items = itemsResult.getOrNull()?.data ?: it.items,
                     hasMoreItems = itemsResult.getOrNull()?.page?.hasMore ?: false,
                     isLoading = false,
-                    error = if (tagResult.isFailure) tagResult.exceptionOrNull()?.message else null,
+                    error =
+                        if (tagResult.isFailure) {
+                            UiMessage(Res.string.tags_error_load_detail)
+                        } else {
+                            null
+                        },
                 )
             }
         }

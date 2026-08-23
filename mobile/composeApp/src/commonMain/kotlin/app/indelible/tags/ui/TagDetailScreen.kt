@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import app.indelible.core.i18n.resolve
 import app.indelible.library.ui.components.LibraryItemRow
 import app.indelible.reader.model.TagData
 import app.indelible.tags.viewmodel.TagDetailViewModel
@@ -52,8 +53,16 @@ import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_retry
+import indelible.composeapp.generated.resources.tags_items
+import indelible.composeapp.generated.resources.tags_no_items
+import indelible.composeapp.generated.resources.tags_stats
+import indelible.composeapp.generated.resources.tags_title
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.jetbrains.compose.resources.stringResource
 
 private const val ITEMS_PAGINATION_TRIGGER = 5
 
@@ -98,12 +107,12 @@ fun TagDetailScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(Res.string.common_back),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
                 Text(
-                    text = "Tags",
+                    text = stringResource(Res.string.tags_title),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
@@ -135,12 +144,14 @@ fun TagDetailScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = state.error ?: "Something went wrong",
+                        text = state.error?.resolve().orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
                     Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
-                    TextButton(onClick = { viewModel.load() }) { Text("Retry") }
+                    TextButton(onClick = { viewModel.load() }) {
+                        Text(stringResource(Res.string.common_retry))
+                    }
                 }
             }
 
@@ -194,7 +205,7 @@ private fun TagDetailContent(
         if (state.items.isNotEmpty() || state.isLoadingMoreItems) {
             item(key = "items-header") {
                 Text(
-                    text = "Items",
+                    text = stringResource(Res.string.tags_items),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
@@ -225,7 +236,7 @@ private fun TagDetailContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No items with this tag",
+                        text = stringResource(Res.string.tags_no_items),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -304,15 +315,12 @@ private fun TagHeroHeader(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             val statsText =
-                buildString {
-                    append("${tag.itemCount} item${if (tag.itemCount == 1L) "" else "s"}")
-                    if (tag.highlightCount > 0) {
-                        append(" · ${tag.highlightCount} highlight${if (tag.highlightCount == 1L) "" else "s"}")
-                    }
-                    if (childCount > 0) {
-                        append(" · $childCount sub-tag${if (childCount == 1) "" else "s"}")
-                    }
-                }
+                stringResource(
+                    Res.string.tags_stats,
+                    tag.itemCount,
+                    tag.highlightCount,
+                    childCount,
+                )
             Text(
                 text = statsText,
                 style = MaterialTheme.typography.labelSmall,

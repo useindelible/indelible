@@ -1,8 +1,13 @@
 package app.indelible.feed.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.feed.viewmodel.FakeFeedRepository.Companion.fakeFeedItem
 import app.indelible.feed.viewmodel.FakeFeedRepository.Companion.fakeSubscription
 import app.indelible.feed.viewmodel.FakeFeedRepository.Companion.paginatedFeedItems
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_error_load
+import indelible.composeapp.generated.resources.feed_error_load_more
+import indelible.composeapp.generated.resources.feed_error_open
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -72,7 +77,7 @@ class FeedViewModelTest {
             advanceUntilIdle()
 
             val state = assertIs<FeedUiState.Error>(viewModel.uiState.value)
-            assertEquals("Network error", state.message)
+            assertEquals(UiMessage(Res.string.feed_error_load), state.message)
         }
 
     @Test
@@ -127,7 +132,10 @@ class FeedViewModelTest {
             val state = assertIs<FeedUiState.Success>(viewModel.uiState.value)
             assertEquals(listOf("a", "b"), state.items.map { it.id })
             assertFalse(state.isLoadingMore)
-            assertTrue(effects.any { it is FeedEffect.ShowSnackbar })
+            assertEquals(
+                UiMessage(Res.string.feed_error_load_more),
+                effects.filterIsInstance<FeedEffect.ShowSnackbar>().single().message,
+            )
             job.cancel()
         }
 
@@ -184,7 +192,10 @@ class FeedViewModelTest {
             viewModel.openDelivery("fd_7")
             advanceUntilIdle()
 
-            assertTrue(effects.any { it is FeedEffect.ShowSnackbar })
+            assertEquals(
+                UiMessage(Res.string.feed_error_open),
+                effects.filterIsInstance<FeedEffect.ShowSnackbar>().single().message,
+            )
             assertFalse(effects.any { it is FeedEffect.OpenReader })
             job.cancel()
         }

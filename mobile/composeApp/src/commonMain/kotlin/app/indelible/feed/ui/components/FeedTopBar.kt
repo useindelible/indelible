@@ -41,6 +41,14 @@ import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_action_manage_cd
+import indelible.composeapp.generated.resources.feed_action_open_navigation_cd
+import indelible.composeapp.generated.resources.feed_source_count
+import indelible.composeapp.generated.resources.feed_source_count_approximate
+import indelible.composeapp.generated.resources.feed_your_feed
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Feed header (prototype FRAME 3 `.appbar` + `.head`): the same slim action bar
@@ -85,7 +93,7 @@ fun FeedTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Menu,
-                    contentDescription = "Open navigation",
+                    contentDescription = stringResource(Res.string.feed_action_open_navigation_cd),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -96,7 +104,7 @@ fun FeedTopBar(
             ) {
                 Icon(
                     imageVector = IndelibleIcons.Settings,
-                    contentDescription = "Manage sources",
+                    contentDescription = stringResource(Res.string.feed_action_manage_cd),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -161,14 +169,15 @@ fun FeedTopBar(
     }
 }
 
+@Composable
 private fun feedEyebrow(
     sourceCount: Int?,
     exact: Boolean,
 ): String {
-    if (sourceCount == null) return "Your feed".uppercase()
-    val suffix = if (exact) "" else "+"
-    val noun = if (sourceCount == 1 && exact) "source" else "sources"
-    return "Your feed · $sourceCount$suffix $noun".uppercase()
+    if (sourceCount == null) return stringResource(Res.string.feed_your_feed)
+    val resource =
+        if (exact) Res.plurals.feed_source_count else Res.plurals.feed_source_count_approximate
+    return pluralStringResource(resource, sourceCount, sourceCount)
 }
 
 @Composable
@@ -194,8 +203,7 @@ private fun FeedScopeChevron(open: Boolean) {
                             style = Stroke(width = sw),
                         )
                     }
-                }
-                .clip(CircleShape)
+                }.clip(CircleShape)
                 .background(background),
         contentAlignment = Alignment.Center,
     ) {
