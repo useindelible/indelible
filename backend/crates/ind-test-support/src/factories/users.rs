@@ -24,7 +24,7 @@ impl UserFactory {
                 password_hash: None,
                 display_name: format!("{} {}", Name().fake::<String>(), short_unique_suffix()),
                 avatar_url: None,
-                locale: "en".into(),
+                locale: None,
                 timezone: "UTC".into(),
                 theme: Theme::System,
                 email_verified: self.email_verified,

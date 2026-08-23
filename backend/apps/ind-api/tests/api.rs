@@ -3,6 +3,7 @@
 mod api {
     mod access_policy_extractor_tests;
     mod account_email_capture_tests;
+    mod account_locale_tests;
     mod ai_action_journey_tests;
     mod ai_asset_route_permission_tests;
     mod api_credential_boundary_tests;

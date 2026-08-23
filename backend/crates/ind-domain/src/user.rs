@@ -86,7 +86,7 @@ pub struct User {
     pub password_hash: Option<String>,
     pub display_name: String,
     pub avatar_url: Option<String>,
-    pub locale: String,
+    pub locale: Option<String>,
     pub timezone: String,
     pub theme: Theme,
     pub email_verified: bool,

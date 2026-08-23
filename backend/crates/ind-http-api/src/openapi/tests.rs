@@ -39,6 +39,18 @@ fn generated_client_contracts_remain_typed() {
 }
 
 #[test]
+fn profile_locale_is_required_and_nullable() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).unwrap();
+    let profile = &spec["components"]["schemas"]["ProfileResponse"];
+    let required = profile["required"].as_array().unwrap();
+    let locale_types = profile["properties"]["locale"]["type"].as_array().unwrap();
+
+    assert!(required.iter().any(|field| field == "locale"));
+    assert!(locale_types.iter().any(|kind| kind == "string"));
+    assert!(locale_types.iter().any(|kind| kind == "null"));
+}
+
+#[test]
 fn api_permission_schema_matches_domain_catalogue() {
     let spec = serde_json::to_value(ApiDoc::openapi()).unwrap();
     let schemas = &spec["components"]["schemas"];

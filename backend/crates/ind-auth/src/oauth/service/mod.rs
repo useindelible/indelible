@@ -197,7 +197,7 @@ impl OAuthService {
             password_hash: None,
             display_name: user_info.display_name.unwrap_or_else(|| "New User".into()),
             avatar_url: user_info.avatar_url,
-            locale: "en".into(),
+            locale: None,
             timezone: "UTC".into(),
             theme: ind_domain::Theme::default(),
             email_verified: user_info
