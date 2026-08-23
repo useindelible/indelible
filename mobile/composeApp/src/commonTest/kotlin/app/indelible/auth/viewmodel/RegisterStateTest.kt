@@ -1,5 +1,12 @@
 package app.indelible.auth.viewmodel
 
+import app.indelible.core.i18n.UiMessage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_confirm_password_required
+import indelible.composeapp.generated.resources.auth_display_name_required
+import indelible.composeapp.generated.resources.auth_password_min_length
+import indelible.composeapp.generated.resources.auth_password_required
+import indelible.composeapp.generated.resources.auth_passwords_mismatch
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -18,14 +25,14 @@ class RegisterStateTest {
     fun emptyPasswordFails() {
         val error = RegisterState.validatePassword("")
         assertNotNull(error)
-        assertEquals("Password is required", error)
+        assertEquals(UiMessage(Res.string.auth_password_required), error)
     }
 
     @Test
     fun shortPasswordFails() {
         val error = RegisterState.validatePassword("short")
         assertNotNull(error)
-        assertEquals("Password must be at least 8 characters", error)
+        assertEquals(UiMessage(Res.string.auth_password_min_length, listOf(8)), error)
     }
 
     @Test
@@ -50,14 +57,14 @@ class RegisterStateTest {
     fun emptyConfirmPasswordFails() {
         val error = RegisterState.validateConfirmPassword("password123", "")
         assertNotNull(error)
-        assertEquals("Please confirm your password", error)
+        assertEquals(UiMessage(Res.string.auth_confirm_password_required), error)
     }
 
     @Test
     fun mismatchedPasswordsFails() {
         val error = RegisterState.validateConfirmPassword("password123", "different")
         assertNotNull(error)
-        assertEquals("Passwords do not match", error)
+        assertEquals(UiMessage(Res.string.auth_passwords_mismatch), error)
     }
 
     @Test
@@ -130,7 +137,7 @@ class RegisterStateTest {
                 email = "user@example.com",
                 password = "password123",
                 confirmPassword = "password123",
-                serverError = "some error",
+                serverError = UiMessage(Res.string.auth_password_required),
             )
         val validated = state.validate()
         assertNull(validated.serverError)
@@ -147,6 +154,6 @@ class RegisterStateTest {
             )
         val validated = state.validate()
         assertNotNull(validated.displayNameError)
-        assertEquals("Display name is required", validated.displayNameError)
+        assertEquals(UiMessage(Res.string.auth_display_name_required), validated.displayNameError)
     }
 }

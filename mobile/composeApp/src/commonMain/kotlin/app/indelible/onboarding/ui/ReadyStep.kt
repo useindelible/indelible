@@ -11,6 +11,12 @@ import androidx.compose.ui.text.style.TextAlign
 import app.indelible.onboarding.ui.components.StepCard
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.onboarding_go_to_library
+import indelible.composeapp.generated.resources.onboarding_ready_body
+import indelible.composeapp.generated.resources.onboarding_ready_subtitle
+import indelible.composeapp.generated.resources.onboarding_ready_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ReadyStep(
@@ -18,14 +24,12 @@ fun ReadyStep(
     modifier: Modifier = Modifier,
 ) {
     StepCard(
-        title = "You're All Set!",
-        subtitle = "Your Indelible library is ready",
+        title = stringResource(Res.string.onboarding_ready_title),
+        subtitle = stringResource(Res.string.onboarding_ready_subtitle),
         modifier = modifier,
     ) {
         Text(
-            text =
-                "Start saving articles, documents, and links. " +
-                    "Everything you save is archived, searchable, and always available.",
+            text = stringResource(Res.string.onboarding_ready_body),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -34,6 +38,6 @@ fun ReadyStep(
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step48))
 
-        IndelibleButton(text = "Go to Library", onClick = onComplete)
+        IndelibleButton(text = stringResource(Res.string.onboarding_go_to_library), onClick = onComplete)
     }
 }

@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import app.indelible.auth.server.ServerHealthChecker
 import app.indelible.auth.server.ServerUrlForm
 import app.indelible.auth.server.ServerUrlValidation
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.storage.TokenStorage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_server_unreachable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +17,7 @@ import kotlinx.coroutines.launch
 data class ConnectServerState(
     val url: String = "",
     val isChecking: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
     val pendingCleartextUrl: String? = null,
 )
 
@@ -101,13 +104,12 @@ class ConnectServerViewModel(
                     _state.value = _state.value.copy(isChecking = false, url = url)
                     _connectedUrl.value = url
                 }.onFailure {
-                    _state.value = _state.value.copy(isChecking = false, error = UNREACHABLE_MESSAGE)
+                    _state.value =
+                        _state.value.copy(
+                            isChecking = false,
+                            error = UiMessage(Res.string.auth_server_unreachable),
+                        )
                 }
         }
-    }
-
-    companion object {
-        const val UNREACHABLE_MESSAGE =
-            "Can't reach this server. Check the address and that your instance is online."
     }
 }

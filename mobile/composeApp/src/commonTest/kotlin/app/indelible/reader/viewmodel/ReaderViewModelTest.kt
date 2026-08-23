@@ -1,5 +1,6 @@
 package app.indelible.reader.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderContentMode
@@ -8,6 +9,9 @@ import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.Typeface
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeHighlight
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeItemDetail
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_error_load
+import indelible.composeapp.generated.resources.reader_error_retry_content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -66,7 +70,7 @@ class ReaderViewModelTest {
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Error>(viewModel.uiState.value)
-            assertEquals("Not found", state.message)
+            assertEquals(UiMessage(Res.string.reader_error_load), state.message)
         }
 
     @Test
@@ -185,7 +189,7 @@ class ReaderViewModelTest {
             assertTrue(
                 effects
                     .filterIsInstance<ReaderEffect.ShowSnackbar>()
-                    .any { it.message == "Queue failed" },
+                    .any { it.message == UiMessage(Res.string.reader_error_retry_content) },
                 effects.toString(),
             )
             assertEquals(listOf("reprocessDocument:doc_test1"), repository.contentCallLog)

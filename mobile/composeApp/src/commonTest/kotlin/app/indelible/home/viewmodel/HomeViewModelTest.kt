@@ -1,6 +1,10 @@
 package app.indelible.home.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.home.viewmodel.FakeHomeRepository.Companion.sampleDashboard
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_error_load
+import indelible.composeapp.generated.resources.home_stat_read
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -83,7 +87,8 @@ class HomeViewModelTest {
 
             val state = assertIs<HomeUiState.Ready>(viewModel.uiState.value)
             val read = state.stats.first { it.icon == StatIcon.READING_TIME }
-            assertEquals("7", read.value)
+            assertEquals(7L, read.value)
+            assertEquals(Res.string.home_stat_read, read.labelRes)
         }
 
     @Test
@@ -111,6 +116,7 @@ class HomeViewModelTest {
             viewModel.load()
             advanceUntilIdle()
 
-            assertIs<HomeUiState.Error>(viewModel.uiState.value)
+            val state = assertIs<HomeUiState.Error>(viewModel.uiState.value)
+            assertEquals(UiMessage(Res.string.home_error_load), state.message)
         }
 }

@@ -44,6 +44,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
+import app.indelible.core.i18n.LocalizedDateStyle
+import app.indelible.core.i18n.resolve
+import app.indelible.core.i18n.resolveString
 import app.indelible.core.model.ItemDetail
 import app.indelible.library.ui.components.TriageSegmentedControl
 import app.indelible.library.viewmodel.ItemDetailEffect
@@ -54,8 +58,30 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_coming_soon
+import indelible.composeapp.generated.resources.common_delete
+import indelible.composeapp.generated.resources.library_action_add_favorite
+import indelible.composeapp.generated.resources.library_action_add_shortlist
+import indelible.composeapp.generated.resources.library_action_open_original
+import indelible.composeapp.generated.resources.library_action_open_reader
+import indelible.composeapp.generated.resources.library_action_rearchive
+import indelible.composeapp.generated.resources.library_action_remove_favorite
+import indelible.composeapp.generated.resources.library_action_remove_shortlist
+import indelible.composeapp.generated.resources.library_more_options_cd
+import indelible.composeapp.generated.resources.library_pipeline_failed
+import indelible.composeapp.generated.resources.library_pipeline_processing
+import indelible.composeapp.generated.resources.library_pipeline_ready
+import indelible.composeapp.generated.resources.library_pipeline_title
+import indelible.composeapp.generated.resources.library_pipeline_unknown
+import indelible.composeapp.generated.resources.library_reading_time
+import indelible.composeapp.generated.resources.library_triage
+import indelible.composeapp.generated.resources.library_word_count
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,12 +95,13 @@ fun ItemDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val comingSoonMessage = stringResource(Res.string.common_coming_soon)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is ItemDetailEffect.NavigateBack -> onNavigateBack()
-                is ItemDetailEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is ItemDetailEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
             }
         }
     }
@@ -96,17 +123,17 @@ fun ItemDetailScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
                 actions = {
                     IconButton(
-                        onClick = { coroutineScope.launch { snackbarHostState.showSnackbar("Coming soon") } },
+                        onClick = { coroutineScope.launch { snackbarHostState.showSnackbar(comingSoonMessage) } },
                     ) {
                         Icon(
                             imageVector = Icons.Filled.MoreVert,
-                            contentDescription = "More options",
+                            contentDescription = stringResource(Res.string.library_more_options_cd),
                         )
                     }
                 },
@@ -136,7 +163,7 @@ fun ItemDetailScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = state.message,
+                        text = state.message.resolve(),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -220,7 +247,8 @@ private fun ItemMetaHeader(item: ItemDetail) {
     )
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
-    val metaLine = listOfNotNull(item.domain, item.author, item.publishedAt).joinToString(" · ")
+    val publishedDate = item.publishedAt?.let { LocaleFormatters.date(it, LocalizedDateStyle.MEDIUM) }
+    val metaLine = listOfNotNull(item.domain, item.author, publishedDate).joinToString(" · ")
     if (metaLine.isNotBlank()) {
         Text(
             text = metaLine,
@@ -231,10 +259,12 @@ private fun ItemMetaHeader(item: ItemDetail) {
 
     val statsLine =
         buildString {
-            item.wordCount?.let { append("$it words") }
+            item.wordCount?.let {
+                append(pluralStringResource(Res.plurals.library_word_count, it, it))
+            }
             item.readingTimeMinutes?.let {
                 if (isNotEmpty()) append(" · ")
-                append("$it min read")
+                append(pluralStringResource(Res.plurals.library_reading_time, it, it))
             }
             item.language?.let {
                 if (isNotEmpty()) append(" · ")
@@ -271,7 +301,7 @@ private fun ItemActionsSection(
         }
 
     Text(
-        text = "Triage",
+        text = stringResource(Res.string.library_triage),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -290,17 +320,39 @@ private fun ItemActionsSection(
         IconButton(onClick = onToggleFavorite) {
             Icon(
                 imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                contentDescription = if (item.isFavorite) "Remove from favorites" else "Add to favorites",
-                tint = if (item.isFavorite) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                contentDescription =
+                    stringResource(
+                        if (item.isFavorite) {
+                            Res.string.library_action_remove_favorite
+                        } else {
+                            Res.string.library_action_add_favorite
+                        },
+                    ),
+                tint =
+                    if (item.isFavorite) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
         }
         IconButton(onClick = onToggleShortlist) {
             Icon(
                 imageVector = if (item.isShortlisted) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                contentDescription = if (item.isShortlisted) "Remove from shortlist" else "Add to shortlist",
-                tint = if (item.isShortlisted) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                contentDescription =
+                    stringResource(
+                        if (item.isShortlisted) {
+                            Res.string.library_action_remove_shortlist
+                        } else {
+                            Res.string.library_action_add_shortlist
+                        },
+                    ),
+                tint =
+                    if (item.isShortlisted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
         }
         val openUrl = item.canonicalUrl ?: item.url
@@ -308,7 +360,7 @@ private fun ItemActionsSection(
             IconButton(onClick = { onOpenInBrowser(openUrl) }) {
                 Icon(
                     imageVector = Icons.Filled.OpenInBrowser,
-                    contentDescription = "Open original",
+                    contentDescription = stringResource(Res.string.library_action_open_original),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -316,7 +368,7 @@ private fun ItemActionsSection(
         IconButton(onClick = onRearchive) {
             Icon(
                 imageVector = Icons.Filled.Refresh,
-                contentDescription = "Re-archive",
+                contentDescription = stringResource(Res.string.library_action_rearchive),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -325,7 +377,7 @@ private fun ItemActionsSection(
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
     IndelibleButton(
-        text = "Delete",
+        text = stringResource(Res.string.common_delete),
         onClick = onDelete,
         style = IndelibleButtonStyle.Destructive,
         modifier = Modifier.fillMaxWidth(),
@@ -334,7 +386,7 @@ private fun ItemActionsSection(
     Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
     IndelibleButton(
-        text = "Open in Reader",
+        text = stringResource(Res.string.library_action_open_reader),
         onClick = onOpenInReader,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -347,7 +399,7 @@ private fun PipelineStatusSection(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "Pipeline Status",
+            text = stringResource(Res.string.library_pipeline_title),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -358,10 +410,13 @@ private fun PipelineStatusSection(
         ) {
             val (statusLabel, statusColor) =
                 when (item.pipelineStatus) {
-                    "processing" -> "Processing" to MaterialTheme.colorScheme.primary
-                    "ready" -> "Ready" to MaterialTheme.colorScheme.primary
-                    "failed" -> "Failed" to MaterialTheme.colorScheme.error
-                    else -> "Unknown" to MaterialTheme.colorScheme.onSurfaceVariant
+                    "processing" ->
+                        stringResource(Res.string.library_pipeline_processing) to MaterialTheme.colorScheme.primary
+                    "ready" -> stringResource(Res.string.library_pipeline_ready) to MaterialTheme.colorScheme.primary
+                    "failed" -> stringResource(Res.string.library_pipeline_failed) to MaterialTheme.colorScheme.error
+                    else ->
+                        stringResource(Res.string.library_pipeline_unknown) to
+                            MaterialTheme.colorScheme.onSurfaceVariant
                 }
             Text(
                 text = statusLabel,
@@ -413,23 +468,24 @@ private fun PipelineStatusSectionPreviewDark() {
     }
 }
 
-private fun previewItemDetail() = ItemDetail(
-    id = "lib_preview1",
-    documentId = "doc_preview1",
-    itemType = "article",
-    triageState = "inbox",
-    isFavorite = true,
-    isShortlisted = false,
-    title = "The Future of Open-Source AI Models",
-    excerpt = "A deep dive into what the next generation of open models will look like",
-    url = "https://techcrunch.com/article",
-    canonicalUrl = "https://techcrunch.com/article",
-    domain = "techcrunch.com",
-    author = "Sarah Chen",
-    publishedAt = Instant.parse("2024-01-15T00:00:00Z"),
-    language = "en",
-    source = "url",
-    savedAt = Instant.parse("2024-01-15T12:00:00Z"),
-    createdAt = Instant.parse("2024-01-15T12:00:00Z"),
-    updatedAt = Instant.parse("2024-01-15T12:00:00Z"),
-)
+private fun previewItemDetail() =
+    ItemDetail(
+        id = "lib_preview1",
+        documentId = "doc_preview1",
+        itemType = "article",
+        triageState = "inbox",
+        isFavorite = true,
+        isShortlisted = false,
+        title = "The Future of Open-Source AI Models",
+        excerpt = "A deep dive into what the next generation of open models will look like",
+        url = "https://techcrunch.com/article",
+        canonicalUrl = "https://techcrunch.com/article",
+        domain = "techcrunch.com",
+        author = "Sarah Chen",
+        publishedAt = Instant.parse("2024-01-15T00:00:00Z"),
+        language = "en",
+        source = "url",
+        savedAt = Instant.parse("2024-01-15T12:00:00Z"),
+        createdAt = Instant.parse("2024-01-15T12:00:00Z"),
+        updatedAt = Instant.parse("2024-01-15T12:00:00Z"),
+    )

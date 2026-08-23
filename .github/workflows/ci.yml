@@ -209,3 +209,45 @@ jobs:
       - run: npm run i18n:check
       - run: npm run dom-preprocessor:check
       - run: npm test
+
+  mobile:
+    name: Mobile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: ./gradlew --no-daemon :composeApp:i18nCheck :composeApp:compileCommonMainKotlinMetadata :composeApp:jvmTest :composeApp:assembleDebug
+
+  mobile-ios:
+    name: Mobile (iOS compile)
+    # The Xcode project is format 77, which needs Xcode 16.3+; macos-14 tops
+    # out at Xcode 15.4.
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: ./gradlew --no-daemon :composeApp:compileKotlinIosSimulatorArm64 :composeApp:linkDebugFrameworkIosSimulatorArm64
+      - name: Compile iOS share extension
+        run: >-
+          xcodebuild
+          -project iosApp/iosApp.xcodeproj
+          -target IndelibleShareExtension
+          -configuration Debug
+          -sdk iphonesimulator
+          FRAMEWORK_SEARCH_PATHS='${{ github.workspace }}/mobile/composeApp/build/bin/iosSimulatorArm64/debugFramework'
+          CODE_SIGNING_ALLOWED=NO
+          build

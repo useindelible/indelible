@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.api.generated.models.CollectionResponse
 import app.indelible.collections.repository.CollectionsRepository
+import app.indelible.core.i18n.UiMessage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.collections_error_load
+import indelible.composeapp.generated.resources.collections_error_refresh
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +20,7 @@ data class CollectionsState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 class CollectionsViewModel(
@@ -47,8 +51,10 @@ class CollectionsViewModel(
                             isLoading = false,
                         )
                     }
-                }.onFailure { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load collections") }
+                }.onFailure {
+                    _state.update {
+                        it.copy(isLoading = false, error = UiMessage(Res.string.collections_error_load))
+                    }
                 }
         }
     }
@@ -68,8 +74,10 @@ class CollectionsViewModel(
                             isRefreshing = false,
                         )
                     }
-                }.onFailure { error ->
-                    _state.update { it.copy(isRefreshing = false, error = error.message ?: "Refresh failed") }
+                }.onFailure {
+                    _state.update {
+                        it.copy(isRefreshing = false, error = UiMessage(Res.string.collections_error_refresh))
+                    }
                 }
         }
     }

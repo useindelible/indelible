@@ -2,7 +2,12 @@ package app.indelible.search.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.search.repository.SearchRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.search_error_load_more
+import indelible.composeapp.generated.resources.search_error_refresh
+import indelible.composeapp.generated.resources.search_error_search
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -114,9 +119,9 @@ class SearchViewModel(
                             isLoadingMore = false,
                         )
                     }
-                }.onFailure { error ->
+                }.onFailure {
                     _state.update { it.copy(isLoadingMore = false) }
-                    _effects.emit(SearchEffect.ShowSnackbar(error.message ?: "Failed to load more results"))
+                    _effects.emit(SearchEffect.ShowSnackbar(UiMessage(Res.string.search_error_load_more)))
                 }
         }
     }
@@ -141,9 +146,9 @@ class SearchViewModel(
                             isRefreshing = false,
                         )
                     }
-                }.onFailure { error ->
+                }.onFailure {
                     _state.update { it.copy(isRefreshing = false) }
-                    _effects.emit(SearchEffect.ShowSnackbar(error.message ?: "Refresh failed"))
+                    _effects.emit(SearchEffect.ShowSnackbar(UiMessage(Res.string.search_error_refresh)))
                 }
         }
     }
@@ -220,8 +225,10 @@ class SearchViewModel(
                             isSearching = false,
                         )
                     }
-                }.onFailure { error ->
-                    _state.update { it.copy(isSearching = false, error = error.message ?: "Search failed") }
+                }.onFailure {
+                    _state.update {
+                        it.copy(isSearching = false, error = UiMessage(Res.string.search_error_search))
+                    }
                 }
         }
     }

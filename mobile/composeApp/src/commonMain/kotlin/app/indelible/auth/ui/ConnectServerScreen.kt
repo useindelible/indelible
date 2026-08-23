@@ -24,7 +24,18 @@ import app.indelible.auth.ui.components.AuthButton
 import app.indelible.auth.ui.components.AuthCard
 import app.indelible.auth.ui.components.AuthTextField
 import app.indelible.auth.viewmodel.ConnectServerViewModel
+import app.indelible.core.i18n.resolve
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_cleartext_body
+import indelible.composeapp.generated.resources.auth_cleartext_continue
+import indelible.composeapp.generated.resources.auth_cleartext_go_back
+import indelible.composeapp.generated.resources.auth_cleartext_title
+import indelible.composeapp.generated.resources.auth_connect_body
+import indelible.composeapp.generated.resources.auth_connect_title
+import indelible.composeapp.generated.resources.auth_server_address_label
+import indelible.composeapp.generated.resources.common_continue
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +55,7 @@ fun ConnectServerScreen(
 
     AuthCard {
         Text(
-            text = "Connect to your server",
+            text = stringResource(Res.string.auth_connect_title),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -53,7 +64,7 @@ fun ConnectServerScreen(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
         Text(
-            text = "Enter the address of your Indelible server. It's the same URL you open in your browser.",
+            text = stringResource(Res.string.auth_connect_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -65,8 +76,8 @@ fun ConnectServerScreen(
         AuthTextField(
             value = state.url,
             onValueChange = viewModel::updateUrl,
-            label = "Server address",
-            error = state.error,
+            label = stringResource(Res.string.auth_server_address_label),
+            error = state.error?.resolve(),
             keyboardType = KeyboardType.Uri,
             imeAction = ImeAction.Done,
             onImeAction = { viewModel.connect() },
@@ -75,7 +86,7 @@ fun ConnectServerScreen(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
         AuthButton(
-            text = "Continue",
+            text = stringResource(Res.string.common_continue),
             onClick = { viewModel.connect() },
             isLoading = state.isChecking,
         )
@@ -111,7 +122,7 @@ private fun CleartextWarningSheet(
                     ),
         ) {
             Text(
-                text = "This connection isn't encrypted",
+                text = stringResource(Res.string.auth_cleartext_title),
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -120,10 +131,7 @@ private fun CleartextWarningSheet(
             Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
             Text(
-                text =
-                    "Traffic to this server, including your password and session, is sent as " +
-                        "plain http. Only continue on a network you trust, or put your server " +
-                        "behind HTTPS.",
+                text = stringResource(Res.string.auth_cleartext_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -133,7 +141,7 @@ private fun CleartextWarningSheet(
             Spacer(modifier = Modifier.height(IndelibleSpacing.step24))
 
             AuthButton(
-                text = "Go back",
+                text = stringResource(Res.string.auth_cleartext_go_back),
                 onClick = onDismiss,
             )
 
@@ -144,7 +152,7 @@ private fun CleartextWarningSheet(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
                 Text(
-                    text = "Continue anyway",
+                    text = stringResource(Res.string.auth_cleartext_continue),
                     color = MaterialTheme.colorScheme.error,
                 )
             }

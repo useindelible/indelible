@@ -54,16 +54,21 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.resolveString
 import app.indelible.search.model.SearchResult
 import app.indelible.search.model.SearchSuggestion
 import app.indelible.search.ui.components.SearchResultRow
 import app.indelible.search.viewmodel.SearchEffect
-import app.indelible.search.viewmodel.SearchState
 import app.indelible.search.viewmodel.SearchViewModel
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_cancel
+import indelible.composeapp.generated.resources.search_clear_cd
+import indelible.composeapp.generated.resources.search_placeholder
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 private const val SLIDE_OFFSET_DIVISOR = 3
@@ -82,7 +87,7 @@ fun SearchScreen(
         viewModel.effects.collect { effect ->
             when (effect) {
                 is SearchEffect.NavigateToReader -> onNavigateToReader(effect.itemId)
-                is SearchEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is SearchEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
             }
         }
     }
@@ -189,7 +194,7 @@ private fun SearchBarRow(
                 decorationBox = { innerTextField ->
                     if (query.isEmpty()) {
                         Text(
-                            text = "Search your Library…",
+                            text = stringResource(Res.string.search_placeholder),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -204,7 +209,7 @@ private fun SearchBarRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Clear search",
+                        contentDescription = stringResource(Res.string.search_clear_cd),
                         modifier = Modifier.size(IndelibleSpacing.step16),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -215,7 +220,7 @@ private fun SearchBarRow(
         AnimatedVisibility(visible = query.isNotEmpty(), enter = fadeIn(), exit = fadeOut()) {
             TextButton(onClick = onClear) {
                 Text(
-                    text = "Cancel",
+                    text = stringResource(Res.string.common_cancel),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )

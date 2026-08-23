@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
@@ -103,7 +104,7 @@ fun SidebarNavItem(
         if (count != null) {
             Spacer(modifier = Modifier.width(IndelibleSpacing.step8))
             Text(
-                text = count.toString(),
+                text = LocaleFormatters.number(count.toLong()),
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = geistMonoFontFamily()),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

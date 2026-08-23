@@ -32,6 +32,23 @@ import app.indelible.reader.model.Typeface
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_background
+import indelible.composeapp.generated.resources.reader_background_black
+import indelible.composeapp.generated.resources.reader_background_paper
+import indelible.composeapp.generated.resources.reader_background_sepia
+import indelible.composeapp.generated.resources.reader_background_slate
+import indelible.composeapp.generated.resources.reader_line_spacing
+import indelible.composeapp.generated.resources.reader_line_spacing_loose
+import indelible.composeapp.generated.resources.reader_line_spacing_normal
+import indelible.composeapp.generated.resources.reader_line_spacing_tight
+import indelible.composeapp.generated.resources.reader_text_size
+import indelible.composeapp.generated.resources.reader_typeface
+import indelible.composeapp.generated.resources.reader_typeface_mono
+import indelible.composeapp.generated.resources.reader_typeface_sans
+import indelible.composeapp.generated.resources.reader_typeface_serif
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -39,7 +56,7 @@ private const val DEFAULT_LINE_HEIGHT = 1.72f
 
 // Line-spacing option menu: the values are the user-facing choices.
 @Suppress("MagicNumber")
-private val lineSpacingOptions = listOf(1.5f to "Tight", 1.72f to "Normal", 2.0f to "Loose")
+private val lineSpacingOptions = listOf(1.5f, 1.72f, 2.0f)
 
 /**
  * Display panel: live reader typography and canvas. Every change is pushed back
@@ -70,7 +87,7 @@ private fun TextSizeSection(
     preferences: ReaderPreferences,
     onPreferencesChanged: (ReaderPreferences) -> Unit,
 ) {
-    PanelSectionLabel("Text size")
+    PanelSectionLabel(stringResource(Res.string.reader_text_size))
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -78,7 +95,7 @@ private fun TextSizeSection(
         horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
     ) {
         Text(
-            text = "A",
+            text = "A", // i18n-ignore: typography size glyph
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -90,7 +107,7 @@ private fun TextSizeSection(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = "A",
+            text = "A", // i18n-ignore: typography size glyph
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -102,7 +119,7 @@ private fun BackgroundSection(
     preferences: ReaderPreferences,
     onPreferencesChanged: (ReaderPreferences) -> Unit,
 ) {
-    PanelSectionLabel("Background")
+    PanelSectionLabel(stringResource(Res.string.reader_background))
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
     val swatches = IndelibleTheme.colors.readerBackgroundSwatches
     Row(horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step16)) {
@@ -110,7 +127,7 @@ private fun BackgroundSection(
             ColorChoice(
                 color = swatches[index],
                 selected = preferences.background == background,
-                contentDescription = background.name,
+                contentDescription = stringResource(backgroundLabelRes(background)),
                 onClick = { onPreferencesChanged(preferences.copy(background = background)) },
             )
         }
@@ -122,10 +139,9 @@ private fun TypefaceSection(
     preferences: ReaderPreferences,
     onPreferencesChanged: (ReaderPreferences) -> Unit,
 ) {
-    PanelSectionLabel("Typeface")
+    PanelSectionLabel(stringResource(Res.string.reader_typeface))
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
     val typefaces = Typeface.entries.toTypedArray()
-    val typefaceLabels = arrayOf("Serif", "Sans", "Mono")
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         typefaces.forEachIndexed { index, typeface ->
             SegmentedButton(
@@ -133,7 +149,7 @@ private fun TypefaceSection(
                 onClick = { onPreferencesChanged(preferences.copy(typeface = typeface)) },
                 shape = SegmentedButtonDefaults.itemShape(index, typefaces.size),
             ) {
-                Text(text = typefaceLabels[index], style = MaterialTheme.typography.bodySmall)
+                Text(text = stringResource(typefaceLabelRes(typeface)), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -144,24 +160,45 @@ private fun LineSpacingSection(
     preferences: ReaderPreferences,
     onPreferencesChanged: (ReaderPreferences) -> Unit,
 ) {
-    PanelSectionLabel("Line spacing")
+    PanelSectionLabel(stringResource(Res.string.reader_line_spacing))
     Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
     val nearestSpacing =
-        lineSpacingOptions.minByOrNull { abs(it.first - preferences.lineHeight) }?.first
+        lineSpacingOptions.minByOrNull { abs(it - preferences.lineHeight) }
             ?: DEFAULT_LINE_HEIGHT
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        lineSpacingOptions.forEachIndexed { index, option ->
-            val (value, label) = option
+        lineSpacingOptions.forEachIndexed { index, value ->
             SegmentedButton(
                 selected = value == nearestSpacing,
                 onClick = { onPreferencesChanged(preferences.copy(lineHeight = value)) },
                 shape = SegmentedButtonDefaults.itemShape(index, lineSpacingOptions.size),
             ) {
-                Text(text = label, style = MaterialTheme.typography.bodySmall)
+                Text(text = stringResource(lineSpacingLabelRes(value)), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
+
+private fun backgroundLabelRes(background: ReaderBackground): StringResource =
+    when (background) {
+        ReaderBackground.PAPER -> Res.string.reader_background_paper
+        ReaderBackground.SEPIA -> Res.string.reader_background_sepia
+        ReaderBackground.SLATE -> Res.string.reader_background_slate
+        ReaderBackground.BLACK -> Res.string.reader_background_black
+    }
+
+private fun typefaceLabelRes(typeface: Typeface): StringResource =
+    when (typeface) {
+        Typeface.SERIF -> Res.string.reader_typeface_serif
+        Typeface.SANS -> Res.string.reader_typeface_sans
+        Typeface.MONO -> Res.string.reader_typeface_mono
+    }
+
+private fun lineSpacingLabelRes(value: Float): StringResource =
+    when (value) {
+        1.5f -> Res.string.reader_line_spacing_tight
+        2.0f -> Res.string.reader_line_spacing_loose
+        else -> Res.string.reader_line_spacing_normal
+    }
 
 @Composable
 private fun PanelSectionLabel(text: String) {

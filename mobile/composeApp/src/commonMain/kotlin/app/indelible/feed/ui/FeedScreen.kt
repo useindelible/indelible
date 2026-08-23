@@ -38,6 +38,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.resolve
+import app.indelible.core.i18n.resolveString
 import app.indelible.feed.model.FeedItemWithState
 import app.indelible.feed.ui.components.FeedItemRow
 import app.indelible.feed.ui.components.FeedScopePopover
@@ -49,7 +51,14 @@ import app.indelible.feed.viewmodel.FeedViewModel
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_action_mark_all_seen
+import indelible.composeapp.generated.resources.feed_action_save_library_cd
+import indelible.composeapp.generated.resources.feed_filter_seen
+import indelible.composeapp.generated.resources.feed_filter_unseen
+import indelible.composeapp.generated.resources.feed_save
 import kotlinx.coroutines.flow.distinctUntilChanged
+import org.jetbrains.compose.resources.stringResource
 
 private const val PAGINATION_TRIGGER_ROWS = 5
 
@@ -75,7 +84,7 @@ fun FeedScreen(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is FeedEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is FeedEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
                 is FeedEffect.NavigateToAddFeed -> onNavigateToAddFeed()
                 is FeedEffect.OpenReader -> onNavigateToReader(effect.documentId)
             }
@@ -125,7 +134,7 @@ fun FeedScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = state.message,
+                                text = state.message.resolve(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.error,
                             )
@@ -175,10 +184,11 @@ fun FeedScreen(
     }
 }
 
+@Composable
 private fun feedScopeTitle(filter: FeedFilter): String =
     when (filter) {
-        FeedFilter.UNSEEN -> "Unseen"
-        FeedFilter.SEEN -> "Seen"
+        FeedFilter.UNSEEN -> stringResource(Res.string.feed_filter_unseen)
+        FeedFilter.SEEN -> stringResource(Res.string.feed_filter_seen)
     }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -238,7 +248,7 @@ private fun FeedItemList(
                 ) {
                     OutlinedButton(onClick = onMarkAllSeen) {
                         Text(
-                            text = "Mark all as seen",
+                            text = stringResource(Res.string.feed_action_mark_all_seen),
                             style = MaterialTheme.typography.titleSmall,
                         )
                     }
@@ -297,11 +307,11 @@ private fun FeedItemSwipeableRow(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.BookmarkAdd,
-                            contentDescription = "Save to Library",
+                            contentDescription = stringResource(Res.string.feed_action_save_library_cd),
                             tint = IndelibleTheme.colors.onSuccess,
                         )
                         Text(
-                            text = "Save",
+                            text = stringResource(Res.string.feed_save),
                             style = MaterialTheme.typography.bodySmall,
                             color = IndelibleTheme.colors.onSuccess,
                         )

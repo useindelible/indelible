@@ -36,14 +36,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.em
 import app.indelible.core.model.LibraryItem
 import app.indelible.core.model.ThumbnailColor
-import app.indelible.core.model.formatReadingTime
 import app.indelible.core.model.readingMinutesLeft
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import coil3.compose.AsyncImage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_content_books
+import indelible.composeapp.generated.resources.library_content_emails
+import indelible.composeapp.generated.resources.library_content_pdfs
+import indelible.composeapp.generated.resources.library_content_podcasts
+import indelible.composeapp.generated.resources.library_content_tweets
+import indelible.composeapp.generated.resources.library_content_videos
+import indelible.composeapp.generated.resources.library_new
+import indelible.composeapp.generated.resources.library_progress_minutes_left
+import indelible.composeapp.generated.resources.library_progress_percent
+import indelible.composeapp.generated.resources.library_reading_time
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 private const val MEDIA_ARTICLE = "article"
@@ -122,6 +135,8 @@ private fun LibraryRowEyebrow(item: LibraryItem) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val domain = item.domain?.takeIf { it.isNotBlank() }
     val readingTime = item.readingTimeMinutes
+    val newLabel = stringResource(Res.string.library_new)
+    val readingTimeLabel = readingTime?.let { pluralStringResource(Res.plurals.library_reading_time, it, it) }
 
     if (!item.isUnread && domain == null && readingTime == null) return
 
@@ -129,7 +144,7 @@ private fun LibraryRowEyebrow(item: LibraryItem) {
         buildAnnotatedString {
             var needSeparator = false
             if (item.isUnread) {
-                withStyle(SpanStyle(color = accent)) { append("New") }
+                withStyle(SpanStyle(color = accent)) { append(newLabel) }
                 needSeparator = true
             }
             if (domain != null) {
@@ -137,9 +152,9 @@ private fun LibraryRowEyebrow(item: LibraryItem) {
                 append(domain.uppercase())
                 needSeparator = true
             }
-            if (readingTime != null) {
+            if (readingTimeLabel != null) {
                 if (needSeparator) append(" · ")
-                append(formatReadingTime(readingTime))
+                append(readingTimeLabel)
             }
         }
 
@@ -242,6 +257,7 @@ private fun ItemTypeBadge(
     itemType: String,
     modifier: Modifier = Modifier,
 ) {
+    val labelRes = itemTypeLabelRes(itemType) ?: return
     Box(
         modifier =
             modifier
@@ -253,7 +269,7 @@ private fun ItemTypeBadge(
                 ),
     ) {
         Text(
-            text = itemType.uppercase(),
+            text = stringResource(labelRes),
             style = libraryEyebrowStyle(),
             color = MaterialTheme.colorScheme.onPrimary,
         )
@@ -337,13 +353,29 @@ private const val PERCENT_SCALE = 100
 private const val SECONDS_PER_HOUR = 3600
 private const val SECONDS_PER_MINUTE = 60
 
+@Composable
 private fun progressLabel(
     progress: Float,
     minutesLeft: Int?,
 ): String {
     val percent = (progress.coerceIn(0f, 1f) * PERCENT_SCALE).roundToInt()
-    return if (minutesLeft != null) "$percent% · ${formatReadingTime(minutesLeft)} LEFT" else "$percent%"
+    return if (minutesLeft != null) {
+        pluralStringResource(Res.plurals.library_progress_minutes_left, minutesLeft, percent, minutesLeft)
+    } else {
+        stringResource(Res.string.library_progress_percent, percent)
+    }
 }
+
+private fun itemTypeLabelRes(itemType: String): StringResource? =
+    when (itemType) {
+        "book" -> Res.string.library_content_books
+        "email" -> Res.string.library_content_emails
+        "pdf" -> Res.string.library_content_pdfs
+        "podcast" -> Res.string.library_content_podcasts
+        "tweet" -> Res.string.library_content_tweets
+        "video" -> Res.string.library_content_videos
+        else -> null
+    }
 
 @Composable
 private fun LibraryProgressBar(

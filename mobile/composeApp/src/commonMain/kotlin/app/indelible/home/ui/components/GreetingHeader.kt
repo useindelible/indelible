@@ -14,12 +14,17 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
+import app.indelible.core.i18n.LocalizedDateStyle
 import app.indelible.home.viewmodel.Greeting
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_greeting_afternoon
+import indelible.composeapp.generated.resources.home_greeting_evening
+import indelible.composeapp.generated.resources.home_greeting_morning
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Top-of-dashboard greeting: a dated eyebrow ("Mon · 24 May") above a
@@ -56,27 +61,15 @@ fun GreetingHeader(
     }
 }
 
+@Composable
 private fun greetingText(greeting: Greeting): String =
     when (greeting) {
-        Greeting.MORNING -> "Good morning"
-        Greeting.AFTERNOON -> "Good afternoon"
-        Greeting.EVENING -> "Good evening"
+        Greeting.MORNING -> stringResource(Res.string.home_greeting_morning)
+        Greeting.AFTERNOON -> stringResource(Res.string.home_greeting_afternoon)
+        Greeting.EVENING -> stringResource(Res.string.home_greeting_evening)
     }
 
-private fun todayLabel(): String {
-    val date = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    val day = abbreviate(date.dayOfWeek.name)
-    val month = abbreviate(date.month.name)
-    return "$day · ${date.dayOfMonth} $month"
-}
-
-private const val ABBREVIATION_LENGTH = 3
-
-private fun abbreviate(enumName: String): String =
-    enumName
-        .lowercase()
-        .replaceFirstChar { it.uppercase() }
-        .take(ABBREVIATION_LENGTH)
+private fun todayLabel(): String = LocaleFormatters.date(Clock.System.now(), LocalizedDateStyle.WEEKDAY_MONTH_DAY)
 
 @Preview
 @Composable

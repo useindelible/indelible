@@ -38,7 +38,13 @@ import app.indelible.search.viewmodel.SearchState
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_delete
+import indelible.composeapp.generated.resources.search_action_clear_all
+import indelible.composeapp.generated.resources.search_filter_syntax
+import indelible.composeapp.generated.resources.search_recent
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.stringResource
 
 private val SYNTAX_HINTS =
     listOf(
@@ -85,7 +91,7 @@ internal fun IdleContent(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "RECENT SEARCHES",
+                        text = stringResource(Res.string.search_recent),
                         style =
                             MaterialTheme.typography.labelSmall.copy(
                                 letterSpacing = 0.06.em,
@@ -94,7 +100,7 @@ internal fun IdleContent(
                     )
                     TextButton(onClick = onClearAll) {
                         Text(
-                            text = "Clear All",
+                            text = stringResource(Res.string.search_action_clear_all),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -112,7 +118,7 @@ internal fun IdleContent(
 
         item {
             Text(
-                text = "FILTER SYNTAX",
+                text = stringResource(Res.string.search_filter_syntax),
                 style =
                     MaterialTheme.typography.labelSmall.copy(
                         letterSpacing = 0.06.em,
@@ -174,7 +180,7 @@ private fun RecentSearchItem(
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Text(
-                    text = "Delete",
+                    text = stringResource(Res.string.common_delete),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onError,
                 )

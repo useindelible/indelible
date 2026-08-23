@@ -1,19 +1,27 @@
 package app.indelible.auth.viewmodel
 
+import app.indelible.core.i18n.UiMessage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_confirm_password_required
+import indelible.composeapp.generated.resources.auth_display_name_required
+import indelible.composeapp.generated.resources.auth_password_min_length
+import indelible.composeapp.generated.resources.auth_password_required
+import indelible.composeapp.generated.resources.auth_passwords_mismatch
+
 data class RegisterState(
     val displayName: String = "",
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",
-    val displayNameError: String? = null,
-    val emailError: String? = null,
-    val passwordError: String? = null,
-    val confirmPasswordError: String? = null,
-    val serverError: String? = null,
+    val displayNameError: UiMessage? = null,
+    val emailError: UiMessage? = null,
+    val passwordError: UiMessage? = null,
+    val confirmPasswordError: UiMessage? = null,
+    val serverError: UiMessage? = null,
     val isLoading: Boolean = false,
 ) {
     fun validate(): RegisterState {
-        val nameErr = if (displayName.isBlank()) "Display name is required" else null
+        val nameErr = if (displayName.isBlank()) UiMessage(Res.string.auth_display_name_required) else null
         val emailErr = LoginState.validateEmail(email)
         val passErr = validatePassword(password)
         val confirmErr = validateConfirmPassword(password, confirmPassword)
@@ -36,21 +44,21 @@ data class RegisterState(
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
 
-        fun validatePassword(password: String): String? =
+        fun validatePassword(password: String): UiMessage? =
             when {
-                password.isBlank() -> "Password is required"
+                password.isBlank() -> UiMessage(Res.string.auth_password_required)
                 password.length < MIN_PASSWORD_LENGTH ->
-                    "Password must be at least $MIN_PASSWORD_LENGTH characters"
+                    UiMessage(Res.string.auth_password_min_length, listOf(MIN_PASSWORD_LENGTH))
                 else -> null
             }
 
         fun validateConfirmPassword(
             password: String,
             confirmPassword: String,
-        ): String? =
+        ): UiMessage? =
             when {
-                confirmPassword.isBlank() -> "Please confirm your password"
-                confirmPassword != password -> "Passwords do not match"
+                confirmPassword.isBlank() -> UiMessage(Res.string.auth_confirm_password_required)
+                confirmPassword != password -> UiMessage(Res.string.auth_passwords_mismatch)
                 else -> null
             }
     }

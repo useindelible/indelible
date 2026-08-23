@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.viewmodel.TocPanelState
 import app.indelible.reader.viewmodel.TocSections
@@ -34,6 +35,16 @@ import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.SerifFontFamily
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_contents
+import indelible.composeapp.generated.resources.reader_contents_building_body
+import indelible.composeapp.generated.resources.reader_contents_building_title
+import indelible.composeapp.generated.resources.reader_contents_empty_body
+import indelible.composeapp.generated.resources.reader_contents_empty_title
+import indelible.composeapp.generated.resources.reader_contents_progress
+import indelible.composeapp.generated.resources.reader_minutes_short
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 internal enum class TocDotState { DONE, HERE, UPCOMING }
 
@@ -50,11 +61,11 @@ internal fun dotState(
 internal fun contentsEyebrow(
     status: TocStatus,
     progressPercent: Int,
-): String =
+): UiMessage =
     if (status == TocStatus.READY) {
-        "Contents / $progressPercent% read"
+        UiMessage(Res.string.reader_contents_progress, listOf(progressPercent))
     } else {
-        "Contents"
+        UiMessage(Res.string.reader_contents)
     }
 
 /** The Contents pill only appears once an outline actually exists. */
@@ -107,15 +118,15 @@ fun ContentsPanel(
 
         TocStatus.LOADING, TocStatus.PENDING ->
             ContentsMessage(
-                title = "Building the outline",
-                body = "The table of contents is being prepared for this article. It usually takes a few seconds.",
+                title = stringResource(Res.string.reader_contents_building_title),
+                body = stringResource(Res.string.reader_contents_building_body),
                 modifier = modifier,
             )
 
         TocStatus.NONE, TocStatus.UNAVAILABLE ->
             ContentsMessage(
-                title = "No outline here",
-                body = "This article doesn't have enough sections for a table of contents.",
+                title = stringResource(Res.string.reader_contents_empty_title),
+                body = stringResource(Res.string.reader_contents_empty_body),
                 modifier = modifier,
             )
     }
@@ -165,7 +176,10 @@ private fun ContentsRow(
                     ),
         )
         Text(
-            text = "${TocSections.sectionMinutes(entry.wordCount)} min",
+            text =
+                TocSections.sectionMinutes(entry.wordCount).let { minutes ->
+                    pluralStringResource(Res.plurals.reader_minutes_short, minutes, minutes)
+                },
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = geistMonoFontFamily()),
             color = IndelibleTheme.colors.textTertiary,
             modifier = Modifier.padding(top = IndelibleSpacing.step4),

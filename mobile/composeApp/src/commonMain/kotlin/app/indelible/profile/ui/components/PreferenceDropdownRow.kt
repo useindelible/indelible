@@ -24,7 +24,7 @@ import app.indelible.ui.theme.IndelibleSpacing
 fun <T> PreferenceDropdownRow(
     label: String,
     currentValue: T,
-    displayName: (T) -> String,
+    displayName: @Composable (T) -> String,
     options: List<T>,
     onSelected: (T) -> Unit,
     modifier: Modifier = Modifier,

@@ -2,10 +2,8 @@ package app.indelible.reader.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,16 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
-import app.indelible.ui.theme.IndelibleTheme
-import app.indelible.ui.theme.SerifFontFamily
-import app.indelible.ui.theme.geistMonoFontFamily
 import coil3.compose.AsyncImage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_play_youtube
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Tappable video thumbnail that stands in for the provider embed (which the reader hides).
@@ -81,7 +77,7 @@ fun YouTubeVideoHeader(
             ) {
                 Icon(
                     imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Play on YouTube",
+                    contentDescription = stringResource(Res.string.reader_action_play_youtube),
                     tint = Color.White,
                     modifier = Modifier.size(IndelibleSpacing.step40),
                 )
@@ -105,7 +101,6 @@ fun YouTubeVideoHeader(
                 )
             }
         }
-
     }
 }
 

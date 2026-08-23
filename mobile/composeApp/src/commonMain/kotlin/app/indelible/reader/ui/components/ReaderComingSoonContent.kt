@@ -19,14 +19,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_coming_contents_body
+import indelible.composeapp.generated.resources.reader_coming_contents_title
+import indelible.composeapp.generated.resources.reader_coming_epub_body
+import indelible.composeapp.generated.resources.reader_coming_epub_title
+import indelible.composeapp.generated.resources.reader_coming_pdf_body
+import indelible.composeapp.generated.resources.reader_coming_pdf_title
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 /** Which not-yet-supported surface the reader is standing in for. */
 enum class ReaderComingSoonFormat { PDF, EPUB, CONTENTS }
 
 private data class ComingSoonCopy(
     val icon: ImageVector,
-    val title: String,
-    val body: String,
+    val titleRes: StringResource,
+    val bodyRes: StringResource,
 )
 
 private fun copyFor(format: ReaderComingSoonFormat): ComingSoonCopy =
@@ -34,22 +43,22 @@ private fun copyFor(format: ReaderComingSoonFormat): ComingSoonCopy =
         ReaderComingSoonFormat.PDF ->
             ComingSoonCopy(
                 icon = IndelibleIcons.Pdf,
-                title = "PDF reading is coming soon",
-                body = "We're building a dedicated PDF reader. It will arrive in an upcoming update.",
+                titleRes = Res.string.reader_coming_pdf_title,
+                bodyRes = Res.string.reader_coming_pdf_body,
             )
 
         ReaderComingSoonFormat.EPUB ->
             ComingSoonCopy(
                 icon = IndelibleIcons.Book,
-                title = "EPUB reading is coming soon",
-                body = "We're building a dedicated EPUB reader. It will arrive in an upcoming update.",
+                titleRes = Res.string.reader_coming_epub_title,
+                bodyRes = Res.string.reader_coming_epub_body,
             )
 
         ReaderComingSoonFormat.CONTENTS ->
             ComingSoonCopy(
                 icon = IndelibleIcons.SmartList,
-                title = "Contents is coming soon",
-                body = "Jumping between an article's headings will arrive in an upcoming update.",
+                titleRes = Res.string.reader_coming_contents_title,
+                bodyRes = Res.string.reader_coming_contents_body,
             )
     }
 
@@ -62,7 +71,7 @@ fun ReaderComingSoonContent(
     format: ReaderComingSoonFormat,
     modifier: Modifier = Modifier,
 ) {
-    val (icon, title, body) = copyFor(format)
+    val copy = copyFor(format)
 
     Box(
         modifier = modifier.padding(IndelibleSpacing.step32),
@@ -73,19 +82,19 @@ fun ReaderComingSoonContent(
             verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
         ) {
             Icon(
-                imageVector = icon,
+                imageVector = copy.icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(IndelibleSpacing.step48),
             )
             Text(
-                text = title,
+                text = stringResource(copy.titleRes),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = body,
+                text = stringResource(copy.bodyRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

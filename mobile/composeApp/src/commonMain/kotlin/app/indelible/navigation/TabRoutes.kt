@@ -23,9 +23,12 @@ import app.indelible.search.viewmodel.SearchViewModel
 import app.indelible.sidebar.viewmodel.SidebarUiState
 import app.indelible.sidebar.viewmodel.SidebarViewModel
 import app.indelible.stubs.TabStub
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.nav_daily_review
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
 
 fun NavGraphBuilder.tabRoutes(
     navController: NavHostController,
@@ -140,7 +143,7 @@ fun NavGraphBuilder.tabRoutes(
             },
         )
     }
-    composable(TabItem.REVIEW.route) { TabStub(title = "Daily Review") }
+    composable(TabItem.REVIEW.route) { TabStub(title = stringResource(Res.string.nav_daily_review)) }
     composable(TabItem.PROFILE.route) {
         ProfileTab(
             authViewModel = authViewModel,

@@ -20,12 +20,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.model.LibraryCounts
 import app.indelible.library.viewmodel.ContentTypeFilter
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_content_all
+import indelible.composeapp.generated.resources.library_content_articles
+import indelible.composeapp.generated.resources.library_content_books
+import indelible.composeapp.generated.resources.library_content_emails
+import indelible.composeapp.generated.resources.library_content_pdfs
+import indelible.composeapp.generated.resources.library_content_podcasts
+import indelible.composeapp.generated.resources.library_content_tweets
+import indelible.composeapp.generated.resources.library_content_videos
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 private const val CHIP_COUNT_ALPHA = 0.72f
 
@@ -108,13 +120,13 @@ private fun ContentTypeChip(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = filter.displayLabel,
+            text = stringResource(filter.labelRes),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = contentColor,
         )
         if (count != null) {
             Text(
-                text = count.toString(),
+                text = LocaleFormatters.number(count.toLong()),
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = geistMonoFontFamily()),
                 color = contentColor.copy(alpha = CHIP_COUNT_ALPHA),
             )
@@ -122,17 +134,17 @@ private fun ContentTypeChip(
     }
 }
 
-private val ContentTypeFilter.displayLabel: String
+private val ContentTypeFilter.labelRes: StringResource
     get() =
         when (this) {
-            ContentTypeFilter.ALL -> "All"
-            ContentTypeFilter.ARTICLES -> "Articles"
-            ContentTypeFilter.BOOKS -> "Books"
-            ContentTypeFilter.PDFS -> "PDFs"
-            ContentTypeFilter.EMAILS -> "Emails"
-            ContentTypeFilter.TWEETS -> "Tweets"
-            ContentTypeFilter.VIDEOS -> "Videos"
-            ContentTypeFilter.PODCASTS -> "Podcasts"
+            ContentTypeFilter.ALL -> Res.string.library_content_all
+            ContentTypeFilter.ARTICLES -> Res.string.library_content_articles
+            ContentTypeFilter.BOOKS -> Res.string.library_content_books
+            ContentTypeFilter.PDFS -> Res.string.library_content_pdfs
+            ContentTypeFilter.EMAILS -> Res.string.library_content_emails
+            ContentTypeFilter.TWEETS -> Res.string.library_content_tweets
+            ContentTypeFilter.VIDEOS -> Res.string.library_content_videos
+            ContentTypeFilter.PODCASTS -> Res.string.library_content_podcasts
         }
 
 @Preview(showBackground = true)

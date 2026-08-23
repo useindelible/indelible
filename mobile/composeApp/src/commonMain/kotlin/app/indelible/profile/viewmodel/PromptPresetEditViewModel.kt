@@ -5,7 +5,13 @@ import androidx.lifecycle.viewModelScope
 import app.indelible.api.generated.models.CreateMilaPromptPresetBody
 import app.indelible.api.generated.models.MilaPromptPresetResponse
 import app.indelible.api.generated.models.UpdateMilaPromptPresetBody
+import app.indelible.core.i18n.UiMessage
 import app.indelible.profile.repository.MilaSettingsRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.mila_name_required
+import indelible.composeapp.generated.resources.mila_preset_delete_failed
+import indelible.composeapp.generated.resources.mila_preset_save_failed
+import indelible.composeapp.generated.resources.mila_system_prompt_required
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +26,7 @@ data class PromptPresetEditUiState(
     val systemPrompt: String = "",
     val isDefault: Boolean = false,
     val isBuiltIn: Boolean = false,
-    val saveError: String? = null,
+    val saveError: UiMessage? = null,
     val isDone: Boolean = false,
 )
 
@@ -66,11 +72,11 @@ class PromptPresetEditViewModel(
     fun save() {
         val state = _uiState.value
         if (state.name.isBlank()) {
-            _uiState.value = state.copy(saveError = "Name is required.")
+            _uiState.value = state.copy(saveError = UiMessage(Res.string.mila_name_required))
             return
         }
         if (state.systemPrompt.isBlank()) {
-            _uiState.value = state.copy(saveError = "System prompt is required.")
+            _uiState.value = state.copy(saveError = UiMessage(Res.string.mila_system_prompt_required))
             return
         }
         viewModelScope.launch {
@@ -98,11 +104,11 @@ class PromptPresetEditViewModel(
             result
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(isSaving = false, isDone = true)
-                }.onFailure { error ->
+                }.onFailure {
                     _uiState.value =
                         _uiState.value.copy(
                             isSaving = false,
-                            saveError = error.message ?: "Failed to save preset.",
+                            saveError = UiMessage(Res.string.mila_preset_save_failed),
                         )
                 }
         }
@@ -116,11 +122,11 @@ class PromptPresetEditViewModel(
                 .deletePromptPreset(presetId)
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(isDeleting = false, isDone = true)
-                }.onFailure { error ->
+                }.onFailure {
                     _uiState.value =
                         _uiState.value.copy(
                             isDeleting = false,
-                            saveError = error.message ?: "Failed to delete preset.",
+                            saveError = UiMessage(Res.string.mila_preset_delete_failed),
                         )
                 }
         }

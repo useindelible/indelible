@@ -15,8 +15,8 @@ import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.geistMonoFontFamily
 
 /**
- * Uppercase monospace group heading in the drawer (prototype `.dw-grouplab`):
- * wide tracking, tertiary colour. Tracking is set via `.copy` on `labelSmall`,
+ * Monospace group heading in the drawer (prototype `.dw-grouplab`): wide
+ * tracking, tertiary colour. Tracking is set via `.copy` on `labelSmall`,
  * which the type-scale doc sanctions for section labels.
  */
 @Composable
@@ -25,7 +25,7 @@ fun SidebarGroupLabel(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = text.uppercase(),
+        text = text,
         style =
             MaterialTheme.typography.labelSmall.copy(
                 fontFamily = geistMonoFontFamily(),

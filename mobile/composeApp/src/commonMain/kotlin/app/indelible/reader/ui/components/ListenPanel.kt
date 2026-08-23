@@ -45,11 +45,36 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_back_15_seconds
+import indelible.composeapp.generated.resources.reader_action_forward_15_seconds
+import indelible.composeapp.generated.resources.reader_action_pause
+import indelible.composeapp.generated.resources.reader_action_play
+import indelible.composeapp.generated.resources.reader_sleep
+import indelible.composeapp.generated.resources.reader_sleep_minutes
+import indelible.composeapp.generated.resources.reader_speed_075
+import indelible.composeapp.generated.resources.reader_speed_100
+import indelible.composeapp.generated.resources.reader_speed_125
+import indelible.composeapp.generated.resources.reader_speed_150
+import indelible.composeapp.generated.resources.reader_speed_175
+import indelible.composeapp.generated.resources.reader_speed_200
+import indelible.composeapp.generated.resources.reader_voice_fallback
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 // Playback speed and sleep-timer option menus: the values are the user-facing choices.
 @Suppress("MagicNumber")
 private val speedSteps = listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
-private val speedLabels = listOf("0.75×", "1.0×", "1.25×", "1.5×", "1.75×", "2.0×")
+private val speedLabelResources =
+    listOf(
+        Res.string.reader_speed_075,
+        Res.string.reader_speed_100,
+        Res.string.reader_speed_125,
+        Res.string.reader_speed_150,
+        Res.string.reader_speed_175,
+        Res.string.reader_speed_200,
+    )
 
 @Suppress("MagicNumber")
 private val sleepSteps = listOf<Int?>(null, 15, 30, 60)
@@ -76,7 +101,11 @@ fun ListenPanel(
     modifier: Modifier = Modifier,
 ) {
     var voicesExpanded by remember { mutableStateOf(false) }
-    val currentVoiceName = voices.firstOrNull { it.id == state.voiceId }?.name ?: "Voice"
+    val currentVoiceName =
+        voices
+            .firstOrNull { it.id == state.voiceId }
+            ?.let { stringResource(it.nameRes) }
+            ?: stringResource(Res.string.reader_voice_fallback)
 
     Column(modifier = modifier.fillMaxWidth()) {
         NowPlayingCard(title = title, source = source)
@@ -130,7 +159,7 @@ fun ListenPanel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PlayerChip(
-                label = speedLabelFor(state.speed),
+                label = stringResource(speedLabelResourceFor(state.speed)),
                 accent = true,
                 onClick = { onSetSpeed(nextSpeed(state.speed)) },
             )
@@ -142,7 +171,10 @@ fun ListenPanel(
                 onClick = { voicesExpanded = !voicesExpanded },
             )
             PlayerChip(
-                label = state.sleepTimerMinutes?.let { "${it}m" } ?: "Sleep",
+                label =
+                    state.sleepTimerMinutes?.let {
+                        pluralStringResource(Res.plurals.reader_sleep_minutes, it, it)
+                    } ?: stringResource(Res.string.reader_sleep),
                 leadingIcon = Icons.Filled.Bedtime,
                 accent = state.sleepTimerMinutes != null,
                 onClick = { onSetSleepTimer(nextSleep(state.sleepTimerMinutes)) },
@@ -181,7 +213,7 @@ private fun NowPlayingCard(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = source.take(1).uppercase(),
+                text = source.take(1).uppercase(), // i18n-ignore: user-provided source initial
                 style = MaterialTheme.typography.titleLarge,
                 color = IndelibleTheme.colors.onSuccess,
             )
@@ -233,7 +265,17 @@ private fun SkipButton(
             Modifier
                 .size(IndelibleSpacing.touchTarget)
                 .clip(CircleShape)
-                .clickable(onClickLabel = if (forward) "Forward 15 seconds" else "Back 15 seconds", onClick = onClick),
+                .clickable(
+                    onClickLabel =
+                        stringResource(
+                            if (forward) {
+                                Res.string.reader_action_forward_15_seconds
+                            } else {
+                                Res.string.reader_action_back_15_seconds
+                            },
+                        ),
+                    onClick = onClick,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -268,7 +310,13 @@ private fun PlayButton(
                 .size(IndelibleSpacing.step64)
                 .clip(CircleShape)
                 .background(gradient)
-                .clickable(onClickLabel = if (isPlaying) "Pause" else "Play", onClick = onClick),
+                .clickable(
+                    onClickLabel =
+                        stringResource(
+                            if (isPlaying) Res.string.reader_action_pause else Res.string.reader_action_play,
+                        ),
+                    onClick = onClick,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -322,9 +370,9 @@ private fun PlayerChip(
     }
 }
 
-private fun speedLabelFor(speed: Float): String {
+private fun speedLabelResourceFor(speed: Float): StringResource {
     val index = speedSteps.indexOfFirst { kotlin.math.abs(it - speed) < SPEED_EPSILON }
-    return speedLabels[index.coerceIn(0, speedLabels.lastIndex)]
+    return speedLabelResources[index.coerceIn(0, speedLabelResources.lastIndex)]
 }
 
 private fun nextSpeed(current: Float): Float {

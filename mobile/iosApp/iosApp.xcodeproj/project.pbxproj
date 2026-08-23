@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1739F06E7A6982DA30677279 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8F11540B8508F58B763CA3 /* ShareViewController.swift */; };
+		A10000000000000000000001 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* Localizable.strings */; };
 		8D18200F3F94F6791217043C /* SaveSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD71718F80B516A540B86C82 /* SaveSheetView.swift */; };
 		B32DBAEF02E1E561D0C1D49C /* IndelibleShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C83D202F060D92D1C00F3DBF /* IndelibleShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D34EB26DD567D296EEE2699D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BCC916165D7735D40611F7F5 /* Foundation.framework */; };
@@ -39,6 +40,8 @@
 
 /* Begin PBXFileReference section */
 		16884304F4F112FD8CF2C846 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000002 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A10000000000000000000003 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		4E09CFA6E46798ABB78A0327 /* IndelibleShareExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = IndelibleShareExtension.entitlements; sourceTree = "<group>"; };
 		577859108B43F19DE9BAF409 /* indelible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = indelible.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F8F11540B8508F58B763CA3 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -137,6 +140,7 @@
 				AD71718F80B516A540B86C82 /* SaveSheetView.swift */,
 				16884304F4F112FD8CF2C846 /* Info.plist */,
 				4E09CFA6E46798ABB78A0327 /* IndelibleShareExtension.entitlements */,
+				A10000000000000000000004 /* Localizable.strings */,
 			);
 			name = IndelibleShareExtension;
 			path = IndelibleShareExtension;
@@ -205,6 +209,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				fr,
 				Base,
 			);
 			mainGroup = 3A628E881FD6B9ACA90C103D;
@@ -225,6 +230,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000001 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +283,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		A10000000000000000000004 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A10000000000000000000002 /* Localizable.strings */,
+				A10000000000000000000003 /* Localizable.strings */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXTargetDependency section */
 		E9E70B1A7F1E91A1133282D1 /* PBXTargetDependency */ = {

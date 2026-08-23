@@ -248,6 +248,11 @@ kotlin {
             implementation(libs.androidx.browser)
             implementation(libs.ktor.client.okhttp)
         }
+        androidInstrumentedTest.dependencies {
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.androidx.test.runner)
+            implementation(libs.kotlin.test)
+        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -313,6 +318,7 @@ android {
                 .toInt()
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -361,4 +367,14 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+val i18nCheck by tasks.registering {
+    group = "verification"
+    description = "Checks mobile localization catalogs and known user-visible source sinks."
+    dependsOn(":i18n-checker:checkMobileI18n")
+}
+
+tasks.named("check") {
+    dependsOn(i18nCheck)
 }

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.em
+import app.indelible.core.i18n.relativeTimeText
 import app.indelible.core.model.ThumbnailColor
 import app.indelible.feed.model.FeedItemWithState
 import app.indelible.ui.platform.rememberHapticTick
@@ -38,11 +39,13 @@ import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_save
+import indelible.composeapp.generated.resources.feed_saved
+import indelible.composeapp.generated.resources.feed_seen
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
+import org.jetbrains.compose.resources.stringResource
 
 private const val STATE_SEEN = "seen"
 private const val STATE_UNSEEN = "unseen"
@@ -189,7 +192,7 @@ private fun FeedSaveButton(
             )
             Spacer(Modifier.width(IndelibleSpacing.step4))
             Text(
-                text = "Saved",
+                text = stringResource(Res.string.feed_saved),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -218,7 +221,7 @@ private fun FeedSaveButton(
             )
             Spacer(Modifier.width(IndelibleSpacing.step4))
             Text(
-                text = "Save",
+                text = stringResource(Res.string.feed_save),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -226,14 +229,18 @@ private fun FeedSaveButton(
     }
 }
 
+@Composable
 private fun feedEyebrow(item: FeedItemWithState): String {
     val now = currentInstant
     return buildString {
         feedDomain(item.url)?.let { append(it.uppercase()) }
         val timestamp = item.publishedAt ?: item.fetchedAt
         if (isNotEmpty()) append(" · ")
-        append(formatTimeAgo(timestamp, now).uppercase())
-        if (item.state == STATE_SEEN) append(" · SEEN")
+        append(relativeTimeText(timestamp, now))
+        if (item.state == STATE_SEEN) {
+            append(" · ")
+            append(stringResource(Res.string.feed_seen))
+        }
     }
 }
 
@@ -245,25 +252,6 @@ private fun feedDomain(url: String?): String? {
             ?.removePrefix("www.")
             ?.substringBefore("/")
     return domain?.takeIf { it.isNotBlank() }
-}
-
-private const val DAYS_PER_WEEK = 7
-private const val DAYS_PER_YEAR = 365
-private const val ISO_DATE_LENGTH = 10
-
-private fun formatTimeAgo(
-    instant: Instant,
-    now: Instant,
-): String {
-    val diff = now - instant
-    return when {
-        diff < 1.minutes -> "just now"
-        diff < 1.hours -> "${diff.inWholeMinutes}m ago"
-        diff < 1.days -> "${diff.inWholeHours}h ago"
-        diff < DAYS_PER_WEEK.days -> "${diff.inWholeDays}d ago"
-        diff < DAYS_PER_YEAR.days -> "${diff.inWholeDays / DAYS_PER_WEEK}w ago"
-        else -> instant.toString().take(ISO_DATE_LENGTH)
-    }
 }
 
 private val currentInstant: Instant

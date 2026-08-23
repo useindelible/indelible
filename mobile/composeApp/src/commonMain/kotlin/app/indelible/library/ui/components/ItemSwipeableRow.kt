@@ -26,7 +26,11 @@ import app.indelible.ui.platform.rememberHapticTick
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_action_archive
+import indelible.composeapp.generated.resources.library_action_delete
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,14 +72,14 @@ fun ItemSwipeableRow(
                         Quad(
                             IndelibleTheme.colors.success,
                             Icons.Filled.Archive,
-                            "Archive",
+                            stringResource(Res.string.library_action_archive),
                             Alignment.CenterStart,
                         )
                     SwipeToDismissBoxValue.EndToStart ->
                         Quad(
                             MaterialTheme.colorScheme.error,
                             Icons.Filled.Delete,
-                            "Delete",
+                            stringResource(Res.string.library_action_delete),
                             Alignment.CenterEnd,
                         )
                     SwipeToDismissBoxValue.Settled -> return@SwipeToDismissBox

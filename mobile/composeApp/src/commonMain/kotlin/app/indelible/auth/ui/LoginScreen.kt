@@ -20,7 +20,18 @@ import app.indelible.auth.ui.components.AuthCard
 import app.indelible.auth.ui.components.AuthTextField
 import app.indelible.auth.ui.components.OAuthButton
 import app.indelible.auth.viewmodel.AuthViewModel
+import app.indelible.core.i18n.resolve
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_change_server
+import indelible.composeapp.generated.resources.auth_email_label
+import indelible.composeapp.generated.resources.auth_forgot_password
+import indelible.composeapp.generated.resources.auth_password_label
+import indelible.composeapp.generated.resources.auth_sign_in
+import indelible.composeapp.generated.resources.auth_sign_in_prompt
+import indelible.composeapp.generated.resources.auth_sign_up_prompt
+import indelible.composeapp.generated.resources.common_app_name
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LoginScreen(
@@ -36,7 +47,7 @@ fun LoginScreen(
 
     AuthCard {
         Text(
-            text = "Indelible",
+            text = stringResource(Res.string.common_app_name),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -45,7 +56,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
         Text(
-            text = "Sign in to your account",
+            text = stringResource(Res.string.auth_sign_in_prompt),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -64,7 +75,7 @@ fun LoginScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 TextButton(onClick = onChangeServer) {
-                    Text("Change")
+                    Text(stringResource(Res.string.auth_change_server))
                 }
             }
         }
@@ -73,7 +84,7 @@ fun LoginScreen(
 
         if (loginState.serverError != null) {
             Text(
-                text = loginState.serverError.orEmpty(),
+                text = loginState.serverError?.resolve().orEmpty(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
@@ -85,8 +96,8 @@ fun LoginScreen(
         AuthTextField(
             value = loginState.email,
             onValueChange = viewModel::updateLoginEmail,
-            label = "Email",
-            error = loginState.emailError,
+            label = stringResource(Res.string.auth_email_label),
+            error = loginState.emailError?.resolve(),
             keyboardType = KeyboardType.Email,
         )
 
@@ -95,8 +106,8 @@ fun LoginScreen(
         AuthTextField(
             value = loginState.password,
             onValueChange = viewModel::updateLoginPassword,
-            label = "Password",
-            error = loginState.passwordError,
+            label = stringResource(Res.string.auth_password_label),
+            error = loginState.passwordError?.resolve(),
             isPassword = true,
             imeAction = ImeAction.Done,
             onImeAction = { viewModel.login() },
@@ -108,13 +119,13 @@ fun LoginScreen(
             onClick = onNavigateToForgotPassword,
             modifier = Modifier.align(Alignment.End),
         ) {
-            Text("Forgot password?")
+            Text(stringResource(Res.string.auth_forgot_password))
         }
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
         AuthButton(
-            text = "Sign In",
+            text = stringResource(Res.string.auth_sign_in),
             onClick = { viewModel.login() },
             isLoading = loginState.isLoading,
         )
@@ -134,7 +145,7 @@ fun LoginScreen(
                 onClick = onNavigateToRegister,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
-                Text("Don't have an account? Register")
+                Text(stringResource(Res.string.auth_sign_up_prompt))
             }
         }
     }

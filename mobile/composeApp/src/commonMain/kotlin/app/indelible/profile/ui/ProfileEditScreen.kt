@@ -17,6 +17,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -24,6 +26,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +34,16 @@ import app.indelible.auth.viewmodel.AuthState
 import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.profile.ui.components.UserAvatar
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_save
+import indelible.composeapp.generated.resources.profile_display_name
+import indelible.composeapp.generated.resources.profile_edit_title
+import indelible.composeapp.generated.resources.profile_email
+import indelible.composeapp.generated.resources.profile_saving
+import indelible.composeapp.generated.resources.profile_update_failed
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,22 +57,26 @@ fun ProfileEditScreen(
     val avatarBytes by authViewModel.avatarBytes.collectAsState()
     var displayName by remember { mutableStateOf(user?.displayName ?: "") }
     var isSaving by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val updateFailedMessage = stringResource(Res.string.profile_update_failed)
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Edit Profile") },
+                title = { Text(stringResource(Res.string.profile_edit_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         Column(
             modifier =
@@ -83,7 +100,7 @@ fun ProfileEditScreen(
             OutlinedTextField(
                 value = displayName,
                 onValueChange = { displayName = it },
-                label = { Text("Display Name") },
+                label = { Text(stringResource(Res.string.profile_display_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -93,7 +110,7 @@ fun ProfileEditScreen(
             OutlinedTextField(
                 value = user?.email ?: "",
                 onValueChange = {},
-                label = { Text("Email") },
+                label = { Text(stringResource(Res.string.profile_email)) },
                 singleLine = true,
                 enabled = false,
                 modifier = Modifier.fillMaxWidth(),
@@ -104,15 +121,25 @@ fun ProfileEditScreen(
             Button(
                 onClick = {
                     isSaving = true
-                    authViewModel.updateProfile(displayName) {
+                    authViewModel.updateProfile(displayName) { succeeded ->
                         isSaving = false
-                        onNavigateBack()
+                        if (succeeded) {
+                            onNavigateBack()
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(updateFailedMessage)
+                            }
+                        }
                     }
                 },
                 enabled = !isSaving,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (isSaving) "Saving..." else "Save")
+                Text(
+                    stringResource(
+                        if (isSaving) Res.string.profile_saving else Res.string.common_save,
+                    ),
+                )
             }
         }
     }

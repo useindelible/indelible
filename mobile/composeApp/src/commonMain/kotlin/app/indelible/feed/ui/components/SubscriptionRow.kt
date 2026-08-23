@@ -35,7 +35,18 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_action_edit
+import indelible.composeapp.generated.resources.feed_action_more_cd
+import indelible.composeapp.generated.resources.feed_action_pause_cd
+import indelible.composeapp.generated.resources.feed_action_resume_cd
+import indelible.composeapp.generated.resources.feed_action_unsubscribe
+import indelible.composeapp.generated.resources.feed_status_active
+import indelible.composeapp.generated.resources.feed_status_error
+import indelible.composeapp.generated.resources.feed_status_paused
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SubscriptionRow(
@@ -90,7 +101,10 @@ fun SubscriptionRow(
         ) {
             Icon(
                 imageVector = if (isActive) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isActive) "Pause feed" else "Resume feed",
+                contentDescription =
+                    stringResource(
+                        if (isActive) Res.string.feed_action_pause_cd else Res.string.feed_action_resume_cd,
+                    ),
                 tint =
                     when {
                         isError -> MaterialTheme.colorScheme.error
@@ -109,7 +123,7 @@ fun SubscriptionRow(
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(
                     imageVector = Icons.Filled.MoreHoriz,
-                    contentDescription = "More options",
+                    contentDescription = stringResource(Res.string.feed_action_more_cd),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -118,7 +132,7 @@ fun SubscriptionRow(
                 onDismissRequest = { menuExpanded = false },
             ) {
                 DropdownMenuItem(
-                    text = { Text("Edit") },
+                    text = { Text(stringResource(Res.string.feed_action_edit)) },
                     onClick = {
                         menuExpanded = false
                         onEdit()
@@ -127,7 +141,7 @@ fun SubscriptionRow(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = "Unsubscribe",
+                            text = stringResource(Res.string.feed_action_unsubscribe),
                             color = MaterialTheme.colorScheme.error,
                         )
                     },
@@ -206,7 +220,7 @@ private fun StatusBadge(
             "error" -> MaterialTheme.colorScheme.error
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
-    val label = status.replaceFirstChar { it.uppercase() }
+    val label = stringResource(statusLabelRes(status))
 
     Box(
         modifier =
@@ -224,6 +238,13 @@ private fun StatusBadge(
         )
     }
 }
+
+private fun statusLabelRes(status: String): StringResource =
+    when (status) {
+        "active" -> Res.string.feed_status_active
+        "error" -> Res.string.feed_status_error
+        else -> Res.string.feed_status_paused
+    }
 
 @Preview(showBackground = true)
 @Composable

@@ -29,6 +29,10 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.sidebar_settings
+import indelible.composeapp.generated.resources.sidebar_trash
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Drawer footer (prototype `.dw-foot`): a hairline divider over two equal-width
@@ -56,8 +60,16 @@ fun SidebarFooter(
                     ),
             horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
         ) {
-            FooterTile(icon = IndelibleIcons.Settings, label = "Settings", onClick = onSettings)
-            FooterTile(icon = IndelibleIcons.Trash, label = "Trash", onClick = onTrash)
+            FooterTile(
+                icon = IndelibleIcons.Settings,
+                label = stringResource(Res.string.sidebar_settings),
+                onClick = onSettings,
+            )
+            FooterTile(
+                icon = IndelibleIcons.Trash,
+                label = stringResource(Res.string.sidebar_trash),
+                onClick = onTrash,
+            )
         }
     }
 }

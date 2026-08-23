@@ -1,5 +1,6 @@
 package app.indelible.library.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryItem
 
 enum class TriageFilter(
@@ -63,12 +64,12 @@ sealed class LibraryUiState {
     ) : LibraryUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : LibraryUiState()
 }
 
 sealed class LibraryEffect {
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : LibraryEffect()
 }

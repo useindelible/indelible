@@ -2,8 +2,11 @@ package app.indelible.tags.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.TagData
 import app.indelible.tags.repository.TagsRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.tags_error_load
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +27,7 @@ data class TagsState(
     val scope: TagScope = TagScope.ALL,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null,
+    val error: UiMessage? = null,
 )
 
 class TagsViewModel(
@@ -49,8 +52,8 @@ class TagsViewModel(
                             isLoading = false,
                         )
                     }
-                }.onFailure { e ->
-                    _state.update { it.copy(isLoading = false, error = e.message) }
+                }.onFailure {
+                    _state.update { it.copy(isLoading = false, error = UiMessage(Res.string.tags_error_load)) }
                 }
         }
     }

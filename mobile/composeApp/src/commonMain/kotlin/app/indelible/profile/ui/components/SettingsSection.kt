@@ -21,7 +21,7 @@ fun SettingsSection(
         modifier = modifier.fillMaxWidth(),
     ) {
         Text(
-            text = title.uppercase(),
+            text = title,
             // caption-1: 11sp / medium weight / wide tracking — section labels
             style =
                 MaterialTheme.typography.labelSmall.copy(

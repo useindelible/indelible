@@ -13,6 +13,8 @@ gradle-app.setting
 captures/
 *.ipr
 *.iws
+# Buildship/Eclipse Gradle import compiles into bin/ alongside Gradle's build/
+bin/
 
 # Android
 local.properties

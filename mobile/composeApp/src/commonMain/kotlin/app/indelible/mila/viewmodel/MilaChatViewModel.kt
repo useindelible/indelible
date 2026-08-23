@@ -2,11 +2,18 @@ package app.indelible.mila.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.mila.data.ChatMessage
 import app.indelible.mila.data.ChatScope
 import app.indelible.mila.data.MilaRepository
 import app.indelible.mila.data.SourceRef
 import app.indelible.mila.data.StreamEvent
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.mila_chat_failed
+import indelible.composeapp.generated.resources.mila_chat_load_failed
+import indelible.composeapp.generated.resources.mila_chat_provider_unavailable
+import indelible.composeapp.generated.resources.mila_chat_session_failed
+import indelible.composeapp.generated.resources.mila_chat_timeout
 import io.ktor.util.date.getTimeMillis
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,7 +126,7 @@ class MilaChatViewModel(
                 _uiState.value =
                     _uiState.value.copy(
                         sessionLoading = false,
-                        error = "Failed to load messages",
+                        error = UiMessage(Res.string.mila_chat_load_failed),
                     )
             }
     }
@@ -141,7 +148,7 @@ class MilaChatViewModel(
                 _uiState.value =
                     _uiState.value.copy(
                         sessionLoading = false,
-                        error = "Failed to create session",
+                        error = UiMessage(Res.string.mila_chat_session_failed),
                     )
             }
     }
@@ -184,7 +191,7 @@ class MilaChatViewModel(
             // whole process down; it must land as an in-chat error instead.
             val stream =
                 repository.streamChat(id, trimmed).catch { failure ->
-                    emit(StreamEvent.Error(failure.message ?: "Connection lost"))
+                    emit(StreamEvent.Error(failure.message.orEmpty()))
                 }
             stream.collect { event ->
                 when (event) {
@@ -216,13 +223,13 @@ class MilaChatViewModel(
     }
 
     // 503 on stream open is the ai_provider_unavailable contract (provider offline).
-    private fun friendlyStreamError(message: String): String =
+    private fun friendlyStreamError(message: String): UiMessage =
         when {
             message.contains("503") ->
-                "Your AI provider is unreachable. Start it (e.g. LM Studio), then retry."
+                UiMessage(Res.string.mila_chat_provider_unavailable)
             message.contains("timeout", ignoreCase = true) ->
-                "Mila took too long to answer. Check your AI provider and try again."
-            else -> message
+                UiMessage(Res.string.mila_chat_timeout)
+            else -> UiMessage(Res.string.mila_chat_failed)
         }
 
     private fun updateLastAssistantMessage(

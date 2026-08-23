@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderPreferences
-import kotlinx.datetime.Instant
 
 @Composable
 expect fun HtmlReaderView(
@@ -25,8 +24,7 @@ expect fun HtmlReaderView(
     articleTitle: String = "",
     articleAuthor: String? = null,
     articleDomain: String? = null,
-    articlePublishedAt: Instant? = null,
-    articleReadingTimeMinutes: Int? = null,
+    localization: ReaderHtmlLocalization,
     summaryHtml: String? = null,
     summaryPoints: List<String> = emptyList(),
     onSummaryAction: (action: String) -> Unit = {},

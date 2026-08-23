@@ -26,6 +26,9 @@ import app.indelible.home.model.progressFraction
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_minutes_left
+import org.jetbrains.compose.resources.pluralStringResource
 import kotlin.math.roundToInt
 
 private val cardWidth = IndelibleSpacing.step96 + IndelibleSpacing.step56
@@ -102,7 +105,7 @@ private fun JumpBackCard(
 
         if (!item.domain.isNullOrBlank()) {
             Text(
-                text = item.domain.uppercase(),
+                text = item.domain.uppercase(), // i18n-ignore: server-provided domain presentation
                 style = homeEyebrowStyle(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -120,7 +123,7 @@ private fun JumpBackCard(
         if (minutesLeft != null && minutesLeft > 0) {
             Spacer(Modifier.height(IndelibleSpacing.step2))
             Text(
-                text = "$minutesLeft min left",
+                text = pluralStringResource(Res.plurals.home_minutes_left, minutesLeft, minutesLeft),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,

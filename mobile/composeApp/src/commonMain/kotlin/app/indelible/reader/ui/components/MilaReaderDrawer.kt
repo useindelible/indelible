@@ -48,6 +48,10 @@ import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_close_mila
+import indelible.composeapp.generated.resources.reader_reading
+import org.jetbrains.compose.resources.stringResource
 
 private const val DRAWER_WIDTH_FRACTION = 0.86f
 
@@ -157,7 +161,7 @@ private fun DrawerHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "READING",
+                text = stringResource(Res.string.reader_reading),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -173,7 +177,7 @@ private fun DrawerHeader(
         IconButton(onClick = onClose) {
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Close Mila",
+                contentDescription = stringResource(Res.string.reader_close_mila),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

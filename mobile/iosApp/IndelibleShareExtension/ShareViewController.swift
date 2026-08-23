@@ -52,16 +52,28 @@ class ShareViewController: UIViewController {
     }
 
     private func presentSaveSheet(for url: String) {
+        let model = ShareSheetModel()
         let saveView = SaveSheetView(
             url: url,
+            model: model,
             onSave: { [weak self] in
                 self?.bridge.save(url: url, completion: { success, message in
-                    if success == true || message == "queued" || message == "already_saved" {
-                        self?.done()
-                    } else if message == "auth_required" {
-                        self?.openMainAppForAuth()
-                    } else {
-                        self?.done()
+                    switch (success, message) {
+                    case (true, "queued"):
+                        model.state = .queued
+                        self?.completeAfterShowingResult()
+                    case (true, "already_saved"):
+                        model.state = .alreadySaved
+                        self?.completeAfterShowingResult()
+                    case (true, _):
+                        model.state = .saved
+                        self?.completeAfterShowingResult()
+                    case (_, "auth_required"):
+                        model.state = .authRequired
+                    case (_, "invalid_url"):
+                        model.state = .invalidURL
+                    default:
+                        model.state = .error
                     }
                 })
             },
@@ -85,6 +97,12 @@ class ShareViewController: UIViewController {
             host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
         host.didMove(toParent: self)
+    }
+
+    private func completeAfterShowingResult() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            self?.done()
+        }
     }
 
     private func done() {

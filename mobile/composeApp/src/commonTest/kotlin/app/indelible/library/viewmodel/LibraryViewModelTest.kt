@@ -1,7 +1,10 @@
 package app.indelible.library.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.fakeLibraryItem
 import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.paginatedItems
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_error_load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -74,7 +77,7 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             val state = assertIs<LibraryUiState.Error>(viewModel.uiState.value)
-            assertEquals("Network error", state.message)
+            assertEquals(UiMessage(Res.string.library_error_load), state.message)
         }
 
     @Test

@@ -3,6 +3,7 @@ package app.indelible.navigation
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -12,6 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -19,9 +22,11 @@ import androidx.navigation.compose.rememberNavController
 import app.indelible.auth.viewmodel.AuthState
 import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.core.di.AppContainer
+import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.preferences.DefaultViewPreference
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import io.ktor.http.encodeURLQueryComponent
+import org.jetbrains.compose.resources.stringResource
 
 object MainRoutes {
     const val COLLECTIONS = "collections"
@@ -83,6 +88,7 @@ fun MainNavigation(
     authViewModel: AuthViewModel,
     appContainer: AppContainer,
     userPreferencesViewModel: UserPreferencesViewModel,
+    appLanguageSettings: AppLanguageSettings?,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -140,6 +146,7 @@ fun MainNavigation(
                         // REVIEW remains a reachable route but is intentionally absent from the bar;
                         // the prototype tab set is Home, Library, Feed, Search, Profile.
                         TabItem.entries.filter { it != TabItem.REVIEW }.forEach { tab ->
+                            val label = stringResource(tab.labelRes)
                             val selected =
                                 currentDestination?.hierarchy?.any {
                                     it.route == tab.route
@@ -159,10 +166,21 @@ fun MainNavigation(
                                 icon = {
                                     Icon(
                                         imageVector = tab.icon,
-                                        contentDescription = tab.label,
+                                        contentDescription = label,
                                     )
                                 },
-                                label = { Text(tab.label) },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        style =
+                                            MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 10.sp,
+                                                letterSpacing = 0.sp,
+                                            ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
                             )
                         }
                     }
@@ -231,6 +249,7 @@ fun MainNavigation(
                     milaSettingsRepository = appContainer.milaSettingsRepository,
                     ingestEmail = ingestEmail,
                     ingestLibraryEmail = ingestLibraryEmail,
+                    appLanguageSettings = appLanguageSettings,
                 )
                 milaChatRoutes(navController, appContainer.milaRepository)
             }

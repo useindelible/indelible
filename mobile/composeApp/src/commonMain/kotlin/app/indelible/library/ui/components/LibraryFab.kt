@@ -16,6 +16,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_add_url_cd
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LibraryFab(
@@ -31,7 +34,10 @@ fun LibraryFab(
         modifier = modifier.size(IndelibleSpacing.step56),
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(imageVector = Icons.Filled.Add, contentDescription = "Add URL to library")
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(Res.string.library_add_url_cd),
+            )
         }
     }
 }

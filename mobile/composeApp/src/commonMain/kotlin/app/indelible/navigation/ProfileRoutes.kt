@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.savedstate.read
 import app.indelible.auth.viewmodel.AuthViewModel
+import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.feed.ui.AddFeedScreen
 import app.indelible.feed.ui.FeedManagementScreen
 import app.indelible.feed.viewmodel.AddFeedViewModel
@@ -40,6 +41,7 @@ fun NavGraphBuilder.profileRoutes(
     milaSettingsRepository: MilaSettingsRepository,
     ingestEmail: String?,
     ingestLibraryEmail: String?,
+    appLanguageSettings: AppLanguageSettings?,
 ) {
     composable(MainRoutes.PROFILE_EDIT) {
         ProfileEditScreen(
@@ -50,6 +52,7 @@ fun NavGraphBuilder.profileRoutes(
     composable(MainRoutes.PROFILE_PREFERENCES) {
         PreferencesScreen(
             viewModel = userPreferencesViewModel,
+            appLanguageSettings = appLanguageSettings,
             onNavigateBack = { navController.popBackStack() },
         )
     }

@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,9 +38,18 @@ import app.indelible.collections.ui.components.CollectionScreenTopBar
 import app.indelible.collections.ui.components.GridPaginationEffect
 import app.indelible.collections.viewmodel.CollectionsState
 import app.indelible.collections.viewmodel.CollectionsViewModel
+import app.indelible.core.i18n.resolve
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.collections_count
+import indelible.composeapp.generated.resources.collections_item_count
+import indelible.composeapp.generated.resources.collections_none
+import indelible.composeapp.generated.resources.collections_title
+import indelible.composeapp.generated.resources.common_retry
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +75,10 @@ fun CollectionsScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            CollectionScreenTopBar(title = "Collections", onBack = onNavigateBack)
+            CollectionScreenTopBar(
+                title = stringResource(Res.string.collections_title),
+                onBack = onNavigateBack,
+            )
         },
     ) { paddingValues ->
         PullToRefreshBox(
@@ -110,19 +122,19 @@ private fun CollectionsContent(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = state.error ?: "Something went wrong",
+                    text = state.error.resolve(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
-                TextButton(onClick = onRetry) { Text("Retry") }
+                TextButton(onClick = onRetry) { Text(stringResource(Res.string.common_retry)) }
             }
         }
 
         rootCollections.isEmpty() -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "No collections yet",
+                    text = stringResource(Res.string.collections_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -131,7 +143,11 @@ private fun CollectionsContent(
 
         else -> {
             val collectionCountLabel =
-                "${rootCollections.size} collection${if (rootCollections.size == 1) "" else "s"}"
+                pluralStringResource(
+                    Res.plurals.collections_count,
+                    rootCollections.size,
+                    rootCollections.size,
+                )
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 state = gridState,
@@ -244,7 +260,12 @@ private fun CollectionCard(
                     )
                 }
                 Text(
-                    text = "${collection.itemCount} item${if (collection.itemCount == 1L) "" else "s"}",
+                    text =
+                        pluralStringResource(
+                            Res.plurals.collections_item_count,
+                            collection.itemCount.toInt(),
+                            collection.itemCount,
+                        ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

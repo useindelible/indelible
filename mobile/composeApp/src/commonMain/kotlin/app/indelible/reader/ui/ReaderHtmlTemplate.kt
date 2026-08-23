@@ -3,7 +3,6 @@ package app.indelible.reader.ui
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.ReaderPreferences
-import kotlinx.datetime.Instant
 import kotlin.random.Random
 
 object ReaderHtmlTemplate {
@@ -20,18 +19,25 @@ object ReaderHtmlTemplate {
     // Per-render CSP nonce: the reader's own inline bridge script carries it so the strict
     // script-src can run it while blocking any injected inline script or event-handler attribute.
     private fun randomNonce(): String =
-        Random.nextBytes(16).joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
+        Random.nextBytes(16).joinToString("") {
+            (it.toInt() and 0xFF).toString(16).padStart(2, '0')
+        }
 
     fun build(
         articleHtml: String,
         preferences: ReaderPreferences,
         highlights: List<HighlightData>,
+        localization: ReaderHtmlLocalization =
+            ReaderHtmlLocalization(
+                publishedDate = null,
+                readingTime = null,
+                summaryLabel = "",
+                askFollowUpLabel = "",
+            ),
         isDarkMode: Boolean = false,
         articleTitle: String = "",
         articleAuthor: String? = null,
         articleDomain: String? = null,
-        articlePublishedAt: Instant? = null,
-        articleReadingTimeMinutes: Int? = null,
         summaryHtml: String? = null,
         summaryPoints: List<String> = emptyList(),
         topContentPaddingPx: Int = 0,
@@ -48,12 +54,11 @@ object ReaderHtmlTemplate {
                     title = articleTitle,
                     author = articleAuthor,
                     domain = articleDomain,
-                    publishedAt = articlePublishedAt,
-                    readingTimeMinutes = articleReadingTimeMinutes,
                     hasSummary = summaryHtml != null,
                 ),
+                localization = localization,
             )
-        val summaryBlockHtml = buildSummaryBlock(summaryHtml, summaryPoints)
+        val summaryBlockHtml = buildSummaryBlock(summaryHtml, summaryPoints, localization.askFollowUpLabel)
         return """
 <!DOCTYPE html>
 <html>
@@ -119,15 +124,18 @@ applyHighlights(_highlights);
 
     // A document with no drawing still gets the veils and grain; only the field is absent.
     private fun auraMarkup(artwork: LoadedReaderArtwork?): String =
-        artwork?.let { """<div class="aura">${it.svg}</div>""" } ?: ""
+        artwork?.let {
+            """<div class="aura">${it.svg}</div>"""
+        } ?: ""
 
     // Section order is load-bearing: later rules override earlier ones by cascade position.
     private fun buildCss(
         preferences: ReaderPreferences,
         isDarkMode: Boolean,
     ): String {
-        val isDarkBg = preferences.background == ReaderBackground.SLATE ||
-            preferences.background == ReaderBackground.BLACK
+        val isDarkBg =
+            preferences.background == ReaderBackground.SLATE ||
+                preferences.background == ReaderBackground.BLACK
         val palette = if (isDarkBg) DARK_READER_PALETTE else LIGHT_READER_PALETTE
         val colors = backgroundColors(preferences.background)
         return listOf(

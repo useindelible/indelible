@@ -1,12 +1,16 @@
 package app.indelible.onboarding.viewmodel
 
 import app.indelible.auth.repository.ApiAuthRepository
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.StepData
 import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.share.FakePendingSaveRepository
 import app.indelible.share.SaveUrlUseCase
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.onboarding_add_content_invalid_url
+import indelible.composeapp.generated.resources.onboarding_step_account
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -512,10 +516,9 @@ class OnboardingViewModelTest {
         val steps = OnboardingViewModel.defaultSteps()
         assertEquals(5, steps.size)
         assertEquals(1, steps.first().number)
-        assertEquals("Account Setup", steps.first().name)
         assertEquals(5, steps.last().number)
-        assertEquals("Ready", steps.last().name)
         assertTrue(steps.none { it.completed })
+        assertEquals(Res.string.onboarding_step_account, OnboardingPage.ACCOUNT_SETUP.labelRes)
     }
 
     @Test
@@ -825,7 +828,11 @@ class OnboardingViewModelTest {
             viewModel.completeAddContentStep { advanced = true }
             val state = viewModel.state.first { !it.isStepLoading && it.error != null }
 
-            assertTrue(state.error != null, "an unsaveable URL must stay visible")
+            assertEquals(
+                UiMessage(Res.string.onboarding_add_content_invalid_url),
+                state.error,
+                "an unsaveable URL must stay visible",
+            )
             assertFalse(advanced)
             val recorded = log.snapshot()
             assertTrue(recorded.none { it.path == "/api/v1/library" })

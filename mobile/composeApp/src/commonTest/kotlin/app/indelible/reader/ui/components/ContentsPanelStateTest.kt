@@ -1,6 +1,10 @@
 package app.indelible.reader.ui.components
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.viewmodel.TocStatus
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_contents
+import indelible.composeapp.generated.resources.reader_contents_progress
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -18,9 +22,12 @@ class ContentsPanelStateTest {
 
     @Test
     fun eyebrow_carries_progress_only_when_ready() {
-        assertEquals("Contents / 21% read", contentsEyebrow(TocStatus.READY, 21))
-        assertEquals("Contents", contentsEyebrow(TocStatus.PENDING, 21))
-        assertEquals("Contents", contentsEyebrow(TocStatus.NONE, 0))
+        assertEquals(
+            UiMessage(Res.string.reader_contents_progress, listOf(21)),
+            contentsEyebrow(TocStatus.READY, 21),
+        )
+        assertEquals(UiMessage(Res.string.reader_contents), contentsEyebrow(TocStatus.PENDING, 21))
+        assertEquals(UiMessage(Res.string.reader_contents), contentsEyebrow(TocStatus.NONE, 0))
     }
 
     @Test

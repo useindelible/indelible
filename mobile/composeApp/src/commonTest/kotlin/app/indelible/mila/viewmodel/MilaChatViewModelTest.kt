@@ -8,6 +8,10 @@ import app.indelible.mila.viewmodel.FakeMilaRepository.Companion.disabledConfig
 import app.indelible.mila.viewmodel.FakeMilaRepository.Companion.enabledConfig
 import app.indelible.mila.viewmodel.FakeMilaRepository.Companion.fakeSession
 import app.indelible.mila.viewmodel.FakeMilaRepository.Companion.fakeSessionPreview
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.mila_chat_failed
+import indelible.composeapp.generated.resources.mila_chat_provider_unavailable
+import indelible.composeapp.generated.resources.mila_chat_timeout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -295,7 +299,7 @@ class MilaChatViewModelTest {
 
             val state = viewModel.uiState.value
             assertFalse(state.isStreaming)
-            assertEquals("Provider error", state.error)
+            assertEquals(Res.string.mila_chat_failed, state.error?.resource)
         }
 
     @Test
@@ -313,10 +317,7 @@ class MilaChatViewModelTest {
 
             val state = viewModel.uiState.value
             assertFalse(state.isStreaming)
-            assertEquals(
-                "Your AI provider is unreachable. Start it (e.g. LM Studio), then retry.",
-                state.error,
-            )
+            assertEquals(Res.string.mila_chat_provider_unavailable, state.error?.resource)
         }
 
     @Test
@@ -404,7 +405,7 @@ class MilaChatViewModelTest {
             val state = viewModel.uiState.value
             assertFalse(state.isStreaming, "a dead stream must end the streaming state")
             assertTrue(state.messages.none { it.isStreaming }, "the placeholder must be removed")
-            assertTrue(state.error != null, "the failure must surface as an error")
+            assertEquals(Res.string.mila_chat_timeout, state.error?.resource)
         }
 
     @Test

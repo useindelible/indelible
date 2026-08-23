@@ -2,7 +2,10 @@ package app.indelible.profile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.profile.repository.AccountRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.profile_delete_failed
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -10,7 +13,7 @@ import kotlinx.coroutines.launch
 
 sealed class AccountEffect {
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : AccountEffect()
 
     data object AccountDeleted : AccountEffect()
@@ -27,8 +30,10 @@ class AccountViewModel(
             repository
                 .deleteAccount(confirmation)
                 .onSuccess { _effects.emit(AccountEffect.AccountDeleted) }
-                .onFailure { error ->
-                    _effects.emit(AccountEffect.ShowSnackbar(error.message ?: "Failed to delete account"))
+                .onFailure {
+                    _effects.emit(
+                        AccountEffect.ShowSnackbar(UiMessage(Res.string.profile_delete_failed)),
+                    )
                 }
         }
     }

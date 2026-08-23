@@ -2,7 +2,11 @@ package app.indelible.profile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.profile.repository.AddLibraryRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_add_url_error_invalid
+import indelible.composeapp.generated.resources.library_add_url_error_submit
 import io.ktor.http.parseUrl
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +18,7 @@ import kotlinx.coroutines.launch
 
 data class AddLibraryUiState(
     val isSubmitting: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiMessage? = null,
 )
 
 sealed class AddLibraryEffect {
@@ -35,7 +39,7 @@ class AddLibraryViewModel(
 
         val normalizedUrl = url.trim()
         if (!isValidHttpUrl(normalizedUrl)) {
-            _uiState.value = AddLibraryUiState(errorMessage = INVALID_URL_MESSAGE)
+            _uiState.value = AddLibraryUiState(errorMessage = UiMessage(Res.string.library_add_url_error_invalid))
             return
         }
 
@@ -46,10 +50,10 @@ class AddLibraryViewModel(
                 .onSuccess {
                     _uiState.value = AddLibraryUiState()
                     _effects.emit(AddLibraryEffect.Saved)
-                }.onFailure { error ->
+                }.onFailure {
                     _uiState.value =
                         AddLibraryUiState(
-                            errorMessage = error.message ?: SUBMISSION_FAILED_MESSAGE,
+                            errorMessage = UiMessage(Res.string.library_add_url_error_submit),
                         )
                 }
         }
@@ -65,11 +69,6 @@ class AddLibraryViewModel(
         if (!_uiState.value.isSubmitting) {
             _uiState.value = AddLibraryUiState()
         }
-    }
-
-    private companion object {
-        const val INVALID_URL_MESSAGE = "Enter a valid http or https URL"
-        const val SUBMISSION_FAILED_MESSAGE = "Failed to submit URL"
     }
 }
 

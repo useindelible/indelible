@@ -96,8 +96,7 @@ fun ReaderBottomSheetScaffold(
                             } else {
                                 Modifier
                             },
-                        )
-                        .padding(horizontal = IndelibleSpacing.step12)
+                        ).padding(horizontal = IndelibleSpacing.step12)
                         .navigationBarsPadding()
                         .padding(bottom = IndelibleSpacing.step80),
                 shape = IndelibleShape.xxl,
@@ -110,8 +109,7 @@ fun ReaderBottomSheetScaffold(
                             .fillMaxWidth()
                             .then(
                                 if (fillHeightFraction != null) Modifier.fillMaxHeight() else Modifier,
-                            )
-                            .padding(
+                            ).padding(
                                 horizontal = IndelibleSpacing.screenPaddingH,
                                 vertical = IndelibleSpacing.step16,
                             ),
@@ -134,7 +132,7 @@ fun ReaderBottomSheetScaffold(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = eyebrow.uppercase(),
+                            text = eyebrow,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

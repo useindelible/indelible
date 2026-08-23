@@ -11,6 +11,13 @@ import androidx.compose.ui.text.style.TextAlign
 import app.indelible.onboarding.ui.components.StepCard
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.onboarding_get_started
+import indelible.composeapp.generated.resources.onboarding_welcome_body
+import indelible.composeapp.generated.resources.onboarding_welcome_setup
+import indelible.composeapp.generated.resources.onboarding_welcome_subtitle
+import indelible.composeapp.generated.resources.onboarding_welcome_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun WelcomeStep(
@@ -18,15 +25,12 @@ fun WelcomeStep(
     modifier: Modifier = Modifier,
 ) {
     StepCard(
-        title = "Welcome to Indelible",
-        subtitle = "Your personal read-it-later and knowledge archive",
+        title = stringResource(Res.string.onboarding_welcome_title),
+        subtitle = stringResource(Res.string.onboarding_welcome_subtitle),
         modifier = modifier,
     ) {
         Text(
-            text =
-                "Save articles, documents, and links from anywhere. " +
-                    "Indelible keeps your reading organized and searchable, " +
-                    "so nothing important slips through the cracks.",
+            text = stringResource(Res.string.onboarding_welcome_body),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -36,7 +40,7 @@ fun WelcomeStep(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
 
         Text(
-            text = "Let's get you set up in just a few steps.",
+            text = stringResource(Res.string.onboarding_welcome_setup),
             style = MaterialTheme.typography.bodyLarge, // body: 15sp/400
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -45,6 +49,6 @@ fun WelcomeStep(
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step48))
 
-        IndelibleButton(text = "Get Started", onClick = onContinue)
+        IndelibleButton(text = stringResource(Res.string.onboarding_get_started), onClick = onContinue)
     }
 }

@@ -5877,7 +5877,10 @@
             ]
           },
           "locale": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "object": {
             "type": "string"

@@ -38,9 +38,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.reader.model.TagData
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_remove_tag
+import indelible.composeapp.generated.resources.reader_create_tag
+import indelible.composeapp.generated.resources.reader_tags
+import indelible.composeapp.generated.resources.reader_tags_empty
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,7 +137,7 @@ private fun HighlightTagSheetContent(
                 ),
     ) {
         Text(
-            text = "Tags",
+            text = stringResource(Res.string.reader_tags),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -197,7 +204,7 @@ private fun HighlightTagSheetContent(
             if (filteredSuggestions.isEmpty() && !canCreateNew && searchQuery.isEmpty()) {
                 item {
                     Text(
-                        text = "No tags yet. Type to create one.",
+                        text = stringResource(Res.string.reader_tags_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = IndelibleSpacing.step16),
@@ -245,7 +252,7 @@ private fun AppliedTagChip(
         ) {
             Icon(
                 Icons.Filled.Close,
-                contentDescription = "Remove tag",
+                contentDescription = stringResource(Res.string.reader_action_remove_tag),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(14.dp),
             )
@@ -277,14 +284,14 @@ private fun TagSuggestionRow(
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = if (isCreate) "Create \"$name\"" else name,
+            text = if (isCreate) stringResource(Res.string.reader_create_tag, name) else name,
             style = MaterialTheme.typography.bodyMedium,
             color = if (isCreate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
         if (!isCreate && count != null) {
             Text(
-                text = count.toString(),
+                text = LocaleFormatters.number(count.toLong()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

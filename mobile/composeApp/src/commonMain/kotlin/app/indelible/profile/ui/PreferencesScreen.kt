@@ -35,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import app.indelible.core.i18n.AppLanguage
+import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.preferences.DefaultViewPreference
 import app.indelible.core.preferences.ReaderFontFamilyPreference
 import app.indelible.core.preferences.ReaderFontSizePreference
@@ -42,6 +44,7 @@ import app.indelible.core.preferences.ReaderLineHeightPreference
 import app.indelible.core.preferences.ThemePreference
 import app.indelible.core.preferences.TriageModePreference
 import app.indelible.profile.ui.components.PreferenceDropdownRow
+import app.indelible.profile.ui.components.SettingsRow
 import app.indelible.profile.ui.components.SettingsSection
 import app.indelible.profile.ui.components.ToggleRow
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
@@ -50,6 +53,28 @@ import app.indelible.ui.theme.AccentGreen
 import app.indelible.ui.theme.AccentOrange
 import app.indelible.ui.theme.AccentPink
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.prefs_accent_color
+import indelible.composeapp.generated.resources.prefs_appearance
+import indelible.composeapp.generated.resources.prefs_auto_advance
+import indelible.composeapp.generated.resources.prefs_auto_advance_description
+import indelible.composeapp.generated.resources.prefs_default_view
+import indelible.composeapp.generated.resources.prefs_default_view_description
+import indelible.composeapp.generated.resources.prefs_font
+import indelible.composeapp.generated.resources.prefs_font_size
+import indelible.composeapp.generated.resources.prefs_language
+import indelible.composeapp.generated.resources.prefs_language_description
+import indelible.composeapp.generated.resources.prefs_layout_navigation
+import indelible.composeapp.generated.resources.prefs_line_height
+import indelible.composeapp.generated.resources.prefs_reader
+import indelible.composeapp.generated.resources.prefs_theme
+import indelible.composeapp.generated.resources.prefs_theme_description
+import indelible.composeapp.generated.resources.prefs_title
+import indelible.composeapp.generated.resources.prefs_triage_mode
+import indelible.composeapp.generated.resources.prefs_triage_mode_description
+import indelible.composeapp.generated.resources.prefs_triage_workflow
+import org.jetbrains.compose.resources.stringResource
 
 private val accentSwatches =
     listOf(
@@ -63,6 +88,7 @@ private val accentSwatches =
 @Composable
 fun PreferencesScreen(
     viewModel: UserPreferencesViewModel,
+    appLanguageSettings: AppLanguageSettings?,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -82,7 +108,7 @@ fun PreferencesScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Preferences",
+                        text = stringResource(Res.string.prefs_title),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -90,7 +116,7 @@ fun PreferencesScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -104,16 +130,18 @@ fun PreferencesScreen(
                     .padding(top = paddingValues.calculateTopPadding())
                     .verticalScroll(rememberScrollState()),
         ) {
-            // ── Appearance ────────────────────────────────────────────────
-            SettingsSection(title = "Appearance") {
+            SettingsSection(title = stringResource(Res.string.prefs_appearance)) {
                 PreferenceDropdownRow(
-                    label = "Theme",
-                    sublabel = "Light, Dark, or System",
+                    label = stringResource(Res.string.prefs_theme),
+                    sublabel = stringResource(Res.string.prefs_theme_description),
                     currentValue = theme,
-                    displayName = { it.displayName },
+                    displayName = { stringResource(it.labelRes) },
                     options = ThemePreference.entries,
                     onSelected = { viewModel.setTheme(it) },
                 )
+                if (appLanguageSettings != null) {
+                    LanguageSettingsRow(appLanguageSettings)
+                }
                 AccentColorRow(
                     swatches = accentSwatches,
                     selected = selectedAccent,
@@ -121,57 +149,54 @@ fun PreferencesScreen(
                 )
             }
 
-            // ── Layout & Navigation ───────────────────────────────────────
-            SettingsSection(title = "Layout & Navigation") {
+            SettingsSection(title = stringResource(Res.string.prefs_layout_navigation)) {
                 PreferenceDropdownRow(
-                    label = "Default View",
-                    sublabel = "Screen shown on launch",
+                    label = stringResource(Res.string.prefs_default_view),
+                    sublabel = stringResource(Res.string.prefs_default_view_description),
                     currentValue = defaultView,
-                    displayName = { it.displayName },
+                    displayName = { stringResource(it.labelRes) },
                     options = DefaultViewPreference.entries,
                     onSelected = { viewModel.setDefaultView(it) },
                 )
             }
 
-            // ── Triage & Workflow ─────────────────────────────────────────
-            SettingsSection(title = "Triage & Workflow") {
+            SettingsSection(title = stringResource(Res.string.prefs_triage_workflow)) {
                 PreferenceDropdownRow(
-                    label = "Triage Mode",
-                    sublabel = "Manual or Focus-assisted triage",
+                    label = stringResource(Res.string.prefs_triage_mode),
+                    sublabel = stringResource(Res.string.prefs_triage_mode_description),
                     currentValue = triageMode,
-                    displayName = { it.displayName },
+                    displayName = { stringResource(it.labelRes) },
                     options = TriageModePreference.entries,
                     onSelected = { viewModel.setTriageMode(it) },
                 )
                 ToggleRow(
-                    label = "Auto-Advance",
-                    sublabel = "Move to next item after triage action",
+                    label = stringResource(Res.string.prefs_auto_advance),
+                    sublabel = stringResource(Res.string.prefs_auto_advance_description),
                     checked = autoAdvance,
                     onCheckedChange = { viewModel.setAutoAdvance(it) },
                 )
             }
 
-            // ── Reader ────────────────────────────────────────────────────
-            SettingsSection(title = "Reader") {
+            SettingsSection(title = stringResource(Res.string.prefs_reader)) {
                 PreferenceDropdownRow(
-                    label = "Font",
-                    sublabel = fontFamily.description,
+                    label = stringResource(Res.string.prefs_font),
+                    sublabel = stringResource(fontFamily.descriptionRes),
                     currentValue = fontFamily,
-                    displayName = { it.displayName },
+                    displayName = { stringResource(it.labelRes) },
                     options = ReaderFontFamilyPreference.entries,
                     onSelected = { viewModel.setFontFamily(it) },
                 )
                 PreferenceDropdownRow(
-                    label = "Font Size",
+                    label = stringResource(Res.string.prefs_font_size),
                     currentValue = fontSize,
-                    displayName = { it.displayName },
+                    displayName = { stringResource(it.labelRes) },
                     options = ReaderFontSizePreference.entries,
                     onSelected = { viewModel.setFontSize(it) },
                 )
                 PreferenceDropdownRow(
-                    label = "Line Height",
+                    label = stringResource(Res.string.prefs_line_height),
                     currentValue = lineHeight,
-                    displayName = { it.displayName },
+                    displayName = { stringResource(it.labelRes) },
                     options = ReaderLineHeightPreference.entries,
                     onSelected = { viewModel.setLineHeight(it) },
                 )
@@ -179,6 +204,33 @@ fun PreferencesScreen(
 
             Spacer(modifier = Modifier.height(IndelibleSpacing.step32))
         }
+    }
+}
+
+@Composable
+internal fun LanguageSettingsRow(
+    settings: AppLanguageSettings,
+    modifier: Modifier = Modifier,
+) {
+    when (settings) {
+        is AppLanguageSettings.Selectable ->
+            PreferenceDropdownRow(
+                label = stringResource(Res.string.prefs_language),
+                sublabel = stringResource(Res.string.prefs_language_description),
+                currentValue = settings.language,
+                displayName = { stringResource(it.labelRes) },
+                options = AppLanguage.entries,
+                onSelected = settings.onSelected,
+                modifier = modifier,
+            )
+        is AppLanguageSettings.SystemManaged ->
+            SettingsRow(
+                label = stringResource(Res.string.prefs_language),
+                sublabel = stringResource(Res.string.prefs_language_description),
+                value = stringResource(settings.language.labelRes),
+                onClick = settings.onOpenSettings,
+                modifier = modifier,
+            )
     }
 }
 
@@ -197,7 +249,7 @@ private fun AccentColorRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Accent Color",
+            text = stringResource(Res.string.prefs_accent_color),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
         )

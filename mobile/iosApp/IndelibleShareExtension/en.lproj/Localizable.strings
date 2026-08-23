@@ -1,0 +1,12 @@
+"common_cancel" = "Cancel";
+"common_save" = "Save";
+"share_already_saved" = "Already saved";
+"share_error" = "Couldn’t save this link. Please try again.";
+"share_inbox_default" = "Inbox (default)";
+"share_invalid_url" = "This doesn’t look like a valid URL";
+"share_offline" = "Saved offline — it will sync when you’re online";
+"share_open_indelible" = "Open Indelible";
+"share_saved" = "Saved";
+"share_saving" = "Saving…";
+"share_sign_in" = "Sign in to Indelible first";
+"share_title" = "Save to Indelible";

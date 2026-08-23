@@ -6,7 +6,16 @@ import app.indelible.api.generated.models.MilaPromptPresetResponse
 import app.indelible.api.generated.models.TestMilaConfigBody
 import app.indelible.api.generated.models.TestMilaConfigResponse
 import app.indelible.api.generated.models.UpsertMilaConfigBody
+import app.indelible.core.i18n.UiMessage
 import app.indelible.profile.repository.MilaSettingsRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.mila_connection_failed
+import indelible.composeapp.generated.resources.mila_load_failed
+import indelible.composeapp.generated.resources.mila_preset_delete_failed
+import indelible.composeapp.generated.resources.mila_presets_load_failed
+import indelible.composeapp.generated.resources.mila_rebuild_embeddings_confirm
+import indelible.composeapp.generated.resources.mila_required_settings
+import indelible.composeapp.generated.resources.mila_save_failed
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +43,8 @@ data class AiSettingsUiState(
     val isSaving: Boolean = false,
     val isTesting: Boolean = false,
     val testResult: TestMilaConfigResponse? = null,
-    val saveError: String? = null,
+    val testError: UiMessage? = null,
+    val saveError: UiMessage? = null,
     val presets: List<MilaPromptPresetResponse> = emptyList(),
 )
 
@@ -50,7 +60,7 @@ class AiSettingsViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, saveError = null)
             repository
                 .getConfig()
                 .onSuccess { config ->
@@ -73,7 +83,11 @@ class AiSettingsViewModel(
                             reindexConfirmationRequired = false,
                         )
                 }.onFailure {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            saveError = UiMessage(Res.string.mila_load_failed),
+                        )
                 }
         }
         viewModelScope.launch {
@@ -82,6 +96,9 @@ class AiSettingsViewModel(
                 .onSuccess { response ->
                     val flat = response.groups.flatMap { it.presets }
                     _uiState.value = _uiState.value.copy(presets = flat)
+                }.onFailure {
+                    _uiState.value =
+                        _uiState.value.copy(saveError = UiMessage(Res.string.mila_presets_load_failed))
                 }
         }
     }
@@ -91,6 +108,7 @@ class AiSettingsViewModel(
             _uiState.value.copy(
                 apiBase = value,
                 testResult = null,
+                testError = null,
                 saveError = null,
                 reindexConfirmationRequired = false,
             )
@@ -101,6 +119,7 @@ class AiSettingsViewModel(
             _uiState.value.copy(
                 apiKey = value,
                 testResult = null,
+                testError = null,
                 saveError = null,
                 reindexConfirmationRequired = false,
             )
@@ -111,6 +130,7 @@ class AiSettingsViewModel(
             _uiState.value.copy(
                 chatModel = value,
                 testResult = null,
+                testError = null,
                 saveError = null,
                 reindexConfirmationRequired = false,
             )
@@ -120,26 +140,33 @@ class AiSettingsViewModel(
         val state = _uiState.value
         _uiState.value = state.copy(enabled = enabled)
         viewModelScope.launch {
-            repository.upsertConfig(
-                UpsertMilaConfigBody(
-                    chatApiBase = state.apiBase,
-                    embeddingApiBase = state.embeddingApiBase.ifBlank { state.apiBase },
-                    chatModel = state.chatModel,
-                    embeddingModel = state.embeddingModel,
-                    embeddingDim = state.embeddingDim,
-                    modelContextWindow = state.modelContextWindow,
-                    enabled = enabled,
-                    chatApiKey = state.apiKey.takeIf { it.isNotBlank() },
-                    embeddingApiKey = state.apiKey.takeIf { it.isNotBlank() },
-                ),
-            )
+            repository
+                .upsertConfig(
+                    UpsertMilaConfigBody(
+                        chatApiBase = state.apiBase,
+                        embeddingApiBase = state.embeddingApiBase.ifBlank { state.apiBase },
+                        chatModel = state.chatModel,
+                        embeddingModel = state.embeddingModel,
+                        embeddingDim = state.embeddingDim,
+                        modelContextWindow = state.modelContextWindow,
+                        enabled = enabled,
+                        chatApiKey = state.apiKey.takeIf { it.isNotBlank() },
+                        embeddingApiKey = state.apiKey.takeIf { it.isNotBlank() },
+                    ),
+                ).onFailure {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            enabled = state.enabled,
+                            saveError = UiMessage(Res.string.mila_save_failed),
+                        )
+                }
         }
     }
 
     fun save(onResult: (Boolean) -> Unit = {}) {
         val state = _uiState.value
         if (state.apiBase.isBlank() || state.chatModel.isBlank()) {
-            _uiState.value = state.copy(saveError = "API Base URL and Chat Model are required.")
+            _uiState.value = state.copy(saveError = UiMessage(Res.string.mila_required_settings))
             onResult(false)
             return
         }
@@ -152,7 +179,7 @@ class AiSettingsViewModel(
         if (embeddingIdentityChanged && !state.reindexConfirmationRequired) {
             _uiState.value =
                 state.copy(
-                    saveError = "Changing embeddings rebuilds Mila search for saved items. Tap Rebuild embeddings to confirm.",
+                    saveError = UiMessage(Res.string.mila_rebuild_embeddings_confirm),
                     reindexConfirmationRequired = true,
                 )
             onResult(false)
@@ -199,11 +226,11 @@ class AiSettingsViewModel(
                             reindexConfirmationRequired = false,
                         )
                     onResult(true)
-                }.onFailure { error ->
+                }.onFailure {
                     _uiState.value =
                         _uiState.value.copy(
                             isSaving = false,
-                            saveError = error.message ?: "Failed to save settings.",
+                            saveError = UiMessage(Res.string.mila_save_failed),
                         )
                     onResult(false)
                 }
@@ -212,10 +239,15 @@ class AiSettingsViewModel(
 
     fun deletePreset(presetId: String) {
         viewModelScope.launch {
-            repository.deletePromptPreset(presetId).onSuccess {
-                val updated = _uiState.value.presets.filter { it.id != presetId }
-                _uiState.value = _uiState.value.copy(presets = updated)
-            }
+            repository
+                .deletePromptPreset(presetId)
+                .onSuccess {
+                    val updated = _uiState.value.presets.filter { it.id != presetId }
+                    _uiState.value = _uiState.value.copy(presets = updated)
+                }.onFailure {
+                    _uiState.value =
+                        _uiState.value.copy(saveError = UiMessage(Res.string.mila_preset_delete_failed))
+                }
         }
     }
 
@@ -226,6 +258,9 @@ class AiSettingsViewModel(
                 .onSuccess { response ->
                     val flat = response.groups.flatMap { it.presets }
                     _uiState.value = _uiState.value.copy(presets = flat)
+                }.onFailure {
+                    _uiState.value =
+                        _uiState.value.copy(saveError = UiMessage(Res.string.mila_presets_load_failed))
                 }
         }
     }
@@ -233,7 +268,12 @@ class AiSettingsViewModel(
     fun testConnection() {
         val state = _uiState.value
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isTesting = true, testResult = null)
+            _uiState.value =
+                _uiState.value.copy(
+                    isTesting = true,
+                    testResult = null,
+                    testError = null,
+                )
             repository
                 .testConfig(
                     TestMilaConfigBody(
@@ -246,18 +286,18 @@ class AiSettingsViewModel(
                         embeddingApiKey = state.apiKey.takeIf { it.isNotBlank() },
                     ),
                 ).onSuccess { result ->
-                    _uiState.value = _uiState.value.copy(isTesting = false, testResult = result)
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isTesting = false,
+                            testResult = result,
+                            testError = null,
+                        )
                 }.onFailure {
                     _uiState.value =
                         _uiState.value.copy(
                             isTesting = false,
-                            testResult =
-                                TestMilaConfigResponse(
-                                    success = false,
-                                    chatModelOk = false,
-                                    embeddingModelOk = false,
-                                    error = it.message ?: "Connection failed.",
-                                ),
+                            testResult = null,
+                            testError = UiMessage(Res.string.mila_connection_failed),
                         )
                 }
         }

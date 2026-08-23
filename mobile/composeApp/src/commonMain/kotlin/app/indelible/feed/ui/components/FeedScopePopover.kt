@@ -53,6 +53,11 @@ import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_filter_seen
+import indelible.composeapp.generated.resources.feed_filter_show
+import indelible.composeapp.generated.resources.feed_filter_unseen
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Feed scope-switcher popover: the same left-anchored "popIn" sheet the library
@@ -112,8 +117,7 @@ fun FeedScopePopover(
                         start = IndelibleSpacing.step16,
                         top = IndelibleSpacing.step96 + IndelibleSpacing.step16,
                         bottom = IndelibleSpacing.step16,
-                    )
-                    .fillMaxWidth(POPOVER_WIDTH_FRACTION),
+                    ).fillMaxWidth(POPOVER_WIDTH_FRACTION),
         ) {
             Surface(
                 shape = IndelibleShape.xxl,
@@ -126,16 +130,16 @@ fun FeedScopePopover(
                             .verticalScroll(rememberScrollState())
                             .padding(IndelibleSpacing.step10),
                 ) {
-                    FeedScopeLabel("Show")
+                    FeedScopeLabel(stringResource(Res.string.feed_filter_show))
                     FeedScopeItem(
                         icon = IndelibleIcons.Inbox,
-                        name = "Unseen",
+                        name = stringResource(Res.string.feed_filter_unseen),
                         active = currentFilter == FeedFilter.UNSEEN,
                         onClick = { onSelectFilter(FeedFilter.UNSEEN) },
                     )
                     FeedScopeItem(
                         icon = Icons.Filled.Check,
-                        name = "Seen",
+                        name = stringResource(Res.string.feed_filter_seen),
                         active = currentFilter == FeedFilter.SEEN,
                         onClick = { onSelectFilter(FeedFilter.SEEN) },
                     )
@@ -148,7 +152,7 @@ fun FeedScopePopover(
 @Composable
 private fun FeedScopeLabel(text: String) {
     Text(
-        text = text.uppercase(),
+        text = text,
         style =
             MaterialTheme.typography.labelSmall.copy(
                 fontFamily = geistMonoFontFamily(),
@@ -209,9 +213,7 @@ private fun FeedScopeIcon(
     active: Boolean,
 ) {
     val borderColor = MaterialTheme.colorScheme.outline
-    val boxBackground =
-        if (active) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.surfaceContainerHigh
+    val boxBackground = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
     val iconTint = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier =
@@ -229,8 +231,7 @@ private fun FeedScopeIcon(
                             style = Stroke(width = sw),
                         )
                     }
-                }
-                .clip(IndelibleShape.md)
+                }.clip(IndelibleShape.md)
                 .background(boxBackground),
         contentAlignment = Alignment.Center,
     ) {

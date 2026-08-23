@@ -1,12 +1,13 @@
 package app.indelible.reader.playback
 
 import kotlinx.coroutines.flow.StateFlow
+import org.jetbrains.compose.resources.StringResource
 
 /** One synthetic narration voice the Listen player can read with. */
 data class ReaderVoice(
     val id: String,
-    val name: String,
-    val tagline: String,
+    val nameRes: StringResource,
+    val taglineRes: StringResource,
 )
 
 /**

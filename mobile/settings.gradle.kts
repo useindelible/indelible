@@ -33,3 +33,4 @@ plugins {
 }
 
 include(":composeApp")
+include(":i18n-checker")

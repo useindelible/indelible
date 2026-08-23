@@ -2,9 +2,19 @@ package app.indelible.feed.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.feed.model.FeedItemWithState
 import app.indelible.feed.model.PaginatedFeedItems
 import app.indelible.feed.repository.FeedRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_error_load
+import indelible.composeapp.generated.resources.feed_error_load_more
+import indelible.composeapp.generated.resources.feed_error_mark_all_seen
+import indelible.composeapp.generated.resources.feed_error_mark_seen
+import indelible.composeapp.generated.resources.feed_error_open
+import indelible.composeapp.generated.resources.feed_error_save
+import indelible.composeapp.generated.resources.feed_status_all_seen
+import indelible.composeapp.generated.resources.feed_status_saved_library
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -66,8 +76,8 @@ class FeedViewModel(
                         }
                     }
                     _effects.emit(FeedEffect.OpenReader(documentId))
-                }.onFailure { error ->
-                    _effects.emit(FeedEffect.ShowSnackbar(error.message ?: "Can't open this item"))
+                }.onFailure {
+                    _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_open)))
                 }
         }
     }
@@ -84,7 +94,7 @@ class FeedViewModel(
         viewModelScope.launch {
             repository
                 .markSeen(item.id)
-                .onFailure { error ->
+                .onFailure {
                     val restored =
                         (_uiState.value as? FeedUiState.Success)?.items?.toMutableList()
                             ?: mutableListOf()
@@ -92,7 +102,7 @@ class FeedViewModel(
                     _uiState.value = (_uiState.value as? FeedUiState.Success)
                         ?.copy(items = restored)
                         ?: FeedUiState.Success(items = restored, hasMore = false)
-                    _effects.emit(FeedEffect.ShowSnackbar(error.message ?: "Failed to mark as seen"))
+                    _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_mark_seen)))
                 }
         }
     }
@@ -105,13 +115,13 @@ class FeedViewModel(
             repository
                 .saveToLibrary(item.id)
                 .onSuccess {
-                    _effects.emit(FeedEffect.ShowSnackbar("Saved to Library"))
-                }.onFailure { error ->
+                    _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_status_saved_library)))
+                }.onFailure {
                     val latest = _uiState.value as? FeedUiState.Success
                     if (latest != null) {
                         _uiState.value = latest.copy(savedItemIds = latest.savedItemIds - item.id)
                     }
-                    _effects.emit(FeedEffect.ShowSnackbar(error.message ?: "Failed to save"))
+                    _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_save)))
                 }
         }
     }
@@ -125,12 +135,12 @@ class FeedViewModel(
             repository
                 .markAllSeen()
                 .onSuccess {
-                    _effects.emit(FeedEffect.ShowSnackbar("All items marked as seen"))
-                }.onFailure { error ->
+                    _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_status_all_seen)))
+                }.onFailure {
                     _uiState.value = (_uiState.value as? FeedUiState.Success)
                         ?.copy(items = previousItems)
                         ?: FeedUiState.Success(items = previousItems, hasMore = false)
-                    _effects.emit(FeedEffect.ShowSnackbar(error.message ?: "Failed to mark all as seen"))
+                    _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_mark_all_seen)))
                 }
         }
     }
@@ -150,8 +160,8 @@ class FeedViewModel(
                     cursor = if (append) nextCursor else null,
                 ).onSuccess { paginated ->
                     _uiState.value = buildSuccessState(paginated, append, isRefresh)
-                }.onFailure { error ->
-                    handleLoadFailure(append, error)
+                }.onFailure {
+                    handleLoadFailure(append)
                 }
         }
     }
@@ -186,18 +196,15 @@ class FeedViewModel(
         )
     }
 
-    private suspend fun handleLoadFailure(
-        append: Boolean,
-        error: Throwable,
-    ) {
+    private suspend fun handleLoadFailure(append: Boolean) {
         if (!append) {
-            _uiState.value = FeedUiState.Error(error.message ?: "Failed to load feed")
+            _uiState.value = FeedUiState.Error(UiMessage(Res.string.feed_error_load))
             return
         }
         (_uiState.value as? FeedUiState.Success)?.let { current ->
             _uiState.value = current.copy(isLoadingMore = false)
         }
-        _effects.emit(FeedEffect.ShowSnackbar(error.message ?: "Failed to load more items"))
+        _effects.emit(FeedEffect.ShowSnackbar(UiMessage(Res.string.feed_error_load_more)))
     }
 
     private suspend fun ensureSourceCount(force: Boolean): Pair<Int?, Boolean> {

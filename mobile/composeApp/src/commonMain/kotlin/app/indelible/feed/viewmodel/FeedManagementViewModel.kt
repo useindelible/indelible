@@ -2,9 +2,14 @@ package app.indelible.feed.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.feed.model.FeedSubscription
 import app.indelible.feed.model.UpdateSubscriptionRequest
 import app.indelible.feed.repository.FeedRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.feed_error_delete
+import indelible.composeapp.generated.resources.feed_error_load_subscriptions
+import indelible.composeapp.generated.resources.feed_error_update
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,13 +26,13 @@ sealed class FeedManagementUiState {
     ) : FeedManagementUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : FeedManagementUiState()
 }
 
 sealed class FeedManagementEffect {
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : FeedManagementEffect()
 }
 
@@ -47,10 +52,10 @@ class FeedManagementViewModel(
                 .listSubscriptions(cursor = null, limit = SUBSCRIPTION_PAGE_SIZE)
                 .onSuccess { paginated ->
                     _uiState.value = FeedManagementUiState.Success(paginated.data)
-                }.onFailure { error ->
+                }.onFailure {
                     _uiState.value =
                         FeedManagementUiState.Error(
-                            error.message ?: "Failed to load subscriptions",
+                            UiMessage(Res.string.feed_error_load_subscriptions),
                         )
                 }
         }
@@ -63,7 +68,7 @@ class FeedManagementViewModel(
         _uiState.value = current.copy(subscriptions = current.subscriptions - removed)
 
         viewModelScope.launch {
-            repository.unsubscribe(subscriptionId).onFailure { error ->
+            repository.unsubscribe(subscriptionId).onFailure {
                 val restored =
                     (_uiState.value as? FeedManagementUiState.Success)
                         ?.subscriptions
@@ -74,7 +79,7 @@ class FeedManagementViewModel(
                     ?.copy(subscriptions = restored)
                     ?: FeedManagementUiState.Success(restored)
                 _effects.emit(
-                    FeedManagementEffect.ShowSnackbar(error.message ?: "Failed to delete"),
+                    FeedManagementEffect.ShowSnackbar(UiMessage(Res.string.feed_error_delete)),
                 )
             }
         }
@@ -119,7 +124,7 @@ class FeedManagementViewModel(
                         val finalList = s.subscriptions.toMutableList().also { it[idx] = updated }
                         _uiState.value = s.copy(subscriptions = finalList)
                     }
-                }.onFailure { error ->
+                }.onFailure {
                     val s = _uiState.value as? FeedManagementUiState.Success
                     if (s != null) {
                         val idx = s.subscriptions.indexOfFirst { it.id == subscriptionId }
@@ -132,7 +137,7 @@ class FeedManagementViewModel(
                         }
                     }
                     _effects.emit(
-                        FeedManagementEffect.ShowSnackbar(error.message ?: "Failed to update"),
+                        FeedManagementEffect.ShowSnackbar(UiMessage(Res.string.feed_error_update)),
                     )
                 }
         }

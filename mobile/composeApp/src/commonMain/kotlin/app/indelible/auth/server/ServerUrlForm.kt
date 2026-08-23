@@ -1,10 +1,14 @@
 package app.indelible.auth.server
 
+import app.indelible.core.i18n.UiMessage
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.auth_server_address_invalid
+import indelible.composeapp.generated.resources.auth_server_address_required
 import io.ktor.http.parseUrl
 
 sealed interface ServerUrlValidation {
     data class Invalid(
-        val message: String,
+        val message: UiMessage,
     ) : ServerUrlValidation
 
     data class NeedsCleartextConsent(
@@ -17,8 +21,6 @@ sealed interface ServerUrlValidation {
 }
 
 object ServerUrlForm {
-    const val EMPTY_ADDRESS_MESSAGE = "Enter your server address."
-    const val INVALID_ADDRESS_MESSAGE = "That doesn't look like a valid address."
     const val SCHEME_STUB = "https://"
 
     // Mirrors the loopback exceptions in androidMain res/xml/network_security_config.xml:
@@ -43,15 +45,19 @@ object ServerUrlForm {
 
     fun validate(input: String): ServerUrlValidation {
         val normalized = normalize(input)
-        if (normalized.isEmpty()) return ServerUrlValidation.Invalid(EMPTY_ADDRESS_MESSAGE)
-        val url = parseUrl(normalized) ?: return ServerUrlValidation.Invalid(INVALID_ADDRESS_MESSAGE)
+        if (normalized.isEmpty()) {
+            return ServerUrlValidation.Invalid(UiMessage(Res.string.auth_server_address_required))
+        }
+        val url =
+            parseUrl(normalized)
+                ?: return ServerUrlValidation.Invalid(UiMessage(Res.string.auth_server_address_invalid))
         val scheme = url.protocol.name
         if (scheme != "http" && scheme != "https") {
-            return ServerUrlValidation.Invalid(INVALID_ADDRESS_MESSAGE)
+            return ServerUrlValidation.Invalid(UiMessage(Res.string.auth_server_address_invalid))
         }
         val host = url.host
         if (host.isBlank() || host.any { it.isWhitespace() }) {
-            return ServerUrlValidation.Invalid(INVALID_ADDRESS_MESSAGE)
+            return ServerUrlValidation.Invalid(UiMessage(Res.string.auth_server_address_invalid))
         }
         if (scheme == "http" && host !in LOOPBACK_HOSTS) {
             return ServerUrlValidation.NeedsCleartextConsent(normalized)

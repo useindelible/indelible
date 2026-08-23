@@ -1,6 +1,7 @@
 package app.indelible.reader.ui.components
 
 import androidx.compose.runtime.Composable
+import app.indelible.core.i18n.resolve
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderPreferences
@@ -9,6 +10,15 @@ import app.indelible.reader.playback.PlaybackState
 import app.indelible.reader.playback.ReaderVoice
 import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.TocStatus
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_action_listen
+import indelible.composeapp.generated.resources.reader_action_move
+import indelible.composeapp.generated.resources.reader_display
+import indelible.composeapp.generated.resources.reader_highlight
+import indelible.composeapp.generated.resources.reader_item_details
+import indelible.composeapp.generated.resources.reader_move_requires_library
+import indelible.composeapp.generated.resources.reader_notes_tags
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Bottom-anchored reader panels driven by the dock's [DataPanel] selection. Each
@@ -43,7 +53,7 @@ fun ReaderDockPanels(
 ) {
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.AA,
-        eyebrow = "Display",
+        eyebrow = stringResource(Res.string.reader_display),
         onDismiss = onDismiss,
     ) {
         DisplaySettingsPanel(
@@ -54,7 +64,7 @@ fun ReaderDockPanels(
 
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.HL,
-        eyebrow = "Highlight",
+        eyebrow = stringResource(Res.string.reader_highlight),
         onDismiss = onDismiss,
     ) {
         HighlightStylePanel(
@@ -67,7 +77,7 @@ fun ReaderDockPanels(
 
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.NOTE,
-        eyebrow = "Notes & Tags",
+        eyebrow = stringResource(Res.string.reader_notes_tags),
         onDismiss = onDismiss,
     ) {
         NoteTagsSwitcherSheet(
@@ -83,7 +93,7 @@ fun ReaderDockPanels(
 
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.MOVE,
-        eyebrow = "Move",
+        eyebrow = stringResource(Res.string.reader_action_move),
         onDismiss = onDismiss,
     ) {
         if (state.item.saved) {
@@ -94,14 +104,14 @@ fun ReaderDockPanels(
         } else {
             ReaderSaveToLibraryPrompt(
                 onSave = onSaveToLibrary,
-                message = "Save this item to your library to move it between Inbox, Later, and Archive.",
+                message = stringResource(Res.string.reader_move_requires_library),
             )
         }
     }
 
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.INFO,
-        eyebrow = "Item details",
+        eyebrow = stringResource(Res.string.reader_item_details),
         onDismiss = onDismiss,
         fillHeightFraction = 0.82f,
     ) {
@@ -122,7 +132,7 @@ fun ReaderDockPanels(
 
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.CONTENTS,
-        eyebrow = contentsEyebrow(state.toc.status, state.progress.toInt()),
+        eyebrow = contentsEyebrow(state.toc.status, state.progress.toInt()).resolve(),
         onDismiss = onDismiss,
         fillHeightFraction = if (state.toc.status == TocStatus.READY) 0.6f else null,
     ) {
@@ -134,7 +144,7 @@ fun ReaderDockPanels(
 
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.LISTEN,
-        eyebrow = "Listen",
+        eyebrow = stringResource(Res.string.reader_action_listen),
         onDismiss = onDismiss,
     ) {
         ListenPanel(

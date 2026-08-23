@@ -2,8 +2,11 @@ package app.indelible.share.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.share.SaveResult
 import app.indelible.share.SaveUrlUseCase
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.share_error
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +29,7 @@ class ShareViewModel(
                     is SaveResult.Queued -> ShareUiState.Queued
                     is SaveResult.AuthRequired -> ShareUiState.AuthRequired
                     is SaveResult.InvalidUrl -> ShareUiState.InvalidUrl
-                    is SaveResult.Error -> ShareUiState.Error(result.message)
+                    is SaveResult.Error -> ShareUiState.Error(UiMessage(Res.string.share_error))
                 }
         }
     }

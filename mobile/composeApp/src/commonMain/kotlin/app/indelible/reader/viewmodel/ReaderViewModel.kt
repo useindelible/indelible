@@ -2,6 +2,7 @@ package app.indelible.reader.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.ArticleTocStatus
 import app.indelible.reader.model.DataPanel
@@ -14,6 +15,18 @@ import app.indelible.reader.playback.ReaderPlaybackController
 import app.indelible.reader.playback.ReaderVoice
 import app.indelible.reader.playback.StubPlaybackController
 import app.indelible.reader.repository.ReaderRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_error_create_highlight
+import indelible.composeapp.generated.resources.reader_error_delete_highlight
+import indelible.composeapp.generated.resources.reader_error_delete_note
+import indelible.composeapp.generated.resources.reader_error_load
+import indelible.composeapp.generated.resources.reader_error_move
+import indelible.composeapp.generated.resources.reader_error_retry_content
+import indelible.composeapp.generated.resources.reader_error_save_library
+import indelible.composeapp.generated.resources.reader_error_save_note
+import indelible.composeapp.generated.resources.reader_error_save_tags
+import indelible.composeapp.generated.resources.reader_error_update_highlight_color
+import indelible.composeapp.generated.resources.reader_saved_library
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,9 +108,8 @@ class ReaderViewModel(
                     loadHighlights()
                     loadItemNoteAndTags()
                     loadEntities()
-                }.onFailure { error ->
-                    _uiState.value =
-                        ReaderUiState.Error(error.message ?: "Failed to load item")
+                }.onFailure {
+                    _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
                 }
         }
     }
@@ -215,7 +227,7 @@ class ReaderViewModel(
                         )
                     }
                     loadHtmlContent()
-                }.onFailure { error ->
+                }.onFailure {
                     updateSuccessState {
                         it.copy(
                             contentStatus = ReaderContentStatus.UNAVAILABLE,
@@ -223,7 +235,9 @@ class ReaderViewModel(
                             retryAfterSeconds = null,
                         )
                     }
-                    _effects.emit(ReaderEffect.ShowSnackbar(error.message ?: "Failed to retry content"))
+                    _effects.emit(
+                        ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_retry_content)),
+                    )
                 }
         }
     }
@@ -299,9 +313,11 @@ class ReaderViewModel(
                         .getItem(documentId)
                         .onSuccess { refreshed -> updateSuccessState { it.copy(item = refreshed) } }
                     loadItemNoteAndTags()
-                    _effects.emit(ReaderEffect.ShowSnackbar("Saved to Library"))
-                }.onFailure { error ->
-                    _effects.emit(ReaderEffect.ShowSnackbar(error.message ?: "Couldn't save to Library"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_saved_library)))
+                }.onFailure {
+                    _effects.emit(
+                        ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_library)),
+                    )
                 }
         }
     }
@@ -394,7 +410,7 @@ class ReaderViewModel(
                         state.copy(highlights = state.highlights + highlight)
                     }
                 }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to create highlight"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_create_highlight)))
                 }
         }
     }
@@ -420,7 +436,7 @@ class ReaderViewModel(
                     }
                     onCreated(highlight.id)
                 }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to create highlight"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_create_highlight)))
                 }
         }
     }
@@ -440,7 +456,7 @@ class ReaderViewModel(
                             s.copy(highlights = s.highlights + removedHighlight)
                         }
                     }
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to delete highlight"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_delete_highlight)))
                 }
         }
     }
@@ -463,7 +479,9 @@ class ReaderViewModel(
                         )
                     }
                 }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to update color"))
+                    _effects.emit(
+                        ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_update_highlight_color)),
+                    )
                 }
         }
     }
@@ -485,7 +503,7 @@ class ReaderViewModel(
                         )
                     }
                 }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to save note"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_note)))
                 }
         }
     }
@@ -504,7 +522,7 @@ class ReaderViewModel(
                         )
                     }
                 }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to delete note"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_delete_note)))
                 }
         }
     }
@@ -525,7 +543,7 @@ class ReaderViewModel(
             repository
                 .setHighlightTags(highlightId, tags)
                 .onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to save tags"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_tags)))
                 }
         }
     }
@@ -545,7 +563,9 @@ class ReaderViewModel(
             repository
                 .upsertItemNote(documentId, body)
                 .onSuccess { saved -> updateSuccessState { it.copy(itemNote = saved) } }
-                .onFailure { _effects.emit(ReaderEffect.ShowSnackbar("Failed to save note")) }
+                .onFailure {
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_note)))
+                }
         }
     }
 
@@ -557,7 +577,7 @@ class ReaderViewModel(
             repository
                 .triageItem(libraryEntryId, state)
                 .onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar("Failed to move item"))
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_move)))
                 }
         }
     }
@@ -569,7 +589,9 @@ class ReaderViewModel(
             repository
                 .setItemTags(libraryEntryId, tags)
                 .onSuccess { saved -> updateSuccessState { it.copy(itemTags = saved) } }
-                .onFailure { _effects.emit(ReaderEffect.ShowSnackbar("Failed to save tags")) }
+                .onFailure {
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_tags)))
+                }
         }
     }
 

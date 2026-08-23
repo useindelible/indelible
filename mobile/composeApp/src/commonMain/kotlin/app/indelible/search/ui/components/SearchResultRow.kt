@@ -19,14 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import app.indelible.core.i18n.LocaleFormatters
+import app.indelible.core.i18n.LocalizedDateStyle
+import app.indelible.core.i18n.relativeTimeText
 import app.indelible.search.model.SearchResult
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun SearchResultRow(
@@ -142,6 +143,7 @@ private fun contentTypeEmoji(contentType: String): String =
         else -> "\uD83D\uDCF0"
     }
 
+@Composable
 private fun buildMeta(result: SearchResult): String {
     val domain =
         result.url?.let {
@@ -154,29 +156,15 @@ private fun buildMeta(result: SearchResult): String {
     return listOfNotNull(domain, date).joinToString(" · ")
 }
 
-private const val DAYS_PER_WEEK = 7
 private const val DAYS_PER_MONTH = 30
-private const val MONTH_ABBREVIATION_LENGTH = 3
 
+@Composable
 private fun formatRelativeDate(instant: Instant?): String {
     if (instant == null) return ""
-    return runCatching {
-        val diff = Clock.System.now() - instant
-        val diffDays = diff.inWholeDays
-        when {
-            diffDays == 0L ->
-                if (diff.inWholeHours == 0L) "${diff.inWholeMinutes}m" else "${diff.inWholeHours}h"
-            diffDays < DAYS_PER_WEEK -> "${diffDays}d"
-            diffDays < DAYS_PER_MONTH -> "${diffDays / DAYS_PER_WEEK}w"
-            else -> {
-                val ld = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-                val month =
-                    ld.month.name
-                        .lowercase()
-                        .replaceFirstChar { it.uppercase() }
-                        .take(MONTH_ABBREVIATION_LENGTH)
-                "$month ${ld.dayOfMonth}"
-            }
-        }
-    }.getOrElse { "" }
+    val now = Clock.System.now()
+    return if ((now - instant).inWholeDays < DAYS_PER_MONTH) {
+        relativeTimeText(instant, now)
+    } else {
+        LocaleFormatters.date(instant, LocalizedDateStyle.MONTH_DAY)
+    }
 }

@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import app.indelible.core.i18n.resolve
 import app.indelible.profile.ui.components.PreferenceDropdownRow
 import app.indelible.profile.ui.components.SettingsSection
 import app.indelible.profile.ui.components.ToggleRow
@@ -34,6 +35,18 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_back
+import indelible.composeapp.generated.resources.common_save
+import indelible.composeapp.generated.resources.mila_delete_preset
+import indelible.composeapp.generated.resources.mila_name
+import indelible.composeapp.generated.resources.mila_new_preset
+import indelible.composeapp.generated.resources.mila_preset
+import indelible.composeapp.generated.resources.mila_preset_action
+import indelible.composeapp.generated.resources.mila_preset_default_description
+import indelible.composeapp.generated.resources.mila_set_default
+import indelible.composeapp.generated.resources.mila_system_prompt
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +73,7 @@ fun PromptPresetEditScreen(
                             if (state.isBuiltIn) {
                                 state.name
                             } else if (state.name.isBlank()) {
-                                "New Preset"
+                                stringResource(Res.string.mila_new_preset)
                             } else {
                                 state.name
                             },
@@ -71,7 +84,7 @@ fun PromptPresetEditScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.common_back),
                         )
                     }
                 },
@@ -85,11 +98,11 @@ fun PromptPresetEditScreen(
                     .padding(top = paddingValues.calculateTopPadding())
                     .verticalScroll(rememberScrollState()),
         ) {
-            SettingsSection(title = "Preset") {
+            SettingsSection(title = stringResource(Res.string.mila_preset)) {
                 IndelibleTextField(
                     value = state.name,
                     onValueChange = { viewModel.updateName(it) },
-                    label = "Name",
+                    label = stringResource(Res.string.mila_name),
                     enabled = isEditing,
                     imeAction = ImeAction.Next,
                     modifier =
@@ -100,26 +113,30 @@ fun PromptPresetEditScreen(
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 PreferenceDropdownRow(
-                    label = "Action",
+                    label = stringResource(Res.string.mila_preset_action),
                     currentValue = state.action,
-                    displayName = { it.replaceFirstChar { c -> c.uppercase() } },
+                    displayName = { presetActionLabel(it) },
                     options = PRESET_ACTIONS,
                     onSelected = { if (!viewModel.isExistingPreset) viewModel.updateAction(it) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 ToggleRow(
-                    label = "Set as Default",
-                    sublabel = "Use this preset by default for the ${state.action} action",
+                    label = stringResource(Res.string.mila_set_default),
+                    sublabel =
+                        stringResource(
+                            Res.string.mila_preset_default_description,
+                            presetActionLabel(state.action),
+                        ),
                     checked = state.isDefault,
                     onCheckedChange = { if (isEditing) viewModel.updateIsDefault(it) },
                 )
             }
 
-            SettingsSection(title = "System Prompt") {
+            SettingsSection(title = stringResource(Res.string.mila_system_prompt)) {
                 IndelibleTextField(
                     value = state.systemPrompt,
                     onValueChange = { viewModel.updateSystemPrompt(it) },
-                    label = "System Prompt",
+                    label = stringResource(Res.string.mila_system_prompt),
                     enabled = isEditing,
                     singleLine = false,
                     minLines = 6,
@@ -135,7 +152,7 @@ fun PromptPresetEditScreen(
 
             if (state.saveError != null) {
                 Text(
-                    text = state.saveError!!,
+                    text = state.saveError!!.resolve(),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier =
@@ -156,14 +173,14 @@ fun PromptPresetEditScreen(
                     verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
                 ) {
                     IndelibleButton(
-                        text = "Save",
+                        text = stringResource(Res.string.common_save),
                         onClick = { viewModel.save() },
                         isLoading = state.isSaving,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     if (state.action.isNotBlank() && !state.isBuiltIn && viewModel.isExistingPreset) {
                         IndelibleButton(
-                            text = "Delete Preset",
+                            text = stringResource(Res.string.mila_delete_preset),
                             onClick = { viewModel.delete() },
                             isLoading = state.isDeleting,
                             style = IndelibleButtonStyle.Destructive,

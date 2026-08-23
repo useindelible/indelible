@@ -15,17 +15,16 @@ import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderPreferences
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
+import platform.UIKit.UIApplication
+import platform.UIKit.UIColor
+import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
 import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationAction
 import platform.WebKit.WKNavigationActionPolicy
 import platform.WebKit.WKNavigationDelegateProtocol
 import platform.WebKit.WKScriptMessage
 import platform.WebKit.WKScriptMessageHandlerProtocol
-import platform.UIKit.UIApplication
-import platform.UIKit.UIColor
-import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
 import platform.WebKit.WKUserContentController
 import platform.WebKit.WKUserScript
 import platform.WebKit.WKUserScriptInjectionTime
@@ -53,8 +52,7 @@ actual fun HtmlReaderView(
     articleTitle: String,
     articleAuthor: String?,
     articleDomain: String?,
-    articlePublishedAt: Instant?,
-    articleReadingTimeMinutes: Int?,
+    localization: ReaderHtmlLocalization,
     summaryHtml: String?,
     summaryPoints: List<String>,
     onSummaryAction: (String) -> Unit,
@@ -70,25 +68,25 @@ actual fun HtmlReaderView(
             preferences,
             highlights,
             isDarkMode,
+            localization,
             summaryHtml,
             summaryPoints,
             topContentPaddingPx,
             artwork,
         ) {
             ReaderHtmlTemplate.build(
-                htmlContent,
-                preferences,
-                highlights,
-                isDarkMode,
-                articleTitle,
-                articleAuthor,
-                articleDomain,
-                articlePublishedAt,
-                articleReadingTimeMinutes,
-                summaryHtml,
-                summaryPoints,
-                topContentPaddingPx,
-                artwork,
+                articleHtml = htmlContent,
+                preferences = preferences,
+                highlights = highlights,
+                localization = localization,
+                isDarkMode = isDarkMode,
+                articleTitle = articleTitle,
+                articleAuthor = articleAuthor,
+                articleDomain = articleDomain,
+                summaryHtml = summaryHtml,
+                summaryPoints = summaryPoints,
+                topContentPaddingPx = topContentPaddingPx,
+                artwork = artwork,
             )
         }
 

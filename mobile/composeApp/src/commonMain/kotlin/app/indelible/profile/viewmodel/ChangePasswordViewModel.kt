@@ -2,8 +2,13 @@ package app.indelible.profile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiException
 import app.indelible.profile.repository.AccountRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.profile_password_change_failed
+import indelible.composeapp.generated.resources.profile_password_changed
+import indelible.composeapp.generated.resources.profile_password_incorrect
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -14,7 +19,7 @@ import kotlinx.coroutines.launch
 
 sealed class ChangePasswordEffect {
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : ChangePasswordEffect()
 
     data object NavigateBack : ChangePasswordEffect()
@@ -41,15 +46,17 @@ class ChangePasswordViewModel(
                 .changePassword(currentPassword, newPassword)
                 .onSuccess {
                     _isLoading.value = false
-                    _effects.emit(ChangePasswordEffect.ShowSnackbar("Password changed successfully"))
+                    _effects.emit(
+                        ChangePasswordEffect.ShowSnackbar(UiMessage(Res.string.profile_password_changed)),
+                    )
                     _effects.emit(ChangePasswordEffect.NavigateBack)
                 }.onFailure { error ->
                     _isLoading.value = false
                     val message =
                         when {
                             error is ApiException && error.statusCode == HTTP_UNAUTHORIZED ->
-                                "Current password is incorrect"
-                            else -> error.message ?: "Failed to change password"
+                                UiMessage(Res.string.profile_password_incorrect)
+                            else -> UiMessage(Res.string.profile_password_change_failed)
                         }
                     _effects.emit(ChangePasswordEffect.ShowSnackbar(message))
                 }

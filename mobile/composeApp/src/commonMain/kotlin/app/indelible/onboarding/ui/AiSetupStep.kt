@@ -17,6 +17,18 @@ import app.indelible.onboarding.viewmodel.AiProvider
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_continue
+import indelible.composeapp.generated.resources.onboarding_ai_api_key_label
+import indelible.composeapp.generated.resources.onboarding_ai_ollama_description
+import indelible.composeapp.generated.resources.onboarding_ai_ollama_endpoint_label
+import indelible.composeapp.generated.resources.onboarding_ai_openai_description
+import indelible.composeapp.generated.resources.onboarding_ai_privacy
+import indelible.composeapp.generated.resources.onboarding_ai_subtitle
+import indelible.composeapp.generated.resources.onboarding_ai_title
+import indelible.composeapp.generated.resources.onboarding_skip
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AiSetupStep(
@@ -29,14 +41,14 @@ fun AiSetupStep(
     modifier: Modifier = Modifier,
 ) {
     StepCard(
-        title = "AI Assistant",
-        subtitle = "Set up Mila, your AI reading companion",
+        title = stringResource(Res.string.onboarding_ai_title),
+        subtitle = stringResource(Res.string.onboarding_ai_subtitle),
         modifier = modifier,
     ) {
         AiProvider.entries.filter { it != AiProvider.NONE }.forEach { provider ->
             ProviderCard(
-                title = provider.label,
-                description = aiProviderDescription(provider),
+                title = stringResource(provider.labelRes),
+                description = stringResource(aiProviderDescriptionRes(provider)),
                 isSelected = selectedProvider == provider,
                 onClick = { onSelectProvider(provider) },
             )
@@ -48,14 +60,14 @@ fun AiSetupStep(
             IndelibleTextField(
                 value = apiKeyInput,
                 onValueChange = onApiKeyChange,
-                label = "Ollama Endpoint URL",
+                label = stringResource(Res.string.onboarding_ai_ollama_endpoint_label),
             )
         } else if (selectedProvider != AiProvider.NONE) {
             Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
             IndelibleTextField(
                 value = apiKeyInput,
                 onValueChange = onApiKeyChange,
-                label = "API Key",
+                label = stringResource(Res.string.onboarding_ai_api_key_label),
                 isPassword = true,
             )
         }
@@ -71,9 +83,7 @@ fun AiSetupStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text =
-                    "Your API keys are stored securely and never shared. " +
-                        "Mila uses them to summarize, tag, and help you find your saved content.",
+                text = stringResource(Res.string.onboarding_ai_privacy),
                 style = MaterialTheme.typography.bodySmall, // footnote: 12sp/400
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier =
@@ -85,7 +95,7 @@ fun AiSetupStep(
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step32))
 
-        IndelibleButton(text = "Continue", onClick = onContinue)
+        IndelibleButton(text = stringResource(Res.string.common_continue), onClick = onContinue)
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step8))
 
@@ -94,7 +104,7 @@ fun AiSetupStep(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                text = "Skip",
+                text = stringResource(Res.string.onboarding_skip),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -102,9 +112,9 @@ fun AiSetupStep(
     }
 }
 
-private fun aiProviderDescription(provider: AiProvider): String =
+private fun aiProviderDescriptionRes(provider: AiProvider): StringResource =
     when (provider) {
-        AiProvider.NONE -> ""
-        AiProvider.OLLAMA -> "Run AI models locally on your own hardware"
-        AiProvider.OPENAI -> "Use OpenAI-compatible providers, including OpenRouter for Claude"
+        AiProvider.NONE -> error("NONE has no onboarding description")
+        AiProvider.OLLAMA -> Res.string.onboarding_ai_ollama_description
+        AiProvider.OPENAI -> Res.string.onboarding_ai_openai_description
     }

@@ -24,6 +24,10 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.sidebar_close_menu_cd
+import indelible.composeapp.generated.resources.sidebar_my_library
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Drawer profile header (prototype `.dw-top`): avatar, display name, and a
@@ -64,7 +68,7 @@ fun SidebarProfileHeader(
         Spacer(modifier = Modifier.width(IndelibleSpacing.step12))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = displayName.ifEmpty { "My Library" },
+                text = displayName.ifEmpty { stringResource(Res.string.sidebar_my_library) },
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -84,7 +88,7 @@ fun SidebarProfileHeader(
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Close menu",
+                    contentDescription = stringResource(Res.string.sidebar_close_menu_cd),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

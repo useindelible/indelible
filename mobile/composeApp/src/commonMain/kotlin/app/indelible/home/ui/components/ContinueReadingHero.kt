@@ -26,6 +26,14 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_continue_reading
+import indelible.composeapp.generated.resources.home_minutes_left
+import indelible.composeapp.generated.resources.home_pick_up
+import indelible.composeapp.generated.resources.home_progress_percent
+import indelible.composeapp.generated.resources.home_resume
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /**
@@ -45,7 +53,11 @@ fun ContinueReadingHero(
     val percent = (progress * PERCENT_SCALE).roundToInt()
     val minutesLeft = item.readingTimeMinutes?.let { (it * (1f - progress)).roundToInt() }
     val footLabel =
-        if (minutesLeft != null && minutesLeft > 0) "$minutesLeft min left" else "Pick up where you left off"
+        if (minutesLeft != null && minutesLeft > 0) {
+            pluralStringResource(Res.plurals.home_minutes_left, minutesLeft, minutesLeft)
+        } else {
+            stringResource(Res.string.home_pick_up)
+        }
 
     Surface(
         onClick = onOpen,
@@ -60,12 +72,12 @@ fun ContinueReadingHero(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "CONTINUE READING",
+                    text = stringResource(Res.string.home_continue_reading),
                     style = homeEyebrowStyle(),
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "$percent%",
+                    text = stringResource(Res.string.home_progress_percent, percent),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -118,7 +130,7 @@ fun ContinueReadingHero(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 IndelibleButton(
-                    text = "Resume",
+                    text = stringResource(Res.string.home_resume),
                     onClick = onResume,
                     compact = true,
                 )

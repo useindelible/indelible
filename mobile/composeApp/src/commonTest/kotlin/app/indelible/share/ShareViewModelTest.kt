@@ -4,6 +4,8 @@ import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.share.viewmodel.ShareUiState
 import app.indelible.share.viewmodel.ShareViewModel
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.share_error
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -19,6 +21,7 @@ import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -126,5 +129,21 @@ class ShareViewModelTest {
             val terminal = viewModel.uiState.first { it !is ShareUiState.Idle && it !is ShareUiState.Saving }
 
             assertIs<ShareUiState.Queued>(terminal)
+        }
+
+    @Test
+    fun uiStateUsesLocalizedFallbackForServerFailure() =
+        runTest {
+            val tokenStorage = InMemoryTokenStorage().apply { saveToken("valid-token") }
+            val engine = MockEngine { respond("upstream details", HttpStatusCode.InternalServerError) }
+            val apiClient = ApiClient(tokenStorage, engine = engine)
+            val useCase = SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository())
+            val viewModel = ShareViewModel(useCase)
+
+            viewModel.save(validUrl)
+            val terminal = viewModel.uiState.first { it !is ShareUiState.Idle && it !is ShareUiState.Saving }
+
+            val error = assertIs<ShareUiState.Error>(terminal)
+            assertEquals(Res.string.share_error, error.message.resource)
         }
 }
