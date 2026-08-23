@@ -688,6 +688,7 @@
     <string name="reader_typeface_mono">Chasse fixe</string>
     <string name="reader_typeface_sans">Sans empattements</string>
     <string name="reader_typeface_serif">Avec empattements</string>
+    <string name="reader_unavailable_desktop">Le lecteur n’est pas disponible sur ordinateur</string>
     <string name="reader_voice_ava">Ava</string>
     <string name="reader_voice_ava_tagline">Chaleureuse · Narrative</string>
     <string name="reader_voice_fallback">Voix</string>

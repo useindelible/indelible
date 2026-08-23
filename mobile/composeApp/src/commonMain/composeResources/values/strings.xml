@@ -688,6 +688,7 @@
     <string name="reader_typeface_mono">Mono</string>
     <string name="reader_typeface_sans">Sans</string>
     <string name="reader_typeface_serif">Serif</string>
+    <string name="reader_unavailable_desktop">Reader not available on desktop</string>
     <string name="reader_voice_ava">Ava</string>
     <string name="reader_voice_ava_tagline">Warm · Narrative</string>
     <string name="reader_voice_fallback">Voice</string>

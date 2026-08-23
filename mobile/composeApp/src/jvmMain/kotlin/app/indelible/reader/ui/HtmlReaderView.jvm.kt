@@ -9,6 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderPreferences
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_unavailable_desktop
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 actual fun HtmlReaderView(
@@ -44,7 +47,7 @@ actual fun HtmlReaderView(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "Reader not available on desktop",
+            text = stringResource(Res.string.reader_unavailable_desktop),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
