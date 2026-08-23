@@ -2,6 +2,8 @@
 	import type { DocumentListEntry } from '$lib/api';
 	import SummarySection from '$lib/components/library/SummarySection.svelte';
 	import type { BookMetadata } from './book-source';
+	import { date, locale, t } from '$lib/i18n';
+	import { relativeTime } from '$lib/utils/relative-time';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -13,7 +15,7 @@
 
 	const formattedDate = $derived(
 		item.published_at
-			? new Date(item.published_at).toLocaleDateString('en-US', {
+			? $date(new Date(item.published_at), {
 					year: 'numeric',
 					month: 'short',
 					day: 'numeric'
@@ -21,56 +23,64 @@
 			: null
 	);
 
-	const savedAgo = $derived(
-		(() => {
-			const diff = Date.now() - new Date(item.saved_at).getTime();
-			const days = Math.floor(diff / 86400000);
-			if (days === 0) return 'Today';
-			if (days === 1) return 'Yesterday';
-			if (days < 7) return `${days} days ago`;
-			const weeks = Math.floor(days / 7);
-			if (weeks < 5) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-			const months = Math.floor(days / 30);
-			return `${months} month${months > 1 ? 's' : ''} ago`;
-		})()
-	);
+	const savedAgo = $derived.by(() => {
+		void $locale;
+		return relativeTime(item.saved_at) ?? $date(new Date(item.saved_at));
+	});
 
-	const lastReadLabel = $derived(
-		(() => {
-			if (!item.last_read_at) return 'Never';
-			const diff = Date.now() - new Date(item.last_read_at).getTime();
-			const minutes = Math.floor(diff / 60000);
-			if (minutes < 2) return 'Just now';
-			if (minutes < 60) return `${minutes}m ago`;
-			const hours = Math.floor(minutes / 60);
-			if (hours < 24) return `${hours}h ago`;
-			const days = Math.floor(hours / 24);
-			if (days === 1) return 'Yesterday';
-			return `${days} days ago`;
-		})()
-	);
+	const lastReadLabel = $derived.by(() => {
+		if (!item.last_read_at) return $t('reader_never');
+		void $locale;
+		return relativeTime(item.last_read_at) ?? $date(new Date(item.last_read_at));
+	});
 
 	const totalPages = $derived(bookMetadata.estimatedPages ?? 0);
 	const pagesRead = $derived(Math.round((progress / 100) * totalPages));
 	const progressLabel = $derived(
 		totalPages > 0
-			? `${Math.round(progress)}% (${pagesRead} of ${totalPages} pages)`
-			: `${Math.round(progress)}%`
+			? $t('reader_progress_pages', {
+					values: { progress: Math.round(progress), current: pagesRead, total: totalPages }
+				})
+			: $t('reader_percent', { values: { progress: Math.round(progress) } })
 	);
 
 	const readingTimeEstimate = $derived(
-		bookMetadata.totalWords ? `~${Math.round(bookMetadata.totalWords / 250 / 60)}h estimated` : null
+		bookMetadata.totalWords
+			? $t('reader_hours_estimated', {
+					values: { hours: Math.round(bookMetadata.totalWords / 250 / 60) }
+				})
+			: null
 	);
 
 	const remainingEstimate = $derived(
 		bookMetadata.totalWords && progress > 0
-			? `~${Math.round(((100 - progress) / 100) * (bookMetadata.totalWords / 250 / 60))}h estimated`
+			? $t('reader_hours_estimated', {
+					values: {
+						hours: Math.round(((100 - progress) / 100) * (bookMetadata.totalWords / 250 / 60))
+					}
+				})
 			: readingTimeEstimate
 	);
 
 	const itemTypeLabel = $derived(
-		item.item_type === 'book' ? 'Book (EPUB)' : item.item_type === 'pdf' ? 'PDF' : item.item_type
+		item.item_type === 'book'
+			? $t('reader_type_epub')
+			: item.item_type === 'pdf'
+				? $t('reader_view_pdf')
+				: item.item_type
 	);
+
+	const languageLabel = $derived.by(() => {
+		if (!bookMetadata.language) return null;
+		try {
+			return (
+				new Intl.DisplayNames($locale ?? 'en', { type: 'language' }).of(bookMetadata.language) ??
+				bookMetadata.language
+			);
+		} catch {
+			return bookMetadata.language;
+		}
+	});
 </script>
 
 <div class="detail-content">
@@ -80,44 +90,46 @@
 	<SummarySection summary={item.summary} excerpt={item.excerpt} />
 
 	<div class="detail-section">
-		<div class="section-heading">Metadata</div>
+		<div class="section-heading">{$t('common_metadata')}</div>
 		<div class="metadata-table">
 			<div class="metadata-row">
-				<div class="metadata-label">Type</div>
+				<div class="metadata-label">{$t('common_type')}</div>
 				<div class="metadata-value">{itemTypeLabel}</div>
 			</div>
 			{#if formattedDate}
 				<div class="metadata-row">
-					<div class="metadata-label">Published</div>
+					<div class="metadata-label">{$t('common_published')}</div>
 					<div class="metadata-value">{formattedDate}</div>
 				</div>
 			{/if}
 			{#if totalPages > 0}
 				<div class="metadata-row">
-					<div class="metadata-label">Length</div>
-					<div class="metadata-value">{totalPages} pages</div>
+					<div class="metadata-label">{$t('reader_length')}</div>
+					<div class="metadata-value">
+						{$t('reader_page_count', { values: { count: totalPages } })}
+					</div>
 				</div>
 			{/if}
 			{#if bookMetadata.publisher}
 				<div class="metadata-row">
-					<div class="metadata-label">Publisher</div>
+					<div class="metadata-label">{$t('reader_publisher')}</div>
 					<div class="metadata-value">{bookMetadata.publisher}</div>
 				</div>
 			{/if}
 			{#if bookMetadata.isbn}
 				<div class="metadata-row">
-					<div class="metadata-label">ISBN</div>
+					<div class="metadata-label">{$t('reader_isbn')}</div>
 					<div class="metadata-value">{bookMetadata.isbn}</div>
 				</div>
 			{/if}
 			<div class="metadata-row">
-				<div class="metadata-label">Saved</div>
+				<div class="metadata-label">{$t('common_saved')}</div>
 				<div class="metadata-value">{savedAgo}</div>
 			</div>
 			{#if bookMetadata.language}
 				<div class="metadata-row">
-					<div class="metadata-label">Language</div>
-					<div class="metadata-value">{bookMetadata.language}</div>
+					<div class="metadata-label">{$t('common_language')}</div>
+					<div class="metadata-value">{languageLabel}</div>
 				</div>
 			{/if}
 		</div>
@@ -126,20 +138,20 @@
 	<div class="section-divider"></div>
 
 	<div class="detail-section">
-		<div class="section-heading">Reading Progress</div>
+		<div class="section-heading">{$t('reader_reading_progress')}</div>
 		<div class="metadata-table">
 			<div class="metadata-row">
-				<div class="metadata-label">Progress</div>
+				<div class="metadata-label">{$t('reader_progress')}</div>
 				<div class="metadata-value">{progressLabel}</div>
 			</div>
 			{#if remainingEstimate}
 				<div class="metadata-row">
-					<div class="metadata-label">Remaining</div>
+					<div class="metadata-label">{$t('reader_remaining')}</div>
 					<div class="metadata-value">{remainingEstimate}</div>
 				</div>
 			{/if}
 			<div class="metadata-row">
-				<div class="metadata-label">Last read</div>
+				<div class="metadata-label">{$t('reader_last_read')}</div>
 				<div class="metadata-value">{lastReadLabel}</div>
 			</div>
 		</div>

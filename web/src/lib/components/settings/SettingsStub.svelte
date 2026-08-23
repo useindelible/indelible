@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		title: string;
 	}
@@ -8,7 +10,7 @@
 
 <div class="settings-stub">
 	<h2 class="settings-stub-title">{title}</h2>
-	<p class="settings-stub-message">This section is coming soon.</p>
+	<p class="settings-stub-message">{$t('settings_coming_soon')}</p>
 </div>
 
 <style>

@@ -1,4 +1,5 @@
 import type { TagResponse } from '$lib/api/generated/types.gen';
+import type { Translate } from '$lib/i18n';
 import { sanitizeColor } from '$lib/utils/color';
 
 export type TagScope = 'all' | 'document' | 'highlight';
@@ -82,14 +83,15 @@ export function getTagCount(
 }
 
 export function getTagCountLabel(
+	translate: Translate,
 	tag: TagResponse,
 	activeScope: TagScope,
 	rolledUpCounts: Map<string, number>
 ): string {
 	const count = getTagCount(tag, activeScope, rolledUpCounts);
-	if (activeScope === 'highlight') return `${count} highlight${count !== 1 ? 's' : ''}`;
-	if (activeScope === 'document') return `${count} item${count !== 1 ? 's' : ''}`;
-	return `${count} item${count !== 1 ? 's' : ''}`;
+	return translate(activeScope === 'highlight' ? 'tag_highlight_count' : 'tag_item_count', {
+		values: { count }
+	});
 }
 
 export function collectDescendantIds(tags: TagResponse[], rootId: string): Set<string> {

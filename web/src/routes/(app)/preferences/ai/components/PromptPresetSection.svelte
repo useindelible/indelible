@@ -9,6 +9,7 @@
 	} from '../mila-settings-model';
 	import PromptPresetCard from './PromptPresetCard.svelte';
 	import PromptPresetEditor from './PromptPresetEditor.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		actions: ActionMeta[];
@@ -41,24 +42,24 @@
 	}: Props = $props();
 </script>
 
-<SettingsGroup title="Prompt presets" meta="One default per action · Built-ins are read-only">
+<SettingsGroup title={$t('prefs_ai_prompt_presets')} meta={$t('prefs_ai_prompt_presets_hint')}>
 	{#each actions as action (action.key)}
 		{@const list = presetsForAction(presets, action.key)}
 		<section class="preset-action-section">
 			<div class="preset-action-head">
 				<div class="preset-action-icon {action.key}"></div>
 				<div class="preset-action-meta">
-					<div class="preset-action-name">{action.name}</div>
-					<div class="preset-action-desc">{action.desc}</div>
+					<div class="preset-action-name">{$t(action.nameKey)}</div>
+					<div class="preset-action-desc">{$t(action.descKey)}</div>
 				</div>
 				<div class="preset-action-count">
-					{list.length} preset{list.length === 1 ? '' : 's'}
+					{$t('prefs_ai_preset_count', { values: { count: list.length } })}
 				</div>
 			</div>
 
 			<div class="preset-list">
 				{#if list.length === 0 && editorState?.action !== action.key}
-					<div class="preset-empty">No presets yet — add one below.</div>
+					<div class="preset-empty">{$t('prefs_ai_no_presets')}</div>
 				{:else}
 					{#each list as preset (preset.id ?? preset.name)}
 						<PromptPresetCard
@@ -73,7 +74,7 @@
 
 				{#if editorState?.action === action.key}
 					<PromptPresetEditor
-						actionName={action.name}
+						action={action.key}
 						editor={editorState}
 						{editorSaving}
 						onCancel={onCancelEditor}
@@ -82,7 +83,9 @@
 					/>
 				{:else}
 					<button type="button" class="add-preset-row" onclick={() => onAdd(action.key)}>
-						Add {action.name.toLowerCase()} preset
+						{$t('prefs_ai_add_action_preset', {
+							values: { action: action.key }
+						})}
 					</button>
 				{/if}
 			</div>

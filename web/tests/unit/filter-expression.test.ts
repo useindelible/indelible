@@ -315,9 +315,9 @@ describe('filter bar model helpers', () => {
 	it('coerces field changes to the new field value type', () => {
 		const wordCountField: LibraryFilterFieldDef = {
 			key: 'word_count',
-			label: 'Word count',
+			labelKey: 'library_filter_field_content_type',
 			section: 'attributes',
-			ops: [{ value: 'gt', label: 'greater than' }],
+			ops: [{ value: 'gt', labelKey: 'library_filter_operator_after' }],
 			valueType: 'number'
 		};
 

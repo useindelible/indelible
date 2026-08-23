@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
 	import type { FeedStats } from '../feed-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		stats: FeedStats;
@@ -17,19 +18,16 @@
 			<span class="live-dot"></span>
 			<span>
 				{stats.active > 0
-					? `Polling now · ${stats.active} source${stats.active === 1 ? '' : 's'}`
-					: 'No active sources'}
+					? $t('feed_management_polling_sources', { values: { count: stats.active } })
+					: $t('feed_management_no_active_sources')}
 			</span>
 		</div>
-		<h1 class="hero-headline">Your feeds, fresh every few minutes.</h1>
-		<p class="hero-sub">
-			RSS, Atom, and JSON feeds, polled on a schedule and routed straight to your library or your
-			reading queue.
-		</p>
+		<h1 class="hero-headline">{$t('feed_management_hero_title')}</h1>
+		<p class="hero-sub">{$t('feed_management_hero_subtitle')}</p>
 		<div class="hero-cta">
 			<button type="button" class="hero-btn primary" onclick={onAddFeed}>
 				<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-				Add feed
+				{$t('feed_management_add_feed')}
 			</button>
 			<button type="button" class="hero-btn ghost" onclick={onImportOpml}>
 				<svg viewBox="0 0 24 24">
@@ -37,34 +35,36 @@
 					<path d="M7 8l5-5 5 5" />
 					<path d="M5 21h14" />
 				</svg>
-				Import OPML
+				{$t('prefs_add_feed_import_title')}
 			</button>
 		</div>
 	</div>
 
-	<div class="stats-ribbon" role="group" aria-label="Feed statistics">
+	<div class="stats-ribbon" role="group" aria-label={$t('feed_management_statistics')}>
 		<div class="stat-cell">
 			<div class="stat-num">{stats.active}</div>
-			<div class="stat-label">Active</div>
-			<div class="stat-sub">Polled on schedule</div>
+			<div class="stat-label">{$t('feed_management_active')}</div>
+			<div class="stat-sub">{$t('feed_management_polled_schedule')}</div>
 		</div>
 		<div class="stat-cell paused">
 			<div class="stat-num">{stats.paused}</div>
-			<div class="stat-label">Paused</div>
-			<div class="stat-sub">Won't auto-poll</div>
+			<div class="stat-label">{$t('feed_management_paused')}</div>
+			<div class="stat-sub">{$t('feed_management_paused_hint')}</div>
 		</div>
 		<div class="stat-cell error">
 			<div class="stat-num">{stats.error}</div>
-			<div class="stat-label">Error</div>
-			<div class="stat-sub">Needs attention</div>
+			<div class="stat-label">{$t('feed_management_error')}</div>
+			<div class="stat-sub">{$t('feed_management_needs_attention')}</div>
 		</div>
 		<div class="stat-cell">
 			<div class="stat-num">{stats.total}</div>
-			<div class="stat-label">Total</div>
+			<div class="stat-label">{$t('feed_management_total')}</div>
 			{#if stats.active > 0}
-				<div class="live-bar"><span class="live-dot"></span>Polling now</div>
+				<div class="live-bar">
+					<span class="live-dot"></span>{$t('feed_management_polling_now')}
+				</div>
 			{:else}
-				<div class="stat-sub">All sources</div>
+				<div class="stat-sub">{$t('feed_management_all_sources')}</div>
 			{/if}
 		</div>
 	</div>

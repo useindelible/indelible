@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 	import type { TriageModeDto } from '$lib/api';
 
 	interface Props {
@@ -12,14 +13,14 @@
 	let { triageMode, autoAdvance, onTriageModeChange, onAutoAdvanceChange }: Props = $props();
 </script>
 
-<SettingsGroup title="Triage & Workflow">
+<SettingsGroup title={$t('prefs_reading_triage_workflow')}>
 	<div class="group-card">
 		<div class="row with-stack">
 			<div class="label-block">
-				<div class="label">Triage mode</div>
-				<div class="hint">Choose how items flow through your library.</div>
+				<div class="label">{$t('prefs_reading_triage_mode')}</div>
+				<div class="hint">{$t('prefs_reading_triage_mode_hint')}</div>
 			</div>
-			<div class="radio-stack" role="radiogroup" aria-label="Triage mode">
+			<div class="radio-stack" role="radiogroup" aria-label={$t('prefs_reading_triage_mode')}>
 				<button
 					type="button"
 					class="radio-card"
@@ -39,8 +40,8 @@
 						></span><span class="node"></span>
 					</div>
 					<div class="radio-meta">
-						<div class="radio-label">Triage</div>
-						<div class="radio-sub">Inbox → Later → Archive</div>
+						<div class="radio-label">{$t('prefs_reading_triage')}</div>
+						<div class="radio-sub">{$t('prefs_reading_triage_flow')}</div>
 					</div>
 				</button>
 				<button
@@ -60,16 +61,16 @@
 						<span class="node"></span><span class="arrow"></span><span class="node"></span>
 					</div>
 					<div class="radio-meta">
-						<div class="radio-label">Simple</div>
-						<div class="radio-sub">Saved → Archived</div>
+						<div class="radio-label">{$t('prefs_reading_simple')}</div>
+						<div class="radio-sub">{$t('prefs_reading_simple_flow')}</div>
 					</div>
 				</button>
 			</div>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label" id="auto-advance-label">Auto-advance</div>
-				<div class="hint">After archiving an item, automatically open the next one.</div>
+				<div class="label" id="auto-advance-label">{$t('prefs_reading_auto_advance')}</div>
+				<div class="hint">{$t('prefs_reading_auto_advance_hint')}</div>
 			</div>
 			<label class="toggle">
 				<input

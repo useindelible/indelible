@@ -3,6 +3,7 @@
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import FormInput from '$lib/components/auth/FormInput.svelte';
 	import FormButton from '$lib/components/auth/FormButton.svelte';
+	import { t } from '$lib/i18n';
 
 	const auth = getAuth();
 
@@ -28,7 +29,7 @@
 </script>
 
 <svelte:head>
-	<title>Reset password — Indelible</title>
+	<title>{$t('auth_reset_password_title')}</title>
 </svelte:head>
 
 {#if submitted}
@@ -58,8 +59,8 @@
 			/>
 		</svg>
 	</div>
-	<h1 class="auth-title">Check your email</h1>
-	<p class="auth-body">If an account exists for that address, we've sent a password reset link.</p>
+	<h1 class="auth-title">{$t('auth_check_email')}</h1>
+	<p class="auth-body">{$t('auth_reset_email_sent')}</p>
 	<div class="back-link-row">
 		<svg
 			width="14"
@@ -75,14 +76,14 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/login')} class="auth-link">Back to sign in</a>
+		<a href={resolve('/login')} class="auth-link">{$t('auth_back_to_sign_in')}</a>
 	</div>
 {:else}
-	<h1 class="auth-title">Reset your password</h1>
-	<p class="auth-subtitle">Enter your email and we'll send you a reset link</p>
+	<h1 class="auth-title">{$t('auth_reset_your_password')}</h1>
+	<p class="auth-subtitle">{$t('auth_reset_password_subtitle')}</p>
 
 	{#if rateLimited}
-		<div class="auth-error-banner" role="alert">Too many requests. Please try again later.</div>
+		<div class="auth-error-banner" role="alert">{$t('auth_error_too_many_requests')}</div>
 	{/if}
 
 	{#if auth.error && !rateLimited}
@@ -91,16 +92,16 @@
 
 	<form onsubmit={handleSubmit} novalidate>
 		<FormInput
-			label="Email"
+			label={$t('common_email')}
 			type="email"
 			autocomplete="email"
-			placeholder="you@example.com"
+			placeholder={$t('auth_email_placeholder')}
 			required
 			bind:value={email}
 		/>
 
 		<div class="form-actions">
-			<FormButton loading={submitting}>Send reset link</FormButton>
+			<FormButton loading={submitting}>{$t('auth_send_reset_link')}</FormButton>
 		</div>
 	</form>
 
@@ -119,7 +120,7 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/login')} class="auth-link">Back to sign in</a>
+		<a href={resolve('/login')} class="auth-link">{$t('auth_back_to_sign_in')}</a>
 	</div>
 {/if}
 

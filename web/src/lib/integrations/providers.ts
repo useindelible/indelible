@@ -1,9 +1,4 @@
-/**
- * Static catalog of M10-wave providers. The backend `listIntegrations` only
- * returns the user's existing connections; rendering disconnected/unavailable
- * cards requires a frontend-owned list of supported providers. Provider-specific
- * tasks (TASK-200..TASK-209) layer on OAuth/PAT/import wiring.
- */
+import type { MessageKey } from '$lib/i18n';
 
 export type IntegrationCapability = 'sync' | 'oauth' | 'pat' | 'importUpload';
 
@@ -12,9 +7,9 @@ export type IntegrationProviderId = 'obsidian' | 'notion' | 'readwise';
 export interface IntegrationProvider {
 	id: IntegrationProviderId;
 	displayName: string;
-	description: string;
+	descriptionKey: MessageKey;
 	/** Longer import-specific description used on the imports landing card (matches prototype copy). */
-	importDescription?: string;
+	importDescriptionKey?: MessageKey;
 	capabilities: IntegrationCapability[];
 	importSlug?: string;
 	acceptedMimeTypes?: string[];
@@ -30,21 +25,20 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
 	{
 		id: 'obsidian',
 		displayName: 'Obsidian',
-		description: 'Sync highlights and notes with your vault via a scoped access token.',
+		descriptionKey: 'integrations_provider_obsidian_description',
 		capabilities: ['sync', 'pat']
 	},
 	{
 		id: 'notion',
 		displayName: 'Notion',
-		description: 'Sync highlights and annotations into a Notion database.',
+		descriptionKey: 'integrations_provider_notion_description',
 		capabilities: ['sync', 'oauth']
 	},
 	{
 		id: 'readwise',
 		displayName: 'Readwise Reader',
-		description: 'Import Reader CSV, uploaded-file ZIP archives, and feeds OPML from Readwise.',
-		importDescription:
-			"Upload any combination of CSV, document ZIP archive, and OPML. We'll match documents across files and route OPML subscriptions to your feeds. Highlights are not migrated.",
+		descriptionKey: 'integrations_provider_readwise_description',
+		importDescriptionKey: 'integrations_provider_readwise_import_description',
 		capabilities: ['importUpload'],
 		importSlug: 'readwise',
 		acceptedMimeTypes: ['text/csv', 'application/zip', 'text/xml', 'application/xml'],

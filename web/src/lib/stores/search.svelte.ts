@@ -1,4 +1,6 @@
 import * as apiSdk from '$lib/api';
+import { t } from '$lib/i18n';
+import { get } from 'svelte/store';
 import type { DocumentListEntry } from '$lib/api';
 import type {
 	SearchEntityCardResponse,
@@ -94,14 +96,14 @@ async function executeSearch(q: string, newCursor?: string): Promise<void> {
 			if (!newCursor) {
 				const count = incoming.length;
 				if (hasMore) {
-					resultCount = `${count}+ results for "${q}"`;
+					resultCount = get(t)('search_result_count_more', { values: { count, query: q } });
 				} else {
-					resultCount = `${count} result${count !== 1 ? 's' : ''} for "${q}"`;
+					resultCount = get(t)('search_result_count', { values: { count, query: q } });
 				}
 			}
 		}
 	} catch {
-		fetchError = 'Search failed. Please try again.';
+		fetchError = get(t)('search_error_failed');
 	}
 }
 

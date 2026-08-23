@@ -63,6 +63,8 @@ vi.mock('$lib/api', () => {
 import LoginPage from '../../src/routes/(auth)/login/+page.svelte';
 import { api } from '$lib/api';
 import { resetInstanceStatusCache } from '$lib/api/instance';
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
 
 describe('Login page', () => {
 	beforeEach(() => {
@@ -71,6 +73,14 @@ describe('Login page', () => {
 		mockAuthError = null;
 		mockNeedsVerification = false;
 		pageMock.currentUrl = new URL('http://localhost/login');
+		locale.set('en');
+	});
+
+	it('renders the sign-in action in French', () => {
+		setupI18nSync({ fr }, 'fr');
+		render(LoginPage);
+
+		expect(screen.getByRole('button', { name: 'Se connecter' })).toBeTruthy();
 	});
 
 	it('renders email and password fields', () => {

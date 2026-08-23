@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
+	import { date, t } from '$lib/i18n';
 
 	type TrashItem = DocumentListEntry;
 
@@ -60,15 +61,16 @@
 		const now = new Date();
 		const diffMs = now.getTime() - deleted.getTime();
 		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-		if (diffDays === 0) return 'Deleted today';
-		if (diffDays === 1) return 'Deleted 1 day ago';
-		if (diffDays <= 30) return `Deleted ${diffDays} days ago`;
-		return `Deleted ${deleted.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+		if (diffDays === 0) return $t('trash_deleted_today');
+		if (diffDays <= 30) return $t('trash_deleted_days_ago', { values: { count: diffDays } });
+		return $t('trash_deleted_date', {
+			values: { date: $date(deleted, { month: 'short', day: 'numeric', year: 'numeric' }) }
+		});
 	}
 
 	function formatReadTime(minutes: number | null | undefined): string | null {
 		if (minutes == null || minutes === 0) return null;
-		return `${minutes} min`;
+		return $t('common_reading_time_minutes', { values: { minutes } });
 	}
 </script>
 
@@ -115,9 +117,11 @@
 					<polyline points="1 4 1 10 7 10" />
 					<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
 				</svg>
-				{restoring ? 'Restoring...' : 'Restore'}
+				{restoring ? $t('trash_restoring') : $t('trash_restore')}
 			</button>
-			<button class="delete-perm-btn" onclick={() => onDeleteClick(item)}>Delete</button>
+			<button class="delete-perm-btn" onclick={() => onDeleteClick(item)}
+				>{$t('common_delete')}</button
+			>
 		</div>
 	</div>
 </div>

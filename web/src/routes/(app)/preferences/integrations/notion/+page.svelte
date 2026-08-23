@@ -20,6 +20,7 @@
 		UpdateNotionSettingsRequest
 	} from '$lib/api';
 	import NotionStatusPanel from '$lib/components/integrations/NotionStatusPanel.svelte';
+	import { locale, t } from '$lib/i18n';
 	import { deriveConnectionState } from '$lib/integrations/status';
 	import NotionConnectionLoader from './components/NotionConnectionLoader.svelte';
 	import NotionDisconnectSection from './components/NotionDisconnectSection.svelte';
@@ -61,10 +62,12 @@
 	const connectionState = $derived(deriveConnectionState(connection));
 	const workspaceName = $derived(getNotionWorkspaceName(connection));
 	const workspaceIcon = $derived(getNotionWorkspaceIcon(connection));
-	const databaseLabel = $derived(getNotionDatabaseLabel(workspaceName));
+	const databaseLabel = $derived(getNotionDatabaseLabel(workspaceName, $t));
 	const heroDocs = $derived(exportItemsTotal);
-	const formattedHeroLastSync = $derived(formatNotionHeroLastSync(connection?.last_sync_at));
-	const heroStatus = $derived(getNotionHeroStatus(connectionState));
+	const formattedHeroLastSync = $derived(
+		formatNotionHeroLastSync(connection?.last_sync_at, $t, $locale)
+	);
+	const heroStatus = $derived($t(getNotionHeroStatus(connectionState)));
 
 	async function refresh() {
 		loading = true;
@@ -75,10 +78,7 @@
 			connection = result.data.connections.find((candidate) => candidate.provider === 'notion');
 			const available = result.data.available_oauth_providers ?? null;
 			if (!connection && available !== null && !available.includes('notion')) {
-				loadError =
-					'Notion is not configured on this server. An administrator must set ' +
-					'NOTION_CLIENT_ID, NOTION_CLIENT_SECRET, NOTION_REDIRECT_URL and ' +
-					'AUTH_CREDENTIAL_KEY to enable it.';
+				loadError = $t('integrations_notion_unavailable');
 				loading = false;
 				return;
 			}

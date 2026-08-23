@@ -2,6 +2,7 @@
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
 	import FeedSubscriptionsTable from './FeedSubscriptionsTable.svelte';
 	import type { Feed, FeedStats, FilterChip } from '../feed-model';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		loading: boolean;
@@ -43,23 +44,23 @@
 		onDelete
 	}: Props = $props();
 
-	const filters: { value: FilterChip; label: string; count: () => number }[] = [
-		{ value: 'all', label: 'All', count: () => stats.total },
-		{ value: 'active', label: 'Active', count: () => stats.active },
-		{ value: 'paused', label: 'Paused', count: () => stats.paused },
-		{ value: 'error', label: 'Error', count: () => stats.error }
+	const filters: { value: FilterChip; labelKey: MessageKey; count: () => number }[] = [
+		{ value: 'all', labelKey: 'common_all', count: () => stats.total },
+		{ value: 'active', labelKey: 'feed_management_active', count: () => stats.active },
+		{ value: 'paused', labelKey: 'feed_management_paused', count: () => stats.paused },
+		{ value: 'error', labelKey: 'feed_management_error', count: () => stats.error }
 	];
 </script>
 
 <SettingsGroup
-	title="All feeds"
+	title={$t('feed_management_all_feeds')}
 	meta={loading
-		? 'Loading…'
-		: `${stats.total} source${stats.total === 1 ? '' : 's'} · sorted by most recent`}
+		? $t('common_loading')
+		: $t('feed_management_source_count', { values: { count: stats.total } })}
 >
 	{#if loading}
 		<div class="loading-state">
-			<span class="loading-text">Loading subscriptions…</span>
+			<span class="loading-text">{$t('feed_management_loading_subscriptions')}</span>
 		</div>
 	{:else if feeds.length === 0}
 		<div class="empty-state">
@@ -68,11 +69,10 @@
 				<path d="M4 4a16 16 0 0 1 16 16" />
 				<circle cx="5" cy="19" r="1" fill="currentColor" stroke="none" />
 			</svg>
-			<span class="es-title">No feeds yet</span>
-			<span class="es-desc">
-				Subscribe to RSS feeds to automatically receive new content in your library.
-			</span>
-			<button type="button" class="hero-btn primary" onclick={onAddFeed}>Add your first feed</button
+			<span class="es-title">{$t('feed_management_no_feeds')}</span>
+			<span class="es-desc">{$t('feed_management_no_feeds_hint')}</span>
+			<button type="button" class="hero-btn primary" onclick={onAddFeed}
+				>{$t('feed_management_add_first_feed')}</button
 			>
 		</div>
 	{:else}
@@ -85,13 +85,13 @@
 				<input
 					class="search-input"
 					type="search"
-					placeholder="Search feeds by name or domain…"
+					placeholder={$t('feed_management_search_placeholder')}
 					value={searchQuery}
-					aria-label="Search feeds"
+					aria-label={$t('feed_management_search')}
 					oninput={(event) => onSearch(event.currentTarget.value)}
 				/>
 			</div>
-			<div class="chip-row" role="tablist" aria-label="Filter feeds">
+			<div class="chip-row" role="tablist" aria-label={$t('feed_management_filter')}>
 				{#each filters as filter (filter.value)}
 					<button
 						type="button"
@@ -101,7 +101,7 @@
 						aria-selected={activeFilter === filter.value}
 						onclick={() => onFilter(filter.value)}
 					>
-						{filter.label} <span class="count">{filter.count()}</span>
+						{$t(filter.labelKey)} <span class="count">{filter.count()}</span>
 					</button>
 				{/each}
 			</div>
@@ -114,9 +114,17 @@
 					<path d="M21 21l-4.35-4.35" />
 				</svg>
 				<span class="search-empty-title">
-					{searchQuery ? `No feeds match "${searchQuery}"` : `No ${activeFilter} feeds`}
+					{searchQuery
+						? $t('feed_management_no_search_match', { values: { query: searchQuery } })
+						: $t('feed_management_no_filter_match', {
+								values: {
+									filter: $t(
+										filters.find((item) => item.value === activeFilter)?.labelKey ?? 'common_all'
+									)
+								}
+							})}
 				</span>
-				<span class="search-empty-sub">Try a different filter or search term</span>
+				<span class="search-empty-sub">{$t('feed_management_search_empty_hint')}</span>
 			</div>
 		{:else}
 			<FeedSubscriptionsTable

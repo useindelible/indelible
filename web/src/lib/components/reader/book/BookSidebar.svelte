@@ -4,6 +4,7 @@
 	import BookToc from './BookToc.svelte';
 	import BookBookmarks from './BookBookmarks.svelte';
 	import BookSearch from './BookSearch.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	export type SidebarTab = 'contents' | 'bookmarks' | 'search';
 
@@ -46,10 +47,10 @@
 		}
 	});
 
-	const tabs = $derived([
-		{ value: 'contents' as const, label: 'Contents' },
-		{ value: 'bookmarks' as const, label: 'Bookmarks' },
-		...(textAvailable ? [{ value: 'search' as const, label: 'Search' }] : [])
+	const tabs: { value: SidebarTab; labelKey: MessageKey }[] = $derived([
+		{ value: 'contents', labelKey: 'reader_contents' },
+		{ value: 'bookmarks', labelKey: 'reader_bookmarks' },
+		...(textAvailable ? [{ value: 'search' as const, labelKey: 'reader_search' as const }] : [])
 	]);
 
 	$effect(() => {
@@ -91,8 +92,8 @@
 				{/if}
 			</div>
 			<div class="book-details">
-				<div class="book-title">{source.metadata.title ?? 'Untitled'}</div>
-				<div class="book-author">{source.metadata.author ?? 'Unknown author'}</div>
+				<div class="book-title">{source.metadata.title ?? $t('reader_untitled')}</div>
+				<div class="book-author">{source.metadata.author ?? $t('reader_unknown_author')}</div>
 				<div class="book-progress-mini">
 					<div class="progress-bar-mini">
 						<div class="progress-bar-mini-fill" style:width="{Math.round(progress)}%"></div>
@@ -111,7 +112,7 @@
 				class:active={activeTab === tab.value}
 				onclick={() => onTabChange(tab.value)}
 			>
-				{tab.label}
+				{$t(tab.labelKey)}
 			</button>
 		{/each}
 	</div>

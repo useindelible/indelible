@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { ReaderAiFailure } from '../reader-realtime';
+	import { t } from '$lib/i18n';
 
 	type RetryStatus = 'idle' | 'pending' | 'queued' | 'error';
 
@@ -15,12 +16,12 @@
 
 	const title = $derived(
 		failure.action === 'summary'
-			? "Mila couldn't create a summary."
+			? $t('reader_ai_summary_failed')
 			: failure.action === 'tags'
-				? "Mila couldn't suggest tags."
+				? $t('reader_ai_tags_failed')
 				: failure.action === 'entities'
-					? "Mila couldn't extract entities."
-					: "Mila couldn't complete this request."
+					? $t('reader_ai_entities_failed')
+					: $t('reader_ai_request_failed')
 	);
 	const retryable = $derived(['summary', 'tags', 'entities'].includes(failure.action));
 </script>
@@ -29,15 +30,15 @@
 	<div class="notice-copy">
 		<strong>{title}</strong>
 		{#if status === 'queued'}
-			<p class="status success">Retry queued.</p>
+			<p class="status success">{$t('reader_ai_retry_queued')}</p>
 		{:else if status === 'error'}
-			<p class="status error">Could not queue retry. Try again.</p>
+			<p class="status error">{$t('reader_ai_retry_error')}</p>
 		{/if}
 		{#if failure.aiRunId}
-			<span class="run-id">Run {failure.aiRunId}</span>
+			<span class="run-id">{$t('reader_ai_run', { values: { id: failure.aiRunId } })}</span>
 		{/if}
 		<details>
-			<summary>Technical details</summary>
+			<summary>{$t('reader_technical_details')}</summary>
 			<p>{failure.message}</p>
 		</details>
 	</div>
@@ -45,11 +46,11 @@
 	<div class="actions">
 		{#if retryable}
 			<button type="button" class="primary" onclick={onRetry} disabled={status === 'pending'}>
-				{status === 'pending' ? 'Queuing retry…' : 'Retry'}
+				{status === 'pending' ? $t('reader_retry_queuing_action') : $t('reader_retry')}
 			</button>
 		{/if}
-		<a href={resolve('/preferences/ai')}>Open Mila settings</a>
-		<button type="button" class="quiet" onclick={onDismiss}>Dismiss</button>
+		<a href={resolve('/preferences/ai')}>{$t('reader_ai_settings')}</a>
+		<button type="button" class="quiet" onclick={onDismiss}>{$t('common_dismiss')}</button>
 	</div>
 </div>
 

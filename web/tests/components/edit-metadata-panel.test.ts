@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentListEntry } from '$lib/api';
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
 
 const apiMocks = vi.hoisted(() => ({
 	getLibraryEntryTags: vi.fn(),
@@ -41,6 +43,8 @@ function item(itemType: string): DocumentListEntry {
 }
 
 describe('EditMetadataPanel content types', () => {
+	afterEach(() => locale.set('en'));
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		apiMocks.getLibraryEntryTags.mockImplementation(({ path }) =>
@@ -70,5 +74,15 @@ describe('EditMetadataPanel content types', () => {
 
 		const option = screen.getByRole('option', { name: 'Podcast' }) as HTMLOptionElement;
 		expect(option.selected).toBe(true);
+	});
+
+	it('formats word counts in the active locale', () => {
+		setupI18nSync({ fr }, 'fr');
+		const entry = item('article');
+		entry.word_count = 1234;
+
+		render(EditMetadataPanel, { props: { item: entry, onClose: vi.fn() } });
+
+		expect(screen.getByText(/1.?234 mots/)).toBeTruthy();
 	});
 });

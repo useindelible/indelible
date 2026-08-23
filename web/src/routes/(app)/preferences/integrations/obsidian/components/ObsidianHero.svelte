@@ -2,6 +2,7 @@
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
 	import type { IntegrationConnectionDto } from '$lib/api';
 	import type { ObsidianHeroState } from '../obsidian-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		connection: IntegrationConnectionDto | undefined;
@@ -41,7 +42,7 @@
 				<path d="M15 17h3a3 3 0 1 0 0-6h-3" />
 				<path d="M9 12h6" />
 			</svg>
-			Integrations
+			{$t('settings_integrations')}
 			<span class="eyebrow-sep">/</span>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<polygon points="12,2 20,8.5 12,22 4,8.5" />
@@ -49,10 +50,9 @@
 			</svg>
 			Obsidian
 		</div>
-		<h1 class="hero-headline">Obsidian Export</h1>
+		<h1 class="hero-headline">{$t('integrations_obsidian_export')}</h1>
 		<p class="hero-sub">
-			Server-rendered Markdown, append-only highlights, and granular formatting controls straight
-			into your vault.
+			{$t('integrations_obsidian_hero_description')}
 		</p>
 		<div class="hero-ops">
 			<span class="hero-status-pill" data-status={heroState}>
@@ -60,15 +60,21 @@
 			</span>
 			{#if heroState !== 'disconnected'}
 				<span class="ops-sep" aria-hidden="true"></span>
-				<span>Synced <strong>{lastSyncLabel}</strong></span>
+				<span>{$t('integrations_obsidian_synced')} <strong>{lastSyncLabel}</strong></span>
 				{#if connection?.pending_jobs && connection.pending_jobs > 0}
 					<span class="ops-sep" aria-hidden="true"></span>
-					<span><strong>{connection.pending_jobs}</strong> queued</span>
+					<span
+						>{$t('integrations_obsidian_queued', {
+							values: { count: connection.pending_jobs }
+						})}</span
+					>
 				{/if}
 			{:else}
 				<span class="ops-sep" aria-hidden="true"></span>
 				<button type="button" class="hero-cta" onclick={onSetup} disabled={setupRunning}>
-					{setupRunning ? 'Setting up…' : 'Set up Obsidian export'}
+					{setupRunning
+						? $t('integrations_obsidian_setting_up')
+						: $t('integrations_obsidian_setup_export')}
 				</button>
 				{#if setupError}
 					<span class="hero-cta-error">{setupError}</span>

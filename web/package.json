@@ -21,10 +21,11 @@
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
+		"i18n:check": "node scripts/i18n-check.mjs",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:e2e": "playwright test",
-		"validate": "pnpm check && pnpm lint && pnpm format:check && pnpm test",
+		"validate": "pnpm check && pnpm lint && pnpm format:check && pnpm test && pnpm i18n:check",
 		"api:generate": "cd ../backend && cargo run -p ind-http-api --example export_openapi -- ../web/.openapi.tmp.json && cd ../web && rm -rf src/lib/api/generated && openapi-ts -i .openapi.tmp.json -o src/lib/api/generated && pnpm exec prettier --write 'src/lib/api/generated/**/*.ts' && rm -f .openapi.tmp.json"
 	},
 	"devDependencies": {
@@ -41,7 +42,9 @@
 		"eslint-plugin-svelte": "^3.22.0",
 		"eslint-plugin-svelte-runes": "^0.0.11",
 		"globals": "^16.5.0",
+		"intl-messageformat": "^11.2.14",
 		"jsdom": "^26.1.0",
+		"jsonc-parser": "^3.3.1",
 		"prettier": "^3.9.6",
 		"prettier-plugin-svelte": "^3.5.2",
 		"svelte": "^5.56.8",
@@ -55,6 +58,7 @@
 	"dependencies": {
 		"dompurify": "^3.4.12",
 		"marked": "^18.0.7",
-		"pdfjs-dist": "^5.7.284"
+		"pdfjs-dist": "^5.7.284",
+		"svelte-i18n": "^4"
 	}
 }

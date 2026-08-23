@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import MorphSwitcher from '$lib/components/ui/MorphSwitcher.svelte';
 	import DetailInfo from './DetailInfo.svelte';
 	import NotebookTab from './NotebookTab.svelte';
@@ -18,7 +19,7 @@
 	const displayItem = $derived(item);
 
 	type Tab = 'info' | 'notebook' | 'chat';
-	type TabOption = { value: Tab; label: string };
+	type TabOption = { value: Tab; labelKey: 'common_info' | 'common_notebook' | 'common_chat' };
 
 	let activeTab: Tab = $state('info');
 	let editing = $state(false);
@@ -47,14 +48,14 @@
 	});
 
 	const itemTabOptions = $derived<TabOption[]>([
-		{ value: 'info', label: 'Info' },
-		{ value: 'notebook', label: 'Notebook' },
-		...(chatAvailable ? [{ value: 'chat' as const, label: 'Chat' }] : [])
+		{ value: 'info', labelKey: 'common_info' },
+		{ value: 'notebook', labelKey: 'common_notebook' },
+		...(chatAvailable ? [{ value: 'chat' as const, labelKey: 'common_chat' as const }] : [])
 	]);
 
 	const collectionTabOptions: TabOption[] = [
-		{ value: 'info', label: 'Info' },
-		{ value: 'chat', label: 'Chat' }
+		{ value: 'info', labelKey: 'common_info' },
+		{ value: 'chat', labelKey: 'common_chat' }
 	];
 
 	const tabOptions = $derived(hasCollectionChat ? collectionTabOptions : itemTabOptions);
@@ -66,7 +67,7 @@
 
 <aside class="detail-panel" class:chat-mode={activeTab === 'chat' && !editing}>
 	<div class="detail-tabs">
-		<span class="tabs-eyebrow">Details</span>
+		<span class="tabs-eyebrow">{$t('common_details')}</span>
 		<MorphSwitcher options={tabOptions} value={activeTab} onchange={onTabChange} size="sm" />
 	</div>
 

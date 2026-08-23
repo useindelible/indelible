@@ -1,21 +1,24 @@
 <script lang="ts">
+	import { t, type MessageKey } from '$lib/i18n';
+
 	interface Props {
 		password: string;
 	}
+	type Strength = { level: number; labelKey: MessageKey | null };
 
 	let { password }: Props = $props();
 
-	const strength = $derived.by(() => {
-		if (!password) return { level: 0, label: '' };
+	const strength: Strength = $derived.by(() => {
+		if (!password) return { level: 0, labelKey: null };
 		let score = 0;
 		if (password.length >= 8) score++;
 		if (password.length >= 12) score++;
 		if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
 		if (/\d/.test(password)) score++;
 		if (/[^A-Za-z0-9]/.test(password)) score++;
-		if (score <= 1) return { level: 1, label: 'Weak' };
-		if (score <= 3) return { level: 2, label: 'Medium' };
-		return { level: 3, label: 'Strong' };
+		if (score <= 1) return { level: 1, labelKey: 'auth_password_strength_weak' };
+		if (score <= 3) return { level: 2, labelKey: 'auth_password_strength_medium' };
+		return { level: 3, labelKey: 'auth_password_strength_strong' };
 	});
 </script>
 
@@ -26,7 +29,7 @@
 		aria-valuemin="0"
 		aria-valuemax="3"
 		aria-valuenow={strength.level}
-		aria-label="Password strength"
+		aria-label={$t('auth_password_strength')}
 	>
 		{#each [1, 2, 3] as segment (segment)}
 			<span
@@ -38,14 +41,14 @@
 			></span>
 		{/each}
 	</div>
-	{#if strength.label}
+	{#if strength.labelKey}
 		<span
 			class="strength-label"
 			class:weak={strength.level === 1}
 			class:medium={strength.level === 2}
 			class:strong={strength.level === 3}
 		>
-			{strength.label}
+			{$t(strength.labelKey)}
 		</span>
 	{/if}
 </div>

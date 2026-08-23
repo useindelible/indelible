@@ -7,6 +7,12 @@ import type {
 import type { FilterExpression } from '$lib/utils/filter-expression';
 import { fetchAllPages } from '$lib/api/pagination';
 import { getSidebar } from './sidebar.svelte';
+import { t, type MessageKey } from '$lib/i18n';
+import { get } from 'svelte/store';
+
+function message(key: MessageKey): string {
+	return get(t)(key);
+}
 
 let allSmartLists = $state<SmartListResponse[]>([]);
 let loading = $state(false);
@@ -28,7 +34,7 @@ async function loadAllSmartLists(): Promise<void> {
 		});
 		allSmartLists = results;
 	} catch {
-		fetchError = 'Failed to load smart lists';
+		fetchError = message('smart_list_error_load');
 	} finally {
 		loading = false;
 	}
@@ -53,7 +59,7 @@ async function createSmartList(body: CreateSmartListInput): Promise<SmartListRes
 			return created;
 		}
 	} catch {
-		fetchError = 'Failed to create smart list';
+		fetchError = message('smart_list_error_create');
 	}
 	return null;
 }
@@ -71,7 +77,7 @@ async function updateSmartList(
 			return updated;
 		}
 	} catch {
-		fetchError = 'Failed to update smart list';
+		fetchError = message('smart_list_error_update');
 	}
 	return null;
 }
@@ -83,7 +89,7 @@ async function deleteSmartList(id: string): Promise<boolean> {
 		getSidebar().refreshSmartLists();
 		return true;
 	} catch {
-		fetchError = 'Failed to delete smart list';
+		fetchError = message('smart_list_error_delete');
 		return false;
 	}
 }
@@ -98,7 +104,7 @@ async function pinSmartList(id: string, isPinned: boolean): Promise<SmartListRes
 			return updated;
 		}
 	} catch {
-		fetchError = 'Failed to update pin status';
+		fetchError = message('smart_list_error_pin');
 	}
 	return null;
 }

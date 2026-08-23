@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
 	import DetailPanel from '$lib/components/library/DetailPanel.svelte';
+	import { t } from '$lib/i18n';
 
 	import ReaderSidePanel from './ReaderSidePanel.svelte';
 
@@ -30,7 +31,12 @@
 		{#if isMobile}
 			<div class="reader-detail m-detail">
 				<div class="m-detailbar">
-					<button type="button" class="m-back" onclick={onClose} aria-label="Back to article">
+					<button
+						type="button"
+						class="m-back"
+						onclick={onClose}
+						aria-label={$t('reader_back_to_article')}
+					>
 						<svg
 							viewBox="0 0 24 24"
 							fill="none"

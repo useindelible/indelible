@@ -8,6 +8,7 @@
 	import OAuthButtons from '$lib/components/auth/OAuthButtons.svelte';
 	import PasswordStrength from '$lib/components/auth/PasswordStrength.svelte';
 	import { getInstanceStatus } from '$lib/api/instance';
+	import { t } from '$lib/i18n';
 
 	const auth = getAuth();
 
@@ -33,23 +34,23 @@
 		const errors: typeof fieldErrors = {};
 
 		if (!displayName.trim()) {
-			errors.displayName = 'Display name is required';
+			errors.displayName = $t('auth_display_name_required');
 		} else if (displayName.trim().length > 100) {
-			errors.displayName = 'Display name must be 100 characters or fewer';
+			errors.displayName = $t('auth_display_name_too_long');
 		}
 
 		if (!email.trim()) {
-			errors.email = 'Email is required';
+			errors.email = $t('auth_email_required');
 		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-			errors.email = 'Please enter a valid email address';
+			errors.email = $t('auth_email_invalid');
 		}
 
 		if (!password) {
-			errors.password = 'Password is required';
+			errors.password = $t('auth_password_required');
 		} else if (password.length < 8) {
-			errors.password = 'Password must be at least 8 characters';
+			errors.password = $t('auth_password_too_short');
 		} else if (password.length > 2048) {
-			errors.password = 'Password must be 2048 characters or fewer';
+			errors.password = $t('auth_password_too_long');
 		}
 
 		fieldErrors = errors;
@@ -80,7 +81,7 @@
 				}
 			} else {
 				const redirectUrl = $page.url.searchParams.get('redirect');
-				// eslint-disable-next-line svelte/no-navigation-without-resolve -- /onboarding/welcome created in TASK-044
+				// eslint-disable-next-line svelte/no-navigation-without-resolve -- fallback is a static application route.
 				goto(redirectUrl ?? '/onboarding/welcome');
 			}
 		}
@@ -93,13 +94,15 @@
 </script>
 
 <svelte:head>
-	<title>Create account - Indelible</title>
+	<title>{$t('auth_create_account_title')}</title>
 </svelte:head>
 
 {#if signupsEnabled}
-	<h1 class="auth-title">{setupRequired ? 'Set up Indelible' : 'Create your account'}</h1>
+	<h1 class="auth-title">
+		{$t(setupRequired ? 'auth_setup_indelible' : 'auth_create_your_account')}
+	</h1>
 	<p class="auth-subtitle">
-		{setupRequired ? 'Create the first account to get started' : 'Start saving what matters'}
+		{$t(setupRequired ? 'auth_create_first_account' : 'auth_register_subtitle')}
 	</p>
 
 	{#if auth.error}
@@ -108,20 +111,20 @@
 
 	<form onsubmit={handleSubmit} novalidate>
 		<FormInput
-			label="Display name"
+			label={$t('auth_display_name')}
 			type="text"
 			autocomplete="name"
-			placeholder="Your name"
+			placeholder={$t('auth_name_placeholder')}
 			required
 			bind:value={displayName}
 			error={fieldErrors.displayName}
 		/>
 
 		<FormInput
-			label="Email"
+			label={$t('common_email')}
 			type="email"
 			autocomplete="email"
-			placeholder="you@example.com"
+			placeholder={$t('auth_email_placeholder')}
 			required
 			bind:value={email}
 			error={fieldErrors.email}
@@ -129,10 +132,10 @@
 
 		<div class="password-field">
 			<FormInput
-				label="Password"
+				label={$t('auth_password')}
 				type="password"
 				autocomplete="new-password"
-				placeholder="Min. 8 characters"
+				placeholder={$t('auth_password_minimum_placeholder')}
 				required
 				revealable
 				bind:value={password}
@@ -142,17 +145,17 @@
 		</div>
 
 		<div class="form-actions">
-			<FormButton loading={submitting}>Create account</FormButton>
+			<FormButton loading={submitting}>{$t('auth_create_account')}</FormButton>
 		</div>
 	</form>
 
-	<OAuthButtons dividerText="or" />
+	<OAuthButtons dividerText={$t('auth_or')} />
 {/if}
 
 {#if !setupRequired}
 	<p class="auth-footer">
-		Already have an account?
-		<a href="{resolve('/login')}{getRedirectParam()}" class="auth-link">Sign in</a>
+		{$t('auth_have_account')}
+		<a href="{resolve('/login')}{getRedirectParam()}" class="auth-link">{$t('auth_sign_in')}</a>
 	</p>
 {/if}
 

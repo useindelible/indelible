@@ -29,6 +29,7 @@
 	import { getReaderPreferences } from '$lib/stores/reader-preferences.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { applyTheme, getSavedTheme } from '$lib/styles/theme';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -48,10 +49,8 @@
 	let initError = $state<string | null>(null);
 	let annotationError = $state<string | null>(null);
 
-	const annotationErrorFallback = 'Could not save annotation. Please try again.';
-
 	function annotationErrorMessage(error: unknown): string {
-		if (!error || typeof error !== 'object') return annotationErrorFallback;
+		if (!error || typeof error !== 'object') return $t('reader_error_save_annotation');
 		const problem = error as {
 			detail?: unknown;
 			message?: unknown;
@@ -69,7 +68,7 @@
 		) {
 			return problem.message;
 		}
-		return annotationErrorFallback;
+		return $t('reader_error_save_annotation');
 	}
 
 	function showAnnotationError(error?: unknown) {
@@ -264,8 +263,8 @@
 
 			source = nextSource;
 			currentIndex = nextIndex;
-		} catch (err) {
-			initError = err instanceof Error ? err.message : 'Failed to load book';
+		} catch {
+			initError = $t('reader_error_load_book');
 		} finally {
 			pageLoading = false;
 		}
@@ -602,7 +601,9 @@
 	{#if initError}
 		<div class="book-error">
 			<p>{initError}</p>
-			<button type="button" class="error-back-btn" onclick={handleBack}>Return to library</button>
+			<button type="button" class="error-back-btn" onclick={handleBack}
+				>{$t('reader_return_to_library')}</button
+			>
 		</div>
 	{:else}
 		{#if vp.isMobile}
@@ -660,14 +661,14 @@
 				detailPanelOpen={detailOpen && !hideDetailPanel}
 				onDetailPanelToggle={toggleDetailPanel}
 				onMenuClick={vp.isMobile && source ? () => (mobileTocOpen = true) : undefined}
-				menuAriaLabel="Open contents"
+				menuAriaLabel={$t('reader_open_contents')}
 			/>
 			{#if annotationError}
 				<div class="annotation-error" role="alert">
 					<span>{annotationError}</span>
 					<button
 						type="button"
-						aria-label="Dismiss annotation error"
+						aria-label={$t('reader_dismiss_annotation_error')}
 						onclick={() => (annotationError = null)}
 					>
 						&times;
@@ -676,11 +677,8 @@
 			{/if}
 			{#if !textAvailable}
 				<div class="image-only-pdf-note" role="status">
-					<strong>This PDF has no searchable text.</strong>
-					<span
-						>Visual reading and bookmarks still work. Search, Mila chat and text actions are
-						unavailable. OCR is not available in this release.</span
-					>
+					<strong>{$t('reader_pdf_no_searchable_text')}</strong>
+					<span>{$t('reader_pdf_image_only_description')}</span>
 				</div>
 			{/if}
 
@@ -723,7 +721,7 @@
 					/>
 				{:else if pageLoading}
 					<div class="book-page-loading">
-						<span class="loading-text">Loading...</span>
+						<span class="loading-text">{$t('common_loading')}</span>
 					</div>
 				{/if}
 
@@ -772,7 +770,7 @@
 								type="button"
 								class="m-back"
 								onclick={() => (compactDetailOpen = false)}
-								aria-label="Back to book"
+								aria-label={$t('reader_back_to_book')}
 							>
 								<svg
 									viewBox="0 0 24 24"

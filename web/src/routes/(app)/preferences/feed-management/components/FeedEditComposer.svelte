@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { extractDomain, type EditComposerState, type Feed } from '../feed-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		composer: EditComposerState | null;
@@ -17,24 +18,33 @@
 <section
 	class="edit-feed-composer"
 	class:open={composer !== null}
-	aria-label="Edit feed"
+	aria-label={$t('feed_management_edit_feed')}
 	aria-hidden={composer === null}
 >
 	{#if composer && feed}
 		<div class="composer-inner">
 			<div class="composer-header">
 				<div>
-					<div class="composer-eyebrow">EDIT · {extractDomain(feed.inputUrl)}</div>
-					<div class="composer-title">Edit feed · {feed.name}</div>
+					<div class="composer-eyebrow">
+						{$t('feed_management_edit').toUpperCase()} · {extractDomain(feed.inputUrl)}
+					</div>
+					<div class="composer-title">
+						{$t('feed_management_edit_named', { values: { name: feed.name } })}
+					</div>
 				</div>
-				<button type="button" class="composer-close" onclick={onClose} aria-label="Close">
+				<button
+					type="button"
+					class="composer-close"
+					onclick={onClose}
+					aria-label={$t('common_close')}
+				>
 					<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
 				</button>
 			</div>
 
 			<div class="composer-grid">
 				<div class="composer-field span-full">
-					<span class="composer-label">Source</span>
+					<span class="composer-label">{$t('feed_management_source')}</span>
 					<div class="composer-source-readonly">
 						<svg viewBox="0 0 24 24" aria-hidden="true">
 							<path d="M9 17H7a5 5 0 0 1 0-10h2" />
@@ -47,22 +57,24 @@
 				</div>
 
 				<div class="composer-field span-full">
-					<label class="composer-label" for="edit-feed-title">Title</label>
+					<label class="composer-label" for="edit-feed-title">{$t('common_title')}</label>
 					<input
 						id="edit-feed-title"
 						type="text"
 						class="composer-input"
-						placeholder="Display name for this feed"
+						placeholder={$t('feed_management_title_placeholder')}
 						autocomplete="off"
 						spellcheck="false"
 						value={composer.title}
 						oninput={(event) => onChange({ title: event.currentTarget.value })}
 					/>
-					<span class="composer-hint">Override the title pulled from the feed.</span>
+					<span class="composer-hint">{$t('feed_management_title_hint')}</span>
 				</div>
 
 				<div class="composer-field">
-					<label class="composer-label" for="edit-feed-collection">Send to collection</label>
+					<label class="composer-label" for="edit-feed-collection"
+						>{$t('feed_management_send_collection')}</label
+					>
 					<select
 						id="edit-feed-collection"
 						class="composer-input"
@@ -70,29 +82,41 @@
 						onchange={(event) =>
 							onChange({ autoSaveCollectionId: event.currentTarget.value || null })}
 					>
-						<option value="">Inbox</option>
+						<option value="">{$t('library_triage_inbox')}</option>
 					</select>
 				</div>
 
 				<div class="composer-field">
-					<label class="composer-label" for="edit-feed-schedule">Polling schedule</label>
+					<label class="composer-label" for="edit-feed-schedule"
+						>{$t('feed_management_polling_schedule')}</label
+					>
 					<select
 						id="edit-feed-schedule"
 						class="composer-input"
 						value={composer.pollInterval}
 						onchange={(event) => onChange({ pollInterval: event.currentTarget.value })}
 					>
-						<option value="default">Default</option>
-						<option value="15">Every 15m</option>
-						<option value="30">Every 30m</option>
-						<option value="60">Every 1h</option>
-						<option value="240">Every 4h</option>
-						<option value="1440">Daily</option>
+						<option value="default">{$t('feed_management_schedule_default')}</option>
+						<option value="15"
+							>{$t('feed_management_schedule_minutes', { values: { minutes: 15 } })}</option
+						>
+						<option value="30"
+							>{$t('feed_management_schedule_minutes', { values: { minutes: 30 } })}</option
+						>
+						<option value="60"
+							>{$t('feed_management_schedule_hours', { values: { hours: 1 } })}</option
+						>
+						<option value="240"
+							>{$t('feed_management_schedule_hours', { values: { hours: 4 } })}</option
+						>
+						<option value="1440"
+							>{$t('feed_management_schedule_days', { values: { days: 1 } })}</option
+						>
 					</select>
 				</div>
 
 				<div class="composer-field span-full">
-					<span class="composer-label">Auto-save new items</span>
+					<span class="composer-label">{$t('feed_management_auto_save_new')}</span>
 					<div class="auto-save-row">
 						<button
 							type="button"
@@ -100,12 +124,14 @@
 							class:on={composer.autoSave}
 							role="switch"
 							aria-checked={composer.autoSave}
-							aria-label={composer.autoSave ? 'Disable auto-save' : 'Enable auto-save'}
+							aria-label={composer.autoSave
+								? $t('feed_management_disable_auto_save_short')
+								: $t('feed_management_enable_auto_save_short')}
 							onclick={() => onChange({ autoSave: !composer.autoSave })}
 						>
 							<span class="toggle-track"></span>
 						</button>
-						<span class="composer-hint">When off, new items wait in the feed for triage.</span>
+						<span class="composer-hint">{$t('feed_management_auto_save_hint')}</span>
 					</div>
 				</div>
 			</div>
@@ -120,15 +146,17 @@
 						<circle cx="12" cy="12" r="10" />
 						<path d="M12 8v4M12 16h.01" />
 					</svg>
-					<span>Esc to close · ⏎ to save</span>
+					<span>{$t('feed_management_keyboard_hint')}</span>
 				</div>
 				<div class="right">
-					<button type="button" class="composer-btn ghost" onclick={onClose}>Cancel</button>
+					<button type="button" class="composer-btn ghost" onclick={onClose}
+						>{$t('common_cancel')}</button
+					>
 					<button type="button" class="composer-btn primary" disabled={saving} onclick={onSave}>
 						<svg viewBox="0 0 24 24" aria-hidden="true">
 							<path d="M5 12l4 4 10-10" />
 						</svg>
-						<span>{saving ? 'Saving…' : 'Save changes'}</span>
+						<span>{saving ? $t('common_saving') : $t('feed_management_save_changes')}</span>
 					</button>
 				</div>
 			</div>

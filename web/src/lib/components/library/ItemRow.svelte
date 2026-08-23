@@ -2,11 +2,13 @@
 	import type { DocumentListEntry, TriageModeDto } from '$lib/api';
 	import type { TriageTab } from '$lib/stores/library.svelte';
 	import { formatReadingTime } from '$lib/utils/format';
+	import { relativeTime } from '$lib/utils/relative-time';
 	import * as api from '$lib/api';
 	import { mount, unmount } from 'svelte';
 	import HoverActions from './HoverActions.svelte';
 	import ContextMenu from './ContextMenu.svelte';
 	import TagInput from './TagInput.svelte';
+	import { date, locale, t } from '$lib/i18n';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -94,7 +96,7 @@
 			tagPickerTags = [...loaded];
 			tagPickerOriginal = [...loaded];
 		} catch {
-			tagPickerError = 'Failed to load tags';
+			tagPickerError = $t('library_item_error_load_tags');
 		} finally {
 			tagPickerLoading = false;
 		}
@@ -113,7 +115,7 @@
 			});
 			tagPickerOpen = false;
 		} catch {
-			tagPickerError = 'Failed to save tags';
+			tagPickerError = $t('library_item_error_save_tags');
 		} finally {
 			tagPickerSaving = false;
 		}
@@ -151,20 +153,10 @@
 
 	function formatTimestamp(saved: string): string {
 		const d = new Date(saved);
-		const now = new Date();
-		const diffMs = now.getTime() - d.getTime();
-		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-		if (diffDays === 0) {
-			const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-			if (diffHrs === 0) {
-				const diffMin = Math.floor(diffMs / (1000 * 60));
-				return `${diffMin}m`;
-			}
-			return `${diffHrs}h`;
-		}
-		if (diffDays < 7) return `${diffDays}d`;
-		if (diffDays < 30) return `${Math.floor(diffDays / 7)}w`;
-		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+		const diffDays = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+		void $locale;
+		if (diffDays < 30) return relativeTime(saved) ?? '';
+		return $date(d, { month: 'short', day: 'numeric' });
 	}
 
 	function openContextMenu(e: MouseEvent) {
@@ -218,7 +210,7 @@
 			<span class="thumb-emoji">{emoji}</span>
 		{/if}
 		{#if isUnread}
-			<span class="unread-dot" aria-label="Unread"></span>
+			<span class="unread-dot" aria-label={$t('library_item_unread')}></span>
 		{/if}
 	</div>
 
@@ -226,10 +218,10 @@
 		<div class="item-title-line">
 			<p class="item-title">{item.title}</p>
 			{#if item.pipeline_status === 'failed'}
-				<span class="failed-badge">Failed</span>
+				<span class="failed-badge">{$t('library_item_failed')}</span>
 			{/if}
 			{#if showFeedBadge}
-				<span class="feed-badge">Feed</span>
+				<span class="feed-badge">{$t('library_item_feed')}</span>
 			{/if}
 		</div>
 		{#if item.pipeline_status === 'failed' && item.pipeline_error}
@@ -281,7 +273,7 @@
 				e.stopPropagation();
 				onDetail();
 			}}
-			aria-label="Show details"
+			aria-label={$t('library_item_show_details')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -314,7 +306,7 @@
 		class="cmd-backdrop"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Edit tags"
+		aria-label={$t('library_item_edit_tags')}
 		tabindex="-1"
 		onclick={() => (tagPickerOpen = false)}
 		onkeydown={(e) => {
@@ -324,7 +316,7 @@
 		<div class="cmd-card" role="none" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 			<div class="cmd-body">
 				{#if tagPickerLoading}
-					<p class="cmd-loading">Loading tags…</p>
+					<p class="cmd-loading">{$t('library_item_loading_tags')}</p>
 				{:else}
 					<div class="cmd-tag-field">
 						<TagInput bind:tags={tagPickerTags} autofocus />
@@ -336,7 +328,7 @@
 			</div>
 			<div class="cmd-controls">
 				<button type="button" class="cmd-secondary" onclick={() => (tagPickerOpen = false)}>
-					Cancel
+					{$t('common_cancel')}
 				</button>
 				<button
 					type="button"
@@ -344,7 +336,7 @@
 					disabled={tagPickerSaving || tagPickerLoading || !tagPickerChanged}
 					onclick={saveTagPicker}
 				>
-					{tagPickerSaving ? 'Saving…' : 'Save tags'}
+					{tagPickerSaving ? $t('common_saving') : $t('library_item_save_tags')}
 				</button>
 			</div>
 		</div>

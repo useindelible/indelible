@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -106,7 +107,7 @@
 	}
 </script>
 
-<nav class="library-sidebar" aria-label="Application navigation">
+<nav class="library-sidebar" aria-label={$t('library_application_navigation')}>
 	<SidebarHeader
 		{homeHref}
 		popoverOpen={modal.popoverOpen}
@@ -131,7 +132,7 @@
 		<li>
 			<SidebarNavItem
 				href={resolve('/trash')}
-				label="Trash"
+				label={$t('common_trash')}
 				icon="trash"
 				active={isActive('/trash')}
 				badge={sidebar.trashCount > 0 ? sidebar.trashCount : undefined}
@@ -143,7 +144,7 @@
 		<li>
 			<SidebarNavItem
 				href={resolve('/search')}
-				label="Search"
+				label={$t('common_search')}
 				icon="search"
 				active={isActive('/search')}
 			/>
@@ -151,7 +152,7 @@
 		<li>
 			<SidebarNavItem
 				href={resolve('/preferences')}
-				label="Preferences"
+				label={$t('common_preferences')}
 				icon="preferences"
 				active={isActive('/preferences')}
 			/>

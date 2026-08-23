@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import SaveUrlCollectionPicker from './SaveUrlCollectionPicker.svelte';
 	import SaveUrlTagEditor from './SaveUrlTagEditor.svelte';
 
@@ -77,9 +78,9 @@
 	>
 		{#if submitting}
 			<span class="spinner" aria-hidden="true"></span>
-			<span class="sr-only">Saving…</span>
+			<span class="sr-only">{$t('common_saving')}</span>
 		{:else}
-			Save
+			{$t('common_save')}
 		{/if}
 	</button>
 </div>

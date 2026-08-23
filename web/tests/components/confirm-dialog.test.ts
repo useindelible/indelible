@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { tick } from 'svelte';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
 
 function renderDialog(overrides = {}) {
 	const onConfirm = vi.fn();
@@ -22,6 +24,8 @@ function renderDialog(overrides = {}) {
 }
 
 describe('ConfirmDialog', () => {
+	afterEach(() => locale.set('en'));
+
 	it('does not render when closed', () => {
 		renderDialog({ open: false });
 		expect(screen.queryByRole('dialog')).toBeNull();
@@ -33,6 +37,14 @@ describe('ConfirmDialog', () => {
 		expect(screen.getByText('This removes the subscription but keeps saved stories.')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Keep feed' })).toBeTruthy();
+	});
+
+	it('uses localized default action labels', () => {
+		setupI18nSync({ fr }, 'fr');
+		renderDialog({ confirmLabel: undefined, cancelLabel: undefined });
+
+		expect(screen.getByRole('button', { name: 'Confirmer' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Annuler' })).toBeTruthy();
 	});
 
 	it('calls the callback props for confirm and cancel actions', async () => {

@@ -1,30 +1,31 @@
 import type { HomeItemResponse } from '$lib/api';
+import type { MessageKey, Translate } from '$lib/i18n';
 import { formatReadingTime } from '$lib/utils/format';
 
 export interface DashboardConfigItem {
 	id: string;
-	label: string;
+	labelKey: MessageKey;
 	on: boolean;
 }
 
 export const DEFAULT_CONFIG_SECTIONS: DashboardConfigItem[] = [
-	{ id: 'continue', label: 'Continue Reading', on: true },
-	{ id: 'quick', label: 'Quick Reads', on: true },
-	{ id: 'long', label: 'Long Reads', on: true },
-	{ id: 'review', label: 'Daily Review', on: true },
-	{ id: 'recent', label: 'Recently Added', on: true },
-	{ id: 'highlights', label: 'Recently Highlighted', on: true },
-	{ id: 'stats', label: 'Reading Stats', on: false }
+	{ id: 'continue', labelKey: 'dashboard_section_continue', on: true },
+	{ id: 'quick', labelKey: 'dashboard_section_quick', on: true },
+	{ id: 'long', labelKey: 'dashboard_section_long', on: true },
+	{ id: 'review', labelKey: 'dashboard_section_review', on: true },
+	{ id: 'recent', labelKey: 'dashboard_section_recent', on: true },
+	{ id: 'highlights', labelKey: 'dashboard_section_highlights', on: true },
+	{ id: 'stats', labelKey: 'dashboard_section_stats', on: false }
 ];
 
 export const DEFAULT_CONFIG_TYPES: DashboardConfigItem[] = [
-	{ id: 'articles', label: 'Articles', on: true },
-	{ id: 'books', label: 'Books', on: true },
-	{ id: 'emails', label: 'Emails', on: true },
-	{ id: 'pdfs', label: 'PDFs', on: true },
-	{ id: 'tweets', label: 'Tweets', on: true },
-	{ id: 'videos', label: 'Videos', on: true },
-	{ id: 'feeds', label: 'Feeds', on: true }
+	{ id: 'articles', labelKey: 'dashboard_type_articles', on: true },
+	{ id: 'books', labelKey: 'dashboard_type_books', on: true },
+	{ id: 'emails', labelKey: 'dashboard_type_emails', on: true },
+	{ id: 'pdfs', labelKey: 'dashboard_type_pdfs', on: true },
+	{ id: 'tweets', labelKey: 'dashboard_type_tweets', on: true },
+	{ id: 'videos', labelKey: 'dashboard_type_videos', on: true },
+	{ id: 'feeds', labelKey: 'dashboard_type_feeds', on: true }
 ];
 
 export const COVER_COLORS = ['blue', 'green', 'purple', 'orange', 'red', 'teal', 'pink'] as const;
@@ -41,19 +42,22 @@ export function reorder<T>(arr: T[], from: number, to: number): T[] {
 	return next;
 }
 
-export function greetingForHour(hour: number): string {
-	if (hour < 12) return 'Good morning';
-	if (hour < 18) return 'Good afternoon';
-	return 'Good evening';
+export function greetingKeyForHour(hour: number, named: boolean): MessageKey {
+	if (hour < 12) return named ? 'dashboard_greeting_morning_named' : 'dashboard_greeting_morning';
+	if (hour < 18) {
+		return named ? 'dashboard_greeting_afternoon_named' : 'dashboard_greeting_afternoon';
+	}
+	return named ? 'dashboard_greeting_evening_named' : 'dashboard_greeting_evening';
 }
 
 export function greetingLine(
+	translate: Translate,
 	displayName: string | null | undefined,
 	hour = new Date().getHours()
 ): string {
-	const greeting = greetingForHour(hour);
 	const name = displayName?.trim();
-	return name ? `${greeting}, ${name}.` : `${greeting}.`;
+	const key = greetingKeyForHour(hour, Boolean(name));
+	return name ? translate(key, { values: { name } }) : translate(key);
 }
 
 export function longReadItems(items: HomeItemResponse[]): HomeItemResponse[] {
@@ -69,10 +73,16 @@ export function domainInitial(domain: string | null | undefined): string {
 	return (domain ?? '?').charAt(0).toUpperCase();
 }
 
-export function readingMeta(item: HomeItemResponse): string {
+export function readingMeta(translate: Translate, item: HomeItemResponse): string {
 	const parts: string[] = [];
 	const author = item.author ? item.author.replace(/\s*@\S+$/, '').trim() : '';
 	if (author) parts.push(author);
-	if (item.reading_time_minutes) parts.push(`${formatReadingTime(item.reading_time_minutes)} read`);
+	if (item.reading_time_minutes) {
+		parts.push(
+			translate('dashboard_reading_meta', {
+				values: { duration: formatReadingTime(item.reading_time_minutes) }
+			})
+		);
+	}
 	return parts.join(' · ');
 }

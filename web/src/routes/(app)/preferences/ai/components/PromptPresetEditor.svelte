@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { PresetEditorState } from '../mila-settings-model';
+	import type { ActionKey, PresetEditorState } from '../mila-settings-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
-		actionName: string;
+		action: ActionKey;
 		editor: PresetEditorState;
 		editorSaving: boolean;
 		onCancel: () => void;
@@ -10,17 +11,23 @@
 		onSave: () => void;
 	}
 
-	let { actionName, editor, editorSaving, onCancel, onChange, onSave }: Props = $props();
+	let { action, editor, editorSaving, onCancel, onChange, onSave }: Props = $props();
 </script>
 
 <div class="preset-edit-form">
 	<div class="preset-edit-header">
 		<div class="preset-edit-title">
 			<span class="preset-edit-title-dot"></span>
-			{editor.mode === 'add' ? 'New' : 'Edit'}
-			{actionName.toLowerCase()} preset
+			{$t(editor.mode === 'add' ? 'prefs_ai_new_preset_title' : 'prefs_ai_edit_preset_title', {
+				values: { action }
+			})}
 		</div>
-		<button type="button" class="preset-edit-close" aria-label="Discard changes" onclick={onCancel}>
+		<button
+			type="button"
+			class="preset-edit-close"
+			aria-label={$t('common_discard')}
+			onclick={onCancel}
+		>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<path d="M6 6l12 12M18 6L6 18" />
 			</svg>
@@ -28,31 +35,39 @@
 	</div>
 	<div class="preset-edit-body">
 		<div class="preset-edit-field">
-			<label class="preset-edit-field-label" for="preset-edit-name">Preset name</label>
+			<label class="preset-edit-field-label" for="preset-edit-name"
+				>{$t('prefs_ai_preset_name')}</label
+			>
 			<input
 				id="preset-edit-name"
 				class="preset-edit-name-input"
 				value={editor.name}
-				placeholder="e.g. Tight TL;DR"
+				placeholder={$t('prefs_ai_preset_name_placeholder')}
 				oninput={(event) => onChange({ name: event.currentTarget.value })}
 			/>
 		</div>
 		<div class="preset-edit-field">
-			<label class="preset-edit-field-label" for="preset-edit-prompt">System prompt</label>
+			<label class="preset-edit-field-label" for="preset-edit-prompt"
+				>{$t('prefs_ai_system_prompt')}</label
+			>
 			<textarea
 				id="preset-edit-prompt"
 				class="preset-edit-prompt-textarea"
 				value={editor.system_prompt}
 				rows={6}
-				placeholder="What should Mila do for this action? Be specific about tone, length, and format."
+				placeholder={$t('prefs_ai_system_prompt_placeholder')}
 				oninput={(event) => onChange({ system_prompt: event.currentTarget.value })}
 			></textarea>
 		</div>
 		<div class="preset-edit-default-row">
 			<div class="preset-edit-default-text">
-				<div class="preset-edit-default-title">Set as default for {actionName}</div>
+				<div class="preset-edit-default-title">
+					{$t('prefs_ai_set_default_for', { values: { action } })}
+				</div>
 				<div class="preset-edit-default-sub">
-					Mila will use this preset whenever you trigger {actionName.toLowerCase()}.
+					{$t('prefs_ai_set_default_hint', {
+						values: { action }
+					})}
 				</div>
 			</div>
 			<button
@@ -61,7 +76,7 @@
 				class:on={editor.is_default}
 				role="switch"
 				aria-checked={editor.is_default}
-				aria-label={editor.is_default ? 'Unset as default' : 'Set as default'}
+				aria-label={$t(editor.is_default ? 'prefs_ai_unset_default' : 'prefs_ai_set_default')}
 				onclick={() => onChange({ is_default: !editor.is_default })}
 			>
 				<span class="toggle-track"></span>
@@ -69,14 +84,19 @@
 		</div>
 	</div>
 	<div class="preset-edit-footer">
-		<button type="button" class="btn ghost compact" onclick={onCancel}>Cancel</button>
+		<button type="button" class="btn ghost compact" onclick={onCancel}>{$t('common_cancel')}</button
+		>
 		<button
 			type="button"
 			class="btn violet compact"
 			onclick={onSave}
 			disabled={editorSaving || !editor.name.trim()}
 		>
-			{editorSaving ? 'Saving…' : editor.mode === 'add' ? 'Add preset' : 'Save changes'}
+			{editorSaving
+				? $t('common_saving')
+				: editor.mode === 'add'
+					? $t('prefs_ai_add_preset')
+					: $t('prefs_ai_save_changes')}
 		</button>
 	</div>
 </div>

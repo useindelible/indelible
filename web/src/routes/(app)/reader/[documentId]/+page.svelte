@@ -20,6 +20,7 @@
 	import { getReaderPreferences } from '$lib/stores/reader-preferences.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { applyTheme, getSavedTheme } from '$lib/styles/theme';
+	import { t } from '$lib/i18n';
 	import AiFailureNotice from './components/AiFailureNotice.svelte';
 	import ReaderErrorState from './components/ReaderErrorState.svelte';
 	import ReaderCompactDetail from './components/ReaderCompactDetail.svelte';
@@ -60,7 +61,7 @@
 	let error = $state<string | null>(null);
 	let aiFailure = $state<ReaderAiFailure | null>(null);
 	let aiRetryStatus = $state<'idle' | 'pending' | 'queued' | 'error'>('idle');
-	const readerRetry = new ReaderRetryController();
+	const readerRetry = new ReaderRetryController((key, options) => $t(key, options));
 	const showReaderRetry = $derived(
 		readerRetry.pollVisible || shouldReprocessReaderPreparation(item, assets)
 	);
@@ -134,7 +135,7 @@
 	const hasNext = $derived(currentIndex >= 0 && currentIndex < libItems.length - 1);
 	const isBookItem = $derived(isBookReaderItem(item));
 	const readableReady = $derived(isReaderContentReady(item, assets));
-	const readerFailure = $derived(readerFailurePresentation(assets));
+	const readerFailure = $derived(readerFailurePresentation($t, assets));
 	const transcriptUnavailable = $derived(isTranscriptUnavailableVideo(item, assets));
 	$effect(() => {
 		if (transcriptUnavailable) ttsOpen = false;
@@ -234,7 +235,7 @@
 				// so it recovers once preparation finishes (or the network blip clears).
 				readerPoll.schedule(false);
 			} else {
-				error = 'Failed to load item.';
+				error = $t('reader_error_load_item');
 			}
 		} finally {
 			if (isCurrentLoad()) loading = false;
@@ -572,7 +573,7 @@
 {#if loading}
 	<ReaderLoadingState />
 {:else if error || !item}
-	<ReaderErrorState message={error ?? 'Item not found.'} onBack={handleBack} />
+	<ReaderErrorState message={error ?? $t('reader_item_not_found')} onBack={handleBack} />
 {:else if isBookItem}
 	<BookReader {item} {assets} {highlights} {targetHighlightId} />
 {:else}

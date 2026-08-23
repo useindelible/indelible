@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		homeHref: string;
 		popoverOpen: boolean;
@@ -17,8 +18,8 @@
 			type="button"
 			class="sidebar-icon-btn"
 			onclick={onHideSidebar}
-			aria-label="Hide sidebar"
-			title="Hide sidebar"
+			aria-label={$t('library_hide_sidebar')}
+			title={$t('library_hide_sidebar')}
 		>
 			<svg
 				viewBox="0 0 20 20"
@@ -37,7 +38,7 @@
 			type="button"
 			class="sidebar-add-btn"
 			class:active={popoverOpen}
-			aria-label="Add to library"
+			aria-label={$t('library_add_to_library')}
 			aria-expanded={popoverOpen}
 			onclick={onAddClick}
 		>

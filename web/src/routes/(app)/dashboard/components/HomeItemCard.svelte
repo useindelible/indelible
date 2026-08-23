@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { HomeItemResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import { coverColor, domainInitial, readingMeta } from '../dashboard-model';
 
 	interface Props {
@@ -8,14 +9,14 @@
 	}
 
 	let { item, onOpen }: Props = $props();
-	const meta = $derived(readingMeta(item));
+	const meta = $derived(readingMeta($t, item));
 	const progress = $derived(Math.max(0, Math.min(item.progress_percent ?? 0, 100)));
 </script>
 
 <button
 	type="button"
 	class="content-card"
-	aria-label={`Open ${item.title}`}
+	aria-label={$t('dashboard_item_open', { values: { title: item.title } })}
 	onclick={() => onOpen?.(item.id)}
 >
 	<div class="card-thumb">
@@ -27,7 +28,10 @@
 			</div>
 		{/if}
 		{#if progress > 0}
-			<div class="card-thumb-progress" aria-label={`${progress}% read`}>
+			<div
+				class="card-thumb-progress"
+				aria-label={$t('dashboard_item_progress', { values: { progress } })}
+			>
 				<div class="card-thumb-progress-fill" style={`width: ${progress}%`}></div>
 			</div>
 		{/if}
@@ -35,7 +39,7 @@
 	<div class="card-body">
 		<div class="card-source-row">
 			<span class="card-favicon">{domainInitial(item.domain)}</span>
-			<span class="card-domain">{item.domain ?? 'Unknown'}</span>
+			<span class="card-domain">{item.domain ?? $t('common_unknown')}</span>
 		</div>
 		<div class="card-title">{item.title}</div>
 		{#if meta}

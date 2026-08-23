@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import AuthorCard from './AuthorCard.svelte';
 	import SummarySection from './SummarySection.svelte';
 	import MetadataTable from './MetadataTable.svelte';
@@ -55,7 +56,9 @@
 
 	<MetadataTable {item} />
 
-	<button class="edit-metadata-link" type="button" onclick={onEditMetadata}>Edit metadata</button>
+	<button class="edit-metadata-link" type="button" onclick={onEditMetadata}
+		>{$t('library_edit_metadata')}</button
+	>
 
 	<EntitiesSection itemId={item.id} />
 </div>

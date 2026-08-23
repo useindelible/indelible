@@ -3,6 +3,7 @@
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
 	import { normalizeImportStatus } from '$lib/integrations/status';
 	import { progressPercent, statusForJob, type ImportSlot } from '../integrations-hub-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		activeJob: ImportJobStatusResponse | null;
@@ -41,14 +42,17 @@
 	}: Props = $props();
 </script>
 
-<SettingsGroup title="One-time imports" meta="Drag a file or pick to start">
+<SettingsGroup
+	title={$t('integrations_hub_one_time_imports')}
+	meta={$t('integrations_hub_one_time_imports_hint')}
+>
 	<div class="imports-shelf">
 		<div class="import-card">
 			<div class="import-head">
 				<div class="conn-mark readwise">R</div>
 				<div class="conn-meta">
 					<div class="conn-name">Readwise Reader</div>
-					<div class="conn-tagline">CSV + document ZIP + OPML, in any combination.</div>
+					<div class="conn-tagline">{$t('integrations_hub_readwise_formats')}</div>
 				</div>
 			</div>
 
@@ -56,10 +60,15 @@
 				{@const status = statusForJob(activeJob)}
 				<div class="job-strip" data-variant={status.variant}>
 					<div class="job-strip-head">
-						<span class="status-pill {status.variant}">{status.label}</span>
+						<span class="status-pill {status.variant}">{$t(status.labelKey)}</span>
 						<span class="job-strip-counts">
-							{activeJob.counts.imported} imported / {activeJob.counts.duplicate} dup
-							{#if activeJob.counts.failed > 0}/ {activeJob.counts.failed} failed{/if}
+							{$t('integrations_hub_import_counts', {
+								values: {
+									imported: activeJob.counts.imported,
+									duplicate: activeJob.counts.duplicate,
+									failed: activeJob.counts.failed
+								}
+							})}
 						</span>
 					</div>
 					{#if !activeIsTerminal}
@@ -80,13 +89,13 @@
 								onclick={() => onOpenRollback(activeJob.id)}
 								disabled={normalizeImportStatus(activeJob.status) === 'rolled_back'}
 							>
-								Roll back
+								{$t('integrations_hub_roll_back')}
 							</button>
 							<button type="button" class="btn ghost compact" onclick={onClearActiveJob}
-								>Done</button
+								>{$t('reader_done')}</button
 							>
 						{:else}
-							<span class="job-strip-hint">Polling every 2s…</span>
+							<span class="job-strip-hint">{$t('integrations_hub_polling')}</span>
 						{/if}
 					</div>
 				</div>
@@ -109,9 +118,11 @@
 						</svg>
 					</div>
 					<div class="drop-title">
-						{busySlot === 'readwise' ? 'Uploading…' : 'Drop CSV, ZIP, or OPML'}
+						{busySlot === 'readwise'
+							? $t('library_upload_uploading')
+							: $t('integrations_hub_readwise_drop')}
 					</div>
-					<div class="drop-hint">We match documents across files</div>
+					<div class="drop-hint">{$t('integrations_hub_readwise_match_hint')}</div>
 					<input
 						type="file"
 						accept=".csv,.zip,.opml,.xml"

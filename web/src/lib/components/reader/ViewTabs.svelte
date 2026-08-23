@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t, type MessageKey } from '$lib/i18n';
+
 	export type ViewTab = 'reader' | 'original' | 'pdf' | 'screenshot';
 
 	interface Props {
@@ -9,11 +11,11 @@
 
 	let { activeTab, availableTabs, onTabChange }: Props = $props();
 
-	const allTabs: { value: ViewTab; label: string }[] = [
-		{ value: 'reader', label: 'Reader' },
-		{ value: 'original', label: 'Original' },
-		{ value: 'pdf', label: 'PDF' },
-		{ value: 'screenshot', label: 'Screenshot' }
+	const allTabs: { value: ViewTab; labelKey: MessageKey }[] = [
+		{ value: 'reader', labelKey: 'reader_view_reader' },
+		{ value: 'original', labelKey: 'reader_view_original' },
+		{ value: 'pdf', labelKey: 'reader_view_pdf' },
+		{ value: 'screenshot', labelKey: 'reader_view_screenshot' }
 	];
 
 	function isEnabled(tab: ViewTab): boolean {
@@ -44,7 +46,7 @@
 		class="view-tabs-inner"
 		role="tablist"
 		tabindex="-1"
-		aria-label="Content view"
+		aria-label={$t('reader_content_view')}
 		onkeydown={handleKeydown}
 	>
 		{#each allTabs as tab (tab.value)}
@@ -63,7 +65,7 @@
 					if (enabled) onTabChange(tab.value);
 				}}
 			>
-				{tab.label}
+				{$t(tab.labelKey)}
 			</button>
 		{/each}
 	</div>

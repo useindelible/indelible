@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		token: string | null;
 		copied: boolean;
@@ -12,22 +13,27 @@
 {#if token}
 	<div class="reveal">
 		<div class="reveal-head">
-			<div class="reveal-title">Token created <span class="badge-warn">Shown once</span></div>
-			<button type="button" class="btn ghost compact" onclick={onDismiss}>Dismiss</button>
+			<div class="reveal-title">
+				{$t('prefs_developer_token_created')}
+				<span class="badge-warn">{$t('prefs_developer_shown_once')}</span>
+			</div>
+			<button type="button" class="btn ghost compact" onclick={onDismiss}
+				>{$t('common_dismiss')}</button
+			>
 		</div>
 		<div class="reveal-desc">
-			Copy and store this token in a password manager, or the secure credential store of the app
-			using it. We hash and discard it after this dialog closes — it can't be recovered, only
-			revoked.
+			{$t('prefs_developer_token_reveal_hint')}
 		</div>
 		<div class="reveal-token">
 			<code>{token}</code>
 			<button type="button" class="btn ghost compact" onclick={onCopy}>
-				{copied ? 'Copied' : 'Copy'}
+				{$t(copied ? 'common_copied' : 'common_copy')}
 			</button>
 		</div>
 		<div class="reveal-foot">
-			<button type="button" class="btn primary" onclick={onDismiss}>I've saved it</button>
+			<button type="button" class="btn primary" onclick={onDismiss}
+				>{$t('prefs_developer_saved_secret')}</button
+			>
 		</div>
 	</div>
 {/if}

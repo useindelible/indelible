@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		menuEl?: HTMLElement;
@@ -42,22 +43,22 @@
 	role="menu"
 >
 	<button type="button" class="ctx-item" role="menuitem" onclick={() => onRename(tag)}>
-		Rename <span class="ctx-shortcut">R</span>
+		{$t('tag_rename')} <span class="ctx-shortcut">R</span>
 	</button>
 	<button type="button" class="ctx-item" role="menuitem" onclick={() => onCreateChild(tag.id)}>
-		New Child Tag
+		{$t('tag_new_child')}
 	</button>
 	<button type="button" class="ctx-item" role="menuitem" onclick={onToggleColors}>
-		Change Color
+		{$t('tag_color')}
 	</button>
 
 	{#if showColors}
-		<div class="ctx-colors" role="group" aria-label="Color options">
+		<div class="ctx-colors" role="group" aria-label={$t('tag_color_options')}>
 			<button
 				type="button"
 				class="ctx-color-swatch ctx-color-none"
-				title="No color"
-				aria-label="No color"
+				title={$t('tag_color_none')}
+				aria-label={$t('tag_color_none')}
 				onclick={() => onApplyColor(null)}
 			>
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -81,14 +82,14 @@
 
 	<div class="ctx-divider"></div>
 	<button type="button" class="ctx-item" role="menuitem" onclick={() => onSetParent(tag)}>
-		Set Parent Tag
+		{$t('tag_set_parent')}
 	</button>
 	<button type="button" class="ctx-item ctx-item-disabled" role="menuitem" aria-disabled="true">
-		Add Description <span class="ctx-badge-soon">soon</span>
+		{$t('tag_add_description')} <span class="ctx-badge-soon">{$t('tag_soon')}</span>
 	</button>
 	<div class="ctx-divider"></div>
 	<button type="button" class="ctx-item" role="menuitem" onclick={() => onMerge(tag)}>
-		Merge With…
+		{$t('tag_merge_into')}…
 	</button>
 	<div class="ctx-divider"></div>
 	<button
@@ -97,7 +98,8 @@
 		role="menuitem"
 		onclick={() => onDelete(tag)}
 	>
-		Delete <span class="ctx-shortcut ctx-shortcut-destructive">Delete</span>
+		{$t('common_delete')}
+		<span class="ctx-shortcut ctx-shortcut-destructive">{$t('common_delete')}</span>
 	</button>
 </div>
 

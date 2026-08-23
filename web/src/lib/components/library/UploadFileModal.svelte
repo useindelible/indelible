@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { uploadLibraryFile } from '$lib/api/uploads';
+	import { t } from '$lib/i18n';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 
 	const modal = getModalStore();
@@ -48,7 +49,9 @@
 	function validateFile(candidate: File): string {
 		const ext = getExtension(candidate.name);
 		if (!ALLOWED_EXTENSIONS.includes(ext as (typeof ALLOWED_EXTENSIONS)[number])) {
-			return `Unsupported type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`;
+			return $t('library_upload_unsupported_type', {
+				values: { types: ALLOWED_EXTENSIONS.join(', ') }
+			});
 		}
 		return '';
 	}
@@ -98,7 +101,7 @@
 <dialog
 	bind:this={dialogEl}
 	class="modal-backdrop"
-	aria-label="Upload file"
+	aria-label={$t('library_upload_file')}
 	onclick={handleBackdropClick}
 	onclose={close}
 >
@@ -110,7 +113,7 @@
 				class:drag-over={isDragOver}
 				class:has-file={!!file}
 				class:has-error={!!fileError}
-				aria-label="Choose file"
+				aria-label={$t('library_upload_choose_file')}
 				ondrop={handleDrop}
 				ondragover={(e) => {
 					e.preventDefault();
@@ -143,9 +146,9 @@
 						<polyline points="17 8 12 3 7 8" />
 						<line x1="12" y1="3" x2="12" y2="15" />
 					</svg>
-					<span class="dz-title">Drop file here</span>
-					<span class="dz-sub">or choose from your computer</span>
-					<span class="dz-formats">PDF, EPUB, HTML</span>
+					<span class="dz-title">{$t('library_upload_drop_file')}</span>
+					<span class="dz-sub">{$t('library_upload_from_computer')}</span>
+					<span class="dz-formats">{$t('library_upload_supported_formats')}</span>
 				{/if}
 			</button>
 
@@ -171,13 +174,13 @@
 		</div>
 
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={close}>Cancel</button>
+			<button type="button" class="cmd-secondary" onclick={close}>{$t('common_cancel')}</button>
 			<button type="button" class="cmd-action" disabled={!canUpload} onclick={handleUpload}>
 				{#if submitting}
 					<span class="spinner" aria-hidden="true"></span>
-					<span class="sr-only">Uploading</span>
+					<span class="sr-only">{$t('library_upload_uploading')}</span>
 				{:else}
-					Upload
+					{$t('library_upload_upload')}
 				{/if}
 			</button>
 		</div>

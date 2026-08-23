@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { t } from '$lib/i18n';
 	import type { AuthUser } from '$lib/stores/auth.svelte';
 	import { getInitials } from './library-sidebar-model';
 
@@ -39,7 +40,7 @@
 						<circle cx="12" cy="8" r="4" />
 						<path d="M4 22a8 8 0 0 1 16 0" />
 					</svg>
-					Account
+					{$t('common_account')}
 				</a>
 				<div class="user-popup-divider" role="separator"></div>
 				<button type="button" class="user-popup-item danger" role="menuitem" onclick={onLogout}>
@@ -48,7 +49,7 @@
 						<polyline points="16 17 21 12 16 7" />
 						<line x1="21" y1="12" x2="9" y2="12" />
 					</svg>
-					Sign out
+					{$t('library_sign_out')}
 				</button>
 			</div>
 		{/if}
@@ -58,7 +59,7 @@
 				class="user-row-btn"
 				class:active={popupOpen}
 				onclick={() => onPopupOpenChange(!popupOpen)}
-				aria-label="Account menu"
+				aria-label={$t('library_account_menu')}
 				aria-haspopup="menu"
 				aria-expanded={popupOpen}
 			>
@@ -74,7 +75,7 @@
 			<button
 				type="button"
 				class="theme-toggle-sm"
-				aria-label="Toggle theme"
+				aria-label={$t('library_toggle_theme')}
 				onclick={onThemeToggle}
 			>
 				{#if isDark}

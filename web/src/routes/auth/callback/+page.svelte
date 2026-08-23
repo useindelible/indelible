@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { resolve } from '$app/paths';
 	import { getAuth } from '$lib/stores/auth.svelte';
+	import { t } from '$lib/i18n';
 
 	const auth = getAuth();
 
@@ -17,7 +18,7 @@
 
 			if (!auth.isAuthenticated) {
 				status = 'error';
-				errorMessage = 'Authentication failed. Please try again.';
+				errorMessage = $t('auth_callback_failed');
 				return;
 			}
 
@@ -30,7 +31,7 @@
 			}
 		} catch {
 			status = 'error';
-			errorMessage = 'An error occurred during authentication.';
+			errorMessage = $t('auth_callback_error');
 		}
 	}
 
@@ -39,12 +40,16 @@
 
 {#if status === 'loading'}
 	<div class="callback-container">
-		<p>Completing sign in{provider ? ` with ${provider}` : ''}...</p>
+		<p>
+			{$t(provider ? 'auth_callback_completing_provider' : 'auth_callback_completing', {
+				values: { provider: provider ?? '' }
+			})}
+		</p>
 	</div>
 {:else if status === 'error'}
 	<div class="callback-container">
 		<p class="error">{errorMessage}</p>
-		<a href={resolve('/login')}>Back to login</a>
+		<a href={resolve('/login')}>{$t('auth_back_to_login')}</a>
 	</div>
 {/if}
 

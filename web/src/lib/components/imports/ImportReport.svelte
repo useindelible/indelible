@@ -3,6 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { ImportJobStatusResponse } from '$lib/api';
 	import { normalizeImportStatus } from '$lib/integrations/status';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		job: ImportJobStatusResponse;
@@ -44,25 +45,27 @@
 		const parts: string[] = [];
 
 		if (opmlCreated > 0) {
-			const tail = opmlSkipped > 0 ? ` (${opmlSkipped} already subscribed)` : '';
 			parts.push(
-				`${opmlCreated} RSS feed${opmlCreated === 1 ? '' : 's'} added to your Feeds manager${tail}.`
+				$t(
+					opmlSkipped > 0
+						? 'imports_readwise_feeds_added_with_skipped'
+						: 'imports_readwise_feeds_added',
+					{
+						values: { count: opmlCreated, skipped: opmlSkipped }
+					}
+				)
 			);
 		} else if (opmlSkipped > 0) {
 			parts.push(
-				`${opmlSkipped} OPML feed${opmlSkipped === 1 ? ' was' : 's were'} already subscribed; none added.`
+				$t('imports_readwise_feeds_already_subscribed', { values: { count: opmlSkipped } })
 			);
 		}
 
 		if (itemActivity > 0 || archiveAssets > 0) {
 			if (searchJobs > 0 || embedJobs > 0) {
-				parts.push(
-					`${searchJobs} search job${searchJobs === 1 ? '' : 's'} and ${embedJobs} Mila embedding job${embedJobs === 1 ? '' : 's'} were enqueued after imported content was stored.`
-				);
+				parts.push($t('imports_readwise_jobs_enqueued', { values: { searchJobs, embedJobs } }));
 			} else if (archiveAssets > 0) {
-				parts.push(
-					'Archive assets were imported, but no search or Mila embedding jobs were reported for this job.'
-				);
+				parts.push($t('imports_readwise_no_jobs_reported'));
 			}
 		}
 
@@ -79,69 +82,88 @@
 		skipped_private: 'default',
 		failed: 'destructive'
 	};
+
+	const outcomeLabelKey: Record<string, MessageKey> = {
+		duplicate: 'imports_outcome_duplicate',
+		failed: 'imports_outcome_failed',
+		imported: 'imports_outcome_imported',
+		skipped_private: 'imports_outcome_skipped',
+		updated: 'imports_outcome_updated'
+	};
+
+	function outcomeLabel(value: string): string {
+		const key = outcomeLabelKey[value];
+		return key ? $t(key) : value;
+	}
 </script>
 
 <section class="report" data-testid="import-report">
 	<header class="header">
-		<h3 class="title">Import report</h3>
+		<h3 class="title">{$t('imports_report_title')}</h3>
 		<p class="subtitle">
-			{job.counts.imported} imported · {job.counts.failed} failed · {job.counts.duplicate} duplicates
+			{$t('imports_report_summary', {
+				values: {
+					imported: job.counts.imported,
+					failed: job.counts.failed,
+					duplicates: job.counts.duplicate
+				}
+			})}
 		</p>
 	</header>
 
 	<dl class="counts">
 		<div class="count">
-			<dt>Imported</dt>
+			<dt>{$t('imports_count_imported')}</dt>
 			<dd>{job.counts.imported}</dd>
 		</div>
 		<div class="count">
-			<dt>Updated</dt>
+			<dt>{$t('imports_count_updated')}</dt>
 			<dd>{job.counts.updated}</dd>
 		</div>
 		<div class="count">
-			<dt>Duplicates</dt>
+			<dt>{$t('imports_count_duplicates')}</dt>
 			<dd>{job.counts.duplicate}</dd>
 		</div>
 		<div class="count">
-			<dt>Skipped</dt>
+			<dt>{$t('imports_count_skipped')}</dt>
 			<dd>{job.counts.skipped_private}</dd>
 		</div>
 		<div class="count">
-			<dt>Failed</dt>
+			<dt>{$t('imports_count_failed')}</dt>
 			<dd>{job.counts.failed}</dd>
 		</div>
 	</dl>
 
 	{#if readwiseReport}
-		<section class="provider-report" aria-label="Readwise report">
-			<h4 class="outcomes-heading">Readwise details</h4>
+		<section class="provider-report" aria-label={$t('imports_readwise_report')}>
+			<h4 class="outcomes-heading">{$t('imports_readwise_details')}</h4>
 			<dl class="counts">
 				<div class="count">
-					<dt>Article rows</dt>
+					<dt>{$t('imports_readwise_article_rows')}</dt>
 					<dd>{readwiseReport.csv_rows ?? 0}</dd>
 				</div>
 				<div class="count">
-					<dt>Progress rows</dt>
+					<dt>{$t('imports_readwise_progress_rows')}</dt>
 					<dd>{readwiseReport.reading_progress_rows ?? 0}</dd>
 				</div>
 				<div class="count">
-					<dt>Assets</dt>
+					<dt>{$t('imports_readwise_assets')}</dt>
 					<dd>{readwiseReport.archive_assets_imported ?? 0}</dd>
 				</div>
 				<div class="count">
-					<dt>ZIP matched</dt>
+					<dt>{$t('imports_readwise_zip_matched')}</dt>
 					<dd>{readwiseReport.zip_files_matched ?? 0}</dd>
 				</div>
 				<div class="count">
-					<dt>ZIP unmatched</dt>
+					<dt>{$t('imports_readwise_zip_unmatched')}</dt>
 					<dd>{readwiseReport.zip_files_unmatched ?? 0}</dd>
 				</div>
 				<div class="count">
-					<dt>OPML created</dt>
+					<dt>{$t('imports_readwise_opml_created')}</dt>
 					<dd>{readwiseReport.opml_feeds_created ?? 0}</dd>
 				</div>
 				<div class="count">
-					<dt>OPML skipped</dt>
+					<dt>{$t('imports_readwise_opml_skipped')}</dt>
 					<dd>{readwiseReport.opml_feeds_skipped ?? 0}</dd>
 				</div>
 			</dl>
@@ -152,12 +174,12 @@
 
 			{#if (readwiseReport.unmatched_zip_assets ?? []).length > 0}
 				<div class="outcomes">
-					<h4 class="outcomes-heading">Unmatched ZIP assets</h4>
+					<h4 class="outcomes-heading">{$t('imports_readwise_unmatched_zip_assets')}</h4>
 					<ul class="outcomes-list">
 						{#each readwiseReport.unmatched_zip_assets ?? [] as asset (asset)}
 							<li class="outcome-row">
 								<span class="outcome-id" title={asset}>{asset}</span>
-								<Badge variant="warning" size="sm">unmatched</Badge>
+								<Badge variant="warning" size="sm">{$t('imports_readwise_unmatched')}</Badge>
 							</li>
 						{/each}
 					</ul>
@@ -166,7 +188,7 @@
 
 			{#if (readwiseReport.opml_errors ?? []).length > 0}
 				<div class="outcomes">
-					<h4 class="outcomes-heading">OPML errors</h4>
+					<h4 class="outcomes-heading">{$t('imports_readwise_opml_errors')}</h4>
 					<ul class="outcomes-list">
 						{#each readwiseReport.opml_errors ?? [] as error (error)}
 							<li class="outcome-row">
@@ -181,7 +203,7 @@
 
 	{#if job.item_outcomes.length > 0}
 		<div class="outcomes">
-			<h4 class="outcomes-heading">Per-item outcomes</h4>
+			<h4 class="outcomes-heading">{$t('imports_per_item_outcomes')}</h4>
 			<ul class="outcomes-list">
 				{#each visibleOutcomes as outcome (outcome.external_id)}
 					<li class="outcome-row">
@@ -189,7 +211,7 @@
 							>{outcome.title ?? outcome.external_id}</span
 						>
 						<Badge variant={outcomeVariant[outcome.outcome] ?? 'default'} size="sm">
-							{outcome.outcome}
+							{outcomeLabel(outcome.outcome)}
 						</Badge>
 						{#if outcome.error}
 							<span class="outcome-error">{outcome.error}</span>
@@ -199,7 +221,7 @@
 			</ul>
 			{#if hasMore && !showAll}
 				<button type="button" class="show-all" onclick={() => (showAll = true)}>
-					Show all {job.item_outcomes.length}
+					{$t('imports_show_all', { values: { count: job.item_outcomes.length } })}
 				</button>
 			{/if}
 		</div>
@@ -207,7 +229,9 @@
 
 	{#if showRollback}
 		<footer class="actions">
-			<Button variant="destructive-outline" size="sm" onclick={onRollback}>Roll back import</Button>
+			<Button variant="destructive-outline" size="sm" onclick={onRollback}
+				>{$t('imports_rollback_action')}</Button
+			>
 		</footer>
 	{/if}
 </section>

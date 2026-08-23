@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TestState } from '../mila-settings-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		testState: TestState;
@@ -9,10 +10,20 @@
 	}
 
 	let { testState, testMessage, disabled, onTest }: Props = $props();
+
+	const displayedMessage = $derived(
+		testState === 'testing'
+			? $t('prefs_ai_test_checking')
+			: testState === 'success'
+				? $t('prefs_ai_test_live')
+				: testState === 'error'
+					? testMessage || $t('prefs_ai_test_failed')
+					: $t('prefs_ai_test_not_tested')
+	);
 </script>
 
 <div class="test-card">
-	<div class="test-card-label">Connection</div>
+	<div class="test-card-label">{$t('prefs_ai_connection')}</div>
 	<div class="test-state-row" data-state={testState}>
 		{#if testState === 'testing'}
 			<span class="spinner" aria-hidden="true"></span>
@@ -30,12 +41,11 @@
 				<path d="M12 8v4l3 2" />
 			</svg>
 		{/if}
-		<span class="test-state-msg">{testMessage}</span>
+		<span class="test-state-msg">{displayedMessage}</span>
 	</div>
 	<div class="test-foot">
 		<div class="test-meta">
-			We send one short completion to the chat provider and one small embedding probe to the
-			embedding provider. Nothing is logged.
+			{$t('prefs_ai_test_privacy_hint')}
 		</div>
 		<button
 			type="button"
@@ -47,7 +57,7 @@
 				<path d="M21 12a9 9 0 1 1-3-6.7" />
 				<polyline points="21 4 21 10 15 10" />
 			</svg>
-			{testState === 'testing' ? 'Testing…' : 'Test connection'}
+			{testState === 'testing' ? $t('prefs_ai_testing') : $t('prefs_ai_test_connection')}
 		</button>
 	</div>
 </div>

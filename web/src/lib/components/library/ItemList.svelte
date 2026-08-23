@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { DocumentListEntry, TriageModeDto } from '$lib/api';
 	import type { TriageTab } from '$lib/stores/library.svelte';
 	import ItemRow from './ItemRow.svelte';
@@ -61,19 +62,37 @@
 	const emptyLabels = $derived<Record<TriageTab, { heading: string; sub: string }>>(
 		triageMode === 'manual'
 			? {
-					inbox: { heading: 'No saved items', sub: 'Save something to get started' },
-					later: { heading: 'No saved items', sub: 'Save something to get started' },
-					archive: { heading: 'Archive is empty', sub: 'Archived items appear here' }
+					inbox: {
+						heading: $t('library_empty_saved_heading'),
+						sub: $t('library_empty_start_sub')
+					},
+					later: {
+						heading: $t('library_empty_saved_heading'),
+						sub: $t('library_empty_start_sub')
+					},
+					archive: {
+						heading: $t('library_empty_archive_heading'),
+						sub: $t('library_empty_archive_sub')
+					}
 				}
 			: {
-					inbox: { heading: 'Your inbox is empty', sub: 'Save something to get started' },
-					later: { heading: 'Nothing saved for later', sub: 'Move items here to read when ready' },
-					archive: { heading: 'Archive is empty', sub: 'Archived items appear here' }
+					inbox: {
+						heading: $t('library_empty_inbox_heading'),
+						sub: $t('library_empty_start_sub')
+					},
+					later: {
+						heading: $t('library_empty_later_heading'),
+						sub: $t('library_empty_later_sub')
+					},
+					archive: {
+						heading: $t('library_empty_archive_heading'),
+						sub: $t('library_empty_archive_sub')
+					}
 				}
 	);
 </script>
 
-<div class="item-list" role="listbox" aria-label="Library items">
+<div class="item-list" role="listbox" aria-label={$t('library_item_list')}>
 	{#if loading && items.length === 0}
 		<ItemRowSkeleton count={6} />
 	{:else if isEmpty}

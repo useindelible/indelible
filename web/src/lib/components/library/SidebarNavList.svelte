@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import SidebarSection from '$lib/components/layout/SidebarSection.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 	import SidebarNavItem from './SidebarNavItem.svelte';
 	import type { SidebarIcon } from './library-sidebar-model';
 
@@ -17,7 +18,7 @@
 
 	interface LibraryNavItem {
 		href: LibraryItemHref;
-		label: string;
+		labelKey: MessageKey;
 		icon: SidebarIcon;
 		countKey?: string;
 	}
@@ -31,14 +32,19 @@
 	let { isActive, showCountBadge, itemTypeCounts }: Props = $props();
 
 	const libraryItems: LibraryNavItem[] = [
-		{ href: '/library/articles', label: 'Articles', icon: 'articles', countKey: 'article' },
-		{ href: '/library/books', label: 'Books', icon: 'books', countKey: 'book' },
-		{ href: '/library/emails', label: 'Emails', icon: 'emails', countKey: 'email' },
-		{ href: '/library/pdfs', label: 'PDFs', icon: 'pdfs', countKey: 'pdf' },
-		{ href: '/library/tweets', label: 'Tweets', icon: 'tweets', countKey: 'tweet' },
-		{ href: '/library/videos', label: 'Videos', icon: 'videos', countKey: 'video' },
-		{ href: '/tags', label: 'Tags', icon: 'tags' },
-		{ href: '/feed', label: 'Feed', icon: 'feed' }
+		{
+			href: '/library/articles',
+			labelKey: 'library_nav_articles',
+			icon: 'articles',
+			countKey: 'article'
+		},
+		{ href: '/library/books', labelKey: 'library_nav_books', icon: 'books', countKey: 'book' },
+		{ href: '/library/emails', labelKey: 'library_nav_emails', icon: 'emails', countKey: 'email' },
+		{ href: '/library/pdfs', labelKey: 'library_nav_pdfs', icon: 'pdfs', countKey: 'pdf' },
+		{ href: '/library/tweets', labelKey: 'library_nav_tweets', icon: 'tweets', countKey: 'tweet' },
+		{ href: '/library/videos', labelKey: 'library_nav_videos', icon: 'videos', countKey: 'video' },
+		{ href: '/tags', labelKey: 'common_tags', icon: 'tags' },
+		{ href: '/feed', labelKey: 'common_feed', icon: 'feed' }
 	];
 
 	function countFor(key?: string): number | undefined {
@@ -50,20 +56,20 @@
 <li>
 	<SidebarNavItem
 		href={resolve('/dashboard')}
-		label="Home"
+		label={$t('library_nav_home')}
 		icon="home"
 		active={isActive('/dashboard')}
 	/>
 </li>
 
 <li>
-	<SidebarSection label="Library">
+	<SidebarSection label={$t('common_library')}>
 		<ul class="nav-sublist" role="list">
 			{#each libraryItems as item (item.href)}
 				<li>
 					<SidebarNavItem
 						href={resolve(item.href)}
-						label={item.label}
+						label={$t(item.labelKey)}
 						icon={item.icon}
 						active={isActive(item.href)}
 						badge={countFor(item.countKey)}

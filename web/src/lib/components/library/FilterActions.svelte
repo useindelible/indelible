@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		onAddCondition: () => void;
 		onSaveClick: () => void;
@@ -13,9 +14,11 @@
 			<line x1="12" y1="5" x2="12" y2="19" />
 			<line x1="5" y1="12" x2="19" y2="12" />
 		</svg>
-		Add condition
+		{$t('library_filter_add_condition')}
 	</button>
-	<button type="button" class="filter-save-btn" onclick={onSaveClick}> Save as view </button>
+	<button type="button" class="filter-save-btn" onclick={onSaveClick}
+		>{$t('library_filter_save_as_view')}</button
+	>
 </div>
 
 <style>

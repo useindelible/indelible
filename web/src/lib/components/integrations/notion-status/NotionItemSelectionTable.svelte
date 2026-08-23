@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { NotionExportItemDto } from '$lib/api';
 	import { formatExportedAt, formatItemType } from './notion-status-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		visible?: boolean;
@@ -56,10 +57,9 @@
 </script>
 
 <div class="items-section" class:visible>
-	<div class="group-label">Documents to export</div>
+	<div class="group-label">{$t('integrations_notion_documents_to_export')}</div>
 	<div class="group-desc">
-		Pick the documents Indelible includes on the next export. Refresh archives the current Notion
-		page and queues its replacement from current highlights, notes, and tags.
+		{$t('integrations_notion_documents_to_export_description')}
 	</div>
 	<div class="group-card">
 		{#if refreshNotice}
@@ -68,7 +68,7 @@
 				{#if refreshNotice.archivedPageUrl}
 					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Notion returns this external page URL. -->
 					<a href={refreshNotice.archivedPageUrl} target="_blank" rel="noopener noreferrer">
-						Open archived page in Notion
+						{$t('integrations_notion_open_archived_page')}
 					</a>
 				{/if}
 			</div>
@@ -83,20 +83,22 @@
 				<input
 					class="search-input"
 					type="search"
-					placeholder="Search documents"
+					placeholder={$t('integrations_notion_search_documents')}
 					value={itemsQuery}
 					oninput={(event) => onItemsSearch(event.currentTarget.value)}
 				/>
 			</div>
 			<div class="toolbar-meta" data-testid="notion-items-meta">
-				<strong>{selectedCount}</strong> selected · {exportItemsMeta}
+				{$t('integrations_notion_selected_meta', {
+					values: { count: selectedCount, meta: exportItemsMeta }
+				})}
 			</div>
 		</div>
 
 		{#if itemsError}
 			<div class="callout error" role="alert">
 				<div class="callout-body">
-					<div class="callout-title">Couldn't update documents</div>
+					<div class="callout-title">{$t('integrations_notion_update_documents_failed')}</div>
 					<div class="callout-detail">{itemsError}</div>
 				</div>
 			</div>
@@ -106,20 +108,20 @@
 			<thead>
 				<tr>
 					<th class="col-check"></th>
-					<th>Document</th>
-					<th class="col-type">Type</th>
-					<th class="col-last">Last exported</th>
+					<th>{$t('integrations_notion_document')}</th>
+					<th class="col-type">{$t('common_type')}</th>
+					<th class="col-last">{$t('integrations_notion_last_exported')}</th>
 					<th class="col-action"></th>
 				</tr>
 			</thead>
 			<tbody>
 				{#if itemsLoading && items.length === 0}
 					<tr>
-						<td colspan="5" class="empty-row">Loading documents…</td>
+						<td colspan="5" class="empty-row">{$t('integrations_notion_loading_documents')}</td>
 					</tr>
 				{:else if items.length === 0}
 					<tr>
-						<td colspan="5" class="empty-row">No documents match this search.</td>
+						<td colspan="5" class="empty-row">{$t('integrations_notion_no_matching_documents')}</td>
 					</tr>
 				{:else}
 					{#each items as item (item.library_entry_id)}
@@ -129,14 +131,16 @@
 									type="button"
 									class="row-checkbox"
 									class:checked={item.selected}
-									aria-label={item.selected ? 'Deselect' : 'Select'}
+									aria-label={$t(
+										item.selected ? 'integrations_notion_deselect' : 'integrations_notion_select'
+									)}
 									aria-pressed={item.selected}
 									disabled={savingItemId === item.library_entry_id}
 									onclick={() => onItemSelection(item.library_entry_id, !item.selected)}
 								></button>
 							</td>
 							<td>
-								<div class="item-cell-title">{item.title || 'Untitled'}</div>
+								<div class="item-cell-title">{item.title || $t('reader_untitled')}</div>
 								{#if item.url}
 									<div class="item-cell-url">{item.url}</div>
 								{/if}
@@ -145,7 +149,7 @@
 								{/if}
 							</td>
 							<td>
-								<span class="type-pill">{formatItemType(item.item_type)}</span>
+								<span class="type-pill">{formatItemType(item.item_type, $t)}</span>
 							</td>
 							<td class="col-last">{formatExportedAt(item.last_synced_at)}</td>
 							<td class="col-action">
@@ -156,10 +160,10 @@
 									onclick={() => onRefreshItem(item)}
 								>
 									{refreshingItemId === item.library_entry_id
-										? 'Refreshing…'
+										? $t('integrations_notion_refreshing')
 										: item.exported_page_id
-											? 'Refresh'
-											: 'Not exported'}
+											? $t('integrations_notion_refresh')
+											: $t('integrations_notion_not_exported')}
 								</button>
 							</td>
 						</tr>
@@ -178,7 +182,9 @@
 				disabled={!itemsHasNext || itemsLoading}
 				onclick={onItemsLoadMore}
 			>
-				{itemsLoading && items.length > 0 ? 'Loading…' : 'Load more'}
+				{itemsLoading && items.length > 0
+					? $t('common_loading')
+					: $t('integrations_notion_load_more')}
 			</button>
 		</div>
 	</div>

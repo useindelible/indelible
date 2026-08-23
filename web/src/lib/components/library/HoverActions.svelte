@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TriageModeDto } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import { triageOptionsForMode, type TriageTab } from '$lib/stores/library.svelte';
 
 	interface Props {
@@ -14,7 +15,7 @@
 	const triageButtons = $derived(
 		triageOptionsForMode(triageMode).map((option) => ({
 			state: option.value,
-			label: option.label
+			label: $t(option.labelKey)
 		}))
 	);
 </script>
@@ -26,7 +27,7 @@
 				type="button"
 				class="triage-btn"
 				class:current={currentTriage === btn.state}
-				aria-label="Move to {btn.label}"
+				aria-label={$t('library_action_move_to', { values: { label: btn.label } })}
 				onclick={(e) => {
 					e.stopPropagation();
 					if (currentTriage !== btn.state) {
@@ -61,7 +62,7 @@
 	<button
 		type="button"
 		class="more-btn"
-		aria-label="More options"
+		aria-label={$t('library_action_more_options')}
 		onclick={(e) => {
 			e.stopPropagation();
 			onMore(e);

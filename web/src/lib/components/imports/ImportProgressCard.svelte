@@ -2,6 +2,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { ImportJobStatusResponse } from '$lib/api';
 	import { normalizeImportStatus } from '$lib/integrations/status';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		job: ImportJobStatusResponse;
@@ -22,64 +23,71 @@
 		unknown: 'default'
 	} as const;
 
-	const labelMap = {
-		awaiting_provider: 'Queued',
-		pending: 'Queued',
-		running: 'Running',
-		completed: 'Completed',
-		failed: 'Failed',
-		partial: 'Partial',
-		rolled_back: 'Rolled back',
-		unknown: 'Unknown'
+	const labelKeyMap = {
+		awaiting_provider: 'imports_status_queued',
+		pending: 'imports_status_queued',
+		running: 'imports_status_running',
+		completed: 'imports_status_completed',
+		failed: 'imports_status_failed',
+		partial: 'imports_status_partial',
+		rolled_back: 'imports_status_rolled_back',
+		unknown: 'imports_status_unknown'
 	} as const;
 
-	const sourceLabel: Record<string, string> = {
-		readwise_import: 'Readwise Reader',
-		notion_import: 'Notion'
+	const methodLabelKey: Record<string, MessageKey> = {
+		csv: 'imports_method_csv_upload',
+		file_upload: 'imports_method_file_upload',
+		zip: 'imports_method_file_upload',
+		oauth: 'imports_method_connected_account'
 	};
 
-	const methodLabel: Record<string, string> = {
-		csv: 'CSV upload',
-		zip: 'File upload',
-		oauth: 'Connected account'
-	};
+	function methodLabel(value: string): string {
+		const key = methodLabelKey[value];
+		return key ? $t(key) : value;
+	}
 
-	const source = $derived(sourceLabel[job.import_source] ?? job.import_source);
-	const method = $derived(methodLabel[job.import_method] ?? job.import_method);
+	const source = $derived(
+		job.import_source === 'readwise_import'
+			? 'Readwise Reader'
+			: job.import_source === 'notion_import'
+				? 'Notion'
+				: job.import_source
+	);
+	const method = $derived(methodLabel(job.import_method));
 </script>
 
 <section class="progress-card" data-testid="import-progress-card">
 	<header class="header">
 		<div class="title-row">
-			<h3 class="title">Import in progress</h3>
-			<Badge variant={variantMap[normalized]} size="sm">{labelMap[normalized]}</Badge>
+			<h3 class="title">{$t('imports_progress_title')}</h3>
+			<Badge variant={variantMap[normalized]} size="sm">{$t(labelKeyMap[normalized])}</Badge>
 		</div>
 		<p class="meta">{source} · {method}</p>
 	</header>
 
 	{#if normalized === 'awaiting_provider'}
-		<p class="meta meta-info">Queued.</p>
+		<p class="meta meta-info">{$t('imports_queued')}</p>
 	{/if}
 
 	<dl class="counts">
 		<div class="count">
-			<dt>Imported</dt>
+			<dt>{$t('imports_count_imported')}</dt>
 			<dd>{job.counts.imported}</dd>
 		</div>
 		<div class="count">
-			<dt>Updated</dt>
+			<dt>{$t('imports_count_updated')}</dt>
 			<dd>{job.counts.updated}</dd>
 		</div>
 		<div class="count">
-			<dt>Duplicates</dt>
+			<dt>{$t('imports_count_duplicates')}</dt>
 			<dd>{job.counts.duplicate}</dd>
 		</div>
 		<div class="count">
-			<dt>Skipped</dt>
+			<dt>{$t('imports_count_skipped')}</dt>
 			<dd>{job.counts.skipped_private}</dd>
 		</div>
 		<div class="count">
-			<dt>Failed</dt>
+			<dt>{$t('imports_count_failed')}</dt>
 			<dd>{job.counts.failed}</dd>
 		</div>
 	</dl>

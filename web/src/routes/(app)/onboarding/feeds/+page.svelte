@@ -5,6 +5,7 @@
 	import { getOnboarding } from '$lib/stores/onboarding.svelte';
 	import { subscribe } from '$lib/api';
 	import { uploadOpml } from '$lib/api/feeds';
+	import { t } from '$lib/i18n';
 
 	const onboarding = getOnboarding();
 
@@ -91,7 +92,7 @@
 		const url = rssUrl.trim();
 		if (!url) return;
 		if (!isValidFeedUrl(url)) {
-			subscribeError = 'Enter a valid URL starting with http:// or https://.';
+			subscribeError = $t('onboarding_feed_url_invalid');
 			subscribeMessage = '';
 			return;
 		}
@@ -102,13 +103,15 @@
 		try {
 			const { data, error: apiError, response } = await subscribe({ body: { url } });
 			if (data) {
-				subscribeMessage = data.is_new ? 'Subscribed successfully.' : 'Already subscribed.';
+				subscribeMessage = $t(
+					data.is_new ? 'onboarding_feed_subscribed' : 'onboarding_feed_already_subscribed'
+				);
 				rssUrl = '';
 				return;
 			}
 			subscribeError = feedSubscriptionError(apiError, response);
 		} catch {
-			subscribeError = 'An unexpected error occurred.';
+			subscribeError = $t('auth_error_unexpected');
 		} finally {
 			subscribing = false;
 		}
@@ -120,7 +123,11 @@
 			if (typeof error.detail === 'string') return error.detail;
 			if (typeof error.message === 'string') return error.message;
 		}
-		return response?.status === 422 ? 'Invalid feed URL.' : 'Failed to subscribe to feed.';
+		return $t(
+			response?.status === 422
+				? 'onboarding_feed_url_invalid_short'
+				: 'onboarding_feed_subscribe_failed'
+		);
 	}
 
 	async function handleContinue() {
@@ -155,15 +162,15 @@
 		opmlMessage = '';
 		const result = await uploadOpml(file);
 		opmlMessage = result.ok
-			? `Imported ${result.data.created} feed${result.data.created === 1 ? '' : 's'}.`
+			? $t('onboarding_feed_imported', { values: { count: result.data.created } })
 			: result.error;
 		uploadingOpml = false;
 	}
 </script>
 
 <StepLayout
-	title="Subscribe to your favorite sources"
-	description="Follow publications and blogs via RSS. Toggle on the ones you want."
+	title={$t('onboarding_feeds_title')}
+	description={$t('onboarding_feeds_description')}
 	currentStep={3}
 	showSkip
 	{submitting}
@@ -171,7 +178,7 @@
 	onSkip={handleSkip}
 >
 	<div class="feeds-content">
-		<p class="section-label">Suggested feeds</p>
+		<p class="section-label">{$t('onboarding_feeds_suggested')}</p>
 
 		<div class="feed-list">
 			{#each feedState as feed (feed.url)}
@@ -187,22 +194,22 @@
 						type="checkbox"
 						class="toggle"
 						bind:checked={feed.selected}
-						aria-label="Subscribe to {feed.name}"
+						aria-label={$t('onboarding_feed_subscribe_to', { values: { name: feed.name } })}
 					/>
 				</label>
 			{/each}
 		</div>
 		<p class="selection-summary" role="status" aria-live="polite">
 			{#if submitting}
-				Saving your feed choices…
+				{$t('onboarding_feeds_saving')}
 			{:else if selectedUrls.length === 0}
-				No suggested feeds selected.
+				{$t('onboarding_feeds_none_selected')}
 			{:else}
-				{selectedUrls.length} suggested {selectedUrls.length === 1 ? 'feed' : 'feeds'} selected.
+				{$t('onboarding_feeds_selected', { values: { count: selectedUrls.length } })}
 			{/if}
 		</p>
 
-		<p class="section-label manual-label">Add feed manually</p>
+		<p class="section-label manual-label">{$t('onboarding_feed_add_manually')}</p>
 		<form
 			class="manual-row"
 			onsubmit={(event) => {
@@ -215,16 +222,16 @@
 				class="url-input"
 				bind:value={rssUrl}
 				placeholder="https://example.com/feed.xml"
-				aria-label="RSS feed URL"
+				aria-label={$t('onboarding_feed_url')}
 				disabled={subscribing}
 			/>
 			<button type="submit" class="subscribe-btn" disabled={subscribing || !rssUrl.trim()}>
-				{subscribing ? 'Subscribing…' : 'Subscribe'}
+				{subscribing ? $t('onboarding_feed_subscribing') : $t('onboarding_feed_subscribe')}
 			</button>
 		</form>
 		{#if subscribeMessage}<p class="form-success" role="status">{subscribeMessage}</p>{/if}
 		{#if subscribeError}<p class="form-error" role="alert">{subscribeError}</p>{/if}
-		<p class="section-label manual-label">Import subscriptions</p>
+		<p class="section-label manual-label">{$t('onboarding_feed_import_subscriptions')}</p>
 		<label class="opml-zone">
 			<input
 				class="opml-input"
@@ -233,8 +240,12 @@
 				onchange={handleOpml}
 				disabled={uploadingOpml}
 			/>
-			<strong>{uploadingOpml ? 'Importing…' : 'Drop an OPML file or choose one'}</strong>
-			<span>Imports feeds from Feedly, Inoreader, NetNewsWire, and other readers.</span>
+			<strong
+				>{uploadingOpml
+					? $t('onboarding_feed_importing')
+					: $t('onboarding_feed_choose_opml')}</strong
+			>
+			<span>{$t('onboarding_feed_opml_description')}</span>
 		</label>
 		{#if opmlMessage}<p class="form-error">{opmlMessage}</p>{/if}
 

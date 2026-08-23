@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as apiSdk from '$lib/api';
+	import { t } from '$lib/i18n';
 	import CollectionPicker from './CollectionPicker.svelte';
 	import TagInput from './TagInput.svelte';
 
@@ -22,14 +23,14 @@
 	let duplicate = $state<{ id: string; title: string; domain: string | null } | null>(null);
 
 	function validateUrl(value: string): string {
-		if (!value.trim()) return 'Please enter a URL';
+		if (!value.trim()) return $t('library_url_required');
 		try {
 			const parsed = new URL(value.trim());
 			if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-				return 'URL must start with http:// or https://';
+				return $t('library_url_protocol');
 			}
 		} catch {
-			return 'Please enter a valid URL';
+			return $t('library_url_invalid');
 		}
 		return '';
 	}
@@ -63,11 +64,14 @@
 				if (body && typeof body['id'] === 'string') {
 					duplicate = {
 						id: body['id'] as string,
-						title: typeof body['title'] === 'string' ? (body['title'] as string) : 'Already saved',
+						title:
+							typeof body['title'] === 'string'
+								? (body['title'] as string)
+								: $t('library_duplicate_already_saved'),
 						domain: typeof body['domain'] === 'string' ? (body['domain'] as string) : null
 					};
 				} else {
-					submitError = 'This URL is already in your library.';
+					submitError = $t('library_url_already_in_library');
 				}
 				return;
 			}
@@ -76,9 +80,9 @@
 			submitError =
 				(typeof problem?.['detail'] === 'string' ? problem['detail'] : undefined) ??
 				(typeof problem?.['message'] === 'string' ? problem['message'] : undefined) ??
-				'Failed to save. Please try again.';
+				$t('library_error_save');
 		} catch {
-			submitError = 'An unexpected error occurred.';
+			submitError = $t('library_error_unexpected');
 		} finally {
 			submitting = false;
 		}
@@ -96,8 +100,8 @@
 			type="url"
 			class="url-input"
 			bind:value={url}
-			placeholder="https://..."
-			aria-label="URL"
+			placeholder="https://…"
+			aria-label={$t('library_url')}
 			aria-describedby={urlError ? 'url-error' : undefined}
 			oninput={() => {
 				if (urlError) urlError = validateUrl(url);
@@ -115,18 +119,18 @@
 				{#if duplicate.domain}
 					<p class="duplicate-source">{duplicate.domain}</p>
 				{/if}
-				<span class="duplicate-badge">Already saved</span>
+				<span class="duplicate-badge">{$t('library_duplicate_already_saved')}</span>
 			</div>
 		</div>
 	{/if}
 
 	<div class="field-row">
-		<p class="field-label">Collection</p>
+		<p class="field-label">{$t('library_filter_field_collection')}</p>
 		<CollectionPicker bind:value={collectionId} />
 	</div>
 
 	<div class="field-row">
-		<p class="field-label">Tags</p>
+		<p class="field-label">{$t('common_tags')}</p>
 		<TagInput bind:tags />
 	</div>
 
@@ -137,9 +141,9 @@
 	<button type="submit" class="save-btn" disabled={submitting} aria-busy={submitting}>
 		{#if submitting}
 			<span class="spinner" aria-hidden="true"></span>
-			<span class="sr-only">Saving...</span>
+			<span class="sr-only">{$t('common_saving')}</span>
 		{:else}
-			Save to Library
+			{$t('library_url_save_to_library')}
 		{/if}
 	</button>
 </form>

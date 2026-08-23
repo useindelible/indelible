@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { groupCount, isGroupAllSelected, type WebhookEventGroup } from '../developer-model';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -36,26 +37,39 @@
 		onActive,
 		onSubmit
 	}: Props = $props();
+
+	const EVENT_GROUP_LABEL_KEYS: Record<string, MessageKey> = {
+		library_entry: 'prefs_developer_event_group_library_entry',
+		highlight: 'prefs_developer_event_group_highlight',
+		feed: 'prefs_developer_event_group_feed',
+		taxonomy: 'prefs_developer_event_group_taxonomy',
+		lifecycle: 'prefs_developer_event_group_lifecycle'
+	};
+
+	function eventGroupLabel(group: WebhookEventGroup): string {
+		const key = EVENT_GROUP_LABEL_KEYS[group.key];
+		return key ? $t(key) : group.name;
+	}
 </script>
 
 <div class="add-form" class:open inert={!open} aria-hidden={!open}>
 	<div class="add-form-inner">
 		<div class="form-head">
-			<div class="form-title">Add a webhook endpoint</div>
-			<button type="button" class="close" onclick={onClose} aria-label="Close">
+			<div class="form-title">{$t('prefs_developer_add_webhook')}</div>
+			<button type="button" class="close" onclick={onClose} aria-label={$t('common_close')}>
 				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12" /></svg>
 			</button>
 		</div>
 
 		<div class="form-row">
 			<label class="lab" for="dev-add-name">
-				Name<span class="help">Internal label.</span>
+				{$t('prefs_developer_name')}<span class="help">{$t('prefs_developer_internal_label')}</span>
 			</label>
 			<input
 				id="dev-add-name"
 				class="input"
 				type="text"
-				placeholder="e.g. Internal Slack inbox"
+				placeholder={$t('prefs_developer_webhook_name_placeholder')}
 				value={name}
 				oninput={(event) => onName(event.currentTarget.value)}
 			/>
@@ -63,7 +77,7 @@
 
 		<div class="form-row">
 			<label class="lab" for="dev-add-url">
-				URL<span class="help">Must be HTTPS.</span>
+				URL<span class="help">{$t('prefs_developer_https_hint')}</span>
 			</label>
 			<input
 				id="dev-add-url"
@@ -77,16 +91,18 @@
 
 		<div class="form-row">
 			<div class="lab">
-				Events<span class="help">Indelible will sign every payload with HMAC-SHA256.</span>
+				{$t('prefs_developer_events')}<span class="help"
+					>{$t('prefs_developer_events_signing_hint')}</span
+				>
 			</div>
 			<div class="event-picker">
 				{#each eventGroups as group (group.key)}
 					{@const allOn = isGroupAllSelected(group.events, events)}
 					<div class="event-group">
 						<div class="group-head">
-							<span class="group-name">{group.name}</span>
+							<span class="group-name">{eventGroupLabel(group)}</span>
 							<button type="button" class="all-toggle" onclick={() => onToggleGroup(group.events)}>
-								{allOn ? 'Clear' : 'Select all'}
+								{$t(allOn ? 'common_clear' : 'prefs_developer_select_all')}
 							</button>
 							<span class="group-count">
 								{groupCount(group.events, events)} / {group.events.length}
@@ -116,13 +132,15 @@
 		</div>
 
 		<div class="form-row">
-			<div class="lab">Active<span class="help">Disable to pause without deleting.</span></div>
+			<div class="lab">
+				{$t('prefs_developer_active')}<span class="help">{$t('prefs_developer_active_hint')}</span>
+			</div>
 			<button
 				type="button"
 				class="toggle"
 				class:on={active}
 				aria-pressed={active}
-				aria-label="Toggle active"
+				aria-label={$t('prefs_developer_toggle_active')}
 				onclick={() => onActive(!active)}
 			></button>
 		</div>
@@ -132,9 +150,9 @@
 		{/if}
 
 		<div class="form-foot">
-			<button type="button" class="btn ghost" onclick={onClose}>Cancel</button>
+			<button type="button" class="btn ghost" onclick={onClose}>{$t('common_cancel')}</button>
 			<button type="button" class="btn primary" disabled={creating} onclick={onSubmit}>
-				{creating ? 'Creating…' : 'Create endpoint'}
+				{creating ? $t('prefs_developer_creating') : $t('prefs_developer_create_endpoint')}
 			</button>
 		</div>
 	</div>

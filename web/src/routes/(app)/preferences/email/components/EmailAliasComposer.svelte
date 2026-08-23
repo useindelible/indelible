@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { AliasDestinationDto } from '$lib/api';
 	import { domainFromAddress, isValidLocalPart } from '../email-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -28,7 +29,9 @@
 		onCreate
 	}: Props = $props();
 
-	const destinationLabel = $derived(destination === 'feed' ? 'Feed' : 'Library');
+	const destinationLabel = $derived(
+		destination === 'feed' ? $t('common_feed') : $t('common_library')
+	);
 </script>
 
 <div class="draft-shell">
@@ -36,17 +39,27 @@
 		<div class="draft-inner">
 			<div class="draft-head">
 				<div>
-					<div class="draft-eyebrow">Replace your {destinationLabel} address</div>
-					<div class="draft-title">Issue a new primary <em>{destinationLabel}</em> address.</div>
+					<div class="draft-eyebrow">
+						{$t('email_alias_replace', { values: { destination: destinationLabel } })}
+					</div>
+					<div class="draft-title">
+						{$t('email_alias_issue')} <em>{destinationLabel}</em>
+						{$t('email_alias_address_suffix')}
+					</div>
 				</div>
-				<button class="draft-close" type="button" aria-label="Close composer" onclick={onClose}>
+				<button
+					class="draft-close"
+					type="button"
+					aria-label={$t('email_alias_close')}
+					onclick={onClose}
+				>
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M18 6L6 18M6 6l12 12" />
 					</svg>
 				</button>
 			</div>
 
-			<div class="seg-toggle" role="tablist" aria-label="Destination">
+			<div class="seg-toggle" role="tablist" aria-label={$t('email_alias_destination')}>
 				<button
 					class="seg-btn feed"
 					class:active={destination === 'feed'}
@@ -56,7 +69,7 @@
 					onclick={() => onDestination('feed')}
 				>
 					<span class="seg-dot" aria-hidden="true"></span>
-					Feed
+					{$t('common_feed')}
 				</button>
 				<button
 					class="seg-btn library"
@@ -67,7 +80,7 @@
 					onclick={() => onDestination('library')}
 				>
 					<span class="seg-dot" aria-hidden="true"></span>
-					Library
+					{$t('common_library')}
 				</button>
 			</div>
 
@@ -88,16 +101,13 @@
 			</div>
 
 			<p class="draft-warning">
-				Your current <span class="draft-warning-dest">{destination}</span> address keeps receiving for
-				28 days, then stops.
+				{$t('email_alias_grace_period', { values: { destination: destinationLabel } })}
 			</p>
 
 			<div class="draft-foot">
-				<div class="draft-hint">
-					Lowercase letters, digits, <code>. _ -</code> · 3–32 characters
-				</div>
+				<div class="draft-hint">{$t('email_alias_format')} <code>. _ -</code> · 3–32</div>
 				<div class="draft-actions">
-					<button class="btn-ghost" type="button" onclick={onClose}>Cancel</button>
+					<button class="btn-ghost" type="button" onclick={onClose}>{$t('common_cancel')}</button>
 					<button
 						class="btn-seal"
 						type="button"
@@ -105,7 +115,9 @@
 						onclick={onCreate}
 					>
 						<span class="seal" aria-hidden="true">i</span>
-						<span class="seal-label">{creating ? 'Creating…' : 'Make it primary'}</span>
+						<span class="seal-label"
+							>{creating ? $t('email_alias_creating') : $t('email_alias_make_primary')}</span
+						>
 					</button>
 				</div>
 			</div>
@@ -362,12 +374,6 @@
 		border-left: 2px solid var(--warning);
 		background: var(--warning-soft);
 		border-radius: 0 6px 6px 0;
-	}
-
-	.draft-warning-dest {
-		font-family: var(--font-mono);
-		font-size: 11.5px;
-		color: var(--text-primary);
 	}
 
 	.draft-foot {

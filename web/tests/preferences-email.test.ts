@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { locale, setupI18nSync } from '$lib/i18n';
+import en from '$lib/i18n/locales/en.json';
+import fr from '$lib/i18n/locales/fr.json';
 
 vi.mock('$app/navigation', () => ({
 	goto: vi.fn()
@@ -95,6 +98,18 @@ describe('Email preferences page (rebuilt)', () => {
 		await waitFor(() => {
 			expect(screen.getByText(/Newsletters arrive here/i)).toBeTruthy();
 		});
+	});
+
+	it('renders the hero in French', async () => {
+		setupI18nSync({ en, fr }, 'fr');
+		try {
+			render(EmailPage);
+			await waitFor(() => {
+				expect(screen.getByText('Les newsletters arrivent ici.')).toBeTruthy();
+			});
+		} finally {
+			void locale.set('en');
+		}
 	});
 
 	it('renders a 4-cell stats card', async () => {

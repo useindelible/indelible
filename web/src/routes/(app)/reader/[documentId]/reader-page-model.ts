@@ -1,5 +1,6 @@
 import type { DocumentListEntry, DocumentReaderAssetResponse } from '$lib/api';
 import type { ViewTab } from '$lib/components/reader/ViewTabs.svelte';
+import type { MessageKey, Translate } from '$lib/i18n';
 
 export const READER_VIEW_TABS: ViewTab[] = ['reader', 'original', 'pdf', 'screenshot'];
 const REPROCESSABLE_ASSET_STATUSES = new Set(['failed', 'degraded']);
@@ -16,26 +17,22 @@ export interface ReaderFailurePresentation {
 	technicalReason: string | null;
 }
 
-const FAILURE_COPY: Record<
-	ReaderFailureKind,
-	Pick<ReaderFailurePresentation, 'title' | 'guidance'>
-> = {
+const FAILURE_COPY_KEYS: Record<ReaderFailureKind, { title: MessageKey; guidance: MessageKey }> = {
 	service: {
-		title: 'Rendering service unavailable',
-		guidance:
-			'The rendering service could not prepare this page. Retry when the service is available.'
+		title: 'reader_failure_service_title',
+		guidance: 'reader_failure_service_guidance'
 	},
 	access_or_policy: {
-		title: 'Capture blocked',
-		guidance: "The page requires access, or this server's capture policy prevented the request."
+		title: 'reader_failure_access_title',
+		guidance: 'reader_failure_access_guidance'
 	},
 	content: {
-		title: 'No readable article found',
-		guidance: 'Indelible could not find enough article text to create a readable version.'
+		title: 'reader_failure_content_title',
+		guidance: 'reader_failure_content_guidance'
 	},
 	unknown: {
-		title: 'Readable content unavailable',
-		guidance: 'Preparation failed, but the cause could not be determined.'
+		title: 'reader_failure_unknown_title',
+		guidance: 'reader_failure_unknown_guidance'
 	}
 };
 
@@ -73,6 +70,7 @@ function classifyReaderFailure(reason: string | null | undefined): ReaderFailure
 }
 
 export function readerFailurePresentation(
+	translate: Translate,
 	assets: DocumentReaderAssetResponse[]
 ): ReaderFailurePresentation | null {
 	const asset = assets.find(
@@ -83,9 +81,11 @@ export function readerFailurePresentation(
 	if (!asset) return null;
 
 	const kind = classifyReaderFailure(asset.failed_reason);
+	const copy = FAILURE_COPY_KEYS[kind];
 	return {
 		kind,
-		...FAILURE_COPY[kind],
+		title: translate(copy.title),
+		guidance: translate(copy.guidance),
 		diagnosticId: asset.id,
 		attemptedAt: asset.created_at,
 		technicalReason: asset.failed_reason ?? null

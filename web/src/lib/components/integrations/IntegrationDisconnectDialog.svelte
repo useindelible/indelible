@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -41,18 +42,21 @@
 		data-testid="disconnect-dialog"
 	>
 		<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="disconnect-dialog-title">
-			<h2 id="disconnect-dialog-title" class="title">Disconnect {providerName}?</h2>
+			<h2 id="disconnect-dialog-title" class="title">
+				{$t('integrations_disconnect_question', { values: { provider: providerName } })}
+			</h2>
 			<p class="body">
-				We'll stop syncing immediately and remove the stored access token. Items already exported
-				stay where they are; reconnecting later resumes from new items.
+				{$t('integrations_disconnect_description')}
 			</p>
 			{#if errorMessage}
 				<p class="error" role="alert">{errorMessage}</p>
 			{/if}
 			<div class="actions">
-				<Button variant="tertiary" size="sm" onclick={onCancel} disabled={busy}>Cancel</Button>
+				<Button variant="tertiary" size="sm" onclick={onCancel} disabled={busy}
+					>{$t('common_cancel')}</Button
+				>
 				<Button variant="destructive" size="sm" loading={busy} onclick={onConfirm}>
-					Disconnect
+					{$t('integrations_disconnect')}
 				</Button>
 			</div>
 		</div>

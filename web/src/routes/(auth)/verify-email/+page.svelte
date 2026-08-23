@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { getAuth } from '$lib/stores/auth.svelte';
+	import { t } from '$lib/i18n';
 
 	const { data } = $props();
 	const auth = getAuth();
@@ -74,15 +75,15 @@
 </script>
 
 <svelte:head>
-	<title>Verify email — Indelible</title>
+	<title>{$t('auth_verify_email_title')}</title>
 </svelte:head>
 
 {#if hasToken}
 	{#if verifying}
 		<div class="state-icon">
-			<div class="spinner" role="status" aria-label="Verifying email"></div>
+			<div class="spinner" role="status" aria-label={$t('auth_verifying_email')}></div>
 		</div>
-		<h1 class="auth-title">Verifying your email…</h1>
+		<h1 class="auth-title">{$t('auth_verifying_your_email')}</h1>
 	{:else if verified}
 		<div class="state-icon">
 			<svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true">
@@ -96,10 +97,12 @@
 				/>
 			</svg>
 		</div>
-		<h1 class="auth-title">Email verified!</h1>
-		<p class="auth-body">Your account is ready. Welcome to Indelible.</p>
+		<h1 class="auth-title">{$t('auth_email_verified')}</h1>
+		<p class="auth-body">{$t('auth_email_verified_body')}</p>
 		<div class="button-row">
-			<button class="primary-button" onclick={handleContinue}>Continue to Indelible</button>
+			<button class="primary-button" onclick={handleContinue}
+				>{$t('auth_continue_to_indelible')}</button
+			>
 		</div>
 	{:else if verifyError}
 		<div class="state-icon">
@@ -113,8 +116,8 @@
 				/>
 			</svg>
 		</div>
-		<h1 class="auth-title">Verification failed</h1>
-		<p class="auth-body">This link has expired or is invalid. Request a new one below.</p>
+		<h1 class="auth-title">{$t('auth_verification_failed')}</h1>
+		<p class="auth-body">{$t('auth_verification_failed_body')}</p>
 		{#if auth.error}
 			<p class="auth-error">{auth.error}</p>
 		{/if}
@@ -126,16 +129,16 @@
 				aria-busy={resending}
 			>
 				{#if resending}
-					Sending…
+					{$t('auth_sending')}
 				{:else if countdown > 0}
-					Resend email ({countdown}s)
+					{$t('auth_resend_email_countdown', { values: { seconds: countdown } })}
 				{:else}
-					Resend verification email
+					{$t('auth_resend_verification_email')}
 				{/if}
 			</button>
 		</div>
 		<p class="auth-footer">
-			<a href={resolve('/login')} class="auth-link">Back to sign in</a>
+			<a href={resolve('/login')} class="auth-link">{$t('auth_back_to_sign_in')}</a>
 		</p>
 	{/if}
 {:else}
@@ -166,18 +169,18 @@
 		</svg>
 	</div>
 
-	<h1 class="auth-title">Check your email</h1>
+	<h1 class="auth-title">{$t('auth_check_email')}</h1>
 	<p class="auth-body">
-		We've sent a verification link to<br />
+		{$t('auth_verification_sent_to')}<br />
 		{#if auth.user?.email}
 			<strong>{auth.user.email}</strong>
 		{:else}
-			your email address
+			{$t('auth_your_email_address')}
 		{/if}
 	</p>
 
 	{#if resent}
-		<p class="resent-notice">Verification email sent!</p>
+		<p class="resent-notice">{$t('auth_verification_email_sent')}</p>
 	{/if}
 
 	{#if auth.error}
@@ -187,11 +190,11 @@
 	<div class="resend-row">
 		<button class="link-button" onclick={handleResend} disabled={resending || countdown > 0}>
 			{#if resending}
-				Sending…
+				{$t('auth_sending')}
 			{:else if countdown > 0}
-				Resend email ({countdown}s)
+				{$t('auth_resend_email_countdown', { values: { seconds: countdown } })}
 			{:else}
-				Resend email
+				{$t('auth_resend_email')}
 			{/if}
 		</button>
 	</div>
@@ -211,10 +214,10 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/login')} class="auth-link">Back to sign in</a>
+		<a href={resolve('/login')} class="auth-link">{$t('auth_back_to_sign_in')}</a>
 	</div>
 
-	<p class="auth-footnote">Didn't receive it? Check your spam folder.</p>
+	<p class="auth-footnote">{$t('auth_check_spam')}</p>
 {/if}
 
 <style>

@@ -39,7 +39,7 @@ describe('ImportProgressCard', () => {
 		});
 		render(ImportProgressCard, { props: { job } });
 		expect(screen.getByText(/Readwise/)).toBeTruthy();
-		expect(screen.getByText(/file_upload/)).toBeTruthy();
+		expect(screen.getByText(/File upload/)).toBeTruthy();
 		expect(screen.getByText('Running')).toBeTruthy();
 		expect(screen.getByText('7')).toBeTruthy();
 		expect(screen.getByText('2')).toBeTruthy();

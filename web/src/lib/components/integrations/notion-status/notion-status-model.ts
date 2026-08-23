@@ -1,9 +1,11 @@
 import type { IntegrationConnectionDto, NotionExportItemDto } from '$lib/api';
+import { date, t, type Translate } from '$lib/i18n';
 import {
 	deriveConnectionState,
 	detectAuthFailure,
 	detectRateLimit
 } from '$lib/integrations/status';
+import { get } from 'svelte/store';
 
 export type NotionStatusTone = 'success' | 'warning' | 'error' | 'info';
 
@@ -26,17 +28,6 @@ export interface NotionStatusSummary {
 	statusTone: NotionStatusTone;
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-	dateStyle: 'medium',
-	timeStyle: 'short'
-});
-
-const dateOnlyFormatter = new Intl.DateTimeFormat(undefined, {
-	year: 'numeric',
-	month: 'long',
-	day: 'numeric'
-});
-
 export function notionConnectionDetails(
 	connection: IntegrationConnectionDto | undefined
 ): NotionConnectionDetails {
@@ -58,7 +49,8 @@ export function notionConnectionDetails(
 }
 
 export function notionStatusSummary(
-	connection: IntegrationConnectionDto | undefined
+	connection: IntegrationConnectionDto | undefined,
+	translate: Translate = get(t)
 ): NotionStatusSummary {
 	const connectionState = deriveConnectionState(connection);
 	const isAuthFailure = detectAuthFailure(connection?.last_error);
@@ -67,13 +59,22 @@ export function notionStatusSummary(
 
 	return {
 		connectionState,
-		formattedLastSync: formatDateTime(connection?.last_sync_at, 'Never synced'),
+		formattedLastSync: formatDateTime(
+			connection?.last_sync_at,
+			translate('integrations_notion_never_synced')
+		),
 		formattedConnectedOn: formatDateOnly(connection?.created_at),
 		isAuthFailure,
 		isRateLimited,
 		isSchemaError,
 		pendingJobs: connection?.pending_jobs ?? 0,
-		statusLabel: statusLabel(connectionState, isAuthFailure, isSchemaError, isRateLimited),
+		statusLabel: statusLabel(
+			connectionState,
+			isAuthFailure,
+			isSchemaError,
+			isRateLimited,
+			translate
+		),
 		statusTone: statusTone(connectionState, isAuthFailure, isSchemaError, isRateLimited)
 	};
 }
@@ -86,32 +87,46 @@ export function notionExportItemsMeta(
 	itemCount: number,
 	total: number,
 	filteredCount: number,
-	query: string
+	query: string,
+	translate: Translate = get(t)
 ): string {
-	if (query.trim()) return `${itemCount} of ${filteredCount} matching`;
-	return `${itemCount} of ${total} documents`;
+	if (query.trim()) {
+		return translate('integrations_notion_items_matching', {
+			values: { count: itemCount, total: filteredCount }
+		});
+	}
+	return translate('integrations_notion_items_documents', { values: { count: itemCount, total } });
 }
 
 export function formatExportedAt(value: string | null | undefined): string {
-	return formatDateTime(value, 'Not exported');
+	return formatDateTime(value, get(t)('integrations_notion_not_exported'));
 }
 
-export function formatItemType(value: string): string {
-	return value.replace(/_/g, ' ');
+export function formatItemType(value: string, translate: Translate = get(t)): string {
+	const keys: Record<string, Parameters<Translate>[0]> = {
+		article: 'library_filter_value_article',
+		book: 'library_filter_value_book',
+		email: 'library_filter_value_email',
+		pdf: 'library_filter_value_pdf',
+		tweet: 'library_filter_value_tweet',
+		video: 'library_filter_value_video'
+	};
+	const key = keys[value];
+	return key ? translate(key) : value.replace(/_/g, ' ');
 }
 
 function formatDateTime(value: string | null | undefined, fallback: string): string {
 	if (!value) return fallback;
 	const parsed = new Date(value);
 	if (Number.isNaN(parsed.getTime())) return fallback;
-	return dateTimeFormatter.format(parsed);
+	return get(date)(parsed, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function formatDateOnly(value: string | null | undefined): string | null {
 	if (!value) return null;
 	const parsed = new Date(value);
 	if (Number.isNaN(parsed.getTime())) return null;
-	return dateOnlyFormatter.format(parsed);
+	return get(date)(parsed, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function statusTone(
@@ -130,12 +145,13 @@ function statusLabel(
 	connectionState: ReturnType<typeof deriveConnectionState>,
 	isAuthFailure: boolean,
 	isSchemaError: boolean,
-	isRateLimited: boolean
+	isRateLimited: boolean,
+	translate: Translate
 ): string {
-	if (isAuthFailure) return 'Authorization needed';
-	if (isSchemaError) return 'Schema attention';
-	if (connectionState === 'failed') return 'Attention';
-	if (connectionState === 'syncing') return 'Syncing';
-	if (isRateLimited) return 'Rate limited';
-	return 'Healthy';
+	if (isAuthFailure) return translate('integrations_notion_authorization_needed');
+	if (isSchemaError) return translate('integrations_notion_schema_attention');
+	if (connectionState === 'failed') return translate('integrations_notion_attention');
+	if (connectionState === 'syncing') return translate('integrations_notion_syncing');
+	if (isRateLimited) return translate('integrations_notion_rate_limited');
+	return translate('integrations_notion_healthy');
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import * as api from '$lib/api';
 	import type { TagResponse } from '$lib/api/generated/types.gen';
 	import { fetchAllPages } from '$lib/api/pagination';
@@ -107,7 +108,7 @@
 </script>
 
 <div class="tag-input-wrapper">
-	<div class="tag-input" role="group" aria-label="Tags">
+	<div class="tag-input" role="group" aria-label={$t('common_tags')}>
 		{#each tags as tag (tag)}
 			<span class="tag-pill">
 				{#if tagColor(tag)}
@@ -117,7 +118,7 @@
 				<button
 					type="button"
 					class="tag-pill-x"
-					aria-label="Remove tag {tag}"
+					aria-label={$t('library_tag_remove', { values: { tag } })}
 					onclick={(e) => {
 						e.stopPropagation();
 						removeTag(tag);
@@ -142,8 +143,8 @@
 			bind:value={inputValue}
 			type="text"
 			class="tag-text-input"
-			placeholder={tags.length === 0 ? 'Search or add tags...' : ''}
-			aria-label="Add tag"
+			placeholder={tags.length === 0 ? $t('library_tag_search_or_add') : ''}
+			aria-label={$t('library_tag_add')}
 			autofocus={autofocus || undefined}
 			onkeydown={handleKeydown}
 			onfocus={handleFocus}

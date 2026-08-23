@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { TagScope } from '../tag-tree';
 
 	interface Props {
@@ -34,7 +35,12 @@
 	<div class="tags-header-top">
 		<div class="tags-title-row">
 			{#if onMenuClick}
-				<button type="button" class="menu-btn" onclick={onMenuClick} aria-label="Open navigation">
+				<button
+					type="button"
+					class="menu-btn"
+					onclick={onMenuClick}
+					aria-label={$t('common_open_navigation')}
+				>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -50,7 +56,7 @@
 					</svg>
 				</button>
 			{/if}
-			<div class="tags-title">Tags</div>
+			<div class="tags-title">{$t('tag_title')}</div>
 		</div>
 		<div class="tags-header-controls">
 			<button type="button" class="add-tag-btn" onclick={onCreate}>
@@ -58,16 +64,16 @@
 					<line x1="12" y1="5" x2="12" y2="19" />
 					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
-				New Tag
+				{$t('tag_new')}
 			</button>
-			<div class="segmented-control" role="group" aria-label="Filter by scope">
+			<div class="segmented-control" role="group" aria-label={$t('tag_filter_scope')}>
 				<button
 					type="button"
 					class="segment"
 					class:active={activeScope === 'document'}
 					onclick={() => onScopeClick('document')}
 				>
-					Document
+					{$t('tag_document')}
 				</button>
 				<button
 					type="button"
@@ -75,7 +81,7 @@
 					class:active={activeScope === 'highlight'}
 					onclick={() => onScopeClick('highlight')}
 				>
-					Highlight
+					{$t('tag_highlight')}
 				</button>
 			</div>
 			<div class="search-field-wrap">
@@ -92,7 +98,7 @@
 				<input
 					type="text"
 					class="search-input"
-					placeholder="Find…"
+					placeholder={$t('tag_find_placeholder')}
 					value={searchQuery}
 					oninput={(event) => onSearch(event.currentTarget.value)}
 				/>
@@ -106,7 +112,7 @@
 		<button
 			type="button"
 			class="bulk-deselect"
-			aria-label="Deselect all"
+			aria-label={$t('tag_deselect_all')}
 			onclick={onClearSelection}
 		>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -114,9 +120,7 @@
 				<line x1="6" y1="6" x2="18" y2="18" />
 			</svg>
 		</button>
-		<span
-			><span class="bulk-count">{selectedCount} tag{selectedCount !== 1 ? 's' : ''}</span> selected</span
-		>
+		<span class="bulk-count">{$t('tag_selected_count', { values: { count: selectedCount } })}</span>
 		<span class="bulk-spacer"></span>
 		{#if selectedCount >= 2}
 			<button type="button" class="bulk-btn" onclick={onBulkMerge}>
@@ -126,7 +130,7 @@
 					<path d="M3 16v3a2 2 0 0 0 2 2h3" />
 					<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
 				</svg>
-				Merge Selected
+				{$t('tag_merge_selected')}
 			</button>
 		{/if}
 		<button type="button" class="bulk-btn bulk-btn-destructive" onclick={onBulkDelete}>
@@ -134,7 +138,7 @@
 				<polyline points="3 6 5 6 21 6" />
 				<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 			</svg>
-			Delete
+			{$t('common_delete')}
 		</button>
 	</div>
 {/if}

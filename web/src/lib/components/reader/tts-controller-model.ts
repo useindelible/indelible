@@ -1,30 +1,31 @@
 import type { SessionManifestResponse } from '$lib/api/generated/types.gen';
+import type { MessageKey } from '$lib/i18n';
 
 export type TtsStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'unavailable';
 export type TtsSessionChunk = SessionManifestResponse['chunks'][number];
 
 export type TtsUnavailableBanner = {
 	variant: 'setup' | 'error';
-	title: string;
-	message: string;
+	titleKey: MessageKey;
+	messageKey: MessageKey;
 };
 
-export function getTtsUnavailableBanner(message: string): TtsUnavailableBanner {
-	if (/content|readable/i.test(message)) {
+export function getTtsUnavailableBanner(messageKey: MessageKey): TtsUnavailableBanner {
+	if (messageKey === 'reader_tts_no_readable_content') {
 		return {
 			variant: 'setup',
-			title: 'No readable content',
-			message: 'TTS is not available for this document.'
+			titleKey: 'reader_tts_no_readable_content',
+			messageKey: 'reader_tts_not_available_document'
 		};
 	}
 	return {
 		variant: 'error',
-		title: 'TTS unavailable',
-		message: message || 'Audio playback is not available right now.'
+		titleKey: 'reader_tts_unavailable',
+		messageKey
 	};
 }
 
-export function messageForTtsError(err: unknown): string {
+export function messageForTtsError(err: unknown): MessageKey {
 	const text =
 		typeof err === 'string'
 			? err
@@ -33,13 +34,10 @@ export function messageForTtsError(err: unknown): string {
 				: err && typeof err === 'object' && 'status' in err
 					? String((err as { status?: number }).status ?? '')
 					: '';
-	if (/quota|429/i.test(text)) {
-		return 'Monthly TTS quota exhausted. Upgrade your plan or wait until next month.';
-	}
-	if (/503|disabled/i.test(text)) {
-		return 'TTS is not enabled on this server.';
-	}
-	return 'Could not start audio. Please try again.';
+	if (/content|readable/i.test(text)) return 'reader_tts_no_readable_content';
+	if (/quota|429/i.test(text)) return 'reader_tts_quota_exhausted';
+	if (/503|disabled/i.test(text)) return 'reader_tts_not_enabled';
+	return 'reader_tts_could_not_start';
 }
 
 export function formatTtsResumePosition(seconds: number): string {

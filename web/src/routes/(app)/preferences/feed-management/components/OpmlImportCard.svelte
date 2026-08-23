@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
 	import type { OpmlImportResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		uploading: boolean;
@@ -31,14 +32,14 @@
 	}
 </script>
 
-<SettingsGroup title="Import OPML" meta="From Feedly, Inoreader, NetNewsWire, etc.">
+<SettingsGroup title={$t('prefs_add_feed_import_title')} meta={$t('feed_management_opml_meta')}>
 	<div class="opml-block" id="opml-import">
 		<div
 			class="opml-drop"
 			class:drag-over={isDragOver}
 			role="button"
 			tabindex="0"
-			aria-label="Drop OPML file to import feeds"
+			aria-label={$t('prefs_add_feed_opml_drop_label')}
 			ondrop={handleDrop}
 			ondragover={(event) => {
 				event.preventDefault();
@@ -66,7 +67,7 @@
 			/>
 			<div class="drop-icon">
 				{#if uploading}
-					<span class="spinner" aria-label="Uploading"></span>
+					<span class="spinner" aria-label={$t('library_upload_uploading')}></span>
 				{:else}
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 3v12" />
@@ -75,11 +76,11 @@
 					</svg>
 				{/if}
 			</div>
-			<div class="drop-title">{uploading ? 'Uploading…' : 'Drop your OPML file'}</div>
-			<div class="drop-hint">
-				We'll match feeds against your existing subscriptions and add what's new.
+			<div class="drop-title">
+				{uploading ? $t('library_upload_uploading') : $t('feed_management_opml_drop')}
 			</div>
-			<span class="drop-fallback">or click to choose a file</span>
+			<div class="drop-hint">{$t('feed_management_opml_hint')}</div>
+			<span class="drop-fallback">{$t('feed_management_opml_choose')}</span>
 		</div>
 	</div>
 
@@ -90,13 +91,17 @@
 	{#if result}
 		<div class="opml-result">
 			<p class="opml-summary">
-				Imported {result.created} feed{result.created === 1 ? '' : 's'}, skipped {result.skipped}
+				{$t('prefs_add_feed_import_summary', {
+					values: { created: result.created, skipped: result.skipped }
+				})}
 			</p>
 			{#if result.errors.length > 0}
 				<details class="opml-errors">
-					<summary>
-						{result.errors.length} error{result.errors.length === 1 ? '' : 's'}
-					</summary>
+					<summary
+						>{$t('prefs_add_feed_import_error_count', {
+							values: { count: result.errors.length }
+						})}</summary
+					>
 					<ul>
 						{#each result.errors as item, index (index)}
 							<li>{item}</li>

@@ -16,6 +16,7 @@
 		type WebhookEndpoint
 	} from '$lib/api/webhooks';
 	import type { ApiTokenResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import ApiTokenPanel from './components/ApiTokenPanel.svelte';
 	import DeveloperHero from './components/DeveloperHero.svelte';
 	import WebhookPanel from './components/WebhookPanel.svelte';
@@ -83,7 +84,7 @@
 		const preset = issuePresetFromSearchParams(page.url.searchParams);
 		if (preset) {
 			replaceIssuePermissions(preset.permissions);
-			issueName = preset.name;
+			issueName = $t('prefs_developer_obsidian_plugin');
 			issueOpen = true;
 		}
 	});
@@ -120,11 +121,11 @@
 
 	async function submitIssueToken() {
 		if (issuePermissions.size === 0) {
-			issueError = 'Pick at least one permission.';
+			issueError = $t('prefs_developer_error_permission_required');
 			return;
 		}
 		if (issueName.trim().length === 0) {
-			issueError = 'Name is required.';
+			issueError = $t('prefs_developer_error_name_required');
 			return;
 		}
 
@@ -175,11 +176,11 @@
 
 	async function submitCreateEndpoint() {
 		if (!addUrl.trim().toLowerCase().startsWith('https://')) {
-			addError = 'URL must start with https://';
+			addError = $t('prefs_developer_error_https_required');
 			return;
 		}
 		if (addEvents.size === 0) {
-			addError = 'Pick at least one event.';
+			addError = $t('prefs_developer_error_event_required');
 			return;
 		}
 

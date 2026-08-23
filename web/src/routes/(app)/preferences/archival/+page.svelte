@@ -3,6 +3,7 @@
 	import { loadArchivalSettings, saveArchivalSettings } from '$lib/api/settings';
 	import SavePill from '$lib/components/settings/SavePill.svelte';
 	import type { ArchivalSettingsResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import {
 		actionFromApi,
 		buildArchivalSettingsPayload,
@@ -134,7 +135,7 @@
 </script>
 
 {#if loading}
-	<div class="archival-loading">Loading archival settings...</div>
+	<div class="archival-loading">{$t('archival_loading')}</div>
 {:else if loadError}
 	<p class="archival-load-error">{loadError}</p>
 {:else}

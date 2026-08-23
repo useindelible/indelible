@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 	import {
 		ARCHIVE_FORMATS,
 		isArchiveFormatOn,
@@ -16,10 +17,7 @@
 	let { formats, onToggleFormat }: Props = $props();
 </script>
 
-<SettingsGroup
-	title="Archive formats"
-	meta="Pick which formats Indelible writes for every new save. Readable text is always preserved."
->
+<SettingsGroup title={$t('archival_formats_title')} meta={$t('archival_formats_meta')}>
 	<div class="group-card">
 		{#each ARCHIVE_FORMATS as format (format.id)}
 			<ArchiveFormatRow

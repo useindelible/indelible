@@ -7,6 +7,7 @@
 	import FormButton from '$lib/components/auth/FormButton.svelte';
 	import OAuthButtons from '$lib/components/auth/OAuthButtons.svelte';
 	import { getInstanceStatus } from '$lib/api/instance';
+	import { t } from '$lib/i18n';
 
 	const auth = getAuth();
 
@@ -49,11 +50,11 @@
 		const errors: { email?: string; password?: string } = {};
 
 		if (!email.trim()) {
-			errors.email = 'Email is required';
+			errors.email = $t('auth_email_required');
 		}
 
 		if (!password) {
-			errors.password = 'Password is required';
+			errors.password = $t('auth_password_required');
 		}
 
 		fieldErrors = errors;
@@ -104,11 +105,11 @@
 </script>
 
 <svelte:head>
-	<title>Sign in - Indelible</title>
+	<title>{$t('auth_sign_in_title')}</title>
 </svelte:head>
 
-<h1 class="auth-title">Welcome back</h1>
-<p class="auth-subtitle">Sign in to your account</p>
+<h1 class="auth-title">{$t('auth_welcome_back')}</h1>
+<p class="auth-subtitle">{$t('auth_sign_in_subtitle')}</p>
 
 {#if auth.error && !isCoolingDown}
 	<div class="auth-error-banner" role="alert">{auth.error}</div>
@@ -116,26 +117,26 @@
 
 {#if isCoolingDown}
 	<div class="auth-error-banner" role="alert">
-		Too many attempts. Please try again in {cooldownRemaining} seconds.
+		{$t('auth_too_many_attempts', { values: { seconds: cooldownRemaining } })}
 	</div>
 {/if}
 
 <form onsubmit={handleSubmit} novalidate>
 	<FormInput
-		label="Email"
+		label={$t('common_email')}
 		type="email"
 		autocomplete="email"
-		placeholder="you@example.com"
+		placeholder={$t('auth_email_placeholder')}
 		required
 		bind:value={email}
 		error={fieldErrors.email}
 	/>
 
 	<FormInput
-		label="Password"
+		label={$t('auth_password')}
 		type="password"
 		autocomplete="current-password"
-		placeholder="Enter your password"
+		placeholder={$t('auth_password_placeholder')}
 		required
 		revealable
 		bind:value={password}
@@ -143,19 +144,19 @@
 	/>
 
 	<div class="form-actions">
-		<FormButton loading={submitting} disabled={isCoolingDown}>Sign in</FormButton>
+		<FormButton loading={submitting} disabled={isCoolingDown}>{$t('auth_sign_in')}</FormButton>
 	</div>
 </form>
 
-<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- route created in TASK-042 -->
-<a href={forgotPasswordHref} class="forgot-password-link"> Forgot password? </a>
+<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- static application route. -->
+<a href={forgotPasswordHref} class="forgot-password-link">{$t('auth_forgot_password')}</a>
 
-<OAuthButtons dividerText="or" />
+<OAuthButtons dividerText={$t('auth_or')} />
 
 {#if signupsEnabled}
 	<p class="auth-footer">
-		Don't have an account?
-		<a href="{resolve('/register')}{getRedirectParam()}" class="auth-link">Sign up</a>
+		{$t('auth_no_account')}
+		<a href="{resolve('/register')}{getRedirectParam()}" class="auth-link">{$t('auth_sign_up')}</a>
 	</p>
 {/if}
 

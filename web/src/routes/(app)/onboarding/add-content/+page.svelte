@@ -5,6 +5,7 @@
 	import StepLayout from '$lib/components/onboarding/StepLayout.svelte';
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import { getOnboarding } from '$lib/stores/onboarding.svelte';
+	import { t } from '$lib/i18n';
 
 	const onboarding = getOnboarding();
 	const auth = getAuth();
@@ -37,12 +38,10 @@
 		try {
 			const { data, error } = await createDocumentEntry({ body: { url: articleUrl.trim() } });
 			saveMessage =
-				data && !error
-					? 'Saved to your library.'
-					: 'Could not save this URL. You can continue and try again later.';
+				data && !error ? $t('onboarding_content_saved') : $t('onboarding_content_save_failed');
 			if (data && !error) articleUrl = '';
 		} catch {
-			saveMessage = 'Could not save this URL. You can continue and try again later.';
+			saveMessage = $t('onboarding_content_save_failed');
 		} finally {
 			saving = false;
 		}
@@ -84,7 +83,7 @@
 				saveMessage = '';
 				setTimeout(() => (copied = null), 2000);
 			} catch {
-				saveMessage = 'Could not copy the address. Select it and copy it manually.';
+				saveMessage = $t('onboarding_copy_failed');
 			}
 		}
 	}
@@ -104,8 +103,8 @@
 </script>
 
 <StepLayout
-	title="Save your first article"
-	description="Paste a URL below to save it to your library, or explore other ways to add content."
+	title={$t('onboarding_content_title')}
+	description={$t('onboarding_content_description')}
 	currentStep={2}
 	showSkip
 	{submitting}
@@ -119,15 +118,15 @@
 				class="url-input"
 				bind:value={articleUrl}
 				placeholder="https://example.com/article"
-				aria-label="Article URL"
+				aria-label={$t('onboarding_article_url')}
 			/>
 			<button type="button" class="save-btn" disabled={!isValidUrl || saving} onclick={saveArticle}>
-				{saving ? 'Saving…' : 'Save'}
+				{saving ? $t('common_saving') : $t('common_save')}
 			</button>
 		</div>
 		{#if saveMessage}<p class="status-message">{saveMessage}</p>{/if}
 
-		<p class="section-label">Other ways to save</p>
+		<p class="section-label">{$t('onboarding_other_ways_to_save')}</p>
 
 		<div class="method-list">
 			<div class="method-card">
@@ -138,11 +137,11 @@
 					</svg>
 				</div>
 				<div class="method-text">
-					<span class="method-label">Feed email</span>
+					<span class="method-label">{$t('onboarding_feed_email')}</span>
 					<span class="method-desc"
 						>{feedEmail
-							? 'Forward newsletters to your feed'
-							: 'Requires administrator configuration'}</span
+							? $t('onboarding_feed_email_description')
+							: $t('onboarding_requires_admin')}</span
 					>
 				</div>
 				{#if feedEmail}
@@ -152,7 +151,9 @@
 							type="button"
 							class="copy-btn"
 							onclick={() => copyEmail('feed', feedEmail)}
-							aria-label={copied === 'feed' ? 'Feed email copied' : 'Copy feed email address'}
+							aria-label={$t(
+								copied === 'feed' ? 'onboarding_feed_email_copied' : 'onboarding_copy_feed_email'
+							)}
 						>
 							<svg
 								viewBox="0 0 24 24"
@@ -183,11 +184,11 @@
 					</svg>
 				</div>
 				<div class="method-text">
-					<span class="method-label">Library email</span>
+					<span class="method-label">{$t('onboarding_library_email')}</span>
 					<span class="method-desc"
 						>{libraryEmail
-							? 'Forward articles directly to your library'
-							: 'Requires administrator configuration'}</span
+							? $t('onboarding_library_email_description')
+							: $t('onboarding_requires_admin')}</span
 					>
 				</div>
 				{#if libraryEmail}
@@ -197,9 +198,11 @@
 							type="button"
 							class="copy-btn"
 							onclick={() => copyEmail('library', libraryEmail)}
-							aria-label={copied === 'library'
-								? 'Library email copied'
-								: 'Copy library email address'}
+							aria-label={$t(
+								copied === 'library'
+									? 'onboarding_library_email_copied'
+									: 'onboarding_copy_library_email'
+							)}
 						>
 							<svg
 								viewBox="0 0 24 24"

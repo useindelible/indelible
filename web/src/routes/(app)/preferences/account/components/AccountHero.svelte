@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		avatarPreview: string;
@@ -26,7 +27,7 @@
 
 <SettingsHero variant="account">
 	<div class="hero-avatar-wrap">
-		<div class="hero-avatar" aria-label="Avatar">
+		<div class="hero-avatar" aria-label={$t('account_avatar')}>
 			{#if avatarPreview}
 				<img src={avatarPreview} alt="" class="hero-avatar-img" />
 			{:else}
@@ -37,8 +38,8 @@
 			type="button"
 			class="hero-avatar-edit"
 			onclick={() => fileInput?.click()}
-			aria-label="Change avatar"
-			title="Change avatar"
+			aria-label={$t('account_change_avatar')}
+			title={$t('account_change_avatar')}
 		>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<path d="M12 20h9" />
@@ -54,8 +55,8 @@
 		/>
 	</div>
 	<div class="hero-meta">
-		<div class="hero-eyebrow"><span>Your account</span></div>
-		<h1 class="hero-name">{displayName || 'Your name'}</h1>
+		<div class="hero-eyebrow"><span>{$t('account_your_account')}</span></div>
+		<h1 class="hero-name">{displayName || $t('account_your_name')}</h1>
 		<div class="hero-pills">
 			{#if username}
 				<span class="hero-pill">
@@ -72,13 +73,13 @@
 						<circle cx="12" cy="12" r="9" />
 						<path d="M12 7v5l3 2" />
 					</svg>
-					Member since {memberSince}
+					{$t('account_member_since', { values: { date: memberSince } })}
 				</span>
 			{/if}
 			{#if emailVerified}
 				<span class="hero-pill verified">
 					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10" /></svg>
-					Verified
+					{$t('account_verified')}
 				</span>
 			{/if}
 		</div>

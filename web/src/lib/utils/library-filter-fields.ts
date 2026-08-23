@@ -1,183 +1,194 @@
+import type { MessageKey } from '$lib/i18n';
+
 export type LibraryFilterFieldDef = {
 	key: string;
-	label: string;
+	labelKey: MessageKey;
 	section: 'content' | 'attributes' | 'dates';
-	ops: { value: string; label: string }[];
+	ops: { value: string; labelKey: MessageKey }[];
 	valueType: 'select' | 'multi-select' | 'text' | 'number' | 'date' | 'boolean';
-	options?: { value: string; label: string }[];
-	booleanLabels?: { true: string; false: string };
+	options?: { value: string; labelKey: MessageKey }[];
+	booleanLabelKeys?: { true: MessageKey; false: MessageKey };
 	scope?: 'email';
 };
 
 const LIBRARY_FILTER_FIELDS: LibraryFilterFieldDef[] = [
 	{
 		key: 'tag',
-		label: 'Tag',
+		labelKey: 'library_filter_field_tag',
 		section: 'content',
 		ops: [
-			{ value: 'contains', label: 'contains' },
-			{ value: 'eq', label: 'is exactly' },
-			{ value: 'neq', label: 'is not' }
+			{ value: 'contains', labelKey: 'library_filter_operator_contains' },
+			{ value: 'eq', labelKey: 'library_filter_operator_is_exactly' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'item_type',
-		label: 'Content type',
+		labelKey: 'library_filter_field_content_type',
 		section: 'content',
 		ops: [
-			{ value: 'eq', label: 'is' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'eq', labelKey: 'library_filter_operator_is' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'select',
 		options: [
-			{ value: 'article', label: 'Article' },
-			{ value: 'book', label: 'Book' },
-			{ value: 'email', label: 'Email' },
-			{ value: 'pdf', label: 'PDF' },
-			{ value: 'tweet', label: 'Tweet' },
-			{ value: 'video', label: 'Video' }
+			{ value: 'article', labelKey: 'library_filter_value_article' },
+			{ value: 'book', labelKey: 'library_filter_value_book' },
+			{ value: 'email', labelKey: 'library_filter_value_email' },
+			{ value: 'pdf', labelKey: 'library_filter_value_pdf' },
+			{ value: 'tweet', labelKey: 'library_filter_value_tweet' },
+			{ value: 'video', labelKey: 'library_filter_value_video' }
 		]
 	},
 	{
 		key: 'domain',
-		label: 'Domain',
+		labelKey: 'library_filter_field_domain',
 		section: 'content',
 		ops: [
-			{ value: 'eq', label: 'is' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'eq', labelKey: 'library_filter_operator_is' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'sender',
-		label: 'Sender',
+		labelKey: 'library_filter_field_sender',
 		section: 'content',
 		scope: 'email',
 		ops: [
-			{ value: 'contains', label: 'contains' },
-			{ value: 'eq', label: 'is exactly' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'contains', labelKey: 'library_filter_operator_contains' },
+			{ value: 'eq', labelKey: 'library_filter_operator_is_exactly' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'sender_domain',
-		label: 'Sender domain',
+		labelKey: 'library_filter_field_sender_domain',
 		section: 'content',
 		scope: 'email',
 		ops: [
-			{ value: 'contains', label: 'contains' },
-			{ value: 'eq', label: 'is exactly' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'contains', labelKey: 'library_filter_operator_contains' },
+			{ value: 'eq', labelKey: 'library_filter_operator_is_exactly' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'list_id',
-		label: 'List-ID',
+		labelKey: 'library_filter_field_list_id',
 		section: 'content',
 		scope: 'email',
 		ops: [
-			{ value: 'contains', label: 'contains' },
-			{ value: 'eq', label: 'is exactly' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'contains', labelKey: 'library_filter_operator_contains' },
+			{ value: 'eq', labelKey: 'library_filter_operator_is_exactly' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'subject',
-		label: 'Subject',
+		labelKey: 'library_filter_field_subject',
 		section: 'content',
 		scope: 'email',
 		ops: [
-			{ value: 'contains', label: 'contains' },
-			{ value: 'eq', label: 'is exactly' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'contains', labelKey: 'library_filter_operator_contains' },
+			{ value: 'eq', labelKey: 'library_filter_operator_is_exactly' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'collection',
-		label: 'Collection',
+		labelKey: 'library_filter_field_collection',
 		section: 'content',
 		ops: [
-			{ value: 'eq', label: 'is' },
-			{ value: 'contains', label: 'contains' }
+			{ value: 'eq', labelKey: 'library_filter_operator_is' },
+			{ value: 'contains', labelKey: 'library_filter_operator_contains' }
 		],
 		valueType: 'text'
 	},
 	{
 		key: 'is_favorite',
-		label: 'Favorited',
+		labelKey: 'library_filter_field_favorited',
 		section: 'attributes',
 		ops: [],
 		valueType: 'boolean',
-		booleanLabels: { true: 'is favorited', false: 'is not favorited' }
+		booleanLabelKeys: {
+			true: 'library_filter_favorited_true',
+			false: 'library_filter_favorited_false'
+		}
 	},
 	{
 		key: 'has_unsubscribe',
-		label: 'Has unsubscribe',
+		labelKey: 'library_filter_field_has_unsubscribe',
 		section: 'attributes',
 		scope: 'email',
 		ops: [],
 		valueType: 'boolean',
-		booleanLabels: { true: 'has unsubscribe', false: 'no unsubscribe' }
+		booleanLabelKeys: {
+			true: 'library_filter_has_unsubscribe_true',
+			false: 'library_filter_has_unsubscribe_false'
+		}
 	},
 	{
 		key: 'sender_blocked',
-		label: 'Sender blocked',
+		labelKey: 'library_filter_field_sender_blocked',
 		section: 'attributes',
 		scope: 'email',
 		ops: [],
 		valueType: 'boolean',
-		booleanLabels: { true: 'sender blocked', false: 'sender not blocked' }
+		booleanLabelKeys: {
+			true: 'library_filter_sender_blocked_true',
+			false: 'library_filter_sender_blocked_false'
+		}
 	},
 	{
 		key: 'triage_state',
-		label: 'Read Status',
+		labelKey: 'library_filter_field_read_status',
 		section: 'attributes',
 		ops: [
-			{ value: 'eq', label: 'is' },
-			{ value: 'neq', label: 'is not' },
-			{ value: 'in', label: 'is any of' }
+			{ value: 'eq', labelKey: 'library_filter_operator_is' },
+			{ value: 'neq', labelKey: 'library_filter_operator_is_not' },
+			{ value: 'in', labelKey: 'library_filter_operator_is_any_of' }
 		],
 		valueType: 'select',
 		options: [
-			{ value: 'inbox', label: 'Inbox' },
-			{ value: 'later', label: 'Later' },
-			{ value: 'archive', label: 'Archive' }
+			{ value: 'inbox', labelKey: 'library_filter_value_inbox' },
+			{ value: 'later', labelKey: 'library_filter_value_later' },
+			{ value: 'archive', labelKey: 'library_filter_value_archive' }
 		]
 	},
 	{
 		key: 'saved_at',
-		label: 'Saved date',
+		labelKey: 'library_filter_field_saved_date',
 		section: 'dates',
 		ops: [
-			{ value: 'gt', label: 'after' },
-			{ value: 'lt', label: 'before' },
-			{ value: 'eq', label: 'on' },
-			{ value: 'gte', label: 'on or after' },
-			{ value: 'lte', label: 'on or before' }
+			{ value: 'gt', labelKey: 'library_filter_operator_after' },
+			{ value: 'lt', labelKey: 'library_filter_operator_before' },
+			{ value: 'eq', labelKey: 'library_filter_operator_on' },
+			{ value: 'gte', labelKey: 'library_filter_operator_on_or_after' },
+			{ value: 'lte', labelKey: 'library_filter_operator_on_or_before' }
 		],
 		valueType: 'date'
 	},
 	{
 		key: 'published_at',
-		label: 'Published date',
+		labelKey: 'library_filter_field_published_date',
 		section: 'dates',
 		ops: [
-			{ value: 'gt', label: 'after' },
-			{ value: 'lt', label: 'before' },
-			{ value: 'eq', label: 'on' },
-			{ value: 'gte', label: 'on or after' },
-			{ value: 'lte', label: 'on or before' }
+			{ value: 'gt', labelKey: 'library_filter_operator_after' },
+			{ value: 'lt', labelKey: 'library_filter_operator_before' },
+			{ value: 'eq', labelKey: 'library_filter_operator_on' },
+			{ value: 'gte', labelKey: 'library_filter_operator_on_or_after' },
+			{ value: 'lte', labelKey: 'library_filter_operator_on_or_before' }
 		],
 		valueType: 'date'
 	}

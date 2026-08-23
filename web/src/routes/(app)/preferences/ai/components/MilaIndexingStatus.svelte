@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MilaStatusResponse } from '$lib/api';
+	import { number, t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		status: MilaStatusResponse | null;
@@ -36,24 +37,28 @@
 	);
 
 	const title = $derived(
-		{
-			paused: 'Indexing is paused',
-			indexing: 'Indexing your library',
-			ready: 'Your library is ready',
-			attention: status?.reindex_required ? 'Indexing stopped early' : 'Library is partly indexed',
-			unavailable: 'Can’t reach the index'
-		}[variant]
+		$t(
+			(
+				{
+					paused: 'prefs_ai_index_paused',
+					indexing: 'prefs_ai_index_indexing',
+					ready: 'prefs_ai_index_ready',
+					attention: status?.reindex_required ? 'prefs_ai_index_stopped' : 'prefs_ai_index_partial',
+					unavailable: 'prefs_ai_index_unavailable'
+				} satisfies Record<Variant, MessageKey>
+			)[variant]
+		)
 	);
 
 	const subtitle = $derived(
 		{
-			paused: 'Turn Mila on to resume. Nothing is sent to your provider while it is off.',
-			indexing: 'Mila can already answer about the items that are done.',
-			ready: 'Every eligible item is indexed and searchable.',
+			paused: $t('prefs_ai_index_paused_hint'),
+			indexing: $t('prefs_ai_index_indexing_hint'),
+			ready: $t('prefs_ai_index_ready_hint'),
 			attention: status?.reindex_required
-				? 'Some items could not be indexed. Retrying picks up where Mila left off.'
-				: 'Mila answers from the items that are already indexed.',
-			unavailable: error || 'The status service did not respond.'
+				? $t('prefs_ai_index_stopped_hint')
+				: $t('prefs_ai_index_partial_hint'),
+			unavailable: error || $t('prefs_ai_status_unavailable_hint')
 		}[variant]
 	);
 
@@ -77,7 +82,7 @@
 	class="index-card"
 	data-variant={variant}
 	role={variant === 'unavailable' ? 'alert' : 'status'}
-	aria-label="Mila indexing status"
+	aria-label={$t('prefs_ai_index_status')}
 >
 	<div class="head">
 		<span class="dot" aria-hidden="true"></span>
@@ -86,10 +91,10 @@
 			<div class="subtitle">{subtitle}</div>
 		</div>
 		{#if variant === 'unavailable'}
-			<button type="button" class="action" onclick={onRefresh}>Try again</button>
+			<button type="button" class="action" onclick={onRefresh}>{$t('prefs_ai_try_again')}</button>
 		{:else if canRetry}
 			<button type="button" class="action" onclick={onRetry} disabled={retrying}>
-				{retrying ? 'Retrying…' : 'Retry indexing'}
+				{retrying ? $t('prefs_ai_retrying') : $t('prefs_ai_retry_indexing')}
 			</button>
 		{/if}
 	</div>
@@ -109,16 +114,20 @@
 
 		<div class="facts">
 			<span>
-				<strong>{status.indexed_items}</strong>
-				of
-				<strong>{status.eligible_items}</strong>
-				items indexed
+				{$t('prefs_ai_items_indexed', {
+					values: {
+						indexed: $number(status.indexed_items),
+						eligible: $number(status.eligible_items)
+					}
+				})}
 			</span>
 			<span class="sep">·</span>
 			<span class="chip">{embeddingModel}</span>
 			{#if status.stale_items > 0}
 				<span class="sep">·</span>
-				<span class="chip warn">{status.stale_items} stale</span>
+				<span class="chip warn"
+					>{$t('prefs_ai_stale_items', { values: { count: status.stale_items } })}</span
+				>
 			{/if}
 		</div>
 	{/if}
@@ -328,11 +337,6 @@
 		font-size: 12px;
 		color: var(--text-secondary);
 		letter-spacing: -0.005em;
-	}
-	.facts strong {
-		color: var(--text-primary);
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
 	}
 	.facts .sep {
 		color: var(--text-quaternary);

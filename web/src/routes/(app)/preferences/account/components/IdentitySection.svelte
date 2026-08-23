@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		displayName: string;
@@ -10,12 +11,12 @@
 	let { displayName, username, onDisplayNameChange }: Props = $props();
 </script>
 
-<SettingsGroup title="Identity">
+<SettingsGroup title={$t('account_identity')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Display name</div>
-				<div class="hint">Shown on shared notes and collaboration invites.</div>
+				<div class="label">{$t('auth_display_name')}</div>
+				<div class="hint">{$t('account_display_name_hint')}</div>
 			</div>
 			<div class="input-group">
 				<input
@@ -23,15 +24,15 @@
 					type="text"
 					value={displayName}
 					maxlength={100}
-					aria-label="Display name"
+					aria-label={$t('auth_display_name')}
 					oninput={(event) => onDisplayNameChange((event.currentTarget as HTMLInputElement).value)}
 				/>
 			</div>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Username</div>
-				<div class="hint">Used in your public profile URL. Locked after first set.</div>
+				<div class="label">{$t('account_username')}</div>
+				<div class="hint">{$t('account_username_hint')}</div>
 			</div>
 			<div class="input-group">
 				<input
@@ -39,7 +40,7 @@
 					type="text"
 					value={username}
 					readonly
-					aria-label="Username"
+					aria-label={$t('account_username')}
 				/>
 			</div>
 		</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		enabled: boolean;
@@ -11,12 +12,9 @@
 
 <SettingsHero variant="mila">
 	<div class="hero-text">
-		<div class="hero-eyebrow"><span>Your reading assistant</span></div>
-		<h1 class="hero-headline">Hi, I'm Mila.</h1>
-		<p class="hero-sub">
-			I summarise long reads, pull out tags and entities, and help you find anything in your library
-			— using your own model and your own key.
-		</p>
+		<div class="hero-eyebrow"><span>{$t('prefs_ai_hero_eyebrow')}</span></div>
+		<h1 class="hero-headline">{$t('prefs_ai_hero_title')}</h1>
+		<p class="hero-sub">{$t('prefs_ai_hero_description')}</p>
 		<div class="enable-bar">
 			<button
 				type="button"
@@ -24,15 +22,17 @@
 				class:on={enabled}
 				role="switch"
 				aria-checked={enabled}
-				aria-label={enabled ? 'Disable Mila' : 'Enable Mila'}
+				aria-label={$t(enabled ? 'prefs_ai_disable_mila' : 'prefs_ai_enable_mila')}
 				onclick={onToggleEnabled}
 			>
 				<span class="toggle-track"></span>
 			</button>
 			<div>
-				<div class="enable-label">Enable Mila</div>
+				<div class="enable-label">{$t('prefs_ai_enable_mila')}</div>
 				<div class="enable-state">
-					AI summaries, auto-tags, and reading assistant — {enabled ? 'on' : 'off'}
+					{$t('prefs_ai_enable_state', {
+						values: { state: $t(enabled ? 'prefs_ai_on' : 'prefs_ai_off') }
+					})}
 				</div>
 			</div>
 		</div>

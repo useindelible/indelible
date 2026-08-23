@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ObsidianSettingsDto } from '$lib/api';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	type TemplateKey =
 		| 'properties_template'
@@ -11,9 +12,9 @@
 
 	interface TemplateEditor {
 		key: TemplateKey;
-		name: string;
-		cap: string;
-		placeholder?: string;
+		nameKey: MessageKey;
+		capKey: MessageKey;
+		placeholderKey?: MessageKey;
 		span?: boolean;
 		short?: boolean;
 	}
@@ -30,7 +31,7 @@
 
 	const variableGroups = [
 		{
-			label: 'Document',
+			labelKey: 'integrations_obsidian_variable_document' as MessageKey,
 			vars: [
 				'{{title}}',
 				'{{full_title}}',
@@ -43,7 +44,7 @@
 			]
 		},
 		{
-			label: 'Run context',
+			labelKey: 'integrations_obsidian_variable_run_context' as MessageKey,
 			vars: [
 				'{{date}}',
 				'{{time}}',
@@ -53,7 +54,7 @@
 			]
 		},
 		{
-			label: 'Highlight',
+			labelKey: 'integrations_obsidian_variable_highlight' as MessageKey,
 			vars: [
 				'{{highlight_text}}',
 				'{{highlight_location}}',
@@ -69,27 +70,36 @@
 	const editors: TemplateEditor[] = [
 		{
 			key: 'properties_template',
-			name: 'Properties / YAML',
-			cap: 'optional · frontmatter',
-			placeholder: '---\n# YAML frontmatter (optional)\n---'
+			nameKey: 'integrations_obsidian_template_properties',
+			capKey: 'integrations_obsidian_template_properties_cap',
+			placeholderKey: 'integrations_obsidian_template_properties_placeholder'
 		},
 		{
 			key: 'page_title_template',
-			name: 'Page title',
-			cap: 'optional first line',
-			placeholder: '(empty — Obsidian shows the file title)'
+			nameKey: 'integrations_obsidian_template_page_title',
+			capKey: 'integrations_obsidian_template_page_title_cap',
+			placeholderKey: 'integrations_obsidian_template_page_title_placeholder'
 		},
-		{ key: 'metadata_template', name: 'Metadata', cap: 'metadata block', span: true },
+		{
+			key: 'metadata_template',
+			nameKey: 'integrations_obsidian_template_metadata',
+			capKey: 'integrations_obsidian_template_metadata_cap',
+			span: true
+		},
 		{
 			key: 'highlight_header_template',
-			name: 'Highlight header',
-			cap: 'switches on first vs. incremental sync'
+			nameKey: 'integrations_obsidian_template_highlight_header',
+			capKey: 'integrations_obsidian_template_highlight_header_cap'
 		},
-		{ key: 'highlight_template', name: 'Highlight', cap: 'per highlight · location · tags · note' },
+		{
+			key: 'highlight_template',
+			nameKey: 'integrations_obsidian_template_highlight',
+			capKey: 'integrations_obsidian_template_highlight_cap'
+		},
 		{
 			key: 'sync_notification_template',
-			name: 'Sync notification',
-			cap: 'appended to Indelible/Indelible Syncs.md',
+			nameKey: 'integrations_obsidian_template_sync_notification',
+			capKey: 'integrations_obsidian_template_sync_notification_cap',
 			span: true,
 			short: true
 		}
@@ -102,22 +112,24 @@
 
 <section class="section">
 	<div class="section-head">
-		<h2 class="section-title">Templates</h2>
-		<p class="section-sub">MiniJinja syntax · server-rendered on every sync</p>
+		<h2 class="section-title">{$t('integrations_obsidian_templates')}</h2>
+		<p class="section-sub">{$t('integrations_obsidian_templates_hint')}</p>
 	</div>
 
 	<div class="vars" class:is-open={varsOpen}>
 		<button type="button" class="vars-head" aria-expanded={varsOpen} onclick={onToggleVars}>
 			<span class="chev" aria-hidden="true">›</span>
-			Available variables
-			<span class="vars-tag">21 total</span>
+			{$t('integrations_obsidian_available_variables')}
+			<span class="vars-tag"
+				>{$t('integrations_obsidian_variable_count', { values: { count: 21 } })}</span
+			>
 		</button>
 		<div class="vars-body">
 			<div>
 				<div class="vars-body-inner">
-					{#each variableGroups as group (group.label)}
+					{#each variableGroups as group (group.labelKey)}
 						<div class="var-group">
-							<div class="var-group-label">{group.label}</div>
+							<div class="var-group-label">{$t(group.labelKey)}</div>
 							<div class="var-pills">
 								{#each group.vars as variable (variable)}
 									<span class="var-pill">{variable}</span>
@@ -134,15 +146,15 @@
 		{#each editors as editor (editor.key)}
 			<div class="editor" class:span-2={editor.span}>
 				<div class="editor-head">
-					<span class="editor-name">{editor.name}</span>
-					<span class="editor-cap">{editor.cap}</span>
+					<span class="editor-name">{$t(editor.nameKey)}</span>
+					<span class="editor-cap">{$t(editor.capKey)}</span>
 				</div>
 				<div class="editor-body">
 					<textarea
 						class="editor-textarea"
 						class:editor-textarea-short={editor.short}
 						spellcheck="false"
-						placeholder={editor.placeholder}
+						placeholder={editor.placeholderKey ? $t(editor.placeholderKey) : undefined}
 						value={valueFor(editor.key)}
 						oninput={(event) => onTemplateChange(editor.key, event.currentTarget.value)}
 					></textarea>
@@ -154,7 +166,7 @@
 	{#if saveError}
 		<div class="alert-block">
 			<div class="alert">
-				<strong>Save failed</strong>
+				<strong>{$t('integrations_obsidian_save_failed')}</strong>
 				<p>{saveError}</p>
 			</div>
 		</div>

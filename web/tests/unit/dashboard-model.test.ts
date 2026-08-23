@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { HomeItemResponse } from '$lib/api';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 import {
 	DEFAULT_CONFIG_TYPES,
 	coverColor,
@@ -22,6 +24,8 @@ function item(overrides: Partial<HomeItemResponse> = {}): HomeItemResponse {
 }
 
 describe('dashboard model', () => {
+	const translate = get(t);
+
 	it('reorders items without mutating the original list', () => {
 		const source = ['continue', 'quick', 'recent'];
 
@@ -30,9 +34,9 @@ describe('dashboard model', () => {
 	});
 
 	it('builds stable greeting copy', () => {
-		expect(greetingLine('Sam', 8)).toBe('Good morning, Sam.');
-		expect(greetingLine('Sam', 14)).toBe('Good afternoon, Sam.');
-		expect(greetingLine(null, 22)).toBe('Good evening.');
+		expect(greetingLine(translate, 'Sam', 8)).toBe('Good morning, Sam.');
+		expect(greetingLine(translate, 'Sam', 14)).toBe('Good afternoon, Sam.');
+		expect(greetingLine(translate, null, 22)).toBe('Good evening.');
 	});
 
 	it('derives card metadata from home items', () => {
@@ -42,7 +46,7 @@ describe('dashboard model', () => {
 			reading_time_minutes: 75
 		});
 
-		expect(readingMeta(withAuthor)).toBe('Alex Reader · 1h 15m read');
+		expect(readingMeta(translate, withAuthor)).toBe('Alex Reader · 1 h 15 min read');
 		expect(domainInitial(withAuthor.domain)).toBe('N');
 		expect(coverColor(withAuthor.domain)).toBe('teal');
 	});

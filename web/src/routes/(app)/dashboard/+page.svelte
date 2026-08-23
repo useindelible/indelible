@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import * as apiSdk from '$lib/api';
 	import type { HighlightWithNoteResponse, HomeItemResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import DashboardConfigurePopover from './components/DashboardConfigurePopover.svelte';
@@ -41,7 +42,7 @@
 	let draggedSectionId: string | null = null;
 	let draggedTypeId: string | null = null;
 
-	const greeting = $derived(buildGreetingLine(user?.display_name));
+	const greeting = $derived(buildGreetingLine($t, user?.display_name));
 	const longReads = $derived(longReadItems(recentItems));
 	const showEmptyState = $derived(
 		!loading && continueReadingItems.length === 0 && recentItems.length === 0
@@ -147,7 +148,7 @@
 			type="button"
 			class="menu-btn"
 			onclick={() => vp.openMobileNav()}
-			aria-label="Open navigation"
+			aria-label={$t('common_open_navigation')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -182,7 +183,7 @@
 				<path d="M15 8h2" />
 				<path d="M15 16h2" />
 			</svg>
-			<span class="configure-label">Configure</span>
+			<span class="configure-label">{$t('dashboard_config_title')}</span>
 		</button>
 	</div>
 
@@ -191,7 +192,7 @@
 			{#if section.on}
 				{#if section.id === 'continue' && (loading || continueReadingItems.length > 0)}
 					<HomeSection
-						title="Continue Reading"
+						title={$t('dashboard_section_continue')}
 						items={continueReadingItems}
 						{loading}
 						seeAllHref={libraryHref}
@@ -201,7 +202,7 @@
 
 				{#if section.id === 'quick' && (loading || quickReadItems.length > 0)}
 					<HomeSection
-						title="Quick Reads"
+						title={$t('dashboard_section_quick')}
 						items={quickReadItems}
 						{loading}
 						seeAllHref={libraryHref}
@@ -211,7 +212,7 @@
 
 				{#if section.id === 'long' && (loading || longReads.length > 0)}
 					<HomeSection
-						title="Long Reads"
+						title={$t('dashboard_section_long')}
 						items={longReads}
 						{loading}
 						seeAllHref={libraryHref}
@@ -220,7 +221,7 @@
 				{/if}
 
 				{#if section.id === 'review'}
-					<HomeSection title="Daily Review">
+					<HomeSection title={$t('dashboard_section_review')}>
 						<div class="review-widget">
 							<div class="review-icon">
 								<svg
@@ -238,19 +239,19 @@
 								</svg>
 							</div>
 							<div class="review-body">
-								<div class="review-title">Review your highlights</div>
+								<div class="review-title">{$t('dashboard_review_title')}</div>
 								<div class="review-subtitle">
-									Resurface what you've saved and build lasting knowledge.
+									{$t('dashboard_review_body')}
 								</div>
 							</div>
-							<button type="button" class="review-cta" disabled>Coming soon</button>
+							<button type="button" class="review-cta" disabled>{$t('common_coming_soon')}</button>
 						</div>
 					</HomeSection>
 				{/if}
 
 				{#if section.id === 'recent' && (loading || recentItems.length > 0)}
 					<HomeSection
-						title="Recently Added"
+						title={$t('dashboard_section_recent')}
 						items={recentItems}
 						{loading}
 						seeAllHref={libraryHref}

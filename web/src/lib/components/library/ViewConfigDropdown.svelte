@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SmartListResponse, TriageModeDto } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import type { GroupBy } from '$lib/stores/library.svelte';
 
 	interface Props {
@@ -41,7 +42,11 @@
 	}: Props = $props();
 
 	const triageGroupDescription = $derived(
-		triageMode === 'manual' ? 'Saved · Archived' : 'Inbox · Later · Archive'
+		$t(
+			triageMode === 'manual'
+				? 'library_view_triage_manual_description'
+				: 'library_view_triage_focus_description'
+		)
 	);
 
 	let confirmDelete = $state(false);
@@ -83,7 +88,7 @@
 <div class="vp">
 	{#if allSmartLists.length > 0 || smartList}
 		<!-- VIEWS -->
-		<div class="vp-section">Views</div>
+		<div class="vp-section">{$t('library_view_views')}</div>
 		<button
 			type="button"
 			class="vp-item"
@@ -97,7 +102,7 @@
 		>
 			<span class="vp-dot" style:background={!smartList ? 'var(--accent)' : 'var(--text-tertiary)'}
 			></span>
-			Library
+			{$t('common_library')}
 			{#if !smartList}
 				<span class="vp-check">
 					<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
@@ -132,14 +137,14 @@
 					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
 			</span>
-			New view from filters
+			{$t('library_view_new_from_filters')}
 		</button>
 
 		<div class="vp-divider"></div>
 	{/if}
 
 	<!-- GROUP BY -->
-	<div class="vp-section">Group by</div>
+	<div class="vp-section">{$t('library_view_group_by')}</div>
 
 	<button
 		type="button"
@@ -151,7 +156,7 @@
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h12M3 18h7" /></svg>
 		</div>
 		<div class="vp-groupby-text">
-			<span class="vp-groupby-name">Triage</span>
+			<span class="vp-groupby-name">{$t('library_view_triage')}</span>
 			<span class="vp-groupby-desc">{triageGroupDescription}</span>
 		</div>
 		<div class="vp-groupby-radio"><div class="vp-groupby-radio-dot"></div></div>
@@ -170,8 +175,8 @@
 			</svg>
 		</div>
 		<div class="vp-groupby-text">
-			<span class="vp-groupby-name">Read status</span>
-			<span class="vp-groupby-desc">Unread · In progress · Finished</span>
+			<span class="vp-groupby-name">{$t('library_view_read_status')}</span>
+			<span class="vp-groupby-desc">{$t('library_view_read_status_description')}</span>
 		</div>
 		<div class="vp-groupby-radio"><div class="vp-groupby-radio-dot"></div></div>
 	</button>
@@ -193,8 +198,8 @@
 			</svg>
 		</div>
 		<div class="vp-groupby-text">
-			<span class="vp-groupby-name">None</span>
-			<span class="vp-groupby-desc">Flat list, no grouping</span>
+			<span class="vp-groupby-name">{$t('common_none')}</span>
+			<span class="vp-groupby-desc">{$t('library_view_flat_description')}</span>
 		</div>
 		<div class="vp-groupby-radio"><div class="vp-groupby-radio-dot"></div></div>
 	</button>
@@ -202,10 +207,10 @@
 	<div class="vp-divider"></div>
 
 	<!-- DISPLAY -->
-	<div class="vp-section">Display</div>
+	<div class="vp-section">{$t('common_display')}</div>
 
 	<div class="vp-toggle-row">
-		<span>Count badge</span>
+		<span>{$t('library_view_count_badge')}</span>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
@@ -222,14 +227,14 @@
 
 	{#if smartList}
 		<!-- FILTER — smart lists only -->
-		<div class="vp-section">Filter</div>
+		<div class="vp-section">{$t('common_filter')}</div>
 		<button type="button" class="vp-item" onclick={onEditFilter}>
 			<span class="vp-icon">
 				<svg viewBox="0 0 24 24" aria-hidden="true">
 					<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
 				</svg>
 			</span>
-			Edit filter
+			{$t('library_view_edit_filter')}
 		</button>
 		<button
 			type="button"
@@ -245,14 +250,14 @@
 					<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
 				</svg>
 			</span>
-			Rename view
+			{$t('library_view_rename')}
 		</button>
 
 		<div class="vp-divider"></div>
 	{/if}
 
 	<!-- ACTIONS -->
-	<div class="vp-section">Actions</div>
+	<div class="vp-section">{$t('common_actions')}</div>
 	<button
 		type="button"
 		class="vp-item"
@@ -267,7 +272,7 @@
 				<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
 			</svg>
 		</span>
-		Mark all as seen
+		{$t('library_view_mark_all_seen')}
 	</button>
 	<button
 		type="button"
@@ -283,7 +288,7 @@
 				<rect x="1" y="3" width="22" height="5" rx="1" />
 			</svg>
 		</span>
-		Archive all
+		{$t('library_view_archive_all')}
 	</button>
 
 	{#if smartList}
@@ -297,7 +302,7 @@
 					/>
 				</svg>
 			</span>
-			{confirmDelete ? 'Confirm delete?' : 'Delete this view'}
+			{$t(confirmDelete ? 'library_view_confirm_delete' : 'library_view_delete')}
 		</button>
 	{/if}
 </div>

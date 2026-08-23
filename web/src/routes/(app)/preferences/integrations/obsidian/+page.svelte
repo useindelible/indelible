@@ -9,6 +9,7 @@
 		setupObsidianExportConnection
 	} from '$lib/api/integrations';
 	import { deriveConnectionState } from '$lib/integrations/status';
+	import { t } from '$lib/i18n';
 	import { renderMarkdown } from '$lib/utils/markdown';
 	import type {
 		IntegrationConnectionDto,
@@ -63,8 +64,8 @@
 
 	const connectionState = $derived(deriveConnectionState(connection));
 	const heroStateAttr = $derived(obsidianHeroState(connection, connectionState));
-	const heroStatusLabel = $derived(obsidianHeroStatusLabel(heroStateAttr));
-	const lastSyncLabel = $derived(formatObsidianLastSync(connection));
+	const heroStatusLabel = $derived($t(obsidianHeroStatusLabel(heroStateAttr)));
+	const lastSyncLabel = $derived(formatObsidianLastSync(connection, $t));
 	const currentPreviewPath = $derived(previewFilePath(preview, previewViewLocal));
 	const currentPreviewBody = $derived(previewBody(preview, previewViewLocal));
 	const currentPreviewBodyHtml = $derived(
@@ -232,7 +233,7 @@
 </script>
 
 <svelte:head>
-	<title>Obsidian Integration - Indelible</title>
+	<title>Obsidian — Indelible</title>
 </svelte:head>
 
 <div class="obs-page" data-page-state={heroStateAttr}>
@@ -248,7 +249,7 @@
 
 	<div class="body-area">
 		{#if loading}
-			<p class="muted body-msg">Loading Obsidian settings…</p>
+			<p class="muted body-msg">{$t('integrations_obsidian_loading_settings')}</p>
 		{:else if loadError}
 			<p class="error body-msg">{loadError}</p>
 		{:else if connection && settings !== null}

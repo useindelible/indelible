@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import { setupI18nSync } from '$lib/i18n';
+import en from '$lib/i18n/locales/en.json';
+import fr from '$lib/i18n/locales/fr.json';
 import PromptPresetEditor from '../../src/routes/(app)/preferences/ai/components/PromptPresetEditor.svelte';
 
 describe('PromptPresetEditor', () => {
@@ -9,7 +12,7 @@ describe('PromptPresetEditor', () => {
 
 		render(PromptPresetEditor, {
 			props: {
-				actionName: 'Summary',
+				action: 'summary',
 				editor: {
 					mode: 'add',
 					action: 'summary',
@@ -39,5 +42,29 @@ describe('PromptPresetEditor', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: /add preset/i }));
 		expect(onSave).toHaveBeenCalledOnce();
+	});
+
+	it('renders complete French action messages without lowercasing translated labels', () => {
+		setupI18nSync({ en, fr }, 'fr');
+
+		render(PromptPresetEditor, {
+			props: {
+				action: 'summary',
+				editor: {
+					mode: 'add',
+					action: 'summary',
+					name: '',
+					system_prompt: '',
+					is_default: false
+				},
+				editorSaving: false,
+				onCancel: vi.fn(),
+				onChange: vi.fn(),
+				onSave: vi.fn()
+			}
+		});
+
+		expect(screen.getByText('Nouveau préréglage de résumé')).toBeTruthy();
+		expect(screen.getByText('Mila utilisera ce préréglage pour chaque résumé.')).toBeTruthy();
 	});
 });

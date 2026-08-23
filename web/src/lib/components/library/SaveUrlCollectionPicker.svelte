@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
 
 	interface Props {
@@ -31,7 +32,7 @@
 		bind:this={pickerTriggerEl}
 		type="button"
 		class="cmd-collection"
-		aria-label="Choose collection"
+		aria-label={$t('library_choose_collection')}
 		aria-expanded={pickerOpen}
 		onclick={onTogglePicker}
 	>
@@ -50,7 +51,7 @@
 			class="collection-dropdown"
 			style="top: {pickerPos.top}px; left: {pickerPos.left}px;"
 			role="listbox"
-			aria-label="Collections"
+			aria-label={$t('library_collections')}
 		>
 			<button
 				type="button"
@@ -60,7 +61,7 @@
 				aria-selected={collectionId === null}
 				onclick={() => onSelectCollection(null)}
 			>
-				Inbox
+				{$t('library_triage_inbox')}
 			</button>
 			{#each collections as collection (collection.id)}
 				<button

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { EmailSenderResponse, RenderDefaultDto } from '$lib/api';
 	import { formatRelative, routingValue, senderInitial } from '../email-model';
+	import { number, t } from '$lib/i18n';
 
 	interface Props {
 		senders: EmailSenderResponse[];
@@ -27,19 +28,19 @@
 
 <div class="ledger-wrap">
 	{#if senders.length === 0}
-		<p class="muted">No senders match this filter.</p>
+		<p class="muted">{$t('email_no_senders')}</p>
 	{:else}
 		<div class="ledger-scroll">
 			<table class="ledger">
 				<thead>
 					<tr>
-						<th>Sender</th>
+						<th>{$t('email_sender')}</th>
 						<th>List-ID</th>
-						<th>Activity</th>
-						<th>Render</th>
-						<th>Routing</th>
-						<th class="center">Block</th>
-						<th class="right">Action</th>
+						<th>{$t('email_activity')}</th>
+						<th>{$t('email_render')}</th>
+						<th>{$t('email_routing')}</th>
+						<th class="center">{$t('email_block')}</th>
+						<th class="right">{$t('email_action')}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -62,28 +63,28 @@
 								{#if sender.list_id}
 									<span class="listid">{sender.list_id}</span>
 								{:else}
-									<span class="listid empty">no list-id provided</span>
+									<span class="listid empty">{$t('email_no_list_id')}</span>
 								{/if}
 							</td>
 							<td>
 								<div class="activity-cell">
 									<div class="last">{formatRelative(sender.last_seen_at)}</div>
 									<div class="count">
-										<strong>{sender.delivery_count.toLocaleString()}</strong> received
+										{$t('email_received', { values: { count: $number(sender.delivery_count) } })}
 									</div>
 								</div>
 							</td>
 							<td>
 								<select
 									class="inline-select"
-									aria-label="Render mode for {sender.canonical_addr}"
+									aria-label={$t('email_render_for', { values: { sender: sender.canonical_addr } })}
 									value={sender.render_default}
 									disabled={sender.blocked || updatingSender === sender.id}
 									onchange={(event) =>
 										onRenderChange(sender, event.currentTarget.value as RenderDefaultDto)}
 								>
-									<option value="reader">Reader</option>
-									<option value="original">Original</option>
+									<option value="reader">{$t('prefs_reading_reader')}</option>
+									<option value="original">{$t('reader_view_original')}</option>
 								</select>
 							</td>
 							<td>
@@ -91,14 +92,16 @@
 									class="inline-select"
 									class:routing-feed={!sender.blocked &&
 										(sender.routing_default === 'feed' || sender.routing_default == null)}
-									aria-label="Routing for {sender.canonical_addr}"
+									aria-label={$t('email_routing_for', {
+										values: { sender: sender.canonical_addr }
+									})}
 									value={routingValue(sender)}
 									disabled={sender.blocked || updatingSender === sender.id}
 									onchange={(event) => onRoutingChange(sender, event.currentTarget.value)}
 								>
-									<option value="default">Default</option>
-									<option value="feed">Feed</option>
-									<option value="library">Library</option>
+									<option value="default">{$t('email_default')}</option>
+									<option value="feed">{$t('common_feed')}</option>
+									<option value="library">{$t('common_library')}</option>
 								</select>
 							</td>
 							<td class="center">
@@ -107,11 +110,15 @@
 										type="checkbox"
 										checked={sender.blocked}
 										disabled={updatingSender === sender.id}
-										aria-label="Block {sender.canonical_addr}"
+										aria-label={$t('email_block_sender', {
+											values: { sender: sender.canonical_addr }
+										})}
 										onchange={() => onToggleBlock(sender)}
 									/>
 									<span class="toggle-track"></span>
-									<span class="toggle-label">{sender.blocked ? 'Blocked' : 'Allow'}</span>
+									<span class="toggle-label"
+										>{sender.blocked ? $t('email_blocked') : $t('email_allow')}</span
+									>
 								</label>
 							</td>
 							<td class="right">
@@ -119,7 +126,9 @@
 									class="unsub-btn"
 									type="button"
 									disabled={unsubscribingSender === sender.id || sender.blocked}
-									aria-label="Unsubscribe from {sender.display_name ?? sender.canonical_addr}"
+									aria-label={$t('email_unsubscribe_from', {
+										values: { sender: sender.display_name ?? sender.canonical_addr }
+									})}
 									onclick={() => onUnsubscribe(sender)}
 								>
 									<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -127,7 +136,9 @@
 										<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 										<path d="M10 11v6M14 11v6" />
 									</svg>
-									{unsubscribingSender === sender.id ? 'Sending…' : 'Unsubscribe'}
+									{unsubscribingSender === sender.id
+										? $t('email_sending')
+										: $t('email_unsubscribe')}
 								</button>
 							</td>
 						</tr>
@@ -138,9 +149,9 @@
 	{/if}
 	<div class="ledger-foot">
 		<div class="pagination">
-			<strong>{senders.length}</strong> of <strong>{totalSenders}</strong>
+			{$t('email_pagination', { values: { shown: senders.length, total: totalSenders } })}
 		</div>
-		<div class="legend"><em>Default</em> respects the inbox the message arrived on.</div>
+		<div class="legend"><em>{$t('email_default')}</em> {$t('email_default_hint')}</div>
 	</div>
 </div>
 
@@ -369,16 +380,6 @@
 		margin-top: 2px;
 	}
 
-	.count strong {
-		font-family: var(--font-display);
-		font-style: italic;
-		color: var(--text-secondary);
-		font-weight: 600;
-		font-size: 12px;
-		letter-spacing: -0.01em;
-		text-transform: none;
-	}
-
 	.inline-select {
 		appearance: none;
 		-webkit-appearance: none;
@@ -538,11 +539,6 @@
 		font-size: 10.5px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
-	}
-
-	.ledger-foot strong {
-		color: var(--text-primary);
-		font-weight: 600;
 	}
 
 	.legend em {

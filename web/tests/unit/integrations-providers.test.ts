@@ -10,7 +10,7 @@ describe('INTEGRATION_PROVIDERS', () => {
 	it('every provider has a non-empty display name and description', () => {
 		for (const provider of INTEGRATION_PROVIDERS) {
 			expect(provider.displayName.length).toBeGreaterThan(0);
-			expect(provider.description.length).toBeGreaterThan(0);
+			expect(provider.descriptionKey.length).toBeGreaterThan(0);
 		}
 	});
 

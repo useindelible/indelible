@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { VoicePersonaResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		playing: boolean;
@@ -87,12 +88,12 @@
 	});
 </script>
 
-<div class="tts-strip" role="toolbar" aria-label="TTS playback controls">
+<div class="tts-strip" role="toolbar" aria-label={$t('reader_tts_controls')}>
 	<div class="tts-strip-left">
 		<button
 			type="button"
 			class="tts-btn"
-			aria-label="Skip back 15 seconds"
+			aria-label={$t('reader_tts_skip_back')}
 			disabled={loading}
 			onclick={onSkipBack}
 		>
@@ -115,7 +116,7 @@
 		<button
 			type="button"
 			class="tts-btn primary"
-			aria-label={playing ? 'Pause' : 'Play'}
+			aria-label={$t(playing ? 'reader_pause' : 'reader_play')}
 			disabled={loading}
 			onclick={playing ? onPause : onPlay}
 		>
@@ -142,7 +143,7 @@
 		<button
 			type="button"
 			class="tts-btn"
-			aria-label="Skip forward 15 seconds"
+			aria-label={$t('reader_tts_skip_forward')}
 			disabled={loading}
 			onclick={onSkipForward}
 		>
@@ -178,7 +179,7 @@
 			bind:this={progressTrackEl}
 			role="slider"
 			tabindex="0"
-			aria-label="Playback position"
+			aria-label={$t('reader_tts_playback_position')}
 			aria-valuemin={0}
 			aria-valuemax={duration > 0 ? duration : 0}
 			aria-valuenow={currentTime}
@@ -209,7 +210,7 @@
 				}}
 				aria-haspopup="listbox"
 				aria-expanded={showSpeedPopover}
-				aria-label="Playback speed: {speedLabel}"
+				aria-label={$t('reader_tts_playback_speed_value', { values: { speed: speedLabel } })}
 			>
 				{speedLabel}
 				<svg
@@ -227,7 +228,7 @@
 			</button>
 
 			{#if showSpeedPopover}
-				<div class="tts-popover speed" role="listbox" aria-label="Playback speed">
+				<div class="tts-popover speed" role="listbox" aria-label={$t('reader_tts_playback_speed')}>
 					{#each SPEEDS as s (s)}
 						<button
 							type="button"
@@ -273,11 +274,13 @@
 					}}
 					aria-haspopup="listbox"
 					aria-expanded={showVoicePopover}
-					aria-label="Voice: {selectedPersona?.display_name ?? 'Default'}"
+					aria-label={$t('reader_tts_voice_value', {
+						values: { voice: selectedPersona?.display_name ?? $t('reader_tts_default_voice') }
+					})}
 				>
 					<span class="tts-voice-dot" class:custom={selectedPersona && !selectedPersona.is_builtin}
 					></span>
-					{selectedPersona?.display_name ?? 'Default'}
+					{selectedPersona?.display_name ?? $t('reader_tts_default_voice')}
 					<svg
 						class="chev"
 						viewBox="0 0 24 24"
@@ -293,9 +296,9 @@
 				</button>
 
 				{#if showVoicePopover}
-					<div class="tts-popover voice" role="listbox" aria-label="Voice personas">
+					<div class="tts-popover voice" role="listbox" aria-label={$t('reader_tts_voices')}>
 						{#if builtInPersonas.length > 0}
-							<div class="tts-persona-group-label">Built-in</div>
+							<div class="tts-persona-group-label">{$t('reader_tts_builtin')}</div>
 							{#each builtInPersonas as persona (persona.id)}
 								<button
 									type="button"
@@ -316,7 +319,7 @@
 							{/each}
 						{/if}
 						{#if customPersonas.length > 0}
-							<div class="tts-persona-group-label">Custom</div>
+							<div class="tts-persona-group-label">{$t('reader_tts_custom')}</div>
 							{#each customPersonas as persona (persona.id)}
 								<button
 									type="button"
@@ -341,7 +344,7 @@
 			</div>
 		{/if}
 
-		<button type="button" class="tts-btn stop" aria-label="Stop listening" onclick={onStop}>
+		<button type="button" class="tts-btn stop" aria-label={$t('reader_tts_stop')} onclick={onStop}>
 			<svg
 				viewBox="0 0 24 24"
 				fill="none"

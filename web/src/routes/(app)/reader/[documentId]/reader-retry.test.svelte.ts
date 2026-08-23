@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentReaderAssetResponse } from '$lib/api';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 
 const mockReprocessDocument = vi.fn();
 
@@ -8,6 +10,12 @@ vi.mock('$lib/api', () => ({
 }));
 
 import { ReaderRetryController } from './reader-retry.svelte';
+
+const translate = get(t);
+
+function createController(): ReaderRetryController {
+	return new ReaderRetryController(translate);
+}
 
 const failedAsset: DocumentReaderAssetResponse = {
 	id: 'asset_failed',
@@ -42,7 +50,7 @@ afterEach(() => {
 
 describe('ReaderRetryController completion outcome', () => {
 	it('does not announce success for content that was already ready', () => {
-		const controller = new ReaderRetryController();
+		const controller = createController();
 
 		controller.onPreparationReady(true);
 
@@ -50,7 +58,7 @@ describe('ReaderRetryController completion outcome', () => {
 	});
 
 	it('announces when a queued retry becomes ready', async () => {
-		const controller = new ReaderRetryController();
+		const controller = createController();
 		await queueRetry(controller);
 
 		controller.onPreparationReady(true);
@@ -59,7 +67,7 @@ describe('ReaderRetryController completion outcome', () => {
 	});
 
 	it('keeps the completion armed after the queue button cooldown expires', async () => {
-		const controller = new ReaderRetryController();
+		const controller = createController();
 		await queueRetry(controller);
 		await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
 
@@ -70,7 +78,7 @@ describe('ReaderRetryController completion outcome', () => {
 
 	it('does not announce completion after enqueue failure', async () => {
 		mockReprocessDocument.mockRejectedValueOnce(new Error('network'));
-		const controller = new ReaderRetryController();
+		const controller = createController();
 		await queueRetry(controller);
 
 		controller.onPreparationReady(true);
@@ -79,7 +87,7 @@ describe('ReaderRetryController completion outcome', () => {
 	});
 
 	it('clears an earlier completion when a new retry begins', async () => {
-		const controller = new ReaderRetryController();
+		const controller = createController();
 		await queueRetry(controller);
 		controller.onPreparationReady(true);
 
@@ -89,7 +97,7 @@ describe('ReaderRetryController completion outcome', () => {
 	});
 
 	it('clears a queued result when the reader changes documents', async () => {
-		const controller = new ReaderRetryController();
+		const controller = createController();
 		await queueRetry(controller);
 
 		controller.reset();
@@ -108,7 +116,7 @@ describe('ReaderRetryController completion outcome', () => {
 				resolveReprocess = resolve;
 			})
 		);
-		const controller = new ReaderRetryController();
+		const controller = createController();
 		const onRetryPolling = vi.fn();
 		const submit = controller.submit({
 			documentId: 'doc_1',

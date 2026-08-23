@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		onReauthorize: () => void;
 	}
@@ -7,23 +9,22 @@
 </script>
 
 <section class="group" data-testid="notion-status-panel" data-state="empty">
-	<div class="group-label">Connection</div>
+	<div class="group-label">{$t('integrations_notion_connection')}</div>
 	<div class="group-desc">
-		Connect your Notion workspace to export saved documents and highlights into an Indelible managed
-		database.
+		{$t('integrations_notion_empty_description')}
 	</div>
 	<div class="group-card">
 		<div class="empty-card">
 			<div class="conn-card-icon empty">N</div>
 			<div class="empty-text">
-				<div class="empty-title">Notion is not connected</div>
+				<div class="empty-title">{$t('integrations_notion_not_connected')}</div>
 				<div class="empty-hint">
-					Notion's authorization page grants access; it does not choose a destination. Indelible
-					creates the managed database in Notion Private on the first export, and you can move it
-					afterward.
+					{$t('integrations_notion_empty_hint')}
 				</div>
 			</div>
-			<button class="btn primary" type="button" onclick={onReauthorize}>Connect Notion</button>
+			<button class="btn primary" type="button" onclick={onReauthorize}
+				>{$t('integrations_notion_connect')}</button
+			>
 		</div>
 	</div>
 </section>

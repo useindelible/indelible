@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		loading: boolean;
@@ -14,13 +15,13 @@
 
 {#if loading}
 	<div class="body-area">
-		<p class="meta">Loading Notion connection…</p>
+		<p class="meta">{$t('integrations_notion_loading_connection')}</p>
 	</div>
 {:else if loadError}
 	<div class="body-area">
 		<div class="error-block" role="alert">
 			<p>{loadError}</p>
-			<Button variant="secondary" size="sm" onclick={onRetry}>Retry</Button>
+			<Button variant="secondary" size="sm" onclick={onRetry}>{$t('common_retry')}</Button>
 		</div>
 	</div>
 {:else}

@@ -207,7 +207,7 @@ describe('NotionStatusPanel', () => {
 		expect(screen.getByText('Select items to export')).toBeTruthy();
 		expect(screen.getByText('Exported essay')).toBeTruthy();
 		expect(screen.getByTestId('notion-items-meta').textContent).toContain(
-			'1 selected · 1 of 1 documents'
+			'1 selected · 1 of 1 document'
 		);
 
 		const switches = screen.getAllByRole('switch');

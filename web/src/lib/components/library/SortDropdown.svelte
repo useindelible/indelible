@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t, type MessageKey } from '$lib/i18n';
 	import { getLibrary, type SortOrder } from '$lib/stores/library.svelte';
 
 	const lib = getLibrary();
@@ -6,17 +7,20 @@
 	let open = $state(false);
 	let buttonEl = $state<HTMLButtonElement | undefined>(undefined);
 
-	const options: { value: SortOrder; label: string }[] = [
-		{ value: 'date_saved_desc', label: 'Date saved' },
-		{ value: 'date_published_desc', label: 'Date published' },
-		{ value: 'title_asc', label: 'Title A–Z' },
-		{ value: 'title_desc', label: 'Title Z–A' },
-		{ value: 'reading_progress', label: 'Reading progress' },
-		{ value: 'reading_time', label: 'Reading time' }
+	const options: { value: SortOrder; labelKey: MessageKey }[] = [
+		{ value: 'date_saved_desc', labelKey: 'library_sort_date_saved' },
+		{ value: 'date_published_desc', labelKey: 'library_sort_date_published' },
+		{ value: 'title_asc', labelKey: 'library_sort_title_az' },
+		{ value: 'title_desc', labelKey: 'library_sort_title_za' },
+		{ value: 'reading_progress', labelKey: 'library_sort_reading_progress' },
+		{ value: 'reading_time', labelKey: 'library_sort_reading_time' }
 	];
 
 	const currentLabel = $derived(
-		options.find((o) => o.value === lib.sortOrder)?.label ?? 'Date saved'
+		$t(
+			options.find((option) => option.value === lib.sortOrder)?.labelKey ??
+				'library_sort_date_saved'
+		)
 	);
 
 	$effect(() => {
@@ -58,7 +62,7 @@
 	</button>
 
 	{#if open}
-		<div class="sort-popover" role="listbox" aria-label="Sort order">
+		<div class="sort-popover" role="listbox" aria-label={$t('library_sort_order')}>
 			{#each options as opt (opt.value)}
 				<button
 					type="button"
@@ -71,7 +75,7 @@
 						open = false;
 					}}
 				>
-					{opt.label}
+					{$t(opt.labelKey)}
 					{#if lib.sortOrder === opt.value}
 						<svg
 							viewBox="0 0 24 24"

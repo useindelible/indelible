@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 	import type { DefaultViewDto, ListDensityDto, SidePanelModeDto, SidebarModeDto } from '$lib/api';
 
 	interface Props {
@@ -25,72 +26,69 @@
 	}: Props = $props();
 </script>
 
-<SettingsGroup title="Layout & Navigation">
+<SettingsGroup title={$t('prefs_reading_layout_navigation')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Sidebar mode</div>
-				<div class="hint">
-					Always show keeps the sidebar pinned. Auto-collapse hides it on narrower screens to widen
-					the reading column. Always hide tucks it away — use the reveal button to bring it back.
-				</div>
+				<div class="label">{$t('prefs_reading_sidebar_mode')}</div>
+				<div class="hint">{$t('prefs_reading_sidebar_mode_hint')}</div>
 			</div>
 			<select
 				class="select"
 				value={sidebarMode}
-				aria-label="Sidebar mode"
+				aria-label={$t('prefs_reading_sidebar_mode')}
 				onchange={(event) => onSidebarModeChange(event.currentTarget.value as SidebarModeDto)}
 			>
-				<option value="expanded">Always show</option>
-				<option value="auto">Auto-collapse</option>
-				<option value="collapsed">Always hide</option>
+				<option value="expanded">{$t('prefs_reading_always_show')}</option>
+				<option value="auto">{$t('prefs_reading_auto_collapse')}</option>
+				<option value="collapsed">{$t('prefs_reading_always_hide')}</option>
 			</select>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Default view</div>
-				<div class="hint">The screen Indelible opens to when you launch the app.</div>
+				<div class="label">{$t('prefs_reading_default_view')}</div>
+				<div class="hint">{$t('prefs_reading_default_view_hint')}</div>
 			</div>
 			<select
 				class="select"
 				value={defaultView}
-				aria-label="Default view"
+				aria-label={$t('prefs_reading_default_view')}
 				onchange={(event) => onDefaultViewChange(event.currentTarget.value as DefaultViewDto)}
 			>
-				<option value="library">Library</option>
-				<option value="feed">Feed</option>
-				<option value="search">Search</option>
+				<option value="library">{$t('common_library')}</option>
+				<option value="feed">{$t('common_feed')}</option>
+				<option value="search">{$t('common_search')}</option>
 			</select>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">List density</div>
-				<div class="hint">How tightly article rows pack into your library and inbox.</div>
+				<div class="label">{$t('prefs_reading_list_density')}</div>
+				<div class="hint">{$t('prefs_reading_list_density_hint')}</div>
 			</div>
 			<select
 				class="select"
 				value={listDensity}
-				aria-label="List density"
+				aria-label={$t('prefs_reading_list_density')}
 				onchange={(event) => onListDensityChange(event.currentTarget.value as ListDensityDto)}
 			>
-				<option value="compact">Compact</option>
-				<option value="comfortable">Comfortable</option>
+				<option value="compact">{$t('prefs_reading_compact')}</option>
+				<option value="comfortable">{$t('prefs_reading_comfortable')}</option>
 			</select>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Side panel</div>
-				<div class="hint">Where annotations, highlights, and outline live in the reader.</div>
+				<div class="label">{$t('prefs_reading_side_panel')}</div>
+				<div class="hint">{$t('prefs_reading_side_panel_hint')}</div>
 			</div>
 			<select
 				class="select"
 				value={sidePanel}
-				aria-label="Side panel"
+				aria-label={$t('prefs_reading_side_panel')}
 				onchange={(event) => onSidePanelChange(event.currentTarget.value as SidePanelModeDto)}
 			>
-				<option value="open">Show in reader</option>
-				<option value="closed">Hide by default</option>
-				<option value="auto">Floating overlay</option>
+				<option value="open">{$t('prefs_reading_show_in_reader')}</option>
+				<option value="closed">{$t('prefs_reading_hide_by_default')}</option>
+				<option value="auto">{$t('prefs_reading_floating_overlay')}</option>
 			</select>
 		</div>
 	</div>

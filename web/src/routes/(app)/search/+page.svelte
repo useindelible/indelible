@@ -9,6 +9,7 @@
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
 	import DetailPanel from '$lib/components/library/DetailPanel.svelte';
 	import type { SearchSuggestionResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import {
 		buildSearchQuery,
 		FILTER_HINTS,
@@ -291,7 +292,7 @@
 							type="button"
 							class="m-back"
 							onclick={() => (compactDetailOpen = false)}
-							aria-label="Back to results"
+							aria-label={$t('search_back_to_results')}
 						>
 							<svg
 								viewBox="0 0 24 24"
@@ -305,7 +306,7 @@
 								<polyline points="15 18 9 12 15 6" />
 							</svg>
 						</button>
-						<span class="m-dtitle">{detailItem?.title ?? 'Details'}</span>
+						<span class="m-dtitle">{detailItem?.title ?? $t('common_details')}</span>
 					</div>
 					<DetailPanel item={detailItem} />
 				</div>

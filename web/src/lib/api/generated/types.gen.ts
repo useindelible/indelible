@@ -1627,7 +1627,7 @@ export type ProfileResponse = {
 	id: string;
 	ingest_email?: string | null;
 	ingest_library_email?: string | null;
-	locale: string;
+	locale: string | null;
 	object: string;
 	onboarding_completed: boolean;
 	theme: string;

@@ -9,6 +9,8 @@ import {
 	type NotificationsSettingsResponse,
 	type PreferencesSettingsResponse
 } from '$lib/api';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 
 type ApiProblem = {
 	detail?: string;
@@ -35,7 +37,7 @@ export async function loadPreferencesSettings(): Promise<ApiResult<PreferencesSe
 		}
 		return { success: false, error: extractMessage(error, 'Failed to load preferences') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -49,7 +51,7 @@ export async function savePreferencesSettings(
 		}
 		return { success: false, error: extractMessage(error, 'Failed to save preferences') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -63,7 +65,7 @@ export async function loadNotificationsSettings(): Promise<
 		}
 		return { success: false, error: extractMessage(error, 'Failed to load notifications') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -77,7 +79,7 @@ export async function saveNotificationsSettings(
 		}
 		return { success: false, error: extractMessage(error, 'Failed to save notifications') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -89,7 +91,7 @@ export async function loadArchivalSettings(): Promise<ApiResult<ArchivalSettings
 		}
 		return { success: false, error: extractMessage(error, 'Failed to load archival settings') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -103,6 +105,6 @@ export async function saveArchivalSettings(
 		}
 		return { success: false, error: extractMessage(error, 'Failed to save archival settings') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }

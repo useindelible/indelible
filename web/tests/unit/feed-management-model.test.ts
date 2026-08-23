@@ -58,7 +58,7 @@ describe('feed management model', () => {
 			status: 'active',
 			enabled: true,
 			autoSave: true,
-			lastFetched: '30m ago'
+			lastFetched: '30 minutes ago'
 		});
 		vi.useRealTimers();
 	});

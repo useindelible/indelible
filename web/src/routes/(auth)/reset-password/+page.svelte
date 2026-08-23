@@ -3,6 +3,7 @@
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import FormInput from '$lib/components/auth/FormInput.svelte';
 	import FormButton from '$lib/components/auth/FormButton.svelte';
+	import { t } from '$lib/i18n';
 
 	const { data } = $props();
 	const auth = getAuth();
@@ -18,15 +19,15 @@
 
 	function validate(): boolean {
 		if (password.length < 8) {
-			validationError = 'Password must be at least 8 characters.';
+			validationError = $t('auth_password_too_short_sentence');
 			return false;
 		}
 		if (password.length > 2048) {
-			validationError = 'Password must be no more than 2048 characters.';
+			validationError = $t('auth_password_too_long_sentence');
 			return false;
 		}
 		if (password !== confirmPassword) {
-			validationError = 'Passwords do not match.';
+			validationError = $t('auth_passwords_do_not_match');
 			return false;
 		}
 		validationError = null;
@@ -52,7 +53,7 @@
 </script>
 
 <svelte:head>
-	<title>Set new password — Indelible</title>
+	<title>{$t('auth_set_new_password_title')}</title>
 </svelte:head>
 
 {#if !hasToken}
@@ -67,8 +68,8 @@
 			/>
 		</svg>
 	</div>
-	<h1 class="auth-title">Invalid reset link</h1>
-	<p class="auth-body">This password reset link is missing a token. Please request a new one.</p>
+	<h1 class="auth-title">{$t('auth_invalid_reset_link')}</h1>
+	<p class="auth-body">{$t('auth_invalid_reset_link_body')}</p>
 	<div class="back-link-row">
 		<svg
 			width="14"
@@ -84,7 +85,7 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/forgot-password')} class="auth-link">Request a new link</a>
+		<a href={resolve('/forgot-password')} class="auth-link">{$t('auth_request_new_link')}</a>
 	</div>
 {:else if success}
 	<div class="state-icon">
@@ -99,8 +100,8 @@
 			/>
 		</svg>
 	</div>
-	<h1 class="auth-title">Password updated</h1>
-	<p class="auth-body">Your password has been reset successfully.</p>
+	<h1 class="auth-title">{$t('auth_password_updated')}</h1>
+	<p class="auth-body">{$t('auth_password_updated_body')}</p>
 	<div class="back-link-row">
 		<svg
 			width="14"
@@ -116,7 +117,7 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/login')} class="auth-link">Sign in</a>
+		<a href={resolve('/login')} class="auth-link">{$t('auth_sign_in')}</a>
 	</div>
 {:else if tokenError}
 	<div class="state-icon">
@@ -130,8 +131,8 @@
 			/>
 		</svg>
 	</div>
-	<h1 class="auth-title">Link expired</h1>
-	<p class="auth-body">This password reset link has expired or is invalid.</p>
+	<h1 class="auth-title">{$t('auth_link_expired')}</h1>
+	<p class="auth-body">{$t('auth_link_expired_body')}</p>
 	<div class="back-link-row">
 		<svg
 			width="14"
@@ -147,11 +148,11 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/forgot-password')} class="auth-link">Request a new link</a>
+		<a href={resolve('/forgot-password')} class="auth-link">{$t('auth_request_new_link')}</a>
 	</div>
 {:else}
-	<h1 class="auth-title">Set new password</h1>
-	<p class="auth-subtitle">Choose a strong password for your account</p>
+	<h1 class="auth-title">{$t('auth_set_new_password')}</h1>
+	<p class="auth-subtitle">{$t('auth_set_new_password_subtitle')}</p>
 
 	{#if validationError}
 		<div class="auth-error-banner" role="alert">{validationError}</div>
@@ -163,25 +164,25 @@
 
 	<form onsubmit={handleSubmit} novalidate>
 		<FormInput
-			label="New password"
+			label={$t('auth_new_password')}
 			type="password"
 			autocomplete="new-password"
-			placeholder="Enter new password"
+			placeholder={$t('auth_new_password_placeholder')}
 			required
 			bind:value={password}
 		/>
 
 		<FormInput
-			label="Confirm password"
+			label={$t('auth_confirm_password')}
 			type="password"
 			autocomplete="new-password"
-			placeholder="Confirm new password"
+			placeholder={$t('auth_confirm_password_placeholder')}
 			required
 			bind:value={confirmPassword}
 		/>
 
 		<div class="form-actions">
-			<FormButton loading={submitting}>Reset password</FormButton>
+			<FormButton loading={submitting}>{$t('auth_reset_password')}</FormButton>
 		</div>
 	</form>
 
@@ -200,7 +201,7 @@
 			<path d="M19 12H5" />
 			<path d="M12 19l-7-7 7-7" />
 		</svg>
-		<a href={resolve('/login')} class="auth-link">Back to sign in</a>
+		<a href={resolve('/login')} class="auth-link">{$t('auth_back_to_sign_in')}</a>
 	</div>
 {/if}
 

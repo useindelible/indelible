@@ -1,11 +1,12 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 	import type { AccentColorDto, ThemeDto } from '$lib/api';
 
 	interface Props {
 		theme: ThemeDto;
 		accentColor: AccentColorDto;
-		accentSwatches: { value: AccentColorDto; label: string }[];
+		accentSwatches: { value: AccentColorDto; labelKey: MessageKey }[];
 		onThemeChange: (theme: ThemeDto) => void;
 		onAccentColorChange: (accentColor: AccentColorDto) => void;
 	}
@@ -13,16 +14,14 @@
 	let { theme, accentColor, accentSwatches, onThemeChange, onAccentColorChange }: Props = $props();
 </script>
 
-<SettingsGroup title="Theme" meta="Appearance + accent colour for the whole app">
+<SettingsGroup title={$t('prefs_reading_theme')} meta={$t('prefs_reading_theme_meta')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Appearance</div>
-				<div class="hint">
-					Light, dark, or follow your system. The reader preview above stays in sync.
-				</div>
+				<div class="label">{$t('prefs_reading_appearance')}</div>
+				<div class="hint">{$t('prefs_reading_appearance_hint')}</div>
 			</div>
-			<div class="pill-group" role="tablist" aria-label="Theme">
+			<div class="pill-group" role="tablist" aria-label={$t('prefs_reading_theme')}>
 				<button
 					type="button"
 					class="pill"
@@ -37,7 +36,7 @@
 							d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4l1.4-1.4M17 7l1.4-1.4"
 						/>
 					</svg>
-					Light
+					{$t('onboarding_theme_light')}
 				</button>
 				<button
 					type="button"
@@ -50,7 +49,7 @@
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
 					</svg>
-					Dark
+					{$t('onboarding_theme_dark')}
 				</button>
 				<button
 					type="button"
@@ -64,18 +63,16 @@
 						<rect x="3" y="4" width="18" height="13" rx="2" />
 						<path d="M8 21h8M12 17v4" />
 					</svg>
-					System
+					{$t('prefs_reading_system')}
 				</button>
 			</div>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Accent colour</div>
-				<div class="hint">
-					Used for buttons, links, and the SavePill. Live-applied to the reader preview link.
-				</div>
+				<div class="label">{$t('prefs_reading_accent_color')}</div>
+				<div class="hint">{$t('prefs_reading_accent_color_hint')}</div>
 			</div>
-			<div class="swatch-row" role="radiogroup" aria-label="Accent colour">
+			<div class="swatch-row" role="radiogroup" aria-label={$t('prefs_reading_accent_color')}>
 				{#each accentSwatches as color (color.value)}
 					<button
 						type="button"
@@ -84,7 +81,7 @@
 						class:selected={accentColor === color.value}
 						role="radio"
 						aria-checked={accentColor === color.value}
-						aria-label={color.label}
+						aria-label={$t(color.labelKey)}
 						onclick={() => onAccentColorChange(color.value)}
 					>
 						<span class="check">

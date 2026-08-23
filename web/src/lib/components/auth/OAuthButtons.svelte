@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { api, listProviders, type OAuthProviderInfo } from '$lib/api';
 	import AuthDivider from './AuthDivider.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		dividerText?: string;
 	}
 
-	let { dividerText = 'or' }: Props = $props();
+	let { dividerText }: Props = $props();
 
 	type OAuthProvider = OAuthProviderInfo;
 
@@ -36,12 +37,12 @@
 	}
 
 	function getProviderLabel(provider: OAuthProvider): string {
-		return `Continue with ${provider.name}`;
+		return $t('auth_continue_with', { values: { provider: provider.name } });
 	}
 </script>
 
 {#if loaded && providers.length > 0}
-	<AuthDivider text={dividerText} />
+	<AuthDivider text={dividerText ?? $t('auth_or')} />
 	<div class="oauth-buttons">
 		{#each providers as provider (provider.id)}
 			<button

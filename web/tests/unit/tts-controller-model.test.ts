@@ -37,16 +37,16 @@ function manifest(chunks: SessionChunk[]): SessionManifestResponse {
 
 describe('tts controller model', () => {
 	it('maps unavailable messages to banner copy', () => {
-		expect(getTtsUnavailableBanner('No readable content found')).toEqual({
+		expect(getTtsUnavailableBanner('reader_tts_no_readable_content')).toEqual({
 			variant: 'setup',
-			title: 'No readable content',
-			message: 'TTS is not available for this document.'
+			titleKey: 'reader_tts_no_readable_content',
+			messageKey: 'reader_tts_not_available_document'
 		});
 
-		expect(getTtsUnavailableBanner('disabled')).toEqual({
+		expect(getTtsUnavailableBanner('reader_tts_not_enabled')).toEqual({
 			variant: 'error',
-			title: 'TTS unavailable',
-			message: 'disabled'
+			titleKey: 'reader_tts_unavailable',
+			messageKey: 'reader_tts_not_enabled'
 		});
 	});
 
@@ -57,9 +57,9 @@ describe('tts controller model', () => {
 	});
 
 	it('normalizes TTS startup errors', () => {
-		expect(messageForTtsError('quota exceeded')).toMatch(/quota exhausted/i);
-		expect(messageForTtsError({ status: 503 })).toMatch(/not enabled/i);
-		expect(messageForTtsError(new Error('unknown'))).toMatch(/Could not start audio/i);
+		expect(messageForTtsError('quota exceeded')).toBe('reader_tts_quota_exhausted');
+		expect(messageForTtsError({ status: 503 })).toBe('reader_tts_not_enabled');
+		expect(messageForTtsError(new Error('unknown'))).toBe('reader_tts_could_not_start');
 	});
 
 	it('selects ready chunks by element and adjacency', () => {

@@ -7,6 +7,7 @@
 	import WebhookCreateDialog from './WebhookCreateDialog.svelte';
 	import WebhookEndpointRow from './WebhookEndpointRow.svelte';
 	import WebhookSecretRevealCard from './WebhookSecretRevealCard.svelte';
+	import { t } from '$lib/i18n';
 
 	interface WebhookSecret {
 		name: string;
@@ -91,11 +92,8 @@
 <section class="zone">
 	<div class="zone-head">
 		<div>
-			<div class="zone-title">Webhooks</div>
-			<div class="zone-desc">
-				Push events from Indelible to your own services. Each endpoint gets an independent secret,
-				scoped event subscriptions, and a delivery log with replay.
-			</div>
+			<div class="zone-title">{$t('prefs_developer_webhooks')}</div>
+			<div class="zone-desc">{$t('prefs_developer_webhooks_hint')}</div>
 		</div>
 		<div class="zone-actions">
 			<button
@@ -104,7 +102,7 @@
 				onclick={(event) => {
 					addOpener = event.currentTarget;
 					onOpenAdd();
-				}}>Add endpoint</button
+				}}>{$t('prefs_developer_add_endpoint')}</button
 			>
 		</div>
 	</div>
@@ -118,13 +116,15 @@
 
 	<div class="group">
 		<div class="group-label">
-			<span>Endpoints</span>
-			<span class="meta">{endpointCount} endpoint{endpointCount === 1 ? '' : 's'}</span>
+			<span>{$t('prefs_developer_endpoints')}</span>
+			<span class="meta"
+				>{$t('prefs_developer_endpoint_count', { values: { count: endpointCount } })}</span
+			>
 		</div>
 
 		<div class="group-card">
 			{#if endpoints.length === 0}
-				<div class="empty">No webhook endpoints yet. Add one to receive events from Indelible.</div>
+				<div class="empty">{$t('prefs_developer_no_endpoints')}</div>
 			{:else}
 				<div class="endpoints-list">
 					{#each endpoints as endpoint (endpoint.id)}

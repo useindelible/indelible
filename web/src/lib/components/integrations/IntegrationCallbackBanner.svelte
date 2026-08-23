@@ -2,6 +2,7 @@
 	import type { IntegrationCallback } from '$lib/integrations/callback';
 	import { findProvider } from '$lib/integrations/providers';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		callback: IntegrationCallback | null;
@@ -12,7 +13,7 @@
 	let { callback, onDismiss, onAction = null }: Props = $props();
 
 	const providerLabel = $derived.by(() => {
-		if (!callback?.provider) return 'integration';
+		if (!callback?.provider) return $t('integrations_generic_name');
 		const provider = findProvider(callback.provider);
 		return provider?.displayName ?? callback.provider;
 	});
@@ -34,13 +35,13 @@
 		if (!callback) return '';
 		switch (callback.kind) {
 			case 'success':
-				return `${providerLabel} connected`;
+				return $t('integrations_callback_connected', { values: { provider: providerLabel } });
 			case 'denied':
-				return `${providerLabel} connection cancelled`;
+				return $t('integrations_callback_cancelled', { values: { provider: providerLabel } });
 			case 'provider_error':
-				return `${providerLabel} couldn't complete the connection`;
+				return $t('integrations_callback_provider_error', { values: { provider: providerLabel } });
 			case 'server_error':
-				return `Something went wrong connecting ${providerLabel}`;
+				return $t('integrations_callback_server_error', { values: { provider: providerLabel } });
 		}
 	});
 
@@ -48,20 +49,20 @@
 		if (!callback) return '';
 		switch (callback.kind) {
 			case 'success':
-				return 'You can manage settings, run a manual sync, or disconnect at any time.';
+				return $t('integrations_callback_success_body');
 			case 'denied':
-				return 'You declined the authorization request, so no connection was created. Try again whenever you’re ready.';
+				return $t('integrations_callback_denied_body');
 			case 'provider_error':
-				return 'The provider returned an error during sign-in. No connection was created — please try again.';
+				return $t('integrations_callback_provider_error_body');
 			case 'server_error':
-				return 'We couldn’t finish the sign-in flow. Please try again, and contact support if it keeps happening.';
+				return $t('integrations_callback_server_error_body');
 		}
 	});
 
 	const actionLabel = $derived.by(() => {
 		if (!callback) return null;
 		if (callback.kind === 'success' && callback.provider === 'notion') {
-			return 'Open Notion settings';
+			return $t('integrations_open_notion_settings');
 		}
 		return null;
 	});
@@ -84,7 +85,7 @@
 					{actionLabel}
 				</Button>
 			{/if}
-			<Button variant="tertiary" size="sm" onclick={onDismiss}>Dismiss</Button>
+			<Button variant="tertiary" size="sm" onclick={onDismiss}>{$t('integrations_dismiss')}</Button>
 		</div>
 	</aside>
 {/if}

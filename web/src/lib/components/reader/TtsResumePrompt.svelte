@@ -1,6 +1,7 @@
 <script lang="ts">
 	import TtsBanner from './TtsBanner.svelte';
 	import { formatTtsResumePosition } from './tts-controller-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		positionSeconds: number;
@@ -10,21 +11,25 @@
 
 	let { positionSeconds, onResume, onStartAgain }: Props = $props();
 
-	const message = $derived(`You stopped at ${formatTtsResumePosition(positionSeconds)}.`);
+	const message = $derived(
+		$t('reader_tts_resume_position', {
+			values: { position: formatTtsResumePosition(positionSeconds) }
+		})
+	);
 </script>
 
 <TtsBanner
 	variant="setup"
-	title="Resume where you left off"
+	title={$t('reader_tts_resume_title')}
 	{message}
 	actions={[
 		{
-			label: 'Resume',
+			label: $t('reader_resume'),
 			style: 'primary',
 			onclick: onResume
 		},
 		{
-			label: 'Start again',
+			label: $t('reader_tts_start_again'),
 			style: 'secondary',
 			onclick: onStartAgain
 		}

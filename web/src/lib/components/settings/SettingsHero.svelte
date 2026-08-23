@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { t } from '$lib/i18n';
 
 	type Variant =
 		| 'account'
@@ -20,7 +21,7 @@
 	let { variant, children }: Props = $props();
 </script>
 
-<section class="hero" data-variant={variant} aria-label="Page header">
+<section class="hero" data-variant={variant} aria-label={$t('settings_page_header')}>
 	<div class="hero-inner">
 		{@render children()}
 	</div>

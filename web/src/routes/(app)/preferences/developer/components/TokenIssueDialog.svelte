@@ -7,6 +7,7 @@
 		type ResourceAccessLevel,
 		type ResourcePermissionKey
 	} from '../developer-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -52,21 +53,21 @@
 <div class="issue-form" class:open inert={!open} aria-hidden={!open}>
 	<div class="issue-form-inner">
 		<div class="issue-form-head">
-			<div class="ifh-title">Issue a new token</div>
-			<button type="button" class="close" onclick={onClose} aria-label="Close">
+			<div class="ifh-title">{$t('prefs_developer_issue_new_token')}</div>
+			<button type="button" class="close" onclick={onClose} aria-label={$t('common_close')}>
 				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12" /></svg>
 			</button>
 		</div>
 
 		<div class="form-row">
 			<label class="lab" for="dev-token-name">
-				Name<span class="help">A descriptive label so you know what it's for.</span>
+				{$t('prefs_developer_name')}<span class="help">{$t('prefs_developer_name_hint')}</span>
 			</label>
 			<input
 				id="dev-token-name"
 				class="input"
 				type="text"
-				placeholder="e.g. Personal MacBook"
+				placeholder={$t('prefs_developer_name_placeholder')}
 				value={name}
 				oninput={(event) => onName(event.currentTarget.value)}
 			/>
@@ -74,7 +75,9 @@
 
 		<div class="form-row">
 			<div class="lab">
-				Permissions<span class="help">Start with none, then grant only what this token needs.</span>
+				{$t('prefs_developer_permissions')}<span class="help"
+					>{$t('prefs_developer_permissions_hint')}</span
+				>
 			</div>
 			<PermissionLedger
 				{permissions}
@@ -87,7 +90,7 @@
 
 		<div class="form-row">
 			<label class="lab" for="dev-token-expiry">
-				Expiry<span class="help">Token auto-revokes at this time.</span>
+				{$t('prefs_developer_expiry')}<span class="help">{$t('prefs_developer_expiry_hint')}</span>
 			</label>
 			<div class="expiry">
 				<select
@@ -96,16 +99,16 @@
 					value={expiry}
 					onchange={(event) => onExpiry(event.currentTarget.value as ExpiryOption)}
 				>
-					<option value="30">30 days</option>
-					<option value="90">90 days</option>
-					<option value="365">1 year</option>
-					<option value="never">No expiry</option>
+					<option value="30">{$t('prefs_developer_30_days')}</option>
+					<option value="90">{$t('prefs_developer_90_days')}</option>
+					<option value="365">{$t('prefs_developer_1_year')}</option>
+					<option value="never">{$t('prefs_developer_no_expiry')}</option>
 				</select>
 				<span class="resolved">
 					{#if revokesOn}
-						Revokes <strong>{revokesOn}</strong>
+						{$t('prefs_developer_revokes_on', { values: { date: revokesOn } })}
 					{:else}
-						Stays valid until you revoke it.
+						{$t('prefs_developer_valid_until_revoked')}
 					{/if}
 				</span>
 			</div>
@@ -116,9 +119,9 @@
 		{/if}
 
 		<div class="form-foot">
-			<button type="button" class="btn ghost" onclick={onClose}>Cancel</button>
+			<button type="button" class="btn ghost" onclick={onClose}>{$t('common_cancel')}</button>
 			<button type="button" class="btn primary" disabled={creating} onclick={onSubmit}>
-				{creating ? 'Creating…' : 'Create token'}
+				{creating ? $t('prefs_developer_creating') : $t('prefs_developer_create_token')}
 			</button>
 		</div>
 	</div>
@@ -267,11 +270,6 @@
 		font-size: 11.5px;
 		color: var(--text-tertiary);
 		letter-spacing: -0.005em;
-	}
-
-	.resolved strong {
-		color: var(--text-secondary);
-		font-weight: 600;
 	}
 
 	.form-error {

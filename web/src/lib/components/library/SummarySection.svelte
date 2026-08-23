@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		excerpt?: string | null;
 		summary?: string | null;
@@ -11,7 +12,9 @@
 	const isMilaSummary = $derived(
 		Boolean(normalizedSummary && normalizedSummary !== normalizedExcerpt)
 	);
-	const heading = $derived(isMilaSummary ? 'Summary' : normalizedExcerpt ? 'Excerpt' : 'Summary');
+	const heading = $derived(
+		$t(isMilaSummary || !normalizedExcerpt ? 'library_edit_summary' : 'library_excerpt')
+	);
 	const text = $derived(isMilaSummary ? normalizedSummary : normalizedExcerpt);
 </script>
 
@@ -20,10 +23,10 @@
 	{#if text}
 		<p class="summary-text">{text}</p>
 	{:else}
-		<p class="summary-text summary-stub">Summary unavailable.</p>
+		<p class="summary-text summary-stub">{$t('library_summary_unavailable')}</p>
 	{/if}
 	{#if isMilaSummary}
-		<p class="summary-attribution">Summarized by Mila</p>
+		<p class="summary-attribution">{$t('library_summary_attribution')}</p>
 	{/if}
 </div>
 

@@ -27,6 +27,7 @@
 	import { parseIntegrationCallback, type IntegrationCallback } from '$lib/integrations/callback';
 	import { findProvider } from '$lib/integrations/providers';
 	import { getAuth } from '$lib/stores/auth.svelte';
+	import { t } from '$lib/i18n';
 	import { createPoll, type PollHandle } from '$lib/utils/polling';
 	import ConnectionsSection from './components/ConnectionsSection.svelte';
 	import ImportHistoryTable from './components/ImportHistoryTable.svelte';
@@ -49,7 +50,7 @@
 	const auth = getAuth();
 	const inboxAddress = $derived(auth.user?.ingest_library_email ?? '');
 	const feedAddress = $derived(auth.user?.ingest_email ?? '');
-	const readwiseUploadLimit = formatUploadLimit(findProvider('readwise')?.maxBytes);
+	const readwiseUploadLimit = $derived(formatUploadLimit(findProvider('readwise')?.maxBytes, $t));
 	const CSV_HEADER_PROBE_BYTES = 4096;
 
 	let copiedInbox = $state(false);
@@ -381,7 +382,7 @@
 			return;
 		}
 		rollbackOpen = false;
-		rollbackNotice = 'Rollback completed. Imported items were moved to Trash.';
+		rollbackNotice = $t('integrations_hub_rollback_complete');
 		void refreshHistory();
 		const lookup = await fetchImportJob(jobId);
 		if (lookup.status === 'ok' && activeJob?.id === jobId) activeJob = lookup.data;
@@ -448,7 +449,10 @@
 			onClearActiveJob={clearActiveJob}
 		/>
 
-		<SettingsGroup title="Import history" meta="Most recent jobs">
+		<SettingsGroup
+			title={$t('integrations_hub_import_history')}
+			meta={$t('integrations_hub_recent_jobs')}
+		>
 			<ImportHistoryTable {history} onRollback={openRollback} />
 		</SettingsGroup>
 	</div>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		onCopyInbox: () => void;
 		onStartNotion: () => void;
@@ -24,8 +26,8 @@
 			</svg>
 		</div>
 		<div class="meta">
-			<div class="title">Install browser extension</div>
-			<div class="sub">Clip articles in one click</div>
+			<div class="title">{$t('integrations_hub_install_extension')}</div>
+			<div class="sub">{$t('integrations_hub_install_extension_hint')}</div>
 		</div>
 		<div class="arrow">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
@@ -39,8 +41,8 @@
 			</svg>
 		</div>
 		<div class="meta">
-			<div class="title">Set up email forwarding</div>
-			<div class="sub">Auto-capture newsletters</div>
+			<div class="title">{$t('integrations_hub_setup_email')}</div>
+			<div class="sub">{$t('integrations_hub_setup_email_hint')}</div>
 		</div>
 		<div class="arrow">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
@@ -49,8 +51,8 @@
 	<button type="button" class="quickstart-card" onclick={onStartNotion}>
 		<div class="mark notion">N</div>
 		<div class="meta">
-			<div class="title">Connect Notion</div>
-			<div class="sub">Sync highlights to a database</div>
+			<div class="title">{$t('integrations_notion_connect')}</div>
+			<div class="sub">{$t('integrations_hub_connect_notion_hint')}</div>
 		</div>
 		<div class="arrow">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>

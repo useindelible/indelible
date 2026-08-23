@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HomeItemResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import HomeItemCard from './HomeItemCard.svelte';
 
 	interface Props {
@@ -31,7 +32,9 @@
 			{@render actions()}
 		{:else if seeAllHref}
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolved app hrefs into this route-local section component. -->
-			<a href={seeAllHref} class="see-all">See all <span aria-hidden="true">-&gt;</span></a>
+			<a href={seeAllHref} class="see-all"
+				>{$t('common_see_all')} <span aria-hidden="true">-&gt;</span></a
+			>
 		{/if}
 	</div>
 

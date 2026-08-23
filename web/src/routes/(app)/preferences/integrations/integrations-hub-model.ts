@@ -1,20 +1,21 @@
 import type { IntegrationConnectionDto, ImportJobStatusResponse } from '$lib/api';
 import { deriveConnectionState } from '$lib/integrations/status';
 import { normalizeImportStatus } from '$lib/integrations/status';
+import type { MessageKey, Translate } from '$lib/i18n';
 
 export type ImportSlot = 'readwise';
 export type StatusVariant = 'active' | 'syncing' | 'attention' | 'coming';
 export type SyncState = 'idle' | 'pending' | 'success' | 'error';
 
 export interface HubConnectionStatus {
-	label: string;
+	labelKey: MessageKey;
 	variant: StatusVariant;
 	pulse?: boolean;
 	check?: boolean;
 }
 
 export interface StoreLink {
-	label: string;
+	labelKey: MessageKey;
 	href: string;
 }
 
@@ -41,39 +42,39 @@ export interface SevenDayDelta {
 	label: string;
 }
 
-export function formatUploadLimit(bytes: number | undefined): string {
-	if (!bytes) return 'Max file size set by server';
+export function formatUploadLimit(bytes: number | undefined, translate: Translate): string {
+	if (!bytes) return translate('integrations_hub_max_file_server');
 	const megabytes = bytes / (1024 * 1024);
 	const label = Number.isInteger(megabytes) ? megabytes.toString() : megabytes.toFixed(1);
-	return `Max ${label} MB each`;
+	return translate('integrations_hub_max_file_each', { values: { size: label } });
 }
 
-export function sourceFileLabel(job: ImportJobStatusResponse): string {
-	if (job.import_source.startsWith('readwise')) return 'Readwise · files';
+export function sourceFileLabel(job: ImportJobStatusResponse, translate: Translate): string {
+	if (job.import_source.startsWith('readwise')) return translate('integrations_hub_readwise_files');
 	return job.import_source;
 }
 
 export function statusForJob(job: ImportJobStatusResponse | null | undefined): {
-	label: string;
+	labelKey: MessageKey;
 	variant: StatusVariant;
 } {
-	if (!job) return { label: 'Unknown', variant: 'coming' };
+	if (!job) return { labelKey: 'imports_status_unknown', variant: 'coming' };
 	switch (normalizeImportStatus(job.status)) {
 		case 'completed':
-			return { label: 'Completed', variant: 'active' };
+			return { labelKey: 'imports_status_completed', variant: 'active' };
 		case 'partial':
-			return { label: 'Partial', variant: 'attention' };
+			return { labelKey: 'imports_status_partial', variant: 'attention' };
 		case 'failed':
-			return { label: 'Failed', variant: 'attention' };
+			return { labelKey: 'imports_status_failed', variant: 'attention' };
 		case 'rolled_back':
-			return { label: 'Rolled back', variant: 'coming' };
+			return { labelKey: 'imports_status_rolled_back', variant: 'coming' };
 		case 'pending':
 		case 'awaiting_provider':
-			return { label: 'Queued', variant: 'syncing' };
+			return { labelKey: 'imports_status_queued', variant: 'syncing' };
 		case 'running':
-			return { label: 'Running', variant: 'syncing' };
+			return { labelKey: 'imports_status_running', variant: 'syncing' };
 		default:
-			return { label: 'Unknown', variant: 'coming' };
+			return { labelKey: 'imports_status_unknown', variant: 'coming' };
 	}
 }
 
@@ -91,18 +92,20 @@ export function isOauthProviderAvailable(
 export function notionHubStatus(
 	connection: IntegrationConnectionDto | null | undefined
 ): HubConnectionStatus {
-	if (!connection) return { label: 'Not connected', variant: 'coming' };
+	if (!connection) return { labelKey: 'integrations_hub_status_not_connected', variant: 'coming' };
 	const state = deriveConnectionState(connection);
-	if (state === 'syncing') return { label: 'Syncing', variant: 'syncing', pulse: true };
-	if (state === 'failed') return { label: 'Needs attention', variant: 'attention' };
-	return { label: 'Connected', variant: 'active', check: true };
+	if (state === 'syncing')
+		return { labelKey: 'integrations_hub_status_syncing', variant: 'syncing', pulse: true };
+	if (state === 'failed')
+		return { labelKey: 'integrations_hub_status_needs_attention', variant: 'attention' };
+	return { labelKey: 'integrations_hub_status_connected', variant: 'active', check: true };
 }
 
 export function obsidianHubStatus(
 	connection: IntegrationConnectionDto | null | undefined
 ): HubConnectionStatus {
-	if (!connection) return { label: 'Not connected', variant: 'coming' };
-	return { label: 'Connected', variant: 'active', check: true };
+	if (!connection) return { labelKey: 'integrations_hub_status_not_connected', variant: 'coming' };
+	return { labelKey: 'integrations_hub_status_connected', variant: 'active', check: true };
 }
 
 export function notionDatabaseLabel(
@@ -171,21 +174,6 @@ export function sevenDayDelta(history: ImportJobStatusResponse[]): SevenDayDelta
 	return { sign: pct > 0 ? 'up' : 'down', label: `${Math.abs(pct)}%` };
 }
 
-export function relativeTime(iso: string): string {
-	const timestamp = new Date(iso).getTime();
-	if (Number.isNaN(timestamp)) return iso;
-	const diff = Date.now() - timestamp;
-	if (diff < 60_000) return 'just now';
-	const minutes = Math.floor(diff / 60_000);
-	if (minutes < 60) return minutes === 1 ? '1 min ago' : `${minutes} min ago`;
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return hours === 1 ? '1 hr ago' : `${hours} hr ago`;
-	const days = Math.floor(hours / 24);
-	if (days < 30) return days === 1 ? '1 day ago' : `${days} days ago`;
-	const months = Math.floor(days / 30);
-	return months === 1 ? '1 month ago' : `${months} months ago`;
-}
-
 export function progressPercent(job: ImportJobStatusResponse): number | null {
 	const status = normalizeImportStatus(job.status);
 	if (status === 'completed' || status === 'partial') return 100;
@@ -193,15 +181,20 @@ export function progressPercent(job: ImportJobStatusResponse): number | null {
 }
 
 export function browserStoreLink(userAgent: string | undefined): StoreLink {
-	if (!userAgent) return { label: 'Get for Chrome', href: 'https://chromewebstore.google.com/' };
+	if (!userAgent)
+		return { labelKey: 'integrations_hub_get_chrome', href: 'https://chromewebstore.google.com/' };
 	if (/Firefox\//.test(userAgent))
-		return { label: 'Get for Firefox', href: 'https://addons.mozilla.org/' };
+		return { labelKey: 'integrations_hub_get_firefox', href: 'https://addons.mozilla.org/' };
 	if (/Edg\//.test(userAgent)) {
-		return { label: 'Get for Edge', href: 'https://microsoftedge.microsoft.com/addons/' };
+		return {
+			labelKey: 'integrations_hub_get_edge',
+			href: 'https://microsoftedge.microsoft.com/addons/'
+		};
 	}
-	if (/OPR\//.test(userAgent)) return { label: 'Get for Opera', href: 'https://addons.opera.com/' };
+	if (/OPR\//.test(userAgent))
+		return { labelKey: 'integrations_hub_get_opera', href: 'https://addons.opera.com/' };
 	if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent) && !/Chromium\//.test(userAgent)) {
-		return { label: 'Get for Safari', href: 'https://apps.apple.com/' };
+		return { labelKey: 'integrations_hub_get_safari', href: 'https://apps.apple.com/' };
 	}
-	return { label: 'Get for Chrome', href: 'https://chromewebstore.google.com/' };
+	return { labelKey: 'integrations_hub_get_chrome', href: 'https://chromewebstore.google.com/' };
 }

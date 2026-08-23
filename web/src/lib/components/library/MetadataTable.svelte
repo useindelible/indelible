@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
 	import { formatReadingTime } from '$lib/utils/format';
+	import { date, locale, t, type MessageKey } from '$lib/i18n';
+	import { relativeTime } from '$lib/utils/relative-time';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -9,38 +11,44 @@
 	let { item }: Props = $props();
 
 	function formatItemType(raw: string): string {
+		const keys: Partial<Record<string, MessageKey>> = {
+			article: 'library_filter_value_article',
+			book: 'library_filter_value_book',
+			email: 'library_filter_value_email',
+			pdf: 'library_filter_value_pdf',
+			podcast: 'library_filter_value_podcast',
+			tweet: 'library_filter_value_tweet',
+			video: 'library_filter_value_video'
+		};
+		const key = keys[raw];
+		if (key) return $t(key);
 		return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
 	}
 
 	function formatDate(iso: string | null | undefined): string {
 		if (!iso) return '—';
 		const d = new Date(iso);
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	}
-
-	function formatRelativeDate(iso: string): string {
-		const diff = Math.max(0, Date.now() - new Date(iso).getTime());
-		const minutes = Math.floor(diff / 60_000);
-		if (minutes < 60) return minutes <= 1 ? 'just now' : `${minutes} minutes ago`;
-		const hours = Math.floor(minutes / 60);
-		if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-		const days = Math.floor(hours / 24);
-		if (days < 30) return days === 1 ? '1 day ago' : `${days} days ago`;
-		return formatDate(iso);
+		return $date(d, { month: 'short', day: 'numeric', year: 'numeric' });
 	}
 
 	function formatLength(minutes: number | null | undefined): string {
 		if (!minutes) return '—';
-		return `${formatReadingTime(minutes)} read`;
+		return $t('library_reading_length', { values: { time: formatReadingTime(minutes) } });
 	}
 
 	function formatDuration(seconds: number): string {
 		const h = Math.floor(seconds / 3600);
 		const m = Math.floor((seconds % 3600) / 60);
 		const s = seconds % 60;
-		if (h > 0) return `${h}h ${m}m ${s}s`;
-		if (m > 0) return `${m} min ${s} sec`;
-		return `${s} sec`;
+		if (h > 0) {
+			return $t('library_duration_hours_minutes_seconds', {
+				values: { hours: h, minutes: m, seconds: s }
+			});
+		}
+		if (m > 0) {
+			return $t('library_duration_minutes_seconds', { values: { minutes: m, seconds: s } });
+		}
+		return $t('library_duration_seconds', { values: { seconds: s } });
 	}
 
 	const isVideo = $derived(item.item_type === 'video');
@@ -48,7 +56,7 @@
 	function formatLanguage(code: string | null | undefined): string {
 		if (!code) return '—';
 		try {
-			return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code;
+			return new Intl.DisplayNames([$locale ?? 'en'], { type: 'language' }).of(code) ?? code;
 		} catch {
 			return code;
 		}
@@ -58,43 +66,43 @@
 </script>
 
 <div class="metadata-section">
-	<div class="section-heading">Metadata</div>
+	<div class="section-heading">{$t('common_metadata')}</div>
 	<div class="metadata-table">
 		<div class="metadata-row">
-			<span class="metadata-label">Type</span>
+			<span class="metadata-label">{$t('common_type')}</span>
 			<span class="metadata-value">{formatItemType(item.item_type)}</span>
 		</div>
 		<div class="metadata-row">
-			<span class="metadata-label">Domain</span>
+			<span class="metadata-label">{$t('common_domain')}</span>
 			<span class="metadata-value">{item.domain ?? '—'}</span>
 		</div>
 		<div class="metadata-row">
-			<span class="metadata-label">Published</span>
+			<span class="metadata-label">{$t('common_published')}</span>
 			<span class="metadata-value">{formatDate(item.published_at)}</span>
 		</div>
 		{#if isVideo && item.video_duration_seconds}
 			<div class="metadata-row">
-				<span class="metadata-label">Duration</span>
+				<span class="metadata-label">{$t('library_metadata_duration')}</span>
 				<span class="metadata-value">{formatDuration(item.video_duration_seconds)}</span>
 			</div>
 		{:else}
 			<div class="metadata-row">
-				<span class="metadata-label">Length</span>
+				<span class="metadata-label">{$t('library_metadata_length')}</span>
 				<span class="metadata-value">{formatLength(item.reading_time_minutes)}</span>
 			</div>
 			<div class="metadata-row">
-				<span class="metadata-label">Words</span>
-				<span class="metadata-value"
-					>{item.word_count ? item.word_count.toLocaleString() + ' words' : '—'}</span
-				>
+				<span class="metadata-label">{$t('library_metadata_words')}</span>
+				<span class="metadata-value">
+					{item.word_count ? $t('library_word_count', { values: { count: item.word_count } }) : '—'}
+				</span>
 			</div>
 		{/if}
 		<div class="metadata-row">
-			<span class="metadata-label">Saved</span>
-			<span class="metadata-value">{formatRelativeDate(item.saved_at)}</span>
+			<span class="metadata-label">{$t('library_metadata_saved')}</span>
+			<span class="metadata-value">{relativeTime(item.saved_at) ?? formatDate(item.saved_at)}</span>
 		</div>
 		<div class="metadata-row">
-			<span class="metadata-label">Progress</span>
+			<span class="metadata-label">{$t('library_metadata_progress')}</span>
 			<span class="metadata-value">
 				<span class="progress-inline">
 					{progressPercent}%
@@ -111,13 +119,15 @@
 			</span>
 		</div>
 		<div class="metadata-row">
-			<span class="metadata-label">Last read</span>
+			<span class="metadata-label">{$t('library_metadata_last_read')}</span>
 			<span class="metadata-value"
-				>{item.last_read_at ? formatRelativeDate(item.last_read_at) : '—'}</span
+				>{item.last_read_at
+					? (relativeTime(item.last_read_at) ?? formatDate(item.last_read_at))
+					: '—'}</span
 			>
 		</div>
 		<div class="metadata-row">
-			<span class="metadata-label">Language</span>
+			<span class="metadata-label">{$t('common_language')}</span>
 			<span class="metadata-value">{formatLanguage(item.language)}</span>
 		</div>
 	</div>

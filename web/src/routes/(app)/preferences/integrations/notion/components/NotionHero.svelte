@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
+	import { t } from '$lib/i18n';
 	import type { ConnectionState } from '$lib/integrations/status';
 	import NotionHeroTile from './NotionHeroTile.svelte';
 
@@ -36,20 +37,21 @@
 			</span>
 			<span>Indelible × Notion</span>
 		</div>
-		<h1 class="hero-title">Your library,<br />kept in Notion.</h1>
+		<h1 class="hero-title">
+			{$t('integrations_notion_hero_line_one')}<br />{$t('integrations_notion_hero_line_two')}
+		</h1>
 		<p class="hero-sub">
-			Indelible exports every saved document, highlight, and note into a managed database in your
-			Notion workspace. Append-only by default — your edits stay safe.
+			{$t('integrations_notion_hero_description')}
 		</p>
-		<div class="hero-stats" aria-label="Notion export summary">
+		<div class="hero-stats" aria-label={$t('integrations_notion_export_summary')}>
 			<div class="hero-stat">
 				<span class="v">{heroDocs}</span>
-				<span class="l">Documents</span>
+				<span class="l">{$t('integrations_notion_documents')}</span>
 			</div>
 			<div class="hero-stat-divider"></div>
 			<div class="hero-stat">
 				<span class="v">{formattedHeroLastSync}</span>
-				<span class="l">Last sync</span>
+				<span class="l">{$t('integrations_notion_last_sync')}</span>
 			</div>
 		</div>
 	</div>

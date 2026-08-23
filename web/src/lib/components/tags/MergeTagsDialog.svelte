@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
 	import { sanitizeColor } from '$lib/utils/color';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		sourceTags: TagResponse[];
@@ -32,7 +33,7 @@
 	class="cmd-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label="Merge tags"
+	aria-label={$t('tag_merge')}
 	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(e) => {
@@ -45,7 +46,7 @@
 	<div class="cmd-card" role="none" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 		<div class="cmd-body">
 			<div class="source-tags">
-				<span class="field-label">Merging</span>
+				<span class="field-label">{$t('tag_merging')}</span>
 				<div class="tag-pills">
 					{#each sourceTags as tag (tag.id)}
 						<span class="tag-pill">
@@ -67,13 +68,13 @@
 					<line x1="12" y1="9" x2="12" y2="13" />
 					<line x1="12" y1="17" x2="12.01" y2="17" />
 				</svg>
-				{totalItems} item{totalItems !== 1 ? 's' : ''} will be re-tagged. Source tags will be deleted.
+				{$t('tag_merge_warning', { values: { count: totalItems } })}
 			</div>
 
 			<label class="merge-field">
-				<span class="field-label">Merge into</span>
+				<span class="field-label">{$t('tag_merge_into')}</span>
 				<select class="cmd-select" bind:value={targetId}>
-					<option value="" disabled>Select target tag…</option>
+					<option value="" disabled>{$t('tag_select_target')}</option>
 					{#each targetOptions as tag (tag.id)}
 						<option value={tag.id}>{tag.name}</option>
 					{/each}
@@ -82,14 +83,14 @@
 		</div>
 
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+			<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 			<button
 				type="button"
 				class="cmd-action cmd-action-danger"
 				disabled={!canMerge}
 				onclick={handleMerge}
 			>
-				{merging ? 'Merging…' : 'Merge tags'}
+				{merging ? $t('tag_merging_progress') : $t('tag_merge')}
 			</button>
 		</div>
 	</div>

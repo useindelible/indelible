@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		onClose: () => void;
@@ -11,10 +12,10 @@
 
 <ConfirmDialog
 	open
-	title="Delete tag"
-	message="This tag will be removed from all items and highlights. This cannot be undone."
-	confirmLabel="Delete tag"
-	cancelLabel="Cancel"
+	title={$t('tag_delete')}
+	message={$t('tag_delete_body')}
+	confirmLabel={$t('tag_delete')}
+	cancelLabel={$t('common_cancel')}
 	variant="destructive"
 	onCancel={onClose}
 	{onConfirm}

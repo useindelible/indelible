@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		x: number;
@@ -75,7 +76,7 @@
 						type="button"
 						class="hl-applied-tag-remove"
 						onclick={() => onRemoveTag(tag)}
-						aria-label="Remove {tag}"
+						aria-label={$t('reader_remove_tag', { values: { tag } })}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -104,7 +105,7 @@
 		<input
 			type="text"
 			class="hl-tag-field"
-			placeholder="Add tag…"
+			placeholder={$t('library_tag_add')}
 			value={tagInput}
 			oninput={(e) => {
 				onTagInputChange((e.target as HTMLInputElement).value);

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import type { FilterCondition } from '$lib/utils/filter-expression';
 	import type { LibraryFilterFieldDef } from '$lib/utils/library-filter-fields';
 	import { filterCollections, type FilterCollection } from './filter-bar-model';
@@ -67,7 +68,7 @@
 									condition.value.includes(opt.value)}
 								onclick={() => onToggleMultiValue(opt.value)}
 							>
-								{opt.label}
+								{$t(opt.labelKey)}
 								{#if Array.isArray(condition.value) && condition.value.includes(opt.value)}
 									<span class="check-icon">
 										<svg viewBox="0 0 24 24" aria-hidden="true"
@@ -86,7 +87,7 @@
 									onClose();
 								}}
 							>
-								{opt.label}
+								{$t(opt.labelKey)}
 								{#if condition.value === opt.value}
 									<span class="check-icon">
 										<svg viewBox="0 0 24 24" aria-hidden="true"
@@ -102,7 +103,7 @@
 						<input
 							type="text"
 							class="value-text-input"
-							placeholder="Search tags..."
+							placeholder={$t('library_filter_search_tags')}
 							value={typeof condition.value === 'string' ? condition.value : ''}
 							autofocus
 							oninput={(event) => {
@@ -119,7 +120,7 @@
 									onValueChange('');
 									onSearchTags('');
 								}}
-								aria-label="Clear"
+								aria-label={$t('library_filter_clear')}
 							>
 								<svg viewBox="0 0 24 24" aria-hidden="true">
 									<line x1="18" y1="6" x2="6" y2="18" />
@@ -153,7 +154,7 @@
 						<input
 							type="text"
 							class="value-text-input"
-							placeholder="Search collections..."
+							placeholder={$t('library_filter_search_collections')}
 							value={typeof condition.value === 'string' ? condition.value : ''}
 							autofocus
 							oninput={(event) => onValueChange((event.target as HTMLInputElement).value)}
@@ -163,7 +164,7 @@
 								type="button"
 								class="value-input-clear"
 								onclick={() => onValueChange('')}
-								aria-label="Clear"
+								aria-label={$t('library_filter_clear')}
 							>
 								<svg viewBox="0 0 24 24" aria-hidden="true">
 									<line x1="18" y1="6" x2="6" y2="18" />
@@ -197,7 +198,7 @@
 						<input
 							type="text"
 							class="value-text-input"
-							placeholder="Enter value..."
+							placeholder={$t('library_filter_enter_value')}
 							value={typeof condition.value === 'string' ? condition.value : ''}
 							autofocus
 							oninput={(event) => onValueChange((event.target as HTMLInputElement).value)}
@@ -210,7 +211,7 @@
 								type="button"
 								class="value-input-clear"
 								onclick={() => onValueChange('')}
-								aria-label="Clear"
+								aria-label={$t('library_filter_clear')}
 							>
 								<svg viewBox="0 0 24 24" aria-hidden="true">
 									<line x1="18" y1="6" x2="6" y2="18" />
@@ -239,7 +240,7 @@
 								type="button"
 								class="value-input-clear"
 								onclick={() => onValueChange(0)}
-								aria-label="Clear"
+								aria-label={$t('library_filter_clear')}
 							>
 								<svg viewBox="0 0 24 24" aria-hidden="true">
 									<line x1="18" y1="6" x2="6" y2="18" />

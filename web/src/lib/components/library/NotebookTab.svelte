@@ -6,8 +6,10 @@
 		HighlightWithNoteResponse
 	} from '$lib/api';
 	import { goto } from '$app/navigation';
+	import { t } from '$lib/i18n';
 	import { resolve } from '$app/paths';
 	import { browser } from '$app/environment';
+	import { date } from '$lib/i18n';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -52,7 +54,7 @@
 				}
 			})
 			.catch(() => {
-				highlightsError = 'Failed to load highlights.';
+				highlightsError = $t('library_notebook_error_load_highlights');
 			})
 			.finally(() => {
 				highlightsLoading = false;
@@ -71,7 +73,7 @@
 				note = data ?? null;
 			})
 			.catch(() => {
-				noteError = 'Failed to load note.';
+				noteError = $t('library_notebook_error_load_note');
 			})
 			.finally(() => {
 				noteLoading = false;
@@ -94,7 +96,7 @@
 			note = data ?? null;
 			editing = false;
 		} catch {
-			noteError = 'Failed to save note.';
+			noteError = $t('library_notebook_error_save_note');
 		} finally {
 			saving = false;
 		}
@@ -111,7 +113,7 @@
 			note = null;
 			editing = false;
 		} catch {
-			noteError = 'Failed to delete note.';
+			noteError = $t('library_notebook_error_delete_note');
 		} finally {
 			saving = false;
 		}
@@ -127,7 +129,7 @@
 			await apiSdk.deleteHighlight({ path: { highlight_id: highlightId } });
 			highlights = highlights.filter((h) => h.id !== highlightId);
 		} catch {
-			highlightsError = 'Failed to delete highlight.';
+			highlightsError = $t('library_notebook_error_delete_highlight');
 		}
 	}
 
@@ -152,7 +154,7 @@
 			}
 			editingHighlightNoteId = null;
 		} catch {
-			highlightsError = 'Failed to save note.';
+			highlightsError = $t('library_notebook_error_save_note');
 		} finally {
 			highlightNoteSaving = false;
 		}
@@ -166,7 +168,7 @@
 				editingHighlightNoteId = null;
 			}
 		} catch {
-			highlightsError = 'Failed to delete note.';
+			highlightsError = $t('library_notebook_error_delete_note');
 		}
 	}
 
@@ -185,7 +187,7 @@
 				URL.revokeObjectURL(url);
 			}
 		} catch {
-			highlightsError = 'Failed to export highlights.';
+			highlightsError = $t('library_notebook_error_export_highlights');
 		}
 	}
 
@@ -225,16 +227,18 @@
 	<!-- Highlights -->
 	<div class="section">
 		<div class="section-header-row">
-			<span class="section-heading">Highlights</span>
-			<span class="section-count">{highlights.length} marked</span>
+			<span class="section-heading">{$t('library_notebook_highlights')}</span>
+			<span class="section-count"
+				>{$t('library_notebook_marked', { values: { count: highlights.length } })}</span
+			>
 		</div>
 
 		{#if highlightsLoading}
-			<div class="note-loading">Loading...</div>
+			<div class="note-loading">{$t('common_loading')}</div>
 		{:else if highlightsError}
 			<p class="note-error">{highlightsError}</p>
 		{:else if highlights.length === 0}
-			<div class="empty-state">No highlights yet. Open in Reader to start highlighting.</div>
+			<div class="empty-state">{$t('library_notebook_empty_highlights')}</div>
 		{:else}
 			<div class="highlights-list">
 				{#each highlights as hl (hl.id)}
@@ -262,7 +266,7 @@
 								<textarea
 									bind:value={highlightNoteText}
 									class="add-note-input"
-									placeholder="Add a note..."
+									placeholder={$t('library_notebook_add_note')}
 									rows={3}
 									onkeydown={(e) => {
 										if (e.key === 'Escape') {
@@ -278,7 +282,7 @@
 											onclick={() => deleteHighlightNote(hl.id)}
 											disabled={highlightNoteSaving}
 										>
-											Delete
+											{$t('common_delete')}
 										</button>
 									{/if}
 									<button
@@ -289,7 +293,7 @@
 										}}
 										disabled={highlightNoteSaving}
 									>
-										Cancel
+										{$t('common_cancel')}
 									</button>
 									<button
 										type="button"
@@ -297,7 +301,7 @@
 										disabled={highlightNoteSaving || !highlightNoteText.trim()}
 										onclick={saveHighlightNote}
 									>
-										{highlightNoteSaving ? 'Saving...' : 'Save'}
+										{highlightNoteSaving ? $t('common_saving') : $t('common_save')}
 									</button>
 								</div>
 							</div>
@@ -308,35 +312,35 @@
 							<button
 								type="button"
 								class="hl-action"
-								aria-label="Add note to highlight"
+								aria-label={$t('library_notebook_add_note_to_highlight')}
 								onclick={(e) => {
 									e.stopPropagation();
 									startHighlightNoteEdit(hl.id);
 								}}
 							>
-								Note
+								{$t('library_notebook_note')}
 							</button>
 							<button
 								type="button"
 								class="hl-action"
-								aria-label="Copy highlight"
+								aria-label={$t('library_notebook_copy_highlight')}
 								onclick={(e) => {
 									e.stopPropagation();
 									copyToClipboard(hl.text_content);
 								}}
 							>
-								Copy
+								{$t('common_copy')}
 							</button>
 							<button
 								type="button"
 								class="hl-action hl-action-delete"
-								aria-label="Delete highlight"
+								aria-label={$t('library_notebook_delete_highlight')}
 								onclick={(e) => {
 									e.stopPropagation();
 									deleteHighlight(hl.id);
 								}}
 							>
-								Delete
+								{$t('common_delete')}
 							</button>
 						</div>
 					</div>
@@ -356,24 +360,24 @@
 					<polyline points="7 10 12 15 17 10" />
 					<line x1="12" y1="15" x2="12" y2="3" />
 				</svg>
-				Export Highlights
+				{$t('library_notebook_export_highlights')}
 			</button>
 		{/if}
 	</div>
 
 	<!-- Note -->
 	<div class="section">
-		<span class="section-heading">Note</span>
+		<span class="section-heading">{$t('library_notebook_note')}</span>
 
 		{#if noteLoading}
-			<div class="note-loading">Loading...</div>
+			<div class="note-loading">{$t('common_loading')}</div>
 		{:else if editing}
 			<div class="add-note-form">
 				<textarea
 					bind:this={noteInputEl}
 					bind:value={editText}
 					class="add-note-input"
-					placeholder="Write a note..."
+					placeholder={$t('library_notebook_write_note')}
 					rows={4}
 					onkeydown={(e) => {
 						if (e.key === 'Escape') {
@@ -387,7 +391,7 @@
 				<div class="add-note-actions">
 					{#if note}
 						<button type="button" class="note-delete" onclick={deleteNote} disabled={saving}>
-							Delete
+							{$t('common_delete')}
 						</button>
 					{/if}
 					<button
@@ -398,7 +402,7 @@
 						}}
 						disabled={saving}
 					>
-						Cancel
+						{$t('common_cancel')}
 					</button>
 					<button
 						type="button"
@@ -406,7 +410,7 @@
 						disabled={saving || !editText.trim()}
 						onclick={saveNote}
 					>
-						{saving ? 'Saving...' : 'Save'}
+						{saving ? $t('common_saving') : $t('common_save')}
 					</button>
 				</div>
 			</div>
@@ -420,7 +424,7 @@
 			>
 				<p class="note-text">{note.body}</p>
 				<span class="note-timestamp">
-					{new Date(note.updated_at).toLocaleDateString('en-US', {
+					{$date(new Date(note.updated_at), {
 						month: 'short',
 						day: 'numeric'
 					})}
@@ -435,7 +439,7 @@
 					<line x1="12" y1="5" x2="12" y2="19" />
 					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
-				Add a note
+				{$t('library_notebook_add_note')}
 			</button>
 		{/if}
 	</div>

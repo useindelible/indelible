@@ -3,6 +3,7 @@ import type {
 	DuplicateActionDto,
 	DuplicateSensitivityDto
 } from '$lib/api';
+import type { MessageKey } from '$lib/i18n';
 
 export type FormatId = 'readable' | 'monolith' | 'pdf' | 'screenshot' | 'warc';
 export type FormatStatus = 'on' | 'off' | 'coming';
@@ -12,8 +13,8 @@ export type DuplicateAction = 'notify' | 'skip' | 'merge';
 
 export interface ArchiveFormat {
 	id: FormatId;
-	label: string;
-	desc: string;
+	labelKey: MessageKey;
+	descKey: MessageKey;
 	size: string;
 	alwaysOn?: boolean;
 	comingSoon?: boolean;
@@ -35,33 +36,33 @@ export interface BuildArchivalSettingsInput extends ArchivalSnapshotInput {
 export const ARCHIVE_FORMATS: ArchiveFormat[] = [
 	{
 		id: 'readable',
-		label: 'Readable Text',
-		desc: 'Simplified article text — the foundation every other save builds on.',
+		labelKey: 'archival_format_readable',
+		descKey: 'archival_format_readable_description',
 		size: '~30 KB',
 		alwaysOn: true
 	},
 	{
 		id: 'monolith',
-		label: 'Monolith HTML',
-		desc: 'Single-file HTML archive with embedded styles, fonts, and assets.',
+		labelKey: 'archival_format_monolith',
+		descKey: 'archival_format_monolith_description',
 		size: '~1.2 MB'
 	},
 	{
 		id: 'pdf',
-		label: 'PDF Snapshot',
-		desc: 'Page rendered through the Chromium renderer — print-ready, paginated.',
+		labelKey: 'archival_format_pdf',
+		descKey: 'archival_format_pdf_description',
 		size: '~600 KB'
 	},
 	{
 		id: 'screenshot',
-		label: 'Screenshot',
-		desc: 'Full-page PNG — the page exactly as it looked at the moment you saved it.',
+		labelKey: 'archival_format_screenshot',
+		descKey: 'archival_format_screenshot_description',
 		size: '~2.4 MB'
 	},
 	{
 		id: 'warc',
-		label: 'WARC Archive',
-		desc: 'Standards-compliant web archive (ISO 28500) — preserves headers, redirects, and sub-resources.',
+		labelKey: 'archival_format_warc',
+		descKey: 'archival_format_warc_description',
 		size: '— —',
 		comingSoon: true
 	}

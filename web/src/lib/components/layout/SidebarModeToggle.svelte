@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { NavMode } from '$lib/stores/sidebar.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		mode: NavMode;
@@ -9,14 +10,14 @@
 	let { mode, onToggle }: Props = $props();
 </script>
 
-<div class="mode-toggle" role="radiogroup" aria-label="Navigation mode">
+<div class="mode-toggle" role="radiogroup" aria-label={$t('layout_navigation_mode')}>
 	<button
 		type="button"
 		class="mode-btn"
 		class:active={mode === 'content-type'}
 		role="radio"
 		aria-checked={mode === 'content-type'}
-		aria-label="Browse by content type"
+		aria-label={$t('layout_browse_content_type')}
 		onclick={() => {
 			if (mode !== 'content-type') onToggle();
 		}}
@@ -42,7 +43,7 @@
 		class:active={mode === 'collections'}
 		role="radio"
 		aria-checked={mode === 'collections'}
-		aria-label="Browse by collections"
+		aria-label={$t('layout_browse_collections')}
 		onclick={() => {
 			if (mode !== 'collections') onToggle();
 		}}

@@ -6,6 +6,7 @@
 	import CheckRow from './CheckRow.svelte';
 	import ProviderChatBudget from './ProviderChatBudget.svelte';
 	import ProviderConnectionCard from './ProviderConnectionCard.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		config: MilaConfigResponse | null;
@@ -24,27 +25,18 @@
 	const embeddingBaseId = `${uid}-embedding-base`;
 	const embeddingModelId = `${uid}-embedding-model`;
 
-	const REASONING_HELP = {
-		on: 'On — standard sampling controls are omitted. No reasoning_effort value is sent; the provider uses its default reasoning level.',
-		off: 'Off — Indelible sends its normal per-task sampling controls; chat includes temperature and top_p. For LM Studio reasoning models, compatibility requires LM Studio 0.4.8 or newer.'
-	};
-
 	const testDisabled = $derived(!draft.chatApiBase.trim() || !draft.embeddingApiBase.trim());
 </script>
 
 <SettingsGroup
-	title="Provider"
-	meta={draft.byoOn
-		? 'Bring your own OpenAI-compatible endpoint'
-		: 'Powered by Indelible — included in your plan'}
+	title={$t('prefs_ai_provider')}
+	meta={draft.byoOn ? $t('prefs_ai_provider_byo_hint') : $t('prefs_ai_provider_managed_hint')}
 >
 	<div class="byo-shell" class:expanded={draft.byoOn}>
 		<div class="byo-toggle-row">
 			<div class="byo-toggle-text">
-				<div class="byo-toggle-title">Use my own AI provider</div>
-				<div class="byo-toggle-sub">
-					Connect any OpenAI-compatible endpoint, including OpenRouter for Claude
-				</div>
+				<div class="byo-toggle-title">{$t('prefs_ai_byo_provider')}</div>
+				<div class="byo-toggle-sub">{$t('prefs_ai_byo_provider_hint')}</div>
 			</div>
 			<button
 				type="button"
@@ -52,7 +44,7 @@
 				class:on={draft.byoOn}
 				role="switch"
 				aria-checked={draft.byoOn}
-				aria-label={draft.byoOn ? 'Disable BYO provider' : 'Enable BYO provider'}
+				aria-label={$t(draft.byoOn ? 'prefs_ai_disable_byo' : 'prefs_ai_enable_byo')}
 				onclick={() => onChange({ byoOn: !draft.byoOn })}
 			>
 				<span class="toggle-track"></span>
@@ -64,10 +56,10 @@
 				<!-- Chat and embeddings are separate endpoints: a hosted chat model
 				     alongside local embeddings is the common setup. -->
 				<div class="section chat">
-					<div class="section-title">Chat provider</div>
+					<div class="section-title">{$t('prefs_ai_chat_provider')}</div>
 
 					<div class="form-group">
-						<label class="form-label" for={chatBaseId}>Chat API base URL</label>
+						<label class="form-label" for={chatBaseId}>{$t('prefs_ai_chat_api_base')}</label>
 						<input
 							id={chatBaseId}
 							class="form-input"
@@ -79,12 +71,12 @@
 					</div>
 
 					<ApiKeyField
-						label="Chat API key"
+						label={$t('prefs_ai_chat_api_key')}
 						value={draft.chatApiKey}
 						show={draft.showChatApiKey}
 						hasStoredKey={Boolean(config?.has_chat_api_key)}
-						emptyHint="Required"
-						clearLabel="Remove the saved chat key when I save"
+						emptyHint={$t('prefs_ai_required')}
+						clearLabel={$t('prefs_ai_remove_chat_key')}
 						clear={draft.clearChatApiKey}
 						onValueChange={(value) =>
 							onChange({
@@ -96,7 +88,7 @@
 					/>
 
 					<div class="form-group">
-						<label class="form-label" for={chatModelId}>Chat model ID</label>
+						<label class="form-label" for={chatModelId}>{$t('prefs_ai_chat_model_id')}</label>
 						<input
 							id={chatModelId}
 							class="form-input"
@@ -106,26 +98,32 @@
 							oninput={(event) => onChange({ chatModel: event.currentTarget.value })}
 						/>
 						<span class="field-hint">
-							Whatever your provider exposes — including OpenRouter model slugs.
+							{$t('prefs_ai_chat_model_hint')}
 						</span>
 					</div>
 
 					<CheckRow
 						checked={draft.supportsReasoningEffort}
-						label="Reasoning model compatibility"
+						label={$t('prefs_ai_reasoning_compatibility')}
 						onChange={(checked) => onChange({ supportsReasoningEffort: checked })}
 					>
 						{#snippet help()}
-							{draft.supportsReasoningEffort ? REASONING_HELP.on : REASONING_HELP.off}
+							{$t(
+								draft.supportsReasoningEffort
+									? 'prefs_ai_reasoning_on_hint'
+									: 'prefs_ai_reasoning_off_hint'
+							)}
 						{/snippet}
 					</CheckRow>
 				</div>
 
 				<div class="section embed">
-					<div class="section-title">Embedding provider</div>
+					<div class="section-title">{$t('prefs_ai_embedding_provider')}</div>
 
 					<div class="form-group">
-						<label class="form-label" for={embeddingBaseId}>Embedding API base URL</label>
+						<label class="form-label" for={embeddingBaseId}
+							>{$t('prefs_ai_embedding_api_base')}</label
+						>
 						<input
 							id={embeddingBaseId}
 							class="form-input"
@@ -137,12 +135,12 @@
 					</div>
 
 					<ApiKeyField
-						label="Embedding API key"
+						label={$t('prefs_ai_embedding_api_key')}
 						value={draft.embeddingApiKey}
 						show={draft.showEmbeddingApiKey}
 						hasStoredKey={Boolean(config?.has_embedding_api_key)}
-						emptyHint="Optional for local providers"
-						clearLabel="Remove the saved embedding key when I save"
+						emptyHint={$t('prefs_ai_embedding_key_optional')}
+						clearLabel={$t('prefs_ai_remove_embedding_key')}
 						clear={draft.clearEmbeddingApiKey}
 						onValueChange={(value) =>
 							onChange({
@@ -154,7 +152,9 @@
 					/>
 
 					<div class="form-group">
-						<label class="form-label" for={embeddingModelId}>Embedding model ID</label>
+						<label class="form-label" for={embeddingModelId}
+							>{$t('prefs_ai_embedding_model_id')}</label
+						>
 						<input
 							id={embeddingModelId}
 							class="form-input"
@@ -164,8 +164,7 @@
 							oninput={(event) => onChange({ embeddingModel: event.currentTarget.value })}
 						/>
 						<span class="field-hint">
-							Must return <strong>{draft.embeddingDim}-dimensional</strong> vectors. Changing the endpoint
-							or model rebuilds every embedding when you save.
+							{$t('prefs_ai_embedding_model_hint', { values: { dimensions: draft.embeddingDim } })}
 						</span>
 					</div>
 				</div>
@@ -318,10 +317,6 @@
 		line-height: 1.4;
 		letter-spacing: -0.005em;
 		color: var(--text-tertiary);
-	}
-	.field-hint strong {
-		font-weight: 600;
-		color: var(--text-secondary);
 	}
 
 	.toggle {

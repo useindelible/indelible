@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { DashboardConfigItem } from '../dashboard-model';
 
 	interface Props {
@@ -42,7 +43,7 @@
 	class="configure-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label="Configure Home"
+	aria-label={$t('dashboard_config_title')}
 	tabindex="-1"
 	onclick={(event) => {
 		if (event.target === event.currentTarget) onClose();
@@ -53,8 +54,8 @@
 >
 	<div class="configure-popover">
 		<div class="popover-header">
-			<span class="popover-title">Configure Home</span>
-			<button type="button" class="popover-close" aria-label="Close" onclick={onClose}>
+			<span class="popover-title">{$t('dashboard_config_title')}</span>
+			<button type="button" class="popover-close" aria-label={$t('common_close')} onclick={onClose}>
 				<svg
 					viewBox="0 0 24 24"
 					fill="none"
@@ -71,11 +72,12 @@
 		<div class="popover-body">
 			<div class="popover-section">
 				<div class="popover-section-hdr">
-					<span class="popover-section-lbl">Sections</span>
-					<span class="popover-section-hint">Drag to reorder</span>
+					<span class="popover-section-lbl">{$t('dashboard_config_sections')}</span>
+					<span class="popover-section-hint">{$t('dashboard_config_drag_to_reorder')}</span>
 				</div>
 				<div class="config-rows">
 					{#each sections as section, i (section.id)}
+						{@const label = $t(section.labelKey)}
 						<div
 							class="config-row"
 							class:row-off={!section.on}
@@ -92,12 +94,14 @@
 									<div class="drag-dot"></div>
 								{/each}
 							</div>
-							<span class="config-row-lbl">{section.label}</span>
+							<span class="config-row-lbl">{label}</span>
 							<button
 								type="button"
 								class="cfg-check"
 								class:on={section.on}
-								aria-label={section.on ? `Hide ${section.label}` : `Show ${section.label}`}
+								aria-label={$t(section.on ? 'dashboard_config_hide' : 'dashboard_config_show', {
+									values: { label }
+								})}
 								onclick={() => onToggleSection(section.id)}
 							>
 								{#if section.on}
@@ -123,10 +127,11 @@
 
 			<div class="popover-section">
 				<div class="popover-section-hdr">
-					<span class="popover-section-lbl">Content Types</span>
+					<span class="popover-section-lbl">{$t('dashboard_config_content_types')}</span>
 				</div>
 				<div class="ct-rows">
 					{#each types as type, i (type.id)}
+						{@const label = $t(type.labelKey)}
 						<div
 							class="ct-row"
 							class:drag-over={typeOver === i}
@@ -137,13 +142,15 @@
 							ondragend={onTypeDragEnd}
 							role="listitem"
 						>
-							<div class="ct-icon-tile" aria-hidden="true">{type.label.charAt(0)}</div>
-							<span class="ct-row-lbl">{type.label}</span>
+							<div class="ct-icon-tile" aria-hidden="true">{label.charAt(0)}</div>
+							<span class="ct-row-lbl">{label}</span>
 							<button
 								type="button"
 								class="cfg-check"
 								class:on={type.on}
-								aria-label={type.on ? `Hide ${type.label}` : `Show ${type.label}`}
+								aria-label={$t(type.on ? 'dashboard_config_hide' : 'dashboard_config_show', {
+									values: { label }
+								})}
 								onclick={() => onToggleType(type.id)}
 							>
 								{#if type.on}
@@ -168,8 +175,8 @@
 			</div>
 		</div>
 		<div class="popover-footer">
-			<button type="button" class="btn-cancel" onclick={onClose}>Cancel</button>
-			<button type="button" class="btn-apply" onclick={onClose}>Apply</button>
+			<button type="button" class="btn-cancel" onclick={onClose}>{$t('common_cancel')}</button>
+			<button type="button" class="btn-apply" onclick={onClose}>{$t('common_apply')}</button>
 		</div>
 	</div>
 </div>

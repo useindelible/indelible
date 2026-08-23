@@ -6,6 +6,8 @@ import {
 	type ImportUploadResponse
 } from '$lib/api';
 import { getAccessToken } from '$lib/auth-tokens';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 
 type ApiProblem = {
 	detail?: string;
@@ -53,7 +55,7 @@ export async function fetchImportJob(jobId: string): Promise<ImportJobLookupResu
 			message: extractMessage(error, 'Failed to load import job')
 		};
 	} catch {
-		return { status: 'error', httpStatus: 0, message: 'An unexpected error occurred' };
+		return { status: 'error', httpStatus: 0, message: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -73,7 +75,7 @@ export async function fetchRecentImports(
 			)
 		};
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -85,7 +87,7 @@ export async function rollbackImportJob(jobId: string): Promise<ApiResult<void>>
 		}
 		return { success: false, error: extractMessage(error, 'Failed to roll back import') };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -121,7 +123,7 @@ export async function uploadImportFile(
 		const data = (await response.json()) as ImportUploadResponse;
 		return { success: true, data };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }
 
@@ -194,6 +196,6 @@ export async function uploadReadwiseImportFiles(
 		const data = (await response.json()) as ImportUploadResponse;
 		return { success: true, data };
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: get(t)('auth_error_unexpected') };
 	}
 }

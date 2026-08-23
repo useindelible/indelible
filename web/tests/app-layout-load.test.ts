@@ -4,11 +4,15 @@ const { getInstanceStatus } = vi.hoisted(() => ({ getInstanceStatus: vi.fn() }))
 
 let isAuthenticated = false;
 let needsOnboarding = false;
+let user: { locale: string | null } | null = null;
 
 vi.mock('$lib/api/instance', () => ({ getInstanceStatus }));
 
 vi.mock('$lib/stores/auth.svelte', () => ({
 	getAuth: () => ({
+		get user() {
+			return user;
+		},
 		get isAuthenticated() {
 			return isAuthenticated;
 		},
@@ -24,6 +28,12 @@ describe('app layout load', () => {
 	beforeEach(() => {
 		isAuthenticated = false;
 		needsOnboarding = false;
+		user = null;
+		window.localStorage.clear();
+		Object.defineProperty(window.navigator, 'languages', {
+			configurable: true,
+			value: ['fr']
+		});
 		getInstanceStatus.mockReset();
 		getInstanceStatus.mockResolvedValue({ signupsEnabled: false, setupRequired: false });
 	});
@@ -39,6 +49,33 @@ describe('app layout load', () => {
 			} as never)
 		).resolves.toEqual(parentData);
 		expect(getInstanceStatus).not.toHaveBeenCalled();
+	});
+
+	it('reconciles an authenticated profile locale', async () => {
+		isAuthenticated = true;
+		user = { locale: 'fr' };
+
+		await load({
+			parent: async () => ({}),
+			url: new URL('http://localhost/dashboard')
+		} as never);
+
+		expect(document.documentElement.lang).toBe('fr');
+		expect(window.localStorage.getItem('ind.locale')).toBe('fr');
+	});
+
+	it('follows the system when an authenticated profile has no locale', async () => {
+		isAuthenticated = true;
+		user = { locale: null };
+		window.localStorage.setItem('ind.locale', 'en');
+
+		await load({
+			parent: async () => ({}),
+			url: new URL('http://localhost/dashboard')
+		} as never);
+
+		expect(document.documentElement.lang).toBe('fr');
+		expect(window.localStorage.length).toBe(0);
 	});
 
 	it('redirects authenticated new accounts without fetching instance status', async () => {

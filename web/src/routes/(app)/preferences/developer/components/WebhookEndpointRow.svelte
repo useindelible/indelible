@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { WebhookDelivery, WebhookEndpoint } from '$lib/api/webhooks';
 	import { formatTime, lastStatusClass, lastStatusLabel, statusClassFor } from '../developer-model';
+	import { number, t } from '$lib/i18n';
 
 	interface Props {
 		endpoint: WebhookEndpoint;
@@ -44,11 +45,10 @@
 			<div class="ep-name">{endpoint.name}</div>
 		</div>
 		<span class="endpoint-events-count">
-			<strong>{endpoint.events.length}</strong>
-			{endpoint.events.length === 1 ? 'event' : 'events'}
+			{$t('prefs_developer_event_count', { values: { count: endpoint.events.length } })}
 		</span>
-		<span class="status-pill {lastStatusClass(endpoint)}">{lastStatusLabel(endpoint)}</span>
-		<span class="delivery-rail" title="Last 8 deliveries">
+		<span class="status-pill {lastStatusClass(endpoint)}">{$t(lastStatusLabel(endpoint))}</span>
+		<span class="delivery-rail" title={$t('prefs_developer_last_deliveries')}>
 			{#each endpoint.delivery_history as tick, index (`${tick}-${index}`)}
 				<span class="tick {tick}"></span>
 			{/each}
@@ -58,7 +58,7 @@
 	<div class="endpoint-detail">
 		<div class="endpoint-detail-inner">
 			<div class="detail-block">
-				<div class="detail-label">Subscribed events</div>
+				<div class="detail-label">{$t('prefs_developer_subscribed_events')}</div>
 				<div class="pill-row">
 					{#each endpoint.events as event (event)}
 						<span class="event-pill">{event}</span>
@@ -66,7 +66,7 @@
 				</div>
 			</div>
 			<div class="detail-block">
-				<div class="detail-label">Signing secret</div>
+				<div class="detail-label">{$t('prefs_developer_signing_secret')}</div>
 				<div class="secret-row">
 					<input class="input mono" type="text" value={endpoint.secret_preview} readonly />
 					<button
@@ -78,29 +78,40 @@
 							<path d="M3 12a9 9 0 0 1 15-6.7L21 9" />
 							<path d="M21 4v5h-5" />
 						</svg>
-						Rotate
+						{$t('prefs_developer_rotate')}
 					</button>
 				</div>
 			</div>
 			<div class="detail-block">
-				<div class="detail-label">Recent deliveries</div>
+				<div class="detail-label">{$t('prefs_developer_recent_deliveries')}</div>
 				{#if deliveries.length === 0}
-					<div class="deliveries-empty">No deliveries yet. Use "Send test" to fire one.</div>
+					<div class="deliveries-empty">{$t('prefs_developer_no_deliveries')}</div>
 				{:else}
 					<div class="deliveries-mini">
 						{#each deliveries as delivery (delivery.id)}
+							{@const latencyMs = delivery.latency_ms}
 							<div class="delivery">
 								<span class="ts">{formatTime(delivery.attempted_at)}</span>
 								<span class="ev">{delivery.event}</span>
 								<span class="target">{delivery.target}</span>
 								<span class="status {statusClassFor(delivery.status_code)}">
-									<span>{delivery.outcome === 'delivered' ? 'Delivered' : 'Failed'}</span>
+									<span
+										>{$t(
+											delivery.outcome === 'delivered'
+												? 'prefs_developer_delivered'
+												: 'prefs_developer_failed'
+										)}</span
+									>
 									{#if typeof delivery.status_code === 'number'}
 										<span class="status-code">HTTP {delivery.status_code}</span>
 									{/if}
 								</span>
 								<span class="latency">
-									{delivery.latency_ms !== null ? `${delivery.latency_ms}ms` : '-'}
+									{latencyMs != null
+										? $t('prefs_developer_latency_ms', {
+												values: { value: $number(latencyMs) }
+											})
+										: '-'}
 								</span>
 								{#if delivery.error}
 									<span class="delivery-error">{delivery.error}</span>
@@ -113,31 +124,33 @@
 			<div class="endpoint-actions-row">
 				<select
 					class="select test-select"
-					aria-label="Test event"
+					aria-label={$t('prefs_developer_test_event')}
 					value={testEvent}
 					onchange={(event) => onSetTestEvent(endpoint.id, event.currentTarget.value)}
 				>
 					{#each endpoint.events as event (event)}
-						<option value={event}>Send test · {event}</option>
+						<option value={event}
+							>{$t('prefs_developer_send_test_event', { values: { event } })}</option
+						>
 					{/each}
 				</select>
 				<button type="button" class="btn ghost compact" onclick={() => onSendTest(endpoint.id)}>
-					Send test
+					{$t('prefs_developer_send_test')}
 				</button>
 				<span class="spacer"></span>
 				<span class="active-row">
-					Active
+					{$t('prefs_developer_active')}
 					<button
 						type="button"
 						class="toggle"
 						class:on={endpoint.is_active}
 						aria-pressed={endpoint.is_active}
-						aria-label="Toggle active"
+						aria-label={$t('prefs_developer_toggle_active')}
 						onclick={() => onToggleActive(endpoint.id, !endpoint.is_active)}
 					></button>
 				</span>
 				<button type="button" class="btn danger compact" onclick={() => onDelete(endpoint.id)}>
-					Delete
+					{$t('common_delete')}
 				</button>
 			</div>
 		</div>
@@ -237,11 +250,6 @@
 
 	.endpoint-events-count {
 		gap: 6px;
-	}
-
-	.endpoint-events-count strong {
-		color: var(--text-primary);
-		font-weight: 600;
 	}
 
 	.status-pill {

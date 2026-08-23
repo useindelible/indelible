@@ -1,5 +1,8 @@
 import type { WebhookEndpoint } from '$lib/api/webhooks';
 import type { ApiPermissionDto, CreateApiTokenRequest } from '$lib/api/generated/types.gen';
+import { date, time, type MessageKey } from '$lib/i18n';
+import { relativeTime } from '$lib/utils/relative-time';
+import { get } from 'svelte/store';
 
 export type PermissionKey = ApiPermissionDto;
 export type ResourcePermissionKey = 'library' | 'feeds' | 'integrations' | 'webhooks';
@@ -8,16 +11,16 @@ export type ExpiryOption = 'never' | '30' | '90' | '365';
 
 export interface ResourcePermissionGroup {
 	key: ResourcePermissionKey;
-	label: string;
-	desc: string;
+	labelKey: MessageKey;
+	descKey: MessageKey;
 	read: PermissionKey;
 	write: PermissionKey;
 }
 
 export interface IndependentPermissionDef {
 	key: PermissionKey;
-	label: string;
-	desc: string;
+	labelKey: MessageKey;
+	descKey: MessageKey;
 }
 
 export interface WebhookEventGroup {
@@ -44,46 +47,54 @@ export const PERMISSION_CATALOGUE: PermissionKey[] = [
 export const RESOURCE_PERMISSION_GROUPS: ResourcePermissionGroup[] = [
 	{
 		key: 'library',
-		label: 'Library',
-		desc: 'Documents, highlights, notes, tags, collections, search, and imports.',
+		labelKey: 'prefs_developer_resource_library',
+		descKey: 'prefs_developer_resource_library_hint',
 		read: 'library:read',
 		write: 'library:write'
 	},
 	{
 		key: 'feeds',
-		label: 'Feeds',
-		desc: 'Subscriptions, deliveries, email aliases, and email senders.',
+		labelKey: 'prefs_developer_resource_feeds',
+		descKey: 'prefs_developer_resource_feeds_hint',
 		read: 'feeds:read',
 		write: 'feeds:write'
 	},
 	{
 		key: 'integrations',
-		label: 'Integrations',
-		desc: 'Connections, configuration, status, and previews.',
+		labelKey: 'prefs_developer_resource_integrations',
+		descKey: 'prefs_developer_resource_integrations_hint',
 		read: 'integrations:read',
 		write: 'integrations:write'
 	},
 	{
 		key: 'webhooks',
-		label: 'Webhooks',
-		desc: 'Endpoint definitions, delivery history, tests, and rotation.',
+		labelKey: 'prefs_developer_resource_webhooks',
+		descKey: 'prefs_developer_resource_webhooks_hint',
 		read: 'webhooks:read',
 		write: 'webhooks:write'
 	}
 ];
 
 export const INDEPENDENT_PERMISSION_DEFS: IndependentPermissionDef[] = [
-	{ key: 'ai:read', label: 'AI read', desc: 'View stored AI and voice configuration.' },
+	{
+		key: 'ai:read',
+		labelKey: 'prefs_developer_permission_ai_read',
+		descKey: 'prefs_developer_permission_ai_read_hint'
+	},
 	{
 		key: 'ai:write',
-		label: 'AI configure',
-		desc: 'Manage AI configuration, presets, personas, and sessions.'
+		labelKey: 'prefs_developer_permission_ai_configure',
+		descKey: 'prefs_developer_permission_ai_configure_hint'
 	},
-	{ key: 'ai:use', label: 'AI use', desc: 'Invoke models, tests, indexing, and voice generation.' },
+	{
+		key: 'ai:use',
+		labelKey: 'prefs_developer_permission_ai_use',
+		descKey: 'prefs_developer_permission_ai_use_hint'
+	},
 	{
 		key: 'obsidian:sync',
-		label: 'Obsidian sync',
-		desc: 'Export and synchronize highlights, notes, and documents to a vault.'
+		labelKey: 'prefs_developer_permission_obsidian_sync',
+		descKey: 'prefs_developer_permission_obsidian_sync_hint'
 	}
 ];
 
@@ -205,22 +216,13 @@ export function permissionClass(permission: string): string {
 	return 'other';
 }
 
-export function formatRelative(iso: string | null | undefined): string {
-	if (!iso) return 'Never';
-	const ms = Date.now() - new Date(iso).getTime();
-	const seconds = Math.floor(ms / 1000);
-	if (seconds < 60) return `${seconds}s ago`;
-	const minutes = Math.floor(seconds / 60);
-	if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-	const days = Math.floor(hours / 24);
-	return `${days} day${days === 1 ? '' : 's'} ago`;
+export function formatRelative(iso: string | null | undefined): string | null {
+	return relativeTime(iso);
 }
 
 export function formatDate(iso: string | null | undefined): string {
 	if (!iso) return '—';
-	return new Date(iso).toLocaleDateString(undefined, {
+	return get(date)(new Date(iso), {
 		day: '2-digit',
 		month: 'short',
 		year: 'numeric'
@@ -228,7 +230,7 @@ export function formatDate(iso: string | null | undefined): string {
 }
 
 export function formatTime(iso: string): string {
-	return new Date(iso).toLocaleTimeString(undefined, {
+	return get(time)(new Date(iso), {
 		hour: '2-digit',
 		minute: '2-digit',
 		second: '2-digit',
@@ -247,10 +249,10 @@ export function lastStatusClass(endpoint: WebhookEndpoint): 'healthy' | 'failing
 	return endpoint.last_status;
 }
 
-export function lastStatusLabel(endpoint: WebhookEndpoint): string {
-	if (!endpoint.is_active) return 'Paused';
-	if (endpoint.last_status === 'failing') return 'Failing';
-	return 'Healthy';
+export function lastStatusLabel(endpoint: WebhookEndpoint): MessageKey {
+	if (!endpoint.is_active) return 'prefs_developer_status_paused';
+	if (endpoint.last_status === 'failing') return 'prefs_developer_status_failing';
+	return 'prefs_developer_status_healthy';
 }
 
 export function groupCount(events: string[], selected: Set<string>): number {

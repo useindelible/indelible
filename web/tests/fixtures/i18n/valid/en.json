@@ -1,0 +1,4 @@
+{
+	"a": "Hello {name}",
+	"b": "{count, plural, one {# item} other {# items}}"
+}

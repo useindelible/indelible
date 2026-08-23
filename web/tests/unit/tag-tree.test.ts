@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TagResponse } from '$lib/api/generated/types.gen';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 import {
 	buildTagTree,
 	collectDescendantIds,
@@ -25,6 +27,8 @@ function tag(overrides: Partial<TagResponse> = {}): TagResponse {
 }
 
 describe('tag tree model', () => {
+	const translate = get(t);
+
 	it('builds a depth-first tree that respects expanded parents', () => {
 		const tags = [
 			tag({ id: 'a', name: 'A', item_count: 1 }),
@@ -52,9 +56,9 @@ describe('tag tree model', () => {
 		const rolledUp = rolledUpItemCounts(tags);
 
 		expect(rolledUp.get('a')).toBe(4);
-		expect(getTagCountLabel(tags[0], 'document', rolledUp)).toBe('4 items');
-		expect(getTagCountLabel(tags[0], 'highlight', rolledUp)).toBe('2 highlights');
-		expect(getTagCountLabel(tags[0], 'all', rolledUp)).toBe('6 items');
+		expect(getTagCountLabel(translate, tags[0], 'document', rolledUp)).toBe('4 items');
+		expect(getTagCountLabel(translate, tags[0], 'highlight', rolledUp)).toBe('2 highlights');
+		expect(getTagCountLabel(translate, tags[0], 'all', rolledUp)).toBe('6 items');
 	});
 
 	it('excludes self and descendants from parent options', () => {

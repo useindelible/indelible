@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import * as apiSdk from '$lib/api';
 	import type { FeedDeliveryResponse, DocumentListEntry } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import type { TriageTab } from '$lib/stores/library.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import ItemList from '$lib/components/library/ItemList.svelte';
@@ -29,10 +30,10 @@
 	let selectedId = $state<string | null>(null);
 	let markingAllSeen = $state(false);
 
-	const stateOptions = [
-		{ value: 'unseen' as StateFilter, label: 'Unseen' },
-		{ value: 'seen' as StateFilter, label: 'Seen' }
-	] as const;
+	const stateOptions = $derived([
+		{ value: 'unseen' as StateFilter, label: $t('feed_unseen') },
+		{ value: 'seen' as StateFilter, label: $t('feed_seen') }
+	]);
 
 	$effect(() => {
 		const filter = stateFilter;
@@ -179,7 +180,7 @@
 			type="button"
 			class="menu-btn"
 			onclick={() => vp.openMobileNav()}
-			aria-label="Open navigation"
+			aria-label={$t('common_open_navigation')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -201,7 +202,7 @@
 				<path d="M4 4a16 16 0 0 1 16 16" />
 				<circle cx="5" cy="19" r="1" fill="currentColor" stroke="none" />
 			</svg>
-			<span class="feed-title">Feed</span>
+			<span class="feed-title">{$t('feed_title')}</span>
 		</div>
 
 		<div class="header-right">
@@ -218,7 +219,7 @@
 					disabled={markingAllSeen || loading || items.length === 0}
 					onclick={handleMarkAllSeen}
 				>
-					{markingAllSeen ? 'Marking…' : 'Mark all seen'}
+					{markingAllSeen ? $t('feed_marking') : $t('feed_mark_all_seen')}
 				</button>
 			{/if}
 			{#if vp.isCompact && !vp.isMobile}
@@ -227,8 +228,10 @@
 					class="panel-toggle"
 					class:active={compactDetailOpen}
 					onclick={() => (compactDetailOpen = !compactDetailOpen)}
-					aria-label={compactDetailOpen ? 'Hide detail panel' : 'Show detail panel'}
-					title={compactDetailOpen ? 'Hide detail panel' : 'Show detail panel'}
+					aria-label={$t(
+						compactDetailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel'
+					)}
+					title={$t(compactDetailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel')}
 				>
 					<svg
 						viewBox="0 0 20 20"
@@ -277,7 +280,7 @@
 						type="button"
 						class="m-back"
 						onclick={() => (compactDetailOpen = false)}
-						aria-label="Back to list"
+						aria-label={$t('common_back_to_list')}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -291,7 +294,7 @@
 							<polyline points="15 18 9 12 15 6" />
 						</svg>
 					</button>
-					<span class="m-dtitle">{selectedItem?.title ?? 'Details'}</span>
+					<span class="m-dtitle">{selectedItem?.title ?? $t('common_details')}</span>
 				</div>
 				<DetailPanel item={selectedItem} />
 			</div>

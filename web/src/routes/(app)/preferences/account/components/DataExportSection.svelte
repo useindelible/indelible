@@ -1,18 +1,17 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 </script>
 
-<SettingsGroup title="Export your data">
+<SettingsGroup title={$t('account_export_title')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
 				<div class="label">
-					Download your full archive
-					<span class="badge coming">Coming soon</span>
+					{$t('account_export_archive')}
+					<span class="badge coming">{$t('common_coming_soon')}</span>
 				</div>
-				<div class="hint">
-					A single ZIP with every saved item, highlight, note, and collection. Not available yet.
-				</div>
+				<div class="hint">{$t('account_export_hint')}</div>
 			</div>
 			<div>
 				<button type="button" class="btn ghost" disabled>
@@ -21,7 +20,7 @@
 						<path d="M7 10l5 5 5-5" />
 						<path d="M5 21h14" />
 					</svg>
-					Request archive
+					{$t('account_export_request')}
 				</button>
 			</div>
 		</div>

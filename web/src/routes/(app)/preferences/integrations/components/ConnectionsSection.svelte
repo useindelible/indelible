@@ -3,8 +3,10 @@
 	import IntegrationConnectionCard from '$lib/components/integrations/IntegrationConnectionCard.svelte';
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
 	import type { HubConnectionStatus, StoreLink, SyncState } from '../integrations-hub-model';
-	import { notionDatabaseLabel, relativeTime } from '../integrations-hub-model';
+	import { notionDatabaseLabel } from '../integrations-hub-model';
 	import EmailForwardingCard from './EmailForwardingCard.svelte';
+	import { t } from '$lib/i18n';
+	import { relativeTime } from '$lib/utils/relative-time';
 
 	interface Props {
 		connectionsLoading: boolean;
@@ -55,9 +57,12 @@
 	}: Props = $props();
 </script>
 
-<SettingsGroup title="Connections" meta="Import, export, and forwarding connections">
+<SettingsGroup
+	title={$t('integrations_hub_connections')}
+	meta={$t('integrations_hub_connections_hint')}
+>
 	{#if connectionsLoading}
-		<p class="zone-meta">Loading connections…</p>
+		<p class="zone-meta">{$t('integrations_hub_loading_connections')}</p>
 	{:else if connectionsError}
 		<p class="zone-meta error" role="alert">{connectionsError}</p>
 	{:else}
@@ -72,16 +77,16 @@
 
 			<div class="connections-grid">
 				<IntegrationConnectionCard
-					title="Browser Extension"
-					tagline="Capture anything on the web in one click."
-					statusLabel="Installed"
+					title={$t('integrations_hub_browser_extension')}
+					tagline={$t('integrations_hub_browser_tagline')}
+					statusLabel={$t('integrations_hub_installed')}
 					statusVariant="active"
 					statusCheck
 					testId="browser-connection-card"
 				>
 					{#snippet body()}
 						<div class="moment">
-							<div class="moment-eyebrow">Capture from anywhere</div>
+							<div class="moment-eyebrow">{$t('integrations_hub_capture_anywhere')}</div>
 							<div class="shortcut-list">
 								<div class="shortcut-item">
 									<span class="shortcut-icon">
@@ -91,8 +96,8 @@
 										</svg>
 									</span>
 									<span class="shortcut-meta">
-										<span class="shortcut-title">Save page</span>
-										<span class="shortcut-sub">Save the full page to your library</span>
+										<span class="shortcut-title">{$t('integrations_hub_save_page')}</span>
+										<span class="shortcut-sub">{$t('integrations_hub_save_page_hint')}</span>
 									</span>
 									<span class="shortcut-keys"><kbd>⌘</kbd><kbd>S</kbd></span>
 								</div>
@@ -104,14 +109,14 @@
 										</svg>
 									</span>
 									<span class="shortcut-meta">
-										<span class="shortcut-title">Add note</span>
-										<span class="shortcut-sub">Add a quick note or thought</span>
+										<span class="shortcut-title">{$t('integrations_hub_add_note')}</span>
+										<span class="shortcut-sub">{$t('integrations_hub_add_note_hint')}</span>
 									</span>
 									<span class="shortcut-keys"><kbd>N</kbd></span>
 								</div>
 							</div>
 							<div class="works-on">
-								<span>Works on</span>
+								<span>{$t('integrations_hub_works_on')}</span>
 								<span class="browsers">
 									<span class="browser-glyph" aria-label="Chrome">
 										<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -140,22 +145,22 @@
 										</svg>
 									</span>
 								</span>
-								<span class="more-pill">+ more</span>
+								<span class="more-pill">{$t('integrations_hub_more')}</span>
 							</div>
 						</div>
 					{/snippet}
 					{#snippet actions()}
 						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- browser store URLs are external install links. -->
 						<a class="btn ghost compact" href={extStore.href} target="_blank" rel="noopener">
-							{extStore.label}
+							{$t(extStore.labelKey)}
 						</a>
 					{/snippet}
 				</IntegrationConnectionCard>
 
 				<IntegrationConnectionCard
 					title="Notion"
-					tagline="Sync highlights into a Notion database."
-					statusLabel={notionStatus.label}
+					tagline={$t('integrations_hub_notion_tagline')}
+					statusLabel={$t(notionStatus.labelKey)}
 					statusVariant={notionStatus.variant}
 					statusPulse={notionStatus.pulse}
 					statusCheck={notionStatus.check}
@@ -170,29 +175,29 @@
 								{#if dbLabel}<div class="moment-eyebrow">{dbLabel}</div>{/if}
 								{#if notionConnection.last_sync_at}
 									<div class="moment-stat">
-										Last sync {relativeTime(notionConnection.last_sync_at)}
+										{$t('integrations_hub_last_sync_time', {
+											values: { time: relativeTime(notionConnection.last_sync_at) ?? '' }
+										})}
 									</div>
 								{:else}
-									<div class="moment-muted">No sync yet — runs on the next save.</div>
+									<div class="moment-muted">{$t('integrations_hub_no_sync_notion')}</div>
 								{/if}
 							{:else if notionAvailable}
 								<div class="moment-muted">
-									Notion's authorization page grants access; it does not choose a destination.
-									Indelible creates its managed database in Notion Private on the first export. You
-									can move it afterward.
+									{$t('integrations_notion_empty_hint')}
 								</div>
 							{:else}
 								<div class="moment-muted">
-									Notion is not configured on this server. An administrator must set
-									NOTION_CLIENT_ID, NOTION_CLIENT_SECRET, NOTION_REDIRECT_URL and
-									AUTH_CREDENTIAL_KEY to enable it.
+									{$t('integrations_notion_unavailable')}
 								</div>
 							{/if}
 						</div>
 					{/snippet}
 					{#snippet actions()}
 						{#if notionConnection}
-							<button type="button" class="btn ghost compact" onclick={onOpenNotion}>Manage</button>
+							<button type="button" class="btn ghost compact" onclick={onOpenNotion}
+								>{$t('integrations_hub_manage')}</button
+							>
 							<button
 								type="button"
 								class="btn ghost compact"
@@ -200,15 +205,15 @@
 								disabled={syncStateByConnection[notionConnection.id] === 'pending'}
 							>
 								{syncStateByConnection[notionConnection.id] === 'pending'
-									? 'Syncing…'
-									: 'Force resync'}
+									? $t('integrations_notion_syncing')
+									: $t('integrations_hub_force_resync')}
 							</button>
 							<button
 								type="button"
 								class="btn ghost compact danger"
 								onclick={() => onDisconnect(notionConnection)}
 							>
-								Disconnect
+								{$t('integrations_disconnect')}
 							</button>
 						{:else}
 							<button
@@ -217,7 +222,7 @@
 								disabled={!notionAvailable}
 								onclick={onStartNotion}
 							>
-								Connect Notion
+								{$t('integrations_notion_connect')}
 							</button>
 						{/if}
 					{/snippet}
@@ -225,8 +230,8 @@
 
 				<IntegrationConnectionCard
 					title="Obsidian"
-					tagline="Mirror highlights to your vault via PAT."
-					statusLabel={obsidianStatus.label}
+					tagline={$t('integrations_hub_obsidian_tagline')}
+					statusLabel={$t(obsidianStatus.labelKey)}
 					statusVariant={obsidianStatus.variant}
 					statusCheck={obsidianStatus.check}
 					testId="obsidian-connection-card"
@@ -235,20 +240,24 @@
 						<div class="moment">
 							{#if obsidianConnection?.last_sync_at}
 								<div class="moment-stat">
-									Last sync {relativeTime(obsidianConnection.last_sync_at)}
+									{$t('integrations_hub_last_sync_time', {
+										values: { time: relativeTime(obsidianConnection.last_sync_at) ?? '' }
+									})}
 								</div>
 							{:else if obsidianConnection}
-								<div class="moment-muted">No sync yet — run the plugin from Obsidian to start.</div>
+								<div class="moment-muted">{$t('integrations_hub_no_sync_obsidian')}</div>
 							{:else}
 								<div class="moment-muted">
-									Set up Obsidian export to mirror highlights into your vault.
+									{$t('integrations_hub_obsidian_setup_hint')}
 								</div>
 							{/if}
 						</div>
 					{/snippet}
 					{#snippet actions()}
 						<button type="button" class="btn ghost compact" onclick={onOpenObsidian}>
-							{obsidianConnection ? 'Manage' : 'Connect Obsidian'}
+							{obsidianConnection
+								? $t('integrations_hub_manage')
+								: $t('integrations_hub_connect_obsidian')}
 						</button>
 						{#if obsidianConnection}
 							<button
@@ -256,7 +265,7 @@
 								class="btn ghost compact danger"
 								onclick={() => onDisconnect(obsidianConnection)}
 							>
-								Disconnect
+								{$t('integrations_disconnect')}
 							</button>
 						{/if}
 					{/snippet}
@@ -264,8 +273,8 @@
 			</div>
 
 			<div class="coming-soon-strip">
-				<span class="label">Coming soon</span>
-				<span class="chip">Send to Kindle</span>
+				<span class="label">{$t('common_coming_soon')}</span>
+				<span class="chip">{$t('integrations_hub_send_to_kindle')}</span>
 			</div>
 		</div>
 	{/if}

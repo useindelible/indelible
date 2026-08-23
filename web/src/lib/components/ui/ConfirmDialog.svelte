@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 
 	type Variant = 'primary' | 'destructive';
 
@@ -24,8 +25,8 @@
 		open,
 		title,
 		message,
-		confirmLabel = 'Confirm',
-		cancelLabel = 'Cancel',
+		confirmLabel,
+		cancelLabel,
 		variant = 'destructive',
 		busy = false,
 		errorMessage = null,
@@ -101,10 +102,10 @@
 					{@render actions()}
 				{:else}
 					<Button variant="tertiary" size="sm" onclick={handleCancel} disabled={busy}>
-						{cancelLabel}
+						{cancelLabel ?? $t('common_cancel')}
 					</Button>
 					<Button {variant} size="sm" onclick={handleConfirm} loading={busy}>
-						{confirmLabel}
+						{confirmLabel ?? $t('common_confirm')}
 					</Button>
 				{/if}
 			</div>

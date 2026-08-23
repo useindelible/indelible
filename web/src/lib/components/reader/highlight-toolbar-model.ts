@@ -1,6 +1,7 @@
 import type { HighlightWithNoteResponse, TagResponse } from '$lib/api/generated/types.gen';
 import type { HighlightRange } from './highlight-utils';
 import type { PdfHighlightData, PdfLocator } from './book/pdf/pdf-highlight-overlay';
+import type { MessageKey } from '$lib/i18n';
 
 export interface HighlightColorOption {
 	name: string;
@@ -14,6 +15,14 @@ export const HIGHLIGHT_COLORS: HighlightColorOption[] = [
 	{ name: 'pink', hex: '#FF2D55' },
 	{ name: 'purple', hex: '#AF52DE' }
 ];
+
+export const HIGHLIGHT_COLOR_LABEL_KEYS: Record<string, MessageKey> = {
+	blue: 'tag_color_blue',
+	green: 'tag_color_green',
+	pink: 'tag_color_pink',
+	purple: 'tag_color_purple',
+	yellow: 'tag_color_yellow'
+};
 
 export function normalizeTagName(value: string): string {
 	return value.trim().toLowerCase();

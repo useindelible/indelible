@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -33,19 +34,17 @@
 		data-testid="rollback-dialog"
 	>
 		<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rollback-dialog-title">
-			<h2 id="rollback-dialog-title" class="title">Roll back import?</h2>
-			<p class="body">
-				Items are soft-deleted and can be recovered within 30 days from <strong
-					>Settings → Data</strong
-				>. This action cannot be undone after 30 days.
-			</p>
+			<h2 id="rollback-dialog-title" class="title">{$t('imports_rollback_question')}</h2>
+			<p class="body">{$t('imports_rollback_description')}</p>
 			{#if errorMessage}
 				<p class="error" role="alert">{errorMessage}</p>
 			{/if}
 			<div class="actions">
-				<Button variant="tertiary" size="sm" onclick={onCancel} disabled={busy}>Cancel</Button>
+				<Button variant="tertiary" size="sm" onclick={onCancel} disabled={busy}
+					>{$t('common_cancel')}</Button
+				>
 				<Button variant="destructive" size="sm" loading={busy} onclick={onConfirm}>
-					Roll back
+					{$t('imports_rollback')}
 				</Button>
 			</div>
 		</div>

@@ -1,5 +1,6 @@
 import * as apiSdk from '$lib/api';
 import type { DocumentListEntry, DocumentReaderAssetResponse } from '$lib/api';
+import type { MessageKey, Translate, TranslateOptions } from '$lib/i18n';
 
 import { shouldReprocessReaderPreparation } from './reader-page-model';
 
@@ -13,11 +14,13 @@ export class ReaderRetryController {
 	#awaitingQueuedResult = false;
 	#requestEpoch = 0;
 
+	constructor(private readonly translate: Translate) {}
+
 	get label(): string {
-		if (this.state === 'submitting') return 'Queuing...';
-		if (this.state === 'queued') return 'Queued';
-		if (this.state === 'cooldown') return 'Cooling down';
-		return 'Retry';
+		if (this.state === 'submitting') return this.translate('reader_retry_queuing');
+		if (this.state === 'queued') return this.translate('reader_retry_status_queued');
+		if (this.state === 'cooldown') return this.translate('reader_retry_cooling_down');
+		return this.translate('reader_retry');
 	}
 
 	get disabled(): boolean {
@@ -28,7 +31,7 @@ export class ReaderRetryController {
 		if (!ready) return;
 		if (this.#awaitingQueuedResult) {
 			this.#awaitingQueuedResult = false;
-			this.outcome = 'Readable content is ready.';
+			this.outcome = this.translate('reader_retry_outcome_ready');
 		}
 		if (this.state !== 'idle') {
 			this.clearCooldown();
@@ -59,20 +62,18 @@ export class ReaderRetryController {
 				if (!data) throw new Error('Reprocess response was empty');
 				if (data.queued) {
 					this.#awaitingQueuedResult = true;
-					this.hold('queued', 'Reprocessing queued.', 5 * 60);
+					this.hold('queued', 'reader_retry_queued', 5 * 60);
 				} else if (data.retry_after_seconds) {
-					this.hold(
-						'cooldown',
-						`Retry available in ${data.retry_after_seconds} seconds.`,
-						data.retry_after_seconds
-					);
+					this.hold('cooldown', 'reader_retry_available', data.retry_after_seconds, {
+						values: { seconds: data.retry_after_seconds }
+					});
 				} else {
-					this.hold('queued', 'Reprocessing is already running.', 30);
+					this.hold('queued', 'reader_retry_already_running', 30);
 				}
 			} catch {
 				if (requestEpoch !== this.#requestEpoch) return;
 				this.state = 'idle';
-				this.error = 'Could not queue reprocessing. Try again.';
+				this.error = this.translate('reader_retry_error');
 				return;
 			}
 		}
@@ -93,10 +94,15 @@ export class ReaderRetryController {
 		this.reset();
 	}
 
-	private hold(state: 'queued' | 'cooldown', status: string, retryAfterSeconds: number) {
+	private hold(
+		state: 'queued' | 'cooldown',
+		statusKey: MessageKey,
+		retryAfterSeconds: number,
+		options?: TranslateOptions
+	) {
 		this.clearCooldown();
 		this.state = state;
-		this.status = status;
+		this.status = this.translate(statusKey, options);
 		this.#cooldownTimer = setTimeout(() => {
 			this.state = 'idle';
 			this.status = null;

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		onDisconnect: () => void;
 	}
@@ -7,17 +9,18 @@
 </script>
 
 <section class="group">
-	<div class="group-label">Danger zone</div>
+	<div class="group-label">{$t('integrations_notion_danger_zone')}</div>
 	<div class="group-card danger">
 		<div class="danger-card">
 			<div class="label-block">
-				<div class="label">Disconnect from Notion</div>
+				<div class="label">{$t('integrations_notion_disconnect_title')}</div>
 				<div class="hint">
-					Stops all future syncs and forgets the workspace credentials. Documents already in Notion
-					stay in place.
+					{$t('integrations_notion_disconnect_hint')}
 				</div>
 			</div>
-			<button class="btn danger" type="button" onclick={onDisconnect}>Disconnect</button>
+			<button class="btn danger" type="button" onclick={onDisconnect}
+				>{$t('integrations_disconnect')}</button
+			>
 		</div>
 	</div>
 </section>

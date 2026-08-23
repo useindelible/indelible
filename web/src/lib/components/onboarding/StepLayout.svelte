@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ProgressBar from '$lib/components/onboarding/ProgressBar.svelte';
@@ -6,7 +7,7 @@
 	let {
 		title,
 		description = '',
-		continueLabel = 'Continue',
+		continueLabel,
 		showSkip = false,
 		showContinue = true,
 		variant = 'default',
@@ -89,11 +90,13 @@
 				loading={submitting}
 				onclick={onContinue}
 			>
-				{continueLabel}
+				{continueLabel ?? $t('common_continue')}
 			</Button>
 		{/if}
 		{#if showSkip}
-			<button class="btn-secondary" disabled={submitting} onclick={onSkip}> Skip </button>
+			<button class="btn-secondary" disabled={submitting} onclick={onSkip}
+				>{$t('onboarding_skip')}</button
+			>
 		{/if}
 	</div>
 

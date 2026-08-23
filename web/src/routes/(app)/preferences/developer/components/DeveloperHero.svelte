@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
+	import { number, t } from '$lib/i18n';
 
 	interface Props {
 		tokenCount: number;
@@ -14,23 +15,20 @@
 		<div>
 			<div class="hero-eyebrow">
 				<span class="dot"></span>
-				<span>Developer · Tokens &amp; Webhooks</span>
+				<span>{$t('prefs_developer_eyebrow')}</span>
 			</div>
-			<h1 class="hero-title">Wire Indelible<br />into your stack.</h1>
-			<p class="hero-sub">
-				PATs limit inbound API access through explicit permissions. Webhook deliveries are outbound
-				and HMAC-signed with endpoint secrets.
-			</p>
+			<h1 class="hero-title">{$t('prefs_developer_hero_title')}</h1>
+			<p class="hero-sub">{$t('prefs_developer_hero_description')}</p>
 		</div>
 
 		<div class="hero-stats">
 			<div class="hero-stat">
-				<div class="num">{tokenCount}</div>
-				<div class="lbl">Tokens</div>
+				<div class="num">{$number(tokenCount)}</div>
+				<div class="lbl">{$t('prefs_developer_tokens')}</div>
 			</div>
 			<div class="hero-stat">
-				<div class="num">{endpointCount}</div>
-				<div class="lbl">Endpoints</div>
+				<div class="num">{$number(endpointCount)}</div>
+				<div class="lbl">{$t('prefs_developer_endpoints')}</div>
 			</div>
 		</div>
 	</div>

@@ -3,6 +3,7 @@ import { getAuth } from '$lib/stores/auth.svelte';
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoadEvent } from './$types';
 import { getInstanceStatus } from '$lib/api/instance';
+import { applyProfileLocale } from '$lib/i18n';
 
 export async function load({ parent, url }: LayoutLoadEvent) {
 	const parentData = await parent();
@@ -22,6 +23,8 @@ export async function load({ parent, url }: LayoutLoadEvent) {
 	if (redirectPath) {
 		redirect(302, redirectPath);
 	}
+
+	await applyProfileLocale(auth.user ? (auth.user.locale ?? null) : undefined);
 
 	return parentData;
 }

@@ -2,6 +2,7 @@
 	import * as apiSdk from '$lib/api';
 	import type { DocumentListEntry } from '$lib/api';
 	import { fetchAllPages } from '$lib/api/pagination';
+	import { t } from '$lib/i18n';
 	import { getSidebar } from '$lib/stores/sidebar.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import TrashItemRow from '$lib/components/trash/TrashItemRow.svelte';
@@ -36,7 +37,7 @@
 				})
 			);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load trash';
+			error = e instanceof Error ? e.message : $t('trash_error_load');
 		} finally {
 			loading = false;
 		}
@@ -77,7 +78,7 @@
 			showEmptyDialog = false;
 			await sidebar.refreshTrashCount();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to empty trash';
+			error = e instanceof Error ? e.message : $t('trash_error_empty');
 		} finally {
 			emptying = false;
 		}
@@ -97,7 +98,7 @@
 			<line x1="12" y1="9" x2="12" y2="13" />
 			<line x1="12" y1="17" x2="12.01" y2="17" />
 		</svg>
-		<span>Items in Trash are permanently deleted after 30 days.</span>
+		<span>{$t('trash_retention_notice')}</span>
 	</div>
 
 	<div class="trash-header">
@@ -105,7 +106,7 @@
 			type="button"
 			class="menu-btn"
 			onclick={() => vp.openMobileNav()}
-			aria-label="Open navigation"
+			aria-label={$t('common_open_navigation')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -126,7 +127,7 @@
 				<polyline points="3 6 5 6 21 6" />
 				<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 			</svg>
-			Trash
+			{$t('trash_title')}
 		</div>
 		{#if items.length > 0}
 			<button
@@ -144,7 +145,7 @@
 					<line x1="10" y1="11" x2="10" y2="17" />
 					<line x1="14" y1="11" x2="14" y2="17" />
 				</svg>
-				Empty Trash
+				{$t('trash_empty')}
 			</button>
 		{/if}
 	</div>
@@ -154,7 +155,7 @@
 	{:else if loading}
 		<div class="loading-state">
 			<span class="spinner" aria-hidden="true"></span>
-			<span>Loading...</span>
+			<span>{$t('common_loading')}</span>
 		</div>
 	{:else if items.length === 0}
 		<div class="empty-state">
@@ -170,7 +171,7 @@
 				<polyline points="3 6 5 6 21 6" />
 				<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 			</svg>
-			<p>Trash is empty</p>
+			<p>{$t('trash_empty_state')}</p>
 		</div>
 	{:else}
 		<div class="trash-list">
@@ -185,9 +186,7 @@
 				/>
 			{/each}
 		</div>
-		<div class="item-count">
-			{items.length} item{items.length !== 1 ? 's' : ''}
-		</div>
+		<div class="item-count">{$t('trash_item_count', { values: { count: items.length } })}</div>
 	{/if}
 </div>
 

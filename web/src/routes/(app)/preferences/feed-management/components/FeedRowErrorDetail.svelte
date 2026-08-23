@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Feed } from '../feed-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		feed: Feed;
@@ -23,7 +24,7 @@
 				</svg>
 			</div>
 			<div class="error-body">
-				<div class="error-title">Feed unreachable</div>
+				<div class="error-title">{$t('feed_management_unreachable')}</div>
 				<div class="error-msg">{feed.errorMessage}</div>
 			</div>
 			<div class="error-actions">
@@ -32,10 +33,10 @@
 						<path d="M3 7v6h6" />
 						<path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
 					</svg>
-					Retry now
+					{$t('feed_management_retry_now')}
 				</button>
 				<button type="button" class="btn ghost compact" onclick={() => onToggleFeed(feed.id)}>
-					Pause
+					{$t('feed_management_pause')}
 				</button>
 			</div>
 		</div>

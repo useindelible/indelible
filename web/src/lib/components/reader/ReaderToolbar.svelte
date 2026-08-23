@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { DocumentListEntry } from '$lib/api';
 	import type { ViewTab } from './ViewTabs.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -65,19 +66,19 @@
 		ttsActive = false,
 		onTtsToggle,
 		onMenuClick,
-		menuAriaLabel = 'Open navigation'
+		menuAriaLabel
 	}: Props = $props();
 
-	const tabLabels: Record<ViewTab, string> = {
-		reader: 'Reader',
-		original: 'Original',
-		pdf: 'PDF',
-		screenshot: 'Screenshot'
+	const tabLabels: Record<ViewTab, MessageKey> = {
+		reader: 'reader_view_reader',
+		original: 'reader_view_original',
+		pdf: 'reader_view_pdf',
+		screenshot: 'reader_view_screenshot'
 	};
 
 	const allTabs: ViewTab[] = ['reader', 'original', 'pdf', 'screenshot'];
 
-	const activeTabLabel = $derived(activeTab ? (tabLabels[activeTab] ?? 'Reader') : 'Reader');
+	const activeTabLabel = $derived($t(activeTab ? tabLabels[activeTab] : 'reader_view_reader'));
 	const canSwitch = $derived((availableTabs?.length ?? 0) > 1);
 
 	let showViewDropdown = $state(false);
@@ -101,7 +102,7 @@
 			<button
 				type="button"
 				class="toolbar-btn menu-btn"
-				aria-label={menuAriaLabel}
+				aria-label={menuAriaLabel ?? $t('reader_open_navigation')}
 				onclick={onMenuClick}
 			>
 				<svg
@@ -124,7 +125,7 @@
 				type="button"
 				class="toolbar-btn"
 				class:accent-text={leftPanelOpen}
-				aria-label={leftPanelOpen ? 'Hide sidebar' : 'Show sidebar'}
+				aria-label={$t(leftPanelOpen ? 'reader_hide_sidebar' : 'reader_show_sidebar')}
 				onclick={onLeftPanelToggle}
 			>
 				<svg
@@ -140,7 +141,12 @@
 				</svg>
 			</button>
 		{/if}
-		<button type="button" class="toolbar-btn" aria-label="Back to library" onclick={onBack}>
+		<button
+			type="button"
+			class="toolbar-btn"
+			aria-label={$t('reader_back_to_library')}
+			onclick={onBack}
+		>
 			<svg
 				viewBox="0 0 24 24"
 				fill="none"
@@ -156,7 +162,7 @@
 			<button
 				type="button"
 				class="toolbar-btn pn-btn"
-				aria-label="Previous item"
+				aria-label={$t('reader_previous_item')}
 				disabled={!hasPrev}
 				onclick={onPrev}
 			>
@@ -174,7 +180,7 @@
 			<button
 				type="button"
 				class="toolbar-btn pn-btn"
-				aria-label="Next item"
+				aria-label={$t('reader_next_item')}
 				disabled={!hasNext}
 				onclick={onNext}
 			>
@@ -198,7 +204,7 @@
 					type="button"
 					class="view-pill"
 					class:no-switch={!canSwitch}
-					aria-label="Switch view"
+					aria-label={$t('reader_switch_view')}
 					aria-haspopup="listbox"
 					aria-expanded={showViewDropdown}
 					onclick={() => {
@@ -224,7 +230,7 @@
 				</button>
 
 				{#if showViewDropdown}
-					<div class="view-dropdown-menu" role="listbox" aria-label="View options">
+					<div class="view-dropdown-menu" role="listbox" aria-label={$t('reader_view_options')}>
 						{#each allTabs as tab (tab)}
 							{@const isAvailable = availableTabs.includes(tab)}
 							{@const isActive = tab === activeTab}
@@ -258,7 +264,7 @@
 								{:else}
 									<span class="view-check-gap" aria-hidden="true"></span>
 								{/if}
-								{tabLabels[tab]}
+								{$t(tabLabels[tab])}
 							</button>
 						{/each}
 					</div>
@@ -287,7 +293,7 @@
 		<button
 			type="button"
 			class="toolbar-btn aa-btn"
-			aria-label="Typography settings"
+			aria-label={$t('reader_typography_settings')}
 			bind:this={aaButtonEl}
 			onclick={onAaClick}
 		>
@@ -298,7 +304,7 @@
 			<button
 				type="button"
 				class="toolbar-btn bookmark-active"
-				aria-label="Add bookmark"
+				aria-label={$t('reader_add_bookmark')}
 				onclick={onBookmarkCreate}
 			>
 				<svg
@@ -317,7 +323,7 @@
 				type="button"
 				class="toolbar-btn"
 				class:bookmark-active={isFavorite}
-				aria-label={isFavorite ? 'Remove bookmark' : 'Bookmark'}
+				aria-label={$t(isFavorite ? 'reader_remove_bookmark' : 'reader_bookmark')}
 				onclick={onBookmark}
 			>
 				<svg
@@ -338,7 +344,7 @@
 				type="button"
 				class="toolbar-btn"
 				class:accent-text={detailPanelOpen}
-				aria-label={detailPanelOpen ? 'Hide info panel' : 'Show info panel'}
+				aria-label={$t(detailPanelOpen ? 'reader_hide_info_panel' : 'reader_show_info_panel')}
 				onclick={onDetailPanelToggle}
 			>
 				<svg
@@ -360,7 +366,7 @@
 				type="button"
 				class="toolbar-btn"
 				class:tts-active={ttsActive}
-				aria-label={ttsActive ? 'Close listen mode' : 'Listen to article'}
+				aria-label={$t(ttsActive ? 'reader_close_listen_mode' : 'reader_listen_to_article')}
 				aria-pressed={ttsActive}
 				onclick={onTtsToggle}
 			>
@@ -387,7 +393,7 @@
 				disabled={savingToLibrary}
 				onclick={onSaveToLibrary}
 			>
-				{savingToLibrary ? 'Saving...' : 'Save'}
+				{savingToLibrary ? $t('common_saving') : $t('common_save')}
 			</button>
 		{/if}
 	</div>

@@ -3,6 +3,12 @@ import * as api from '$lib/api';
 import { getSidebar } from '$lib/stores/sidebar.svelte';
 import type { TagResponse, DocumentListEntry, HighlightResponse } from '$lib/api';
 import { fetchAllPages } from '$lib/api/pagination';
+import { t, type MessageKey } from '$lib/i18n';
+import { get } from 'svelte/store';
+
+function message(key: MessageKey): string {
+	return get(t)(key);
+}
 
 export type TagScope = 'all' | 'document' | 'highlight';
 export type TagSort = 'name_asc' | 'name_desc' | 'item_count' | 'date_created';
@@ -85,7 +91,7 @@ async function loadAllTags(): Promise<void> {
 	try {
 		allTags = await fetchTags();
 	} catch {
-		fetchError = 'Failed to load tags';
+		fetchError = message('tag_error_load_all');
 	} finally {
 		loading = false;
 	}
@@ -104,7 +110,7 @@ async function loadTag(id: string): Promise<void> {
 		}
 	} catch {
 		currentTag = null;
-		fetchError = 'Failed to load tag';
+		fetchError = message('tag_error_load');
 	} finally {
 		loading = false;
 	}
@@ -130,7 +136,7 @@ async function loadTagItems(tagId: string, reset = false): Promise<void> {
 			itemsCursor = resp.data.page?.next_cursor ?? undefined;
 		}
 	} catch {
-		fetchError = 'Failed to load tag items';
+		fetchError = message('tag_error_load_items');
 	} finally {
 		itemsLoading = false;
 		itemsLoadingMore = false;
@@ -171,7 +177,7 @@ async function loadTagHighlights(tagId: string, reset = false): Promise<void> {
 			highlightsCursor = resp.data.page?.next_cursor ?? undefined;
 		}
 	} catch {
-		fetchError = 'Failed to load tag highlights';
+		fetchError = message('tag_error_load_highlights');
 	} finally {
 		highlightsLoading = false;
 		highlightsLoadingMore = false;
@@ -179,7 +185,7 @@ async function loadTagHighlights(tagId: string, reset = false): Promise<void> {
 }
 
 function createTagError(error: unknown): string {
-	if (!error || typeof error !== 'object') return 'Failed to create tag';
+	if (!error || typeof error !== 'object') return message('tag_error_create');
 	const problem = error as Record<string, unknown>;
 	const errors = Array.isArray(problem.errors) ? problem.errors : [];
 	const firstError = errors[0];
@@ -189,7 +195,7 @@ function createTagError(error: unknown): string {
 	}
 	if (typeof problem.detail === 'string' && problem.detail.trim()) return problem.detail;
 	if (typeof problem.message === 'string' && problem.message.trim()) return problem.message;
-	return 'Failed to create tag';
+	return message('tag_error_create');
 }
 
 async function createTag(body: {
@@ -237,7 +243,7 @@ async function updateTag(
 			return updated;
 		}
 	} catch {
-		fetchError = 'Failed to update tag';
+		fetchError = message('tag_error_update');
 	}
 	return null;
 }
@@ -272,7 +278,7 @@ async function deleteTags(ids: string[]): Promise<boolean> {
 			}
 			for (const id of deletedIds) selectedIds.delete(id);
 		}
-		fetchError = ids.length === 1 ? 'Failed to delete tag' : 'Failed to delete some tags';
+		fetchError = message(ids.length === 1 ? 'tag_error_delete' : 'tag_error_delete_some');
 		return false;
 	}
 }
@@ -286,7 +292,7 @@ async function mergeTagsAction(sourceIds: string[], targetId: string): Promise<b
 		selectedIds.clear();
 		return true;
 	} catch {
-		fetchError = 'Failed to merge tags';
+		fetchError = message('tag_error_merge');
 		return false;
 	}
 }

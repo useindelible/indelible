@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import type { FilterCondition } from '$lib/utils/filter-expression';
 	import type { LibraryFilterFieldDef } from '$lib/utils/library-filter-fields';
 	import FilterFieldPicker from './FilterFieldPicker.svelte';
@@ -68,10 +69,10 @@
 
 <div class="filter-row">
 	{#if index === 0}
-		<span class="filter-conjunction">Where</span>
+		<span class="filter-conjunction">{$t('library_filter_where')}</span>
 	{:else}
 		<button type="button" class="filter-conjunction-toggle" onclick={onToggleConjunction}>
-			{conjunction === 'and' ? 'And' : 'Or'}
+			{$t(conjunction === 'and' ? 'library_filter_and' : 'library_filter_or')}
 		</button>
 	{/if}
 
@@ -81,7 +82,7 @@
 			class="filter-field-btn"
 			onclick={() => onToggleFieldPicker(condition.id)}
 		>
-			{fieldDef.label}
+			{$t(fieldDef.labelKey)}
 			<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
 		</button>
 
@@ -124,7 +125,7 @@
 		type="button"
 		class="filter-remove-btn"
 		onclick={() => onRemove(condition.id)}
-		aria-label="Remove condition"
+		aria-label={$t('library_filter_remove_condition')}
 	>
 		<svg viewBox="0 0 24 24" aria-hidden="true">
 			<line x1="18" y1="6" x2="6" y2="18" />

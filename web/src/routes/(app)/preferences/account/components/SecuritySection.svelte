@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		passwordOpen: boolean;
@@ -38,33 +39,31 @@
 	}: Props = $props();
 </script>
 
-<SettingsGroup title="Security">
+<SettingsGroup title={$t('account_security')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Password</div>
-				<div class="hint">Change your password every few months.</div>
+				<div class="label">{$t('auth_password')}</div>
+				<div class="hint">{$t('account_password_hint')}</div>
 			</div>
 			<div>
 				<button type="button" class="btn ghost" disabled={passwordOpen} onclick={onOpenPassword}>
-					Change password
+					{$t('account_change_password')}
 				</button>
 			</div>
 		</div>
 		{#if passwordOpen}
 			<div class="row with-stack">
 				<div class="label-block">
-					<div class="label">Set a new password</div>
-					<div class="hint">
-						At least 12 characters. Use a mix of letters, numbers, and symbols.
-					</div>
+					<div class="label">{$t('account_set_password')}</div>
+					<div class="hint">{$t('account_set_password_hint')}</div>
 				</div>
 				<div class="input-group input-group--stacked">
 					<input
 						class="input"
 						type="password"
 						value={currentPassword}
-						placeholder="Current password"
+						placeholder={$t('account_current_password')}
 						autocomplete="current-password"
 						oninput={(event) =>
 							onCurrentPasswordChange((event.currentTarget as HTMLInputElement).value)}
@@ -73,7 +72,7 @@
 						class="input"
 						type="password"
 						value={newPassword}
-						placeholder="New password"
+						placeholder={$t('auth_new_password')}
 						autocomplete="new-password"
 						oninput={(event) =>
 							onNewPasswordChange((event.currentTarget as HTMLInputElement).value)}
@@ -82,24 +81,24 @@
 						class="input"
 						type="password"
 						value={confirmPassword}
-						placeholder="Confirm new password"
+						placeholder={$t('auth_confirm_password_placeholder')}
 						autocomplete="new-password"
 						oninput={(event) =>
 							onConfirmPasswordChange((event.currentTarget as HTMLInputElement).value)}
 					/>
 					{#if passwordMismatch}
-						<p class="reveal-error" role="alert">Passwords do not match</p>
+						<p class="reveal-error" role="alert">{$t('account_passwords_mismatch')}</p>
 					{:else if passwordError}
 						<p class="reveal-error" role="alert">{passwordError}</p>
 					{:else if passwordSuccess}
-						<p class="reveal-success" role="status">Password changed successfully</p>
+						<p class="reveal-success" role="status">{$t('account_password_changed')}</p>
 					{/if}
 					<div class="reveal-actions">
 						<button
 							type="button"
 							class="btn ghost"
 							onclick={onCancelPassword}
-							disabled={passwordSaving}>Cancel</button
+							disabled={passwordSaving}>{$t('common_cancel')}</button
 						>
 						<button
 							type="button"
@@ -107,7 +106,7 @@
 							disabled={!canSubmitPassword}
 							onclick={onChangePassword}
 						>
-							{passwordSaving ? 'Updating…' : 'Update password'}
+							{passwordSaving ? $t('account_updating') : $t('account_update_password')}
 						</button>
 					</div>
 				</div>
@@ -125,15 +124,15 @@
 			</div>
 			<div class="session-meta">
 				<div class="device">
-					This browser
+					{$t('account_this_browser')}
 					<span class="current-tag">
 						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10" /></svg>
-						Current
+						{$t('account_current')}
 					</span>
 				</div>
-				<div class="where">Active now</div>
+				<div class="where">{$t('account_active_now')}</div>
 			</div>
-			<button type="button" class="btn ghost" disabled>This session</button>
+			<button type="button" class="btn ghost" disabled>{$t('account_this_session')}</button>
 		</div>
 	</div>
 </SettingsGroup>

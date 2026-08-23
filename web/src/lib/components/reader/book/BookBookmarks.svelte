@@ -2,6 +2,8 @@
 	import type { HighlightWithNoteResponse } from '$lib/api/generated/types.gen';
 	import type { TocEntry } from './book-source';
 	import { estimatePageNumber } from './book-source';
+	import { date, t } from '$lib/i18n';
+	import { relativeTime } from '$lib/utils/relative-time';
 
 	interface Props {
 		highlights: HighlightWithNoteResponse[];
@@ -28,12 +30,14 @@
 		const loc = bookmark.locator;
 		if (!loc) return '';
 		if (loc.type === 'pdf') {
-			return `Page ${loc.page}`;
+			return $t('reader_page_label', { values: { number: loc.page } });
 		}
 		if (loc.type !== 'epub') return '';
 		const entry = toc.find((e) => e.id === loc.chapter);
 		if (!entry) return '';
-		return `Ch. ${navigableEntries.indexOf(entry) + 1} \u00B7 ${entry.title}`;
+		return $t('reader_bookmark_chapter', {
+			values: { number: navigableEntries.indexOf(entry) + 1, title: entry.title }
+		});
 	}
 
 	function getBookmarkPageLabel(bookmark: HighlightWithNoteResponse): string {
@@ -47,28 +51,17 @@
 					loc.start_offset ?? 0,
 					entry.wordCount ? entry.wordCount * 5 : 1
 				);
-				return `Page ${page}`;
+				return $t('reader_page_label', { values: { number: page } });
 			}
 		}
 		if (loc.type === 'pdf') {
-			return `Page ${loc.page}`;
+			return $t('reader_page_label', { values: { number: loc.page } });
 		}
 		return '';
 	}
 
 	function getRelativeTime(dateStr: string): string {
-		const now = Date.now();
-		const then = new Date(dateStr).getTime();
-		const diff = now - then;
-		const minutes = Math.floor(diff / 60000);
-		if (minutes < 1) return 'just now';
-		if (minutes < 60) return `${minutes}m ago`;
-		const hours = Math.floor(minutes / 60);
-		if (hours < 24) return `${hours}h ago`;
-		const days = Math.floor(hours / 24);
-		if (days === 1) return 'yesterday';
-		if (days < 30) return `${days} days ago`;
-		return new Date(dateStr).toLocaleDateString();
+		return relativeTime(dateStr) ?? $date(new Date(dateStr));
 	}
 
 	function handleClick(bookmark: HighlightWithNoteResponse) {
@@ -85,8 +78,8 @@
 <div class="bookmarks-list">
 	{#if bookmarks.length === 0}
 		<div class="bookmarks-empty">
-			<p>No bookmarks yet</p>
-			<p class="empty-hint">Click the bookmark icon in the toolbar to save your reading position</p>
+			<p>{$t('reader_no_bookmarks')}</p>
+			<p class="empty-hint">{$t('reader_no_bookmarks_hint')}</p>
 		</div>
 	{:else}
 		{#each bookmarks as bookmark (bookmark.id)}
@@ -104,7 +97,9 @@
 						{#if getBookmarkPageLabel(bookmark)}
 							&middot;
 						{/if}
-						Bookmarked {getRelativeTime(bookmark.created_at)}
+						{$t('reader_bookmarked_time', {
+							values: { time: getRelativeTime(bookmark.created_at) }
+						})}
 					</div>
 				</div>
 			</button>

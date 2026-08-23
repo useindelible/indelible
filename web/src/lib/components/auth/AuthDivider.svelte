@@ -1,14 +1,16 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		text?: string;
 	}
 
-	let { text = 'or' }: Props = $props();
+	let { text }: Props = $props();
 </script>
 
 <div class="auth-divider">
 	<div class="auth-divider-line"></div>
-	<span class="auth-divider-text">{text}</span>
+	<span class="auth-divider-text">{text ?? $t('auth_or')}</span>
 	<div class="auth-divider-line"></div>
 </div>
 

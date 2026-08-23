@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { NotionConnectionDetails, NotionStatusSummary } from './notion-status-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		details: NotionConnectionDetails;
@@ -26,10 +27,9 @@
 </script>
 
 <section class="group">
-	<div class="group-label">Connection</div>
+	<div class="group-label">{$t('integrations_notion_connection')}</div>
 	<div class="group-desc">
-		The Notion workspace and database that Indelible writes to. Renaming properties in Notion is
-		safe — Indelible matches by stored property ID.
+		{$t('integrations_notion_connection_description')}
 	</div>
 
 	<div class="group-card">
@@ -37,16 +37,20 @@
 			<div class="conn-card-icon">{details.workspaceIcon ?? '📚'}</div>
 			<div class="conn-card-id">
 				<div class="conn-card-name">
-					{details.workspaceName ?? 'Notion workspace'}
+					{details.workspaceName ?? $t('integrations_notion_workspace')}
 					{#if summary.connectionState === 'connected' || summary.connectionState === 'syncing'}
-						<span class="verified-badge" title="Authorized">
+						<span class="verified-badge" title={$t('integrations_notion_authorized')}>
 							<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg>
 						</span>
 					{/if}
 				</div>
 				<div class="conn-card-meta">
 					{#if summary.formattedConnectedOn}
-						<span class="since">Connected on {summary.formattedConnectedOn}</span>
+						<span class="since"
+							>{$t('integrations_notion_connected_on', {
+								values: { date: summary.formattedConnectedOn }
+							})}</span
+						>
 					{/if}
 				</div>
 			</div>
@@ -54,16 +58,18 @@
 				<button class="btn ghost" type="button" onclick={onReauthorize}>
 					<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.5-7.1" /><path d="M21 4v5h-5" /></svg
 					>
-					Re-authorize
+					{$t('integrations_notion_reauthorize')}
 				</button>
-				<button class="btn" type="button" onclick={onChangeAccount}>Change account</button>
+				<button class="btn" type="button" onclick={onChangeAccount}
+					>{$t('integrations_notion_change_account')}</button
+				>
 			</div>
 		</div>
 
 		<div class="conn-detail-row">
-			<span class="key">Managed database</span>
+			<span class="key">{$t('integrations_notion_managed_database')}</span>
 			<span class="val" class:empty={!details.databaseId} data-testid="notion-database-id">
-				{details.databaseId ?? 'Provisioned on first export'}
+				{details.databaseId ?? $t('integrations_notion_provisioned_first_export')}
 			</span>
 			{#if details.databaseId}
 				<button
@@ -71,7 +77,7 @@
 					class:copied={copiedKey === 'database'}
 					type="button"
 					onclick={() => copy(details.databaseId, 'database')}
-					aria-label="Copy database id"
+					aria-label={$t('integrations_notion_copy_database_id')}
 				>
 					<svg viewBox="0 0 24 24"
 						><rect x="9" y="9" width="13" height="13" rx="2" /><path
@@ -85,9 +91,9 @@
 		</div>
 
 		<div class="conn-detail-row">
-			<span class="key">Data source</span>
+			<span class="key">{$t('integrations_notion_data_source')}</span>
 			<span class="val" class:empty={!details.dataSourceId}>
-				{details.dataSourceId ?? 'Provisioned on first export'}
+				{details.dataSourceId ?? $t('integrations_notion_provisioned_first_export')}
 			</span>
 			{#if details.dataSourceId}
 				<button
@@ -95,7 +101,7 @@
 					class:copied={copiedKey === 'data_source'}
 					type="button"
 					onclick={() => copy(details.dataSourceId, 'data_source')}
-					aria-label="Copy data source id"
+					aria-label={$t('integrations_notion_copy_data_source_id')}
 				>
 					<svg viewBox="0 0 24 24"
 						><rect x="9" y="9" width="13" height="13" rx="2" /><path

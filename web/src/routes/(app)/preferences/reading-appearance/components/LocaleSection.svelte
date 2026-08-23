@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 
 	interface LocaleOption {
 		value: string;
@@ -15,17 +16,17 @@
 	let { locale, locales, onLocaleChange }: Props = $props();
 </script>
 
-<SettingsGroup title="Locale">
+<SettingsGroup title={$t('prefs_reading_locale')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Language</div>
-				<div class="hint">Indelible's chrome — menus, settings, and notifications.</div>
+				<div class="label">{$t('prefs_reading_language')}</div>
+				<div class="hint">{$t('prefs_reading_language_hint')}</div>
 			</div>
 			<select
 				class="select"
 				value={locale}
-				aria-label="Language"
+				aria-label={$t('prefs_reading_language')}
 				onchange={(event) => onLocaleChange(event.currentTarget.value)}
 			>
 				{#each locales as item (item.value)}

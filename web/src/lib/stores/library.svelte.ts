@@ -22,11 +22,13 @@ import {
 	type FilterExpression,
 	type FilterCondition
 } from '$lib/utils/filter-expression';
+import { t, type MessageKey } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 export type TriageTab = 'inbox' | 'later' | 'archive';
 export type GroupBy = 'triage' | 'read_status' | 'none';
 export type ReadStatusTab = 'unseen' | 'seen';
-export type TriageOption = { value: TriageTab; label: string };
+export type TriageOption = { value: TriageTab; labelKey: MessageKey };
 export type SortOrder =
 	| 'date_saved_desc'
 	| 'date_saved_asc'
@@ -81,13 +83,13 @@ const SLUG_TO_API_TYPE: Record<string, string> = {
 export function triageOptionsForMode(mode: TriageModeDto): TriageOption[] {
 	return mode === 'manual'
 		? [
-				{ value: 'inbox', label: 'Saved' },
-				{ value: 'archive', label: 'Archived' }
+				{ value: 'inbox', labelKey: 'library_triage_saved' },
+				{ value: 'archive', labelKey: 'library_triage_archived' }
 			]
 		: [
-				{ value: 'inbox', label: 'Inbox' },
-				{ value: 'later', label: 'Later' },
-				{ value: 'archive', label: 'Archive' }
+				{ value: 'inbox', labelKey: 'library_triage_inbox' },
+				{ value: 'later', labelKey: 'library_triage_later' },
+				{ value: 'archive', labelKey: 'library_triage_archive' }
 			];
 }
 
@@ -292,7 +294,7 @@ function describeQueryError(error: unknown): string {
 		if (e.detail && e.detail !== 'validation error') return e.detail;
 		if (e.title) return e.title;
 	}
-	return 'Failed to load items';
+	return get(t)('library_error_load_items');
 }
 
 async function fetchPage(): Promise<void> {
@@ -336,7 +338,7 @@ async function fetchPage(): Promise<void> {
 		}
 	} catch {
 		if (generation === fetchGeneration) {
-			fetchError = 'Failed to load items';
+			fetchError = get(t)('library_error_load_items');
 		}
 	}
 }

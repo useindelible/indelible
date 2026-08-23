@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ConnectionState } from '$lib/integrations/status';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		workspaceIcon: string | null;
@@ -21,17 +22,26 @@
 		pendingJobs
 	}: Props = $props();
 
-	const sampleRows = [
-		['On the difficulty of writing', 'Substack', 'May 3'],
-		['A short history of patience', 'Web', 'May 1'],
-		['What it means to read again', 'Email', 'Apr 29']
-	];
+	const sampleRows = $derived([
+		[$t('integrations_notion_sample_writing'), 'Substack', $t('integrations_notion_sample_may_3')],
+		[
+			$t('integrations_notion_sample_patience'),
+			$t('integrations_notion_sample_web'),
+			$t('integrations_notion_sample_may_1')
+		],
+		[
+			$t('integrations_notion_sample_read_again'),
+			$t('common_email'),
+			$t('integrations_notion_sample_apr_29')
+		]
+	]);
 </script>
 
 <div class="notion-tile" aria-hidden="true">
 	<div class="notion-tile-header">
 		<span class="notion-tile-emoji">{workspaceIcon ?? '📚'}</span>
-		<span class="notion-tile-workspace">{workspaceName ?? 'Notion workspace'}</span>
+		<span class="notion-tile-workspace">{workspaceName ?? $t('integrations_notion_workspace')}</span
+		>
 		<span class="notion-tile-active-pill" class:attention={connectionState === 'failed'}>
 			<span class="dot"></span>
 			{heroStatus}
@@ -47,21 +57,21 @@
 		</span>
 		{databaseLabel}
 	</div>
-	<div class="notion-tile-example">Example preview</div>
+	<div class="notion-tile-example">{$t('integrations_notion_example_preview')}</div>
 	<div class="notion-tile-cols">
 		<span class="notion-tile-col">
 			<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h10M5 17h12" /></svg>
-			Title
+			{$t('common_title')}
 		</span>
 		<span class="notion-tile-col">
 			<svg viewBox="0 0 24 24"><path d="M4 6h12M4 10h16M4 14h12M4 18h16" /></svg>
-			Source
+			{$t('feed_management_source')}
 		</span>
 		<span class="notion-tile-col">
 			<svg viewBox="0 0 24 24"
 				><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 9h18M8 3v4M16 3v4" /></svg
 			>
-			Saved
+			{$t('common_saved')}
 		</span>
 	</div>
 	{#each sampleRows as row (row[0])}
@@ -85,9 +95,9 @@
 			<span class="sync-mark">
 				<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.5-7.1" /><path d="M21 4v5h-5" /></svg>
 			</span>
-			Last edited {formattedHeroLastSync}
+			{$t('integrations_notion_last_edited', { values: { date: formattedHeroLastSync } })}
 		</span>
-		<span>{pendingJobs} pending</span>
+		<span>{$t('integrations_notion_pending_count', { values: { count: pendingJobs } })}</span>
 	</div>
 </div>
 

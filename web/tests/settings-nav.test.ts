@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
 
 vi.mock('$app/state', () => ({
 	page: {
@@ -16,6 +18,14 @@ import SettingsNav from '$lib/components/settings/SettingsNav.svelte';
 describe('SettingsNav', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		locale.set('en');
+	});
+
+	it('renders the reading and appearance link in French', () => {
+		setupI18nSync({ fr }, 'fr');
+		render(SettingsNav);
+
+		expect(screen.getByText('Apparence et lecture')).toBeTruthy();
 	});
 
 	it('renders all settings sections', () => {

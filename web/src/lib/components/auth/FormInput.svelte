@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
+	import { t } from '$lib/i18n';
 
 	interface Props extends HTMLInputAttributes {
 		label: string;
@@ -36,7 +37,7 @@
 				<button
 					type="button"
 					class="toggle-visibility"
-					aria-label={revealed ? 'Hide password' : 'Show password'}
+					aria-label={revealed ? $t('auth_hide_password') : $t('auth_show_password')}
 					onclick={() => (revealed = !revealed)}
 				>
 					{#if revealed}

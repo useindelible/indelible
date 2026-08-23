@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ObsidianSettingsDto } from '$lib/api';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		settings: ObsidianSettingsDto;
@@ -11,23 +12,21 @@
 
 <section class="section">
 	<div class="section-head">
-		<h2 class="section-title">Behavior</h2>
-		<p class="section-sub">How Indelible writes into your vault</p>
+		<h2 class="section-title">{$t('integrations_obsidian_behavior')}</h2>
+		<p class="section-sub">{$t('integrations_obsidian_behavior_hint')}</p>
 	</div>
 	<div class="card card-stack">
 		<div class="row">
 			<div>
-				<p class="row-title">Group in category folders</p>
-				<p class="row-sub">
-					PDFs use <code>books/</code>; videos and emails use <code>articles/</code>.
-				</p>
+				<p class="row-title">{$t('integrations_obsidian_group_folders')}</p>
+				<p class="row-sub">{$t('integrations_obsidian_group_folders_hint')}</p>
 			</div>
 			<button
 				type="button"
 				class="toggle"
 				class:is-on={settings.group_files_in_category_folders}
 				aria-pressed={settings.group_files_in_category_folders}
-				aria-label="Group in category folders"
+				aria-label={$t('integrations_obsidian_group_folders')}
 				onclick={() =>
 					onChange({
 						group_files_in_category_folders: !settings.group_files_in_category_folders
@@ -38,18 +37,15 @@
 		<div class="row-block">
 			<div class="row-inner">
 				<div>
-					<p class="row-title">Export full Reader documents</p>
-					<p class="row-sub">
-						Write a generated companion file when Indelible has a prepared readable asset for the
-						document. Note templates control the linked export note, not this companion body.
-					</p>
+					<p class="row-title">{$t('integrations_obsidian_export_full_documents')}</p>
+					<p class="row-sub">{$t('integrations_obsidian_export_full_documents_hint')}</p>
 				</div>
 				<button
 					type="button"
 					class="toggle"
 					class:is-on={settings.export_all_reader_documents}
 					aria-pressed={settings.export_all_reader_documents}
-					aria-label="Export full Reader documents"
+					aria-label={$t('integrations_obsidian_export_full_documents')}
 					onclick={() =>
 						onChange({
 							export_all_reader_documents: !settings.export_all_reader_documents
@@ -58,9 +54,9 @@
 			</div>
 			{#if settings.export_all_reader_documents}
 				<div class="row-extra">
-					Companion path pattern: <code>{'Indelible/{category}/{title} Full Text.md'}</code>.
-					Documents without prepared readable text still sync their notes and highlights; they skip
-					the full-text companion.
+					{$t('integrations_obsidian_companion_path')}
+					<code>{'Indelible/{category}/{title} Full Text.md'}</code>.
+					{$t('integrations_obsidian_companion_missing_hint')}
 				</div>
 			{/if}
 		</div>
@@ -68,24 +64,21 @@
 		<div class="row-block">
 			<div class="row-inner">
 				<div>
-					<p class="row-title">Append sync notifications</p>
-					<p class="row-sub">
-						Add a timestamped line to <code>Indelible/Indelible Syncs.md</code> after each run.
-					</p>
+					<p class="row-title">{$t('integrations_obsidian_append_notifications')}</p>
+					<p class="row-sub">{$t('integrations_obsidian_append_notifications_hint')}</p>
 				</div>
 				<button
 					type="button"
 					class="toggle"
 					class:is-on={settings.sync_notifications}
 					aria-pressed={settings.sync_notifications}
-					aria-label="Append sync notifications"
+					aria-label={$t('integrations_obsidian_append_notifications')}
 					onclick={() => onChange({ sync_notifications: !settings.sync_notifications })}
 				></button>
 			</div>
 			{#if settings.sync_notifications}
 				<div class="row-extra">
-					One bullet per sync, rendered with the <b>Sync notification</b> template below. Notifications
-					are appended only after document writes succeed.
+					{$t('integrations_obsidian_notifications_detail')}
 				</div>
 			{/if}
 		</div>

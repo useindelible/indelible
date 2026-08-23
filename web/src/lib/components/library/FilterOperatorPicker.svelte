@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { FilterCondition } from '$lib/utils/filter-expression';
 	import type { LibraryFilterFieldDef } from '$lib/utils/library-filter-fields';
 
@@ -13,14 +14,14 @@
 	let { condition, fieldDef, pickerOpen, onTogglePicker, onOperatorChange }: Props = $props();
 
 	const operatorLabel = $derived(
-		fieldDef.ops.find((operator) => operator.value === condition.op)?.label ?? condition.op
+		fieldDef.ops.find((operator) => operator.value === condition.op)?.labelKey
 	);
 </script>
 
 {#if fieldDef.ops.length > 0}
 	<div class="op-picker-anchor">
 		<button type="button" class="filter-op-btn" onclick={onTogglePicker}>
-			{operatorLabel}
+			{operatorLabel ? $t(operatorLabel) : condition.op}
 		</button>
 
 		{#if pickerOpen}
@@ -32,7 +33,7 @@
 						class:selected={condition.op === op.value}
 						onclick={() => onOperatorChange(op.value)}
 					>
-						{op.label}
+						{$t(op.labelKey)}
 					</button>
 				{/each}
 			</div>

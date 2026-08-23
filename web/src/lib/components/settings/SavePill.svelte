@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		isDirty: boolean;
 		saving: boolean;
@@ -24,11 +26,11 @@
 						stroke-linejoin="round"
 					/>
 				</svg>
-				Saved
+				{$t('common_saved')}
 			</span>
 		{:else}
 			<button type="button" class="pill-btn discard" onclick={onDiscard} disabled={saving}
-				>Discard</button
+				>{$t('common_discard')}</button
 			>
 			<div class="pill-divider"></div>
 			<button
@@ -37,7 +39,7 @@
 				onclick={onSave}
 				disabled={saving || saveDisabled}
 			>
-				{saving ? 'Saving\u2026' : 'Save'}
+				{saving ? $t('common_saving') : $t('common_save')}
 			</button>
 		{/if}
 	</div>
