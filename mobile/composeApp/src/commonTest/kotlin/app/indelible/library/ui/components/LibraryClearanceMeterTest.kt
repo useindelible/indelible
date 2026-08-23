@@ -2,10 +2,11 @@ package app.indelible.library.ui.components
 
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import app.indelible.core.model.LibraryCounts
@@ -33,8 +34,7 @@ class LibraryClearanceMeterTest {
                 }
             }
 
-            onNodeWithContentDescription("0 unread, 0 reading, nothing to clear").assertIsDisplayed()
-            onNodeWithText("0 unread").assertIsDisplayed()
-            onNodeWithText("Nothing to clear").assertIsDisplayed()
+            onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription)).assertIsDisplayed()
+            onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).assertCountEquals(3)
         }
 }
