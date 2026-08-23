@@ -17,6 +17,7 @@
 		notionStatusSummary,
 		selectedExportItemCount
 	} from './notion-status/notion-status-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		connection: IntegrationConnectionDto | undefined;
@@ -75,10 +76,10 @@
 	}: Props = $props();
 
 	const details = $derived(notionConnectionDetails(connection));
-	const summary = $derived(notionStatusSummary(connection));
+	const summary = $derived(notionStatusSummary(connection, $t));
 	const selectedCount = $derived(selectedExportItemCount(items));
 	const exportItemsMeta = $derived(
-		notionExportItemsMeta(items.length, itemsTotal, itemsFilteredCount, itemsQuery)
+		notionExportItemsMeta(items.length, itemsTotal, itemsFilteredCount, itemsQuery, $t)
 	);
 </script>
 

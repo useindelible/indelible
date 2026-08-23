@@ -1,46 +1,47 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
-	const shortcutColumns = [
+	const shortcutColumns: { labelKey: MessageKey; rows: [MessageKey, string[]][] }[] = [
 		{
-			label: 'Triage',
+			labelKey: 'prefs_reading_shortcuts_triage',
 			rows: [
-				['Move to Inbox', ['1']],
-				['Move to Later', ['2']],
-				['Move to Archive', ['3']],
-				['Archive selected', ['A']]
+				['prefs_reading_shortcut_move_inbox', ['1']],
+				['prefs_reading_shortcut_move_later', ['2']],
+				['prefs_reading_shortcut_move_archive', ['3']],
+				['prefs_reading_shortcut_archive_selected', ['A']]
 			]
 		},
 		{
-			label: 'Reading',
+			labelKey: 'prefs_reading_shortcuts_reading',
 			rows: [
-				['Open in reader', ['↵']],
-				['Next item', ['J']],
-				['Previous item', ['K']],
-				['Mark unread', ['U']]
+				['prefs_reading_shortcut_open_reader', ['↵']],
+				['reader_next_item', ['J']],
+				['reader_previous_item', ['K']],
+				['prefs_reading_shortcut_mark_unread', ['U']]
 			]
 		},
 		{
-			label: 'Global',
+			labelKey: 'prefs_reading_shortcuts_global',
 			rows: [
-				['Search', ['⌘', 'K']],
-				['Refresh feeds', ['R']],
-				['Toggle dark mode', ['⌘', '⌥', 'D']],
-				['Help', ['?']]
+				['common_search', ['⌘', 'K']],
+				['prefs_reading_shortcut_refresh_feeds', ['R']],
+				['prefs_reading_shortcut_toggle_dark', ['⌘', '⌥', 'D']],
+				['prefs_reading_shortcut_help', ['?']]
 			]
 		}
 	];
 </script>
 
-<SettingsGroup title="Keyboard shortcuts" meta="Read-only · we'll add bindings in a later release">
+<SettingsGroup title={$t('prefs_reading_shortcuts')} meta={$t('prefs_reading_shortcuts_meta')}>
 	<div class="group-card">
 		<div class="kbd-grid">
-			{#each shortcutColumns as column (column.label)}
+			{#each shortcutColumns as column (column.labelKey)}
 				<div class="kbd-col">
-					<div class="kbd-col-label">{column.label}</div>
+					<div class="kbd-col-label">{$t(column.labelKey)}</div>
 					{#each column.rows as row (row[0])}
 						<div class="kbd-row">
-							<span class="kbd-name">{row[0]}</span>
+							<span class="kbd-name">{$t(row[0])}</span>
 							<span class="kbd-keys">
 								{#each row[1] as key (key)}
 									<span class="kbd">{key}</span>

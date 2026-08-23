@@ -3,6 +3,7 @@
 	import { resultKey } from '$lib/stores/search.svelte';
 	import SearchResultRow from './SearchResultRow.svelte';
 	import ItemRowSkeleton from '$lib/components/library/ItemRowSkeleton.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		results: SearchResultResponse[];
@@ -50,7 +51,7 @@
 	});
 </script>
 
-<div class="search-result-list" role="list" aria-label="Search results">
+<div class="search-result-list" role="list" aria-label={$t('search_results')}>
 	{#if loading}
 		<ItemRowSkeleton count={6} />
 	{:else if isEmpty}
@@ -60,11 +61,12 @@
 					><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg
 				>
 			</div>
-			<p class="no-results-title">No results found</p>
-			<p class="no-results-hint">Try different keywords, remove filters, or check spelling.</p>
+			<p class="no-results-title">{$t('search_no_results')}</p>
+			<p class="no-results-hint">{$t('search_no_results_hint')}</p>
 			<div class="no-results-suggestions">
-				<span>Try:</span>
-				<code>tag:</code> <code>type:</code> <code>collection:</code> to narrow your search
+				<span>{$t('search_try')}</span>
+				<code>tag:</code> <code>type:</code> <code>collection:</code>
+				{$t('search_to_narrow')}
 			</div>
 		</div>
 	{:else}

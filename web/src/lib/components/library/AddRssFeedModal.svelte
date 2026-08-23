@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as apiSdk from '$lib/api';
+	import { t } from '$lib/i18n';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 
 	type AuthType = 'none' | 'basic' | 'bearer' | 'apikey';
@@ -81,9 +82,9 @@
 			submitError =
 				(typeof firstError?.['message'] === 'string' ? firstError['message'] : undefined) ??
 				detail ??
-				'Failed to subscribe. Please try again.';
+				$t('library_rss_error_subscribe');
 		} catch (err) {
-			submitError = err instanceof Error ? err.message : 'An unexpected error occurred.';
+			submitError = err instanceof Error ? err.message : $t('library_error_unexpected');
 		} finally {
 			submitting = false;
 		}
@@ -93,7 +94,7 @@
 <dialog
 	bind:this={dialogEl}
 	class="modal-backdrop"
-	aria-label="Add RSS Feed"
+	aria-label={$t('library_add_rss_feed')}
 	onclick={handleBackdropClick}
 	onclose={close}
 >
@@ -111,7 +112,7 @@
 					bind:value={feedUrl}
 					class="cmd-input"
 					type="url"
-					placeholder="Feed URL or website address…"
+					placeholder={$t('library_rss_feed_url')}
 					autocomplete="off"
 					onkeydown={(e) => {
 						if (e.key === 'Enter') handleSubscribe();
@@ -139,7 +140,7 @@
 					<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
 					<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 				</svg>
-				Requires authentication
+				{$t('library_rss_requires_auth')}
 				<svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
 					<polyline points="6 9 12 15 18 9" />
 				</svg>
@@ -148,31 +149,31 @@
 			{#if showAuth}
 				<div class="auth-section">
 					<div class="auth-type-row">
-						<span class="auth-type-label">Type</span>
+						<span class="auth-type-label">{$t('common_type')}</span>
 						<div class="auth-type-tabs">
 							<button
 								type="button"
 								class="auth-tab"
 								class:active={authType === 'none'}
-								onclick={() => (authType = 'none')}>None</button
+								onclick={() => (authType = 'none')}>{$t('common_none')}</button
 							>
 							<button
 								type="button"
 								class="auth-tab"
 								class:active={authType === 'basic'}
-								onclick={() => (authType = 'basic')}>Basic</button
+								onclick={() => (authType = 'basic')}>{$t('library_rss_auth_basic')}</button
 							>
 							<button
 								type="button"
 								class="auth-tab"
 								class:active={authType === 'bearer'}
-								onclick={() => (authType = 'bearer')}>Token</button
+								onclick={() => (authType = 'bearer')}>{$t('library_rss_token')}</button
 							>
 							<button
 								type="button"
 								class="auth-tab"
 								class:active={authType === 'apikey'}
-								onclick={() => (authType = 'apikey')}>API Key</button
+								onclick={() => (authType = 'apikey')}>{$t('library_rss_api_key')}</button
 							>
 						</div>
 					</div>
@@ -182,52 +183,51 @@
 							<input
 								type="text"
 								class="auth-input"
-								placeholder="Username"
+								placeholder={$t('library_rss_username')}
 								bind:value={authUsername}
 								autocomplete="username"
 							/>
 							<input
 								type="password"
 								class="auth-input"
-								placeholder="Password"
+								placeholder={$t('library_rss_password')}
 								bind:value={authPassword}
 								autocomplete="current-password"
 							/>
 						</div>
-						<p class="auth-hint">Used for feeds protected by HTTP Basic authentication.</p>
+						<p class="auth-hint">{$t('library_rss_auth_basic_hint')}</p>
 					{:else if authType === 'bearer'}
 						<div class="auth-fields">
 							<input
 								type="text"
 								class="auth-input"
-								placeholder="Bearer token"
+								placeholder={$t('library_rss_bearer_token')}
 								bind:value={authToken}
 								autocomplete="off"
 							/>
 						</div>
-						<p class="auth-hint">Sent as <code>Authorization: Bearer …</code> with each request.</p>
+						<p class="auth-hint">{$t('library_rss_auth_bearer_hint')}</p>
 					{:else if authType === 'apikey'}
 						<div class="auth-fields auth-fields-row">
 							<input
 								type="text"
 								class="auth-input auth-input-key"
-								placeholder="Header name"
+								placeholder={$t('library_rss_header_name')}
 								bind:value={authKeyName}
 								autocomplete="off"
 							/>
 							<input
 								type="text"
 								class="auth-input auth-input-val"
-								placeholder="Value"
+								placeholder={$t('library_rss_value')}
 								bind:value={authKeyValue}
 								autocomplete="off"
 							/>
 						</div>
-						<p class="auth-hint">E.g. header <code>X-API-Key</code> with your key value.</p>
+						<p class="auth-hint">{$t('library_rss_auth_header_hint')}</p>
 					{:else}
 						<p class="auth-hint auth-hint-none">
-							Most feeds are public. Use authentication only if the feed requires a login, API key,
-							or private token.
+							{$t('library_rss_auth_none_hint')}
 						</p>
 					{/if}
 				</div>
@@ -236,7 +236,7 @@
 			<!-- OPML import -->
 			<div class="cmd-divider">
 				<div class="cmd-divider-line"></div>
-				<span class="cmd-divider-text">or import</span>
+				<span class="cmd-divider-text">{$t('library_rss_import')}</span>
 				<div class="cmd-divider-line"></div>
 			</div>
 
@@ -245,7 +245,7 @@
 				class:drag-over={isDragOver}
 				role="button"
 				tabindex="0"
-				aria-label="Drop OPML file to import feeds"
+				aria-label={$t('library_rss_drop_opml')}
 				ondrop={handleOpmlDrop}
 				ondragover={(e) => {
 					e.preventDefault();
@@ -275,17 +275,17 @@
 					<polyline points="17 8 12 3 7 8" />
 					<line x1="12" y1="3" x2="12" y2="15" />
 				</svg>
-				Drop an <span>OPML file</span> to import feeds
+				{$t('library_rss_drop_opml')}
 			</div>
 		</div>
 
 		<!-- Controls strip -->
 		<div class="cmd-controls">
-			<button type="button" class="cmd-collection" aria-label="Choose collection">
+			<button type="button" class="cmd-collection" aria-label={$t('library_choose_collection')}>
 				<svg viewBox="0 0 24 24" aria-hidden="true">
 					<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
 				</svg>
-				Inbox
+				{$t('library_triage_inbox')}
 				<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"
 					><polyline points="9 6 15 12 9 18" /></svg
 				>
@@ -294,9 +294,9 @@
 			<button type="button" class="cmd-action" disabled={!canSubscribe} onclick={handleSubscribe}>
 				{#if submitting}
 					<span class="spinner" aria-hidden="true"></span>
-					<span class="sr-only">Subscribing...</span>
+					<span class="sr-only">{$t('library_rss_subscribing')}</span>
 				{:else}
-					Subscribe
+					{$t('library_rss_subscribe')}
 				{/if}
 			</button>
 		</div>
@@ -565,14 +565,6 @@
 		margin: 0;
 	}
 
-	.auth-hint code {
-		font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
-		font-size: 10.5px;
-		background: var(--fill-hover);
-		border-radius: 3px;
-		padding: 0 3px;
-	}
-
 	.auth-hint-none {
 		color: var(--text-quaternary);
 	}
@@ -631,11 +623,6 @@
 		stroke-linecap: round;
 		stroke-linejoin: round;
 		flex-shrink: 0;
-	}
-
-	.opml-row span {
-		color: var(--accent);
-		font-weight: 500;
 	}
 
 	/* Controls */

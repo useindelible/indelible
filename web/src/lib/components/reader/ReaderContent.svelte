@@ -3,6 +3,7 @@
 	import type { SearchEmbeddedSenderResponse } from '$lib/api';
 	import { hasScrollableOverflow, scrollProgressPercent } from './progress-geometry';
 	import { sanitizeReaderHtml } from '$lib/utils/sanitize-html';
+	import { date } from '$lib/i18n';
 
 	interface Props {
 		htmlContent: string;
@@ -109,7 +110,7 @@
 
 	const formattedDate = $derived(
 		publishedAt
-			? new Date(publishedAt).toLocaleDateString('en-US', {
+			? $date(new Date(publishedAt), {
 					year: 'numeric',
 					month: 'long',
 					day: 'numeric'

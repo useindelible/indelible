@@ -1,5 +1,11 @@
 import * as apiSdk from '$lib/api';
 import { setAccessToken as setSdkToken } from '$lib/auth-tokens';
+import { t, type MessageKey } from '$lib/i18n';
+import { get } from 'svelte/store';
+
+function message(key: MessageKey): string {
+	return get(t)(key);
+}
 
 export type AuthUser = {
 	id: string;
@@ -8,7 +14,7 @@ export type AuthUser = {
 	email_verified: boolean;
 	onboarding_completed: boolean;
 	avatar_url?: string | null;
-	locale?: string;
+	locale?: string | null;
 	theme?: 'light' | 'dark' | 'system';
 	timezone?: string;
 	ingest_email?: string;
@@ -253,16 +259,16 @@ async function login(
 		}
 		if (response?.status === 429) {
 			const retryAfter = parseInt(response.headers.get('Retry-After') ?? '30', 10);
-			error = 'Too many login attempts. Please try again later.';
+			error = message('auth_error_too_many_login_attempts');
 			return { success: false, rateLimited: true, retryAfter };
 		}
 		error =
 			response?.status === 401
-				? 'Email or password is incorrect.'
-				: getProblemMessage(apiError, 'Login failed');
+				? message('auth_error_email_or_password_incorrect')
+				: getProblemMessage(apiError, message('auth_error_login_failed'));
 		return { success: false };
 	} catch {
-		error = 'An unexpected error occurred';
+		error = message('auth_error_unexpected');
 		return { success: false };
 	}
 }
@@ -295,10 +301,10 @@ async function register(
 			AUTH_CHANNEL?.postMessage({ type: 'login' });
 			return { success: true };
 		}
-		error = getProblemMessage(apiError, 'Registration failed');
+		error = getProblemMessage(apiError, message('auth_error_registration_failed'));
 		return { success: false };
 	} catch {
-		error = 'An unexpected error occurred';
+		error = message('auth_error_unexpected');
 		return { success: false };
 	}
 }
@@ -319,11 +325,11 @@ async function refresh(): Promise<boolean> {
 	error = null;
 	await doRefresh();
 	if (!accessToken) {
-		error = 'Unable to refresh your session. Please try again.';
+		error = message('auth_error_session_refresh_failed');
 		return false;
 	}
 	if (!(await fetchAndApplyProfile())) {
-		error = 'Unable to refresh your profile. Please try again.';
+		error = message('auth_error_profile_refresh_failed');
 		return false;
 	}
 	return true;
@@ -339,12 +345,12 @@ async function forgotPassword(email: string): Promise<{ success: boolean }> {
 			return { success: true };
 		}
 		if (response?.status === 429) {
-			error = 'Too many requests. Please try again later.';
+			error = message('auth_error_too_many_requests');
 			return { success: false };
 		}
 		return { success: true };
 	} catch {
-		error = 'An unexpected error occurred';
+		error = message('auth_error_unexpected');
 		return { success: false };
 	}
 }
@@ -364,13 +370,13 @@ async function resetPassword(
 			expiresAt = null;
 			return { success: true };
 		}
-		const msg = getProblemMessage(apiError, 'Password reset failed');
+		const msg = getProblemMessage(apiError, message('auth_error_password_reset_failed'));
 		error = msg;
 		const isExpired =
 			msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid');
 		return { success: false, expired: isExpired };
 	} catch {
-		error = 'An unexpected error occurred';
+		error = message('auth_error_unexpected');
 		return { success: false };
 	}
 }
@@ -391,10 +397,10 @@ async function verifyEmail(token: string): Promise<{ success: boolean }> {
 			};
 			return { success: true };
 		}
-		error = getProblemMessage(apiError, 'Email verification failed');
+		error = getProblemMessage(apiError, message('auth_error_email_verification_failed'));
 		return { success: false };
 	} catch {
-		error = 'An unexpected error occurred';
+		error = message('auth_error_unexpected');
 		return { success: false };
 	}
 }
@@ -407,12 +413,12 @@ async function resendVerification(): Promise<{ success: boolean }> {
 			return { success: true };
 		}
 		if (response?.status === 429) {
-			error = 'Too many requests. Please try again later.';
+			error = message('auth_error_too_many_requests');
 			return { success: false };
 		}
 		return { success: true };
 	} catch {
-		error = 'An unexpected error occurred';
+		error = message('auth_error_unexpected');
 		return { success: false };
 	}
 }
@@ -420,7 +426,7 @@ async function resendVerification(): Promise<{ success: boolean }> {
 async function updateProfile(body: {
 	display_name?: string;
 	avatar_url?: string | null;
-	locale?: string;
+	locale?: string | null;
 	theme?: 'light' | 'dark' | 'system';
 	timezone?: string;
 }): Promise<{ success: boolean; error?: string }> {
@@ -430,9 +436,12 @@ async function updateProfile(body: {
 			applyProfile(data);
 			return { success: true };
 		}
-		return { success: false, error: getProblemMessage(apiError, 'Update failed') };
+		return {
+			success: false,
+			error: getProblemMessage(apiError, message('auth_error_update_failed'))
+		};
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: message('auth_error_unexpected') };
 	}
 }
 
@@ -447,9 +456,12 @@ async function changePassword(
 		if (data) {
 			return { success: true };
 		}
-		return { success: false, error: getProblemMessage(apiError, 'Password change failed') };
+		return {
+			success: false,
+			error: getProblemMessage(apiError, message('auth_error_password_change_failed'))
+		};
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: message('auth_error_unexpected') };
 	}
 }
 
@@ -467,9 +479,12 @@ async function changeEmail(
 			expiresAt = null;
 			return { success: true };
 		}
-		return { success: false, error: getProblemMessage(apiError, 'Email change failed') };
+		return {
+			success: false,
+			error: getProblemMessage(apiError, message('auth_error_email_change_failed'))
+		};
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: message('auth_error_unexpected') };
 	}
 }
 
@@ -484,8 +499,11 @@ async function deleteAccount(confirmation: string): Promise<{ success: boolean; 
 			expiresAt = null;
 			return { success: true };
 		}
-		return { success: false, error: getProblemMessage(apiError, 'Account deletion failed') };
+		return {
+			success: false,
+			error: getProblemMessage(apiError, message('auth_error_account_deletion_failed'))
+		};
 	} catch {
-		return { success: false, error: 'An unexpected error occurred' };
+		return { success: false, error: message('auth_error_unexpected') };
 	}
 }

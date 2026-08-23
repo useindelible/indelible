@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SenderCounts, SenderFilter } from '../email-model';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		activeFilter: SenderFilter;
@@ -11,17 +12,17 @@
 
 	let { activeFilter, search, counts, onFilter, onSearch }: Props = $props();
 
-	const filters: Array<{ key: SenderFilter; label: string }> = [
-		{ key: 'all', label: 'All' },
-		{ key: 'feed', label: 'Feed' },
-		{ key: 'library', label: 'Library' },
-		{ key: 'blocked', label: 'Blocked' },
-		{ key: 'quiet', label: 'Quiet · 30d' }
+	const filters: Array<{ key: SenderFilter; labelKey: MessageKey }> = [
+		{ key: 'all', labelKey: 'common_all' },
+		{ key: 'feed', labelKey: 'common_feed' },
+		{ key: 'library', labelKey: 'common_library' },
+		{ key: 'blocked', labelKey: 'email_blocked' },
+		{ key: 'quiet', labelKey: 'email_quiet_30d' }
 	];
 </script>
 
 <div class="filter-row">
-	<label class="search-wrap" aria-label="Search senders">
+	<label class="search-wrap" aria-label={$t('email_search_senders')}>
 		<svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
 			<circle cx="11" cy="11" r="7" />
 			<path d="M21 21l-4.35-4.35" />
@@ -29,12 +30,12 @@
 		<input
 			class="search-input"
 			type="search"
-			placeholder="Search by name, address, or list-id…"
+			placeholder={$t('email_search_placeholder')}
 			value={search}
 			oninput={(event) => onSearch(event.currentTarget.value)}
 		/>
 	</label>
-	<div class="chip-row" role="tablist" aria-label="Filter senders">
+	<div class="chip-row" role="tablist" aria-label={$t('email_filter_senders')}>
 		{#each filters as filter (filter.key)}
 			<button
 				type="button"
@@ -44,7 +45,7 @@
 				aria-selected={activeFilter === filter.key}
 				onclick={() => onFilter(filter.key)}
 			>
-				{filter.label} <span class="count">{counts[filter.key]}</span>
+				{$t(filter.labelKey)} <span class="count">{counts[filter.key]}</span>
 			</button>
 		{/each}
 	</div>

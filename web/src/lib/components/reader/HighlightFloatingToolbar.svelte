@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { HighlightColorOption } from './highlight-toolbar-model';
+	import { HIGHLIGHT_COLOR_LABEL_KEYS, type HighlightColorOption } from './highlight-toolbar-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		x: number;
@@ -21,6 +22,11 @@
 	$effect(() => {
 		onToolbarMount?.(toolbarEl);
 	});
+
+	function colorLabel(name: string): string {
+		const key = HIGHLIGHT_COLOR_LABEL_KEYS[name];
+		return key ? $t(key) : name;
+	}
 </script>
 
 <div class="highlight-toolbar" bind:this={toolbarEl} style:left="{x}px" style:top="{y}px">
@@ -29,12 +35,16 @@
 			type="button"
 			class="hl-color-btn"
 			style:background={color.hex}
-			aria-label="Highlight {color.name}"
+			aria-label={$t('reader_highlight_color', {
+				values: {
+					color: colorLabel(color.name)
+				}
+			})}
 			onclick={() => onColorClick(color.name)}
 		></button>
 	{/each}
 	<div class="hl-divider"></div>
-	<button type="button" class="hl-action-btn" onclick={onCopy}> Copy </button>
+	<button type="button" class="hl-action-btn" onclick={onCopy}> {$t('common_copy')} </button>
 	{#if showTagAction}
 		<button type="button" class="hl-action-btn hl-tag-btn" onclick={onTag}>
 			<svg
@@ -48,10 +58,12 @@
 					d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
 				/><line x1="7" y1="7" x2="7.01" y2="7" /></svg
 			>
-			Tag
+			{$t('common_tags')}
 		</button>
 	{/if}
-	<button type="button" class="hl-action-btn" onclick={() => onNote?.()}>Note</button>
+	<button type="button" class="hl-action-btn" onclick={() => onNote?.()}
+		>{$t('library_notebook_note')}</button
+	>
 </div>
 
 <style>

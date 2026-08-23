@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ImportJobStatusResponse } from '$lib/api';
 	import { isTerminalImportStatus, normalizeImportStatus } from '$lib/integrations/status';
-	import { relativeTime, sourceFileLabel, statusForJob } from '../integrations-hub-model';
+	import { sourceFileLabel, statusForJob } from '../integrations-hub-model';
+	import { number, t } from '$lib/i18n';
+	import { relativeTime } from '$lib/utils/relative-time';
 
 	interface Props {
 		history: ImportJobStatusResponse[];
@@ -12,17 +14,17 @@
 </script>
 
 {#if history.length === 0}
-	<p class="zone-meta">No imports yet. Drop a file above to start.</p>
+	<p class="zone-meta">{$t('integrations_hub_no_imports')}</p>
 {:else}
 	<div class="history-table">
 		<table>
 			<thead>
 				<tr>
-					<th>Source</th>
-					<th>Started</th>
-					<th>Status</th>
-					<th class="num-col">Items</th>
-					<th class="num-col">Action</th>
+					<th>{$t('feed_management_source')}</th>
+					<th>{$t('integrations_hub_started')}</th>
+					<th>{$t('feed_management_status')}</th>
+					<th class="num-col">{$t('common_items')}</th>
+					<th class="num-col">{$t('email_action')}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -32,7 +34,7 @@
 						<td>
 							<div class="source-cell">
 								<div class="source-mark readwise">R</div>
-								<span class="source-name">{sourceFileLabel(job)}</span>
+								<span class="source-name">{sourceFileLabel(job, $t)}</span>
 							</div>
 						</td>
 						<td class="when">{relativeTime(job.created_at)}</td>
@@ -45,15 +47,17 @@
 								{:else if status.variant === 'syncing' || status.variant === 'attention'}
 									<span class="pulse-dot"></span>
 								{/if}
-								{status.label}
+								{$t(status.labelKey)}
 							</span>
 						</td>
 						<td class="num num-col">
-							{(job.counts.imported + job.counts.updated).toLocaleString()}
+							{$number(job.counts.imported + job.counts.updated)}
 						</td>
 						<td class="num-col">
 							{#if isTerminalImportStatus(job.status) && normalizeImportStatus(job.status) !== 'rolled_back'}
-								<button class="table-action" onclick={() => onRollback(job.id)}>Roll back</button>
+								<button class="table-action" onclick={() => onRollback(job.id)}
+									>{$t('integrations_hub_roll_back')}</button
+								>
 							{:else}
 								<span class="table-empty">—</span>
 							{/if}

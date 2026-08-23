@@ -2,6 +2,8 @@
 	import DOMPurify from 'dompurify';
 
 	import type { SearchResultResponse } from '$lib/api/generated/types.gen';
+	import { date, locale, t, type MessageKey } from '$lib/i18n';
+	import { relativeTime } from '$lib/utils/relative-time';
 
 	interface Props {
 		result: SearchResultResponse;
@@ -56,24 +58,6 @@
 		}
 	}
 
-	function formatTimestamp(saved: string): string {
-		const d = new Date(saved);
-		const now = new Date();
-		const diffMs = now.getTime() - d.getTime();
-		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-		if (diffDays === 0) {
-			const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-			if (diffHrs === 0) {
-				const diffMin = Math.floor(diffMs / (1000 * 60));
-				return `${diffMin}m`;
-			}
-			return `${diffHrs}h`;
-		}
-		if (diffDays < 7) return `${diffDays}d`;
-		if (diffDays < 30) return `${Math.floor(diffDays / 7)}w`;
-		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-	}
-
 	function faviconUrl(domain: string): string {
 		return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 	}
@@ -83,15 +67,33 @@
 	}
 
 	function typeLabel(type: string): string {
-		if (type === 'pdf') return 'PDF';
-		return type.charAt(0).toUpperCase() + type.slice(1);
+		const keys: Record<string, MessageKey> = {
+			article: 'library_filter_value_article',
+			book: 'library_filter_value_book',
+			email: 'library_filter_value_email',
+			pdf: 'library_filter_value_pdf',
+			tweet: 'library_filter_value_tweet',
+			video: 'library_filter_value_video'
+		};
+		const key = keys[type.toLowerCase()];
+		return key ? $t(key) : type;
 	}
 
 	const gradient = $derived(thumbGradient(result.content_type, result.url));
 	const emoji = $derived(thumbEmoji(result.content_type));
 	const domain = $derived(result.url ? getDomain(result.url) : null);
-	const timestamp = $derived(formatTimestamp(result.saved_at));
-	const sectionLabel = $derived(result.section?.title ? `Ch: ${result.section.title}` : null);
+	const timestamp = $derived.by(() => {
+		void $locale;
+		return (
+			relativeTime(result.saved_at) ??
+			$date(new Date(result.saved_at), { month: 'short', day: 'numeric' })
+		);
+	});
+	const sectionLabel = $derived(
+		result.section?.title
+			? $t('search_result_chapter', { values: { title: result.section.title } })
+			: null
+	);
 	const senderLabel = $derived(
 		result.sender ? (result.sender.display_name ?? result.sender.canonical_addr) : null
 	);
@@ -152,7 +154,9 @@
 					type="button"
 					class="sender-chip"
 					data-testid="search-sender-chip"
-					title={`Filter by ${result.sender.canonical_addr}`}
+					title={$t('search_filter_by_sender', {
+						values: { sender: result.sender.canonical_addr }
+					})}
 					onclick={(e) => {
 						e.stopPropagation();
 						onSenderClick?.(result.sender!.canonical_addr);
@@ -183,7 +187,7 @@
 		</div>
 		{#if result.entity_chips && result.entity_chips.length > 0}
 			<div class="entity-chips-row">
-				<span class="entity-cooccur-label">with</span>
+				<span class="entity-cooccur-label">{$t('search_with')}</span>
 				{#each result.entity_chips as chip (chip.entity_id)}
 					<span class="entity-chip {chip.entity_type.toLowerCase()}">{chip.name}</span>
 				{/each}
@@ -197,7 +201,7 @@
 		<button
 			type="button"
 			class="detail-chevron"
-			aria-label="Show details"
+			aria-label={$t('library_item_show_details')}
 			onclick={(e) => {
 				e.stopPropagation();
 				onDetail?.();

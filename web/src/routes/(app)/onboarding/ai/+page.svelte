@@ -7,30 +7,37 @@
 	import { getOnboarding } from '$lib/stores/onboarding.svelte';
 	import LocalProviderForm from './LocalProviderForm.svelte';
 	import { localOnboardingPayload, localOpenAiBase, type LocalProbe } from './local-provider';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	const onboarding = getOnboarding();
 
 	type Provider = 'ollama' | 'openai' | 'skip' | null;
 
-	const providers = [
+	const providers: Array<{
+		id: Exclude<Provider, null>;
+		labelKey: MessageKey;
+		descriptionKey: MessageKey;
+		iconBg: string;
+		iconColor: string;
+	}> = [
 		{
 			id: 'ollama' as const,
-			label: 'Local server',
-			description: 'Ollama, LM Studio, llama.cpp',
+			labelKey: 'onboarding_ai_local_server',
+			descriptionKey: 'onboarding_ai_local_server_description',
 			iconBg: 'var(--fill-success)',
 			iconColor: 'var(--success)'
 		},
 		{
 			id: 'openai' as const,
-			label: 'OpenAI',
-			description: 'Use your API key',
+			labelKey: 'onboarding_ai_openai',
+			descriptionKey: 'onboarding_ai_openai_description',
 			iconBg: 'var(--fill-selected)',
 			iconColor: 'var(--accent)'
 		},
 		{
 			id: 'skip' as const,
-			label: 'Skip',
-			description: 'Configure later',
+			labelKey: 'onboarding_skip',
+			descriptionKey: 'onboarding_ai_configure_later',
 			iconBg: 'var(--fill-secondary)',
 			iconColor: 'var(--text-tertiary)'
 		}
@@ -56,10 +63,10 @@
 	const showEndpoint = $derived(selectedProvider === 'ollama');
 	const continueLabel = $derived(
 		selectedProvider === 'skip'
-			? 'Continue without AI'
+			? $t('onboarding_ai_continue_without')
 			: localProbe && (!localProbe.chatOk || !localProbe.embeddingOk)
-				? 'Try again'
-				: 'Continue'
+				? $t('common_try_again')
+				: $t('common_continue')
 	);
 
 	function selectProvider(id: Provider) {
@@ -82,7 +89,7 @@
 		stopCheckTimer();
 		checkingModels = false;
 		submitting = false;
-		if (showMessage) testError = 'Model checks canceled. You can try again.';
+		if (showMessage) testError = $t('onboarding_ai_checks_canceled');
 	}
 
 	onDestroy(() => {
@@ -104,14 +111,14 @@
 				if (!(await onboarding.completeStep(4))) return;
 			} else {
 				if (selectedProvider === 'openai' && !sharedOpenAiKey.trim()) {
-					testError = 'Enter an OpenAI API key, or choose Skip to configure Mila later.';
+					testError = $t('onboarding_ai_key_required');
 					return;
 				}
 				if (
 					selectedProvider === 'ollama' &&
 					(!localChatModel.trim() || !localEmbeddingModel.trim())
 				) {
-					testError = 'Enter both model IDs exposed by your local server.';
+					testError = $t('onboarding_ai_models_required');
 					return;
 				}
 				const testBody = buildTestBody();
@@ -137,16 +144,18 @@
 							chatOk: result.chat_model_ok,
 							embeddingOk: result.embedding_model_ok,
 							chatMessage: result.chat_model_ok
-								? `Connected to ${localChatModel.trim()}`
-								: (result.chat_error ?? 'Chat model connection failed'),
+								? $t('onboarding_ai_connected_to', { values: { model: localChatModel.trim() } })
+								: (result.chat_error ?? $t('onboarding_ai_chat_failed')),
 							embeddingMessage: result.embedding_model_ok
-								? `Connected, ${result.embedding_dim ?? 768} dimensions`
-								: (result.embedding_error ?? 'Embedding model connection failed')
+								? $t('onboarding_ai_embedding_connected', {
+										values: { count: result.embedding_dim ?? 768 }
+									})
+								: (result.embedding_error ?? $t('onboarding_ai_embedding_failed'))
 						};
 					}
 					if (!result?.success) {
 						if (selectedProvider === 'openai') {
-							testError = result?.error ?? 'Connection test failed. Check your credentials.';
+							testError = result?.error ?? $t('onboarding_ai_credentials_failed');
 						}
 						return;
 					}
@@ -170,7 +179,7 @@
 		} catch (error) {
 			if (generation !== checkGeneration) return;
 			if (error instanceof DOMException && error.name === 'AbortError') return;
-			testError = error instanceof Error ? error.message : 'Connection test failed. Try again.';
+			testError = error instanceof Error ? error.message : $t('onboarding_ai_connection_failed');
 		} finally {
 			if (generation === checkGeneration) {
 				checkingModels = false;
@@ -209,8 +218,8 @@
 </script>
 
 <StepLayout
-	title="Supercharge your reading with Mila"
-	description="Mila can summarize, auto-tag, and chat about your documents. Connect a provider now or set it up later."
+	title={$t('onboarding_ai_title')}
+	description={$t('onboarding_ai_description')}
 	currentStep={4}
 	{continueLabel}
 	showSkip
@@ -220,7 +229,7 @@
 	onSkip={handleSkip}
 >
 	<div class="ai-content">
-		<p class="section-label">Choose a provider</p>
+		<p class="section-label">{$t('onboarding_ai_choose_provider')}</p>
 
 		<div class="provider-list">
 			{#each providers as provider (provider.id)}
@@ -270,8 +279,8 @@
 						{/if}
 					</div>
 					<div class="provider-text">
-						<span class="provider-name">{provider.label}</span>
-						<span class="provider-desc">{provider.description}</span>
+						<span class="provider-name">{$t(provider.labelKey)}</span>
+						<span class="provider-desc">{$t(provider.descriptionKey)}</span>
 					</div>
 					<div class="radio" aria-hidden="true">
 						{#if selectedProvider === provider.id}
@@ -294,7 +303,7 @@
 
 		{#if showSharedOpenAiKey}
 			<label class="field">
-				<span class="field-label">API key</span>
+				<span class="field-label">{$t('onboarding_ai_api_key')}</span>
 				<input
 					type="password"
 					class="field-input"
@@ -309,16 +318,16 @@
 			<div class="model-checks" role="status" aria-live="polite">
 				<div class="model-check-row">
 					<span class="check-spinner" aria-hidden="true"></span>
-					<span>Checking chat model…</span>
+					<span>{$t('onboarding_ai_checking_chat')}</span>
 				</div>
 				<div class="model-check-row">
 					<span class="check-spinner" aria-hidden="true"></span>
-					<span>Checking embedding model…</span>
+					<span>{$t('onboarding_ai_checking_embedding')}</span>
 				</div>
 				<div class="model-check-footer">
-					<span>{checkElapsedSeconds}s elapsed</span>
+					<span>{$t('onboarding_ai_elapsed', { values: { seconds: checkElapsedSeconds } })}</span>
 					<button type="button" class="cancel-checks" onclick={() => cancelModelChecks()}>
-						Cancel model checks
+						{$t('onboarding_ai_cancel_checks')}
 					</button>
 				</div>
 			</div>
@@ -328,7 +337,7 @@
 			<p class="test-error">{testError}</p>
 		{/if}
 
-		<p class="note">AI is optional. All features work without it.</p>
+		<p class="note">{$t('onboarding_ai_optional')}</p>
 	</div>
 </StepLayout>
 

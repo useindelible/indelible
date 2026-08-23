@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CheckRow from './CheckRow.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		label: string;
@@ -32,10 +33,10 @@
 	const hint = $derived(
 		hasStoredKey
 			? typed
-				? 'Replaces the saved key'
-				: 'Already configured · enter to replace'
+				? $t('prefs_ai_key_replaces_saved')
+				: $t('prefs_ai_key_already_configured')
 			: typed
-				? 'New key — saved on next save'
+				? $t('prefs_ai_key_new')
 				: emptyHint
 	);
 	// Removing a saved key only makes sense when no replacement has been typed.
@@ -59,7 +60,9 @@
 		<button
 			type="button"
 			class="eye-btn"
-			aria-label={show ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+			aria-label={$t(show ? 'prefs_ai_hide_field' : 'prefs_ai_show_field', {
+				values: { label }
+			})}
 			onclick={onToggleShow}
 		>
 			{#if show}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SearchEntityCardResponse } from '$lib/api/generated/types.gen';
+	import { date, t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		entityCard: SearchEntityCardResponse;
@@ -10,18 +11,19 @@
 	let { entityCard, onFilter, filterActive = false }: Props = $props();
 
 	function formatDate(iso: string): string {
-		return new Date(iso).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+		return $date(new Date(iso), { month: 'short', year: 'numeric' });
 	}
 
 	function typeLabel(type: string): string {
-		const labels: Record<string, string> = {
-			person: 'Person',
-			organization: 'Organization',
-			location: 'Location',
-			event: 'Event',
-			work: 'Work'
+		const labels: Record<string, MessageKey> = {
+			person: 'search_entity_type_person',
+			organization: 'search_entity_type_organization',
+			location: 'search_entity_type_location',
+			event: 'search_entity_type_event',
+			work: 'search_entity_type_work'
 		};
-		return labels[type.toLowerCase()] ?? type;
+		const key = labels[type.toLowerCase()];
+		return key ? $t(key) : type;
 	}
 
 	const normalizedType = $derived(entityCard.entity_type.toLowerCase());
@@ -100,12 +102,15 @@
 			<span class="entity-type-pill {normalizedType}">{typeLabel(entityCard.entity_type)}</span>
 		</div>
 		<div class="entity-card-stats">
-			{entityCard.mention_count} mention{entityCard.mention_count !== 1 ? 's' : ''} in your library
+			{$t('search_entity_mention_count', { values: { count: entityCard.mention_count } })}
 		</div>
 		<div class="entity-card-dates">
-			First seen {formatDate(entityCard.first_seen_at)} &middot; Most recent {formatDate(
-				entityCard.last_seen_at
-			)}
+			{$t('search_entity_dates', {
+				values: {
+					first: formatDate(entityCard.first_seen_at),
+					recent: formatDate(entityCard.last_seen_at)
+				}
+			})}
 		</div>
 	</div>
 
@@ -122,7 +127,7 @@
 			>
 				<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
 			</svg>
-			Filter by entity
+			{$t('search_filter_by_entity')}
 		</button>
 	{/if}
 </div>

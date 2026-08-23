@@ -6,6 +6,7 @@
 	import { renderPdfTextLayer } from './pdf/pdf-text-layer';
 	import { applyThemeRemap, type PdfThemeMode } from './pdf/pdf-dark-mode';
 	import './pdf/pdf-text-layer.css';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		content: BookPageContent | null;
@@ -160,7 +161,7 @@
 
 {#if loading}
 	<div class="book-page-loading">
-		<span class="loading-text">Loading chapter...</span>
+		<span class="loading-text">{$t('reader_loading_chapter')}</span>
 	</div>
 {:else if content?.type === 'html'}
 	<div class="book-page-scroll" bind:this={scrollEl} onscroll={handleScroll}>
@@ -175,7 +176,9 @@
 			style:--reader-text-align={prefs.textAlign}
 		>
 			<div class="chapter-label">
-				{content.title.match(/^\d/) ? `Chapter ${content.title.split(/\s/)[0]}` : ''}
+				{content.title.match(/^\d/)
+					? $t('reader_chapter_fallback', { values: { number: content.title.split(/\s/)[0] } })
+					: ''}
 			</div>
 			<h1 class="chapter-title">{content.title}</h1>
 
@@ -202,7 +205,7 @@
 	</div>
 {:else}
 	<div class="book-page-loading">
-		<span class="loading-text">No content available</span>
+		<span class="loading-text">{$t('reader_no_content')}</span>
 	</div>
 {/if}
 

@@ -53,7 +53,9 @@ describe('developer settings model', () => {
 		expect(statusClassFor(500)).toBe('s5xx');
 		expect(statusClassFor(null)).toBe('s5xx');
 		expect(lastStatusClass(endpoint({ is_active: false }))).toBe('paused');
-		expect(lastStatusLabel(endpoint({ last_status: 'failing' }))).toBe('Failing');
+		expect(lastStatusLabel(endpoint({ last_status: 'failing' }))).toBe(
+			'prefs_developer_status_failing'
+		);
 	});
 
 	it('counts selected webhook events', () => {

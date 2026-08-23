@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t, type MessageKey } from '$lib/i18n';
+
 	interface Props {
 		value: string | null;
 		onChange: (color: string | null) => void;
@@ -7,22 +9,22 @@
 	let { value, onChange }: Props = $props();
 
 	const PALETTE = [
-		{ label: 'Yellow', value: '#FFD600' },
-		{ label: 'Blue', value: '#0A84FF' },
-		{ label: 'Green', value: '#34C759' },
-		{ label: 'Pink', value: '#FF2D55' },
-		{ label: 'Purple', value: '#AF52DE' }
+		{ labelKey: 'tag_color_yellow', value: '#FFD600' },
+		{ labelKey: 'tag_color_blue', value: '#0A84FF' },
+		{ labelKey: 'tag_color_green', value: '#34C759' },
+		{ labelKey: 'tag_color_pink', value: '#FF2D55' },
+		{ labelKey: 'tag_color_purple', value: '#AF52DE' }
 	];
 </script>
 
-<div class="color-picker" role="radiogroup" aria-label="Tag color">
+<div class="color-picker" role="radiogroup" aria-label={$t('tag_color')}>
 	<button
 		type="button"
 		class="swatch"
 		class:selected={!value}
 		role="radio"
 		aria-checked={!value}
-		aria-label="No color"
+		aria-label={$t('tag_color_none')}
 		onclick={() => onChange(null)}
 	>
 		<span class="swatch-inner swatch-none">-</span>
@@ -34,7 +36,7 @@
 			class:selected={value === color.value}
 			role="radio"
 			aria-checked={value === color.value}
-			aria-label={color.label}
+			aria-label={$t(color.labelKey as MessageKey)}
 			onclick={() => onChange(color.value)}
 		>
 			<span class="swatch-inner" style="background: {color.value}"></span>

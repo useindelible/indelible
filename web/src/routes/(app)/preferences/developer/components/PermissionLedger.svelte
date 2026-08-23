@@ -9,6 +9,7 @@
 		type ResourceAccessLevel,
 		type ResourcePermissionKey
 	} from '../developer-model';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		permissions: Set<PermissionKey>;
@@ -26,10 +27,10 @@
 		onToggleAllPermissions
 	}: Props = $props();
 
-	const LEVELS: Array<{ value: ResourceAccessLevel; label: string }> = [
-		{ value: 'none', label: 'None' },
-		{ value: 'read', label: 'Read' },
-		{ value: 'write', label: 'Read + write' }
+	const LEVELS: Array<{ value: ResourceAccessLevel; labelKey: MessageKey }> = [
+		{ value: 'none', labelKey: 'prefs_developer_access_none' },
+		{ value: 'read', labelKey: 'prefs_developer_access_read' },
+		{ value: 'write', labelKey: 'prefs_developer_access_write' }
 	];
 
 	const granted = $derived(
@@ -41,31 +42,36 @@
 	<div class="perm-bar">
 		<span class="summary">
 			{#if granted.length}
-				<strong>{granted.length}</strong>
-				permission{granted.length === 1 ? '' : 's'} granted
+				{$t('prefs_developer_permissions_granted', { values: { count: granted.length } })}
 			{:else}
-				No permissions granted
+				{$t('prefs_developer_no_permissions')}
 			{/if}
 		</span>
 		<button type="button" class="perm-all" onclick={onToggleAllPermissions}>
-			{allPermissionsSelected ? 'Clear all' : 'Grant everything'}
+			{$t(allPermissionsSelected ? 'prefs_developer_clear_all' : 'prefs_developer_grant_all')}
 		</button>
 	</div>
 
 	<div class="ledger">
 		<div class="ledger-head">
-			<span>Resources</span>
-			<span class="hint">Choose a level</span>
+			<span>{$t('prefs_developer_resources')}</span>
+			<span class="hint">{$t('prefs_developer_choose_level')}</span>
 		</div>
 
 		{#each RESOURCE_PERMISSION_GROUPS as group (group.key)}
 			{@const level = resourceAccessLevel(permissions, group.key)}
 			<div class="res" data-level={level}>
 				<div class="res-copy">
-					<div class="n">{group.label}</div>
-					<div class="d">{group.desc}</div>
+					<div class="n">{$t(group.labelKey)}</div>
+					<div class="d">{$t(group.descKey)}</div>
 				</div>
-				<div class="levels" role="radiogroup" aria-label={`${group.label} access`}>
+				<div
+					class="levels"
+					role="radiogroup"
+					aria-label={$t('prefs_developer_resource_access', {
+						values: { resource: $t(group.labelKey) }
+					})}
+				>
 					<span class="thumb" aria-hidden="true"></span>
 					{#each LEVELS as option (option.value)}
 						<label class="level">
@@ -76,7 +82,7 @@
 								checked={level === option.value}
 								onchange={() => onSetResourceAccess(group.key, option.value)}
 							/>
-							<span>{option.label}</span>
+							<span>{$t(option.labelKey)}</span>
 						</label>
 					{/each}
 				</div>
@@ -84,8 +90,8 @@
 		{/each}
 
 		<div class="ledger-head second">
-			<span>Capabilities</span>
-			<span class="hint">On or off</span>
+			<span>{$t('prefs_developer_capabilities')}</span>
+			<span class="hint">{$t('prefs_developer_on_or_off')}</span>
 		</div>
 
 		{#each INDEPENDENT_PERMISSION_DEFS as permission (permission.key)}
@@ -102,25 +108,25 @@
 					<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
 				</span>
 				<span class="cap-copy">
-					<span class="n">{permission.label}<code>{permission.key}</code></span>
-					<span class="d">{permission.desc}</span>
+					<span class="n">{$t(permission.labelKey)}<code>{permission.key}</code></span>
+					<span class="d">{$t(permission.descKey)}</span>
 				</span>
-				<span class="via">Included</span>
+				<span class="via">{$t('prefs_developer_included')}</span>
 			</button>
 		{/each}
 	</div>
 
 	<div class="manifest">
 		<div class="manifest-bar">
-			<span class="k">permissions</span>
-			<span>granted to this token</span>
+			<span class="k">{$t('prefs_developer_permissions')}</span>
+			<span>{$t('prefs_developer_granted_to_token')}</span>
 			<span class="n">{granted.length}</span>
 		</div>
 		<div class="manifest-body">
 			{#each granted as permission (permission)}
 				<PermissionChip {permission} />
 			{:else}
-				<span class="manifest-empty">Nothing granted yet — this token can't call the API.</span>
+				<span class="manifest-empty">{$t('prefs_developer_nothing_granted')}</span>
 			{/each}
 		</div>
 	</div>
@@ -144,11 +150,6 @@
 		font-size: 11.5px;
 		color: var(--text-tertiary);
 		letter-spacing: -0.005em;
-	}
-
-	.summary strong {
-		color: var(--text-secondary);
-		font-weight: 600;
 	}
 
 	.perm-all {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { get } from 'svelte/store';
 
 import type { IntegrationConnectionDto } from '$lib/api';
+import { locale, setupI18nSync, t } from '$lib/i18n';
+import en from '$lib/i18n/locales/en.json';
+import fr from '$lib/i18n/locales/fr.json';
 import {
 	formatNotionHeroLastSync,
 	getNotionDatabaseLabel,
@@ -36,20 +40,26 @@ function connection(overrides: Partial<IntegrationConnectionDto> = {}): Integrat
 
 describe('notion route model', () => {
 	it('derives workspace and database labels from Notion connections', () => {
+		setupI18nSync({ en, fr }, 'fr');
 		expect(getNotionWorkspaceName(connection())).toBe('Research Desk');
 		expect(getNotionWorkspaceIcon(connection())).toBe('📚');
-		expect(getNotionDatabaseLabel('Research Desk')).toBe('Research Desk · Indelible');
-		expect(getNotionDatabaseLabel(null)).toBe('Indelible Library');
+		expect(getNotionDatabaseLabel('Research Desk', get(t))).toBe('Research Desk · Indelible');
+		expect(getNotionDatabaseLabel(null, get(t))).toBe('Bibliothèque Indelible');
 		expect(getNotionWorkspaceName(undefined)).toBeNull();
 	});
 
 	it('formats hero status and last sync labels', () => {
+		setupI18nSync({ en, fr }, 'fr');
 		const now = new Date('2026-05-03T12:00:00Z').getTime();
-		expect(formatNotionHeroLastSync(null, now)).toBe('Never');
-		expect(formatNotionHeroLastSync('bad-date', now)).toBe('Never');
-		expect(formatNotionHeroLastSync('2026-05-03T11:30:00Z', now)).toContain('30');
-		expect(getNotionHeroStatus('failed')).toBe('Attention');
-		expect(getNotionHeroStatus('syncing')).toBe('Syncing');
-		expect(getNotionHeroStatus('connected')).toBe('Connected');
+		expect(formatNotionHeroLastSync(null, get(t), get(locale), now)).toBe('Jamais synchronisé');
+		expect(formatNotionHeroLastSync('bad-date', get(t), get(locale), now)).toBe(
+			'Jamais synchronisé'
+		);
+		expect(formatNotionHeroLastSync('2026-05-03T11:30:00Z', get(t), get(locale), now)).toContain(
+			'il y a 30'
+		);
+		expect(get(t)(getNotionHeroStatus('failed'))).toBe('Attention');
+		expect(get(t)(getNotionHeroStatus('syncing'))).toBe('Synchronisation');
+		expect(get(t)(getNotionHeroStatus('connected'))).toBe('Connecté');
 	});
 });

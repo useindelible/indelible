@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 	import type { ReaderFontFamilyDto, ReaderFontSizeDto, ReaderLineHeightDto } from '$lib/api';
 	import { bumpFontSize } from '../reading-appearance-model';
 
@@ -7,7 +8,7 @@
 		fontFamily: ReaderFontFamilyDto;
 		fontSize: ReaderFontSizeDto;
 		lineHeight: ReaderLineHeightDto;
-		fontSizeLabel: Record<ReaderFontSizeDto, string>;
+		fontSizeLabel: Record<ReaderFontSizeDto, MessageKey>;
 		onFontFamilyChange: (value: ReaderFontFamilyDto) => void;
 		onFontSizeChange: (value: ReaderFontSizeDto) => void;
 		onLineHeightChange: (value: ReaderLineHeightDto) => void;
@@ -24,14 +25,17 @@
 	}: Props = $props();
 </script>
 
-<SettingsGroup title="Reader defaults" meta="Live-applied to the preview above">
+<SettingsGroup
+	title={$t('prefs_reading_reader_defaults')}
+	meta={$t('prefs_reading_reader_defaults_meta')}
+>
 	<div class="group-card">
 		<div class="row with-stack">
 			<div class="label-block">
-				<div class="label">Font family</div>
-				<div class="hint">The typeface used for article body text in the reader.</div>
+				<div class="label">{$t('prefs_reading_font_family')}</div>
+				<div class="hint">{$t('prefs_reading_font_family_hint')}</div>
 			</div>
-			<div class="tile-row" role="radiogroup" aria-label="Font family">
+			<div class="tile-row" role="radiogroup" aria-label={$t('prefs_reading_font_family')}>
 				<button
 					type="button"
 					class="font-tile"
@@ -39,11 +43,11 @@
 					class:selected={fontFamily === 'serif'}
 					role="radio"
 					aria-checked={fontFamily === 'serif'}
-					aria-label="Serif"
+					aria-label={$t('prefs_reading_font_serif')}
 					onclick={() => onFontFamilyChange('serif')}
 				>
 					<div class="glyph">Aa</div>
-					<div class="tag">Serif</div>
+					<div class="tag">{$t('prefs_reading_font_serif')}</div>
 				</button>
 				<button
 					type="button"
@@ -52,11 +56,11 @@
 					class:selected={fontFamily === 'sans'}
 					role="radio"
 					aria-checked={fontFamily === 'sans'}
-					aria-label="Sans"
+					aria-label={$t('prefs_reading_font_sans')}
 					onclick={() => onFontFamilyChange('sans')}
 				>
 					<div class="glyph">Aa</div>
-					<div class="tag">Sans</div>
+					<div class="tag">{$t('prefs_reading_font_sans')}</div>
 				</button>
 				<button
 					type="button"
@@ -65,20 +69,18 @@
 					class:selected={fontFamily === 'mono'}
 					role="radio"
 					aria-checked={fontFamily === 'mono'}
-					aria-label="Mono"
+					aria-label={$t('prefs_reading_font_mono')}
 					onclick={() => onFontFamilyChange('mono')}
 				>
 					<div class="glyph">Aa</div>
-					<div class="tag">Mono</div>
+					<div class="tag">{$t('prefs_reading_font_mono')}</div>
 				</button>
 			</div>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Font size</div>
-				<div class="hint">
-					Body text size in the reader. Headings and other elements scale with it.
-				</div>
+				<div class="label">{$t('prefs_reading_font_size')}</div>
+				<div class="hint">{$t('prefs_reading_font_size_hint')}</div>
 			</div>
 			<div class="stepper">
 				<button
@@ -86,17 +88,17 @@
 					class="stepper-btn"
 					onclick={() => onFontSizeChange(bumpFontSize(fontSize, -1))}
 					disabled={fontSize === 'small'}
-					aria-label="Decrease size"
+					aria-label={$t('prefs_reading_decrease_size')}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
 				</button>
-				<span class="stepper-value">{fontSizeLabel[fontSize]}</span>
+				<span class="stepper-value">{$t(fontSizeLabel[fontSize])}</span>
 				<button
 					type="button"
 					class="stepper-btn"
 					onclick={() => onFontSizeChange(bumpFontSize(fontSize, 1))}
 					disabled={fontSize === 'large'}
-					aria-label="Increase size"
+					aria-label={$t('prefs_reading_increase_size')}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
 				</button>
@@ -104,10 +106,10 @@
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Line height</div>
-				<div class="hint">Compact is dense; relaxed is airy.</div>
+				<div class="label">{$t('prefs_reading_line_height')}</div>
+				<div class="hint">{$t('prefs_reading_line_height_hint')}</div>
 			</div>
-			<div class="segmented" role="radiogroup" aria-label="Line height">
+			<div class="segmented" role="radiogroup" aria-label={$t('prefs_reading_line_height')}>
 				<button
 					type="button"
 					class="seg"
@@ -117,7 +119,7 @@
 					onclick={() => onLineHeightChange('compact')}
 				>
 					<span class="lh-bar lh-tight"><span></span><span></span><span></span></span>
-					Compact
+					{$t('prefs_reading_compact')}
 				</button>
 				<button
 					type="button"
@@ -128,7 +130,7 @@
 					onclick={() => onLineHeightChange('relaxed')}
 				>
 					<span class="lh-bar lh-loose"><span></span><span></span><span></span></span>
-					Relaxed
+					{$t('prefs_reading_relaxed')}
 				</button>
 			</div>
 		</div>

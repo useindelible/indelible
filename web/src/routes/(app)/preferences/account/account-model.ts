@@ -28,9 +28,9 @@ export function getAccountAvatarInitial({
 
 export function formatMemberSince(iso: string | null | undefined): string {
 	if (!iso) return '';
-	const date = new Date(iso);
-	if (Number.isNaN(date.getTime())) return '';
-	return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+	const parsed = new Date(iso);
+	if (Number.isNaN(parsed.getTime())) return '';
+	return get(date)(parsed, { month: 'short', year: 'numeric' });
 }
 
 export function isDeleteEmailConfirmed(
@@ -42,3 +42,5 @@ export function isDeleteEmailConfirmed(
 		confirmEmail.length > 0
 	);
 }
+import { date } from '$lib/i18n';
+import { get } from 'svelte/store';

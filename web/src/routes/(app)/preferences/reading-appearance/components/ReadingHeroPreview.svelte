@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
+	import { t } from '$lib/i18n';
 	import type { ReaderPreviewStyles } from '../reading-appearance-model';
 
 	interface Props {
@@ -11,11 +12,11 @@
 
 <SettingsHero variant="reading">
 	<div class="hero-text">
-		<div class="hero-eyebrow">Reading &amp; Appearance</div>
-		<h1 class="hero-title">Read like you <em>mean it.</em></h1>
-		<p class="hero-sub">
-			A reader, a theme, a feel. Tune the page below — the preview to the right responds in kind.
-		</p>
+		<div class="hero-eyebrow">{$t('settings_reading_appearance')}</div>
+		<h1 class="hero-title">
+			{$t('prefs_reading_hero_title')} <em>{$t('prefs_reading_hero_emphasis')}</em>
+		</h1>
+		<p class="hero-sub">{$t('prefs_reading_hero_subtitle')}</p>
 	</div>
 	<div class="reader-tile-wrap">
 		<article
@@ -29,16 +30,15 @@
 			</div>
 			<div class="reader-tile-byline">
 				<span class="ind">i</span>
-				<span>Indelible Journal</span>
+				<span>{$t('prefs_reading_preview_source')}</span>
 				<span>·</span>
-				<span>3 min read</span>
+				<span>{$t('prefs_reading_preview_time')}</span>
 			</div>
-			<h2 class="reader-tile-h">What we save says who we are.</h2>
+			<h2 class="reader-tile-h">{$t('prefs_reading_preview_title')}</h2>
 			<div class="reader-tile-rule"></div>
 			<p class="reader-tile-p">
-				An archive worth keeping is one you'd want to revisit. Indelible holds onto the things you
-				care about — articles, highlights, notes, papers — so you can come back to them at
-				<span class="lk">your own pace, in your own light</span>.
+				{$t('prefs_reading_preview_body')}
+				<span class="lk">{$t('prefs_reading_preview_body_emphasis')}</span>.
 			</p>
 		</article>
 	</div>

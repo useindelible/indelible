@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	type SettingsRoute =
 		| '/preferences/account'
@@ -16,24 +17,24 @@
 		'account' | 'reading' | 'integrations' | 'feed' | 'email' | 'archival' | 'mila' | 'developer';
 
 	interface NavItem {
-		label: string;
+		labelKey: MessageKey;
 		href: SettingsRoute;
 		icon: IconKey;
 	}
 
 	const sections: NavItem[] = [
-		{ label: 'Account', href: '/preferences/account', icon: 'account' },
+		{ labelKey: 'settings_account', href: '/preferences/account', icon: 'account' },
 		{
-			label: 'Reading & Appearance',
+			labelKey: 'settings_reading_appearance',
 			href: '/preferences/reading-appearance',
 			icon: 'reading'
 		},
-		{ label: 'Integrations', href: '/preferences/integrations', icon: 'integrations' },
-		{ label: 'Feed Management', href: '/preferences/feed-management', icon: 'feed' },
-		{ label: 'Email', href: '/preferences/email', icon: 'email' },
-		{ label: 'Archival', href: '/preferences/archival', icon: 'archival' },
-		{ label: 'Mila & AI', href: '/preferences/ai', icon: 'mila' },
-		{ label: 'Developer', href: '/preferences/developer', icon: 'developer' }
+		{ labelKey: 'settings_integrations', href: '/preferences/integrations', icon: 'integrations' },
+		{ labelKey: 'settings_feed_management', href: '/preferences/feed-management', icon: 'feed' },
+		{ labelKey: 'settings_email', href: '/preferences/email', icon: 'email' },
+		{ labelKey: 'settings_archival', href: '/preferences/archival', icon: 'archival' },
+		{ labelKey: 'settings_ai', href: '/preferences/ai', icon: 'mila' },
+		{ labelKey: 'settings_developer', href: '/preferences/developer', icon: 'developer' }
 	];
 
 	function isActive(href: SettingsRoute): boolean {
@@ -41,8 +42,8 @@
 	}
 </script>
 
-<nav class="settings-nav" aria-label="Settings navigation">
-	<div class="settings-nav-section">Preferences</div>
+<nav class="settings-nav" aria-label={$t('settings_navigation')}>
+	<div class="settings-nav-section">{$t('settings_preferences')}</div>
 	<ul class="settings-nav-list">
 		{#each sections as item (item.href)}
 			<li>
@@ -99,7 +100,7 @@
 							</svg>
 						{/if}
 					</span>
-					<span class="nav-label">{item.label}</span>
+					<span class="nav-label">{$t(item.labelKey)}</span>
 				</a>
 			</li>
 		{/each}

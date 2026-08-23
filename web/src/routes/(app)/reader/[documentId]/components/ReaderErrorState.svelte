@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		message: string;
 		onBack: () => void;
@@ -9,7 +11,9 @@
 
 <div class="reader-error-page">
 	<p>{message}</p>
-	<button type="button" class="error-back-btn" onclick={onBack}>Return to library</button>
+	<button type="button" class="error-back-btn" onclick={onBack}
+		>{$t('reader_return_to_library')}</button
+	>
 </div>
 
 <style>

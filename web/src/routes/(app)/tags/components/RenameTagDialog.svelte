@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		value: string;
@@ -21,7 +22,7 @@
 	class="cmd-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label="Rename tag"
+	aria-label={$t('tag_rename_dialog')}
 	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(event) => {
@@ -40,7 +41,7 @@
 				class="cmd-input"
 				type="text"
 				{value}
-				placeholder="New name…"
+				placeholder={$t('tag_rename_placeholder')}
 				oninput={(event) => onValueChange(event.currentTarget.value)}
 				onkeydown={(event) => {
 					if (event.key === 'Enter' && value.trim()) onSubmit();
@@ -48,9 +49,9 @@
 			/>
 		</div>
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+			<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 			<button type="button" class="cmd-action" disabled={!value.trim()} onclick={onSubmit}
-				>Save</button
+				>{$t('common_save')}</button
 			>
 		</div>
 	</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ArchiveFormat } from '../archival-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		format: ArchiveFormat;
@@ -38,17 +39,17 @@
 	</div>
 	<div class="meta">
 		<div class="name">
-			{format.label}
+			{$t(format.labelKey)}
 			{#if format.alwaysOn}
 				<span class="badge always">
 					<svg viewBox="0 0 14 14"><path d="M2.5 7.5L5.5 10.5L11.5 3.5" /></svg>
-					Always on
+					{$t('archival_always_on')}
 				</span>
 			{:else if format.comingSoon}
-				<span class="badge coming">Coming soon</span>
+				<span class="badge coming">{$t('common_coming_soon')}</span>
 			{/if}
 		</div>
-		<div class="desc">{format.desc}</div>
+		<div class="desc">{$t(format.descKey)}</div>
 	</div>
 	<div class="size">{format.size}</div>
 	<div></div>
@@ -61,10 +62,10 @@
 		aria-checked={on}
 		aria-disabled={format.alwaysOn || format.comingSoon}
 		aria-label={format.alwaysOn
-			? `${format.label} always enabled`
+			? $t('archival_format_always_enabled', { values: { format: $t(format.labelKey) } })
 			: format.comingSoon
-				? `${format.label} coming soon`
-				: format.label}
+				? $t('archival_format_coming_soon', { values: { format: $t(format.labelKey) } })
+				: $t(format.labelKey)}
 		onclick={onToggle}
 	></button>
 </div>

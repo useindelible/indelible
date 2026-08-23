@@ -12,6 +12,8 @@ import type {
 	ThemeDto,
 	TriageModeDto
 } from '$lib/api';
+import type { MessageKey, Translate } from '$lib/i18n';
+import { matchLocale, systemLocale } from '$lib/i18n';
 
 export interface ReadingAppearanceDraft {
 	theme: ThemeDto;
@@ -35,11 +37,11 @@ export interface ReaderPreviewStyles {
 	lineHeight: string;
 }
 
-export const ACCENT_SWATCHES: { value: AccentColorDto; label: string }[] = [
-	{ value: 'blue', label: 'Blue' },
-	{ value: 'green', label: 'Green' },
-	{ value: 'rose', label: 'Rose' },
-	{ value: 'orange', label: 'Orange' }
+export const ACCENT_SWATCHES: { value: AccentColorDto; labelKey: MessageKey }[] = [
+	{ value: 'blue', labelKey: 'prefs_reading_color_blue' },
+	{ value: 'green', labelKey: 'prefs_reading_color_green' },
+	{ value: 'rose', labelKey: 'prefs_reading_color_rose' },
+	{ value: 'orange', labelKey: 'prefs_reading_color_orange' }
 ];
 
 export const FONT_SIZES = [
@@ -48,22 +50,41 @@ export const FONT_SIZES = [
 	'large'
 ] as const satisfies readonly ReaderFontSizeDto[];
 
-export const FONT_SIZE_LABEL: Record<ReaderFontSizeDto, string> = {
-	small: 'Small',
-	medium: 'Medium',
-	large: 'Large'
+export const FONT_SIZE_LABEL: Record<ReaderFontSizeDto, MessageKey> = {
+	small: 'prefs_reading_size_small',
+	medium: 'prefs_reading_size_medium',
+	large: 'prefs_reading_size_large'
 };
 
-export const LOCALES = [
-	{ value: 'en-GB', label: 'English (United Kingdom)' },
-	{ value: 'en-US', label: 'English (United States)' },
-	{ value: 'fr-FR', label: 'Français' },
-	{ value: 'de-DE', label: 'Deutsch' },
-	{ value: 'es-ES', label: 'Español' },
-	{ value: 'ja-JP', label: '日本語' },
-	{ value: 'ko-KR', label: '한국어' },
-	{ value: 'zh-CN', label: '简体中文' }
-];
+export const SYSTEM_LOCALE_OPTION = '';
+
+const LANGUAGE_LABEL_KEYS: Record<'en' | 'fr', MessageKey> = {
+	en: 'prefs_reading_language_english',
+	fr: 'prefs_reading_language_french'
+};
+
+export function localeOptions(
+	translate: Translate,
+	navigatorLanguages?: readonly string[]
+): { value: string; label: string }[] {
+	const detected = systemLocale(navigatorLanguages);
+	return [
+		{
+			value: SYSTEM_LOCALE_OPTION,
+			label: translate('prefs_reading_language_system', {
+				values: { language: translate(LANGUAGE_LABEL_KEYS[detected as 'en' | 'fr']) }
+			})
+		},
+		...(['en', 'fr'] as const).map((value) => ({
+			value,
+			label: translate(LANGUAGE_LABEL_KEYS[value])
+		}))
+	];
+}
+
+export function selectedLocaleValue(profileLocale: string | null | undefined): string {
+	return matchLocale(profileLocale) ?? SYSTEM_LOCALE_OPTION;
+}
 
 export function draftFromPreferences(
 	data: PreferencesSettingsResponse,
@@ -101,6 +122,23 @@ export function readingAppearanceSnapshot(draft: ReadingAppearanceDraft): string
 		lineHeight: draft.lineHeight,
 		emailOpenMode: draft.emailOpenMode,
 		locale: draft.locale
+	});
+}
+
+export function readingPreferencesSnapshot(draft: ReadingAppearanceDraft): string {
+	return JSON.stringify({
+		theme: draft.theme,
+		accentColor: draft.accentColor,
+		sidebarMode: draft.sidebarMode,
+		defaultView: draft.defaultView,
+		listDensity: draft.listDensity,
+		sidePanel: draft.sidePanel,
+		triageMode: draft.triageMode,
+		autoAdvance: draft.autoAdvance,
+		fontFamily: draft.fontFamily,
+		fontSize: draft.fontSize,
+		lineHeight: draft.lineHeight,
+		emailOpenMode: draft.emailOpenMode
 	});
 }
 

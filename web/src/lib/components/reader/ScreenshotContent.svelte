@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		downloadUrl: string;
 	}
@@ -7,7 +9,7 @@
 </script>
 
 <div class="screenshot-container">
-	<img src={downloadUrl} alt="Page screenshot" class="screenshot-img" />
+	<img src={downloadUrl} alt={$t('reader_page_screenshot')} class="screenshot-img" />
 </div>
 
 <style>

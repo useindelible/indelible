@@ -61,10 +61,8 @@ export function isTerminalImportStatus(status: string): boolean {
 	);
 }
 
-// Backend exposes only opaque `last_error` text in v1 (structured
-// `retry_after_until` is deferred — see TASK-206 plan). These heuristics keep
-// recoverable-failure messaging visible without extra wire shape; false
-// positives just add an extra hint affordance and are cheap.
+// The backend exposes opaque `last_error` text rather than structured failure details.
+// These heuristics keep recoverable-failure messaging visible without changing the wire shape.
 export function detectRateLimit(lastError: string | null | undefined): boolean {
 	if (!lastError) return false;
 	const lower = lastError.toLowerCase();

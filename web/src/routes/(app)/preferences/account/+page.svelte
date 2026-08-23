@@ -4,6 +4,7 @@
 	import { uploadAvatar, MAX_AVATAR_SIZE_BYTES } from '$lib/api/avatar';
 	import SavePill from '$lib/components/settings/SavePill.svelte';
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 	import {
 		createAccountSnapshot,
 		formatMemberSince,
@@ -88,11 +89,11 @@
 		if (!file) return;
 
 		if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-			saveError = 'Please select a JPEG, PNG, or WebP image';
+			saveError = $t('account_avatar_invalid');
 			return;
 		}
 		if (file.size > MAX_AVATAR_SIZE_BYTES) {
-			saveError = 'Image must be smaller than 2 MB';
+			saveError = $t('account_avatar_too_large');
 			return;
 		}
 
@@ -119,10 +120,10 @@
 			if (!result.success) {
 				switch (result.error.code) {
 					case 'invalid_type':
-						saveError = 'Unsupported image type';
+						saveError = $t('account_avatar_unsupported');
 						break;
 					case 'too_large':
-						saveError = 'Image must be smaller than 2 MB';
+						saveError = $t('account_avatar_too_large');
 						break;
 					default:
 						saveError = result.error.message;
@@ -144,7 +145,7 @@
 				showSaved = false;
 			}, 2000);
 		} else {
-			saveError = result.error ?? 'Update failed';
+			saveError = result.error ?? $t('auth_error_update_failed');
 		}
 		saving = false;
 	}
@@ -164,11 +165,11 @@
 
 	async function handlePasswordChange() {
 		if (pwNew !== pwConfirm) {
-			pwError = 'New passwords do not match';
+			pwError = $t('account_passwords_mismatch');
 			return;
 		}
 		if (pwNew.length < 12) {
-			pwError = 'Password must be at least 12 characters';
+			pwError = $t('account_password_too_short');
 			return;
 		}
 		pwSaving = true;
@@ -181,7 +182,7 @@
 			pwConfirm = '';
 			pwSuccess = true;
 		} else {
-			pwError = result.error ?? 'Password change failed';
+			pwError = result.error ?? $t('auth_error_password_change_failed');
 		}
 		pwSaving = false;
 	}
@@ -194,7 +195,7 @@
 
 	async function handleDeleteAccount() {
 		if (!deleteEmailMatches) {
-			deleteError = 'Email does not match';
+			deleteError = $t('account_email_mismatch');
 			return;
 		}
 		deleting = true;
@@ -203,7 +204,7 @@
 		if (result.success) {
 			window.location.href = '/login';
 		} else {
-			deleteError = result.error ?? 'Account deletion failed';
+			deleteError = result.error ?? $t('auth_error_account_deletion_failed');
 			deleting = false;
 		}
 	}
@@ -252,15 +253,12 @@
 
 		<DataExportSection />
 
-		<SettingsGroup title="Danger zone" danger>
+		<SettingsGroup title={$t('account_danger_zone')} danger>
 			<div class="group-card danger">
 				<div class="row">
 					<div class="label-block">
-						<div class="label">Delete your account</div>
-						<div class="hint">
-							Permanently delete your account and every item, highlight, and collection within it.
-							This cannot be undone.
-						</div>
+						<div class="label">{$t('account_delete_title')}</div>
+						<div class="hint">{$t('account_delete_hint')}</div>
 					</div>
 					<div>
 						<button
@@ -271,7 +269,7 @@
 								deleteError = '';
 							}}
 						>
-							Delete account
+							{$t('account_delete_action')}
 						</button>
 					</div>
 				</div>

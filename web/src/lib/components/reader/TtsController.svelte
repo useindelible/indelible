@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as apiSdk from '$lib/api';
 	import type {
@@ -50,7 +51,7 @@
 	let { documentId, articleBodyEl }: Props = $props();
 
 	let status = $state<TtsStatus>('idle');
-	let unavailableMessage = $state('');
+	let unavailableMessageKey = $state<MessageKey>('reader_tts_audio_unavailable');
 	let session = $state<SessionManifestResponse | null>(null);
 	let activeElementIndex = $state(0);
 	let speed = $state(1);
@@ -74,7 +75,7 @@
 	let playbackRequestId = 0;
 
 	const bannerForStatus = $derived(
-		status === 'unavailable' ? getTtsUnavailableBanner(unavailableMessage) : null
+		status === 'unavailable' ? getTtsUnavailableBanner(unavailableMessageKey) : null
 	);
 
 	$effect(() => {
@@ -153,7 +154,7 @@
 
 			if (error || !manifest) {
 				status = 'unavailable';
-				unavailableMessage = messageForTtsError(error);
+				unavailableMessageKey = messageForTtsError(error);
 				return;
 			}
 
@@ -165,7 +166,7 @@
 				manifest.chunks.find((chunk) => chunk.state === 'ready' && chunk.audio_url);
 			if (!readyChunk?.audio_url) {
 				status = 'unavailable';
-				unavailableMessage = 'Audio not yet available. Please try again shortly.';
+				unavailableMessageKey = 'reader_tts_audio_not_ready';
 				return;
 			}
 
@@ -182,7 +183,7 @@
 		} catch (error: unknown) {
 			if (!isCurrentPlaybackRequest(requestId)) return;
 			status = 'unavailable';
-			unavailableMessage = messageForTtsError(error);
+			unavailableMessageKey = messageForTtsError(error);
 		}
 	}
 
@@ -230,7 +231,7 @@
 		if (!isCurrentPlaybackRequest(requestId)) return;
 		if (!chunk.audio_url) {
 			status = 'unavailable';
-			unavailableMessage = 'Audio not yet available. Please try again shortly.';
+			unavailableMessageKey = 'reader_tts_audio_not_ready';
 			return;
 		}
 
@@ -368,7 +369,7 @@
 
 	function handleAudioError() {
 		status = 'unavailable';
-		unavailableMessage = 'Audio playback failed. Please try again.';
+		unavailableMessageKey = 'reader_tts_audio_playback_failed';
 		clearHighlight();
 	}
 
@@ -419,7 +420,7 @@
 				status = 'playing';
 			} catch {
 				status = 'unavailable';
-				unavailableMessage = 'Playback could not resume. Please try again.';
+				unavailableMessageKey = 'reader_tts_playback_resume_failed';
 			}
 		} else {
 			await startPlayback(activeElementIndex);
@@ -546,8 +547,8 @@
 {#if status === 'unavailable' && bannerForStatus}
 	<TtsBanner
 		variant={bannerForStatus.variant}
-		title={bannerForStatus.title}
-		message={bannerForStatus.message}
+		title={$t(bannerForStatus.titleKey)}
+		message={$t(bannerForStatus.messageKey)}
 	/>
 {:else if showResumePrompt && resumeState}
 	<TtsResumePrompt

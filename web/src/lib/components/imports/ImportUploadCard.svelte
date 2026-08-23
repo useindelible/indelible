@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		title: string;
@@ -23,7 +24,7 @@
 		busy = false,
 		disabled = false,
 		errorMessage,
-		submitLabel = 'Start import',
+		submitLabel,
 		onSubmit
 	}: Props = $props();
 
@@ -47,12 +48,13 @@
 
 	function validate(file: File): string | null {
 		if (!isAccepted(file)) {
-			const list = [...acceptedExtensions, ...acceptedMimeTypes].join(', ') || 'this provider';
-			return `Unsupported file type. Accepted: ${list}.`;
+			const list =
+				[...acceptedExtensions, ...acceptedMimeTypes].join(', ') || $t('imports_this_provider');
+			return $t('imports_unsupported_file_type', { values: { types: list } });
 		}
 		if (maxBytes !== undefined && file.size > maxBytes) {
 			const mb = Math.round(maxBytes / (1024 * 1024));
-			return `File is too large. Maximum size is ${mb} MB.`;
+			return $t('imports_file_too_large', { values: { size: mb } });
 		}
 		return null;
 	}
@@ -150,9 +152,11 @@
 			<p class="filename">{selectedFile.name}</p>
 			<p class="filemeta">{Math.round(selectedFile.size / 1024)} KB</p>
 		{:else}
-			<p class="prompt">Drop a file here or click to browse</p>
+			<p class="prompt">{$t('imports_drop_file')}</p>
 			{#if acceptedExtensions.length > 0}
-				<p class="hint">Accepted: {acceptedExtensions.join(', ')}</p>
+				<p class="hint">
+					{$t('imports_accepted_types', { values: { types: acceptedExtensions.join(', ') } })}
+				</p>
 			{/if}
 		{/if}
 	</div>
@@ -168,7 +172,7 @@
 	<div class="actions">
 		{#if selectedFile}
 			<Button variant="tertiary" size="sm" onclick={clearSelection} disabled={busy || disabled}>
-				Clear
+				{$t('common_clear')}
 			</Button>
 		{/if}
 		<Button
@@ -178,7 +182,7 @@
 			loading={busy}
 			disabled={!selectedFile || disabled}
 		>
-			{submitLabel}
+			{submitLabel ?? $t('imports_start')}
 		</Button>
 	</div>
 </section>

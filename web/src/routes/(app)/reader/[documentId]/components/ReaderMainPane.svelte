@@ -17,6 +17,7 @@
 	} from '$lib/components/reader/toc/active-section';
 	import type { ArticleTocEntry } from '$lib/api';
 	import type { ReaderFailurePresentation } from '../reader-page-model';
+	import { date, t } from '$lib/i18n';
 
 	type FocusState = 'idle' | 'selecting' | 'active' | 'paused' | 'completed';
 	type HighlightCreateInput = {
@@ -207,13 +208,13 @@
 			} else {
 				copyWithSelection(readerFailure.diagnosticId);
 			}
-			diagnosticCopyStatus = 'Diagnostic ID copied.';
+			diagnosticCopyStatus = $t('reader_copy_diagnostic_success');
 		} catch {
 			try {
 				copyWithSelection(readerFailure.diagnosticId);
-				diagnosticCopyStatus = 'Diagnostic ID copied.';
+				diagnosticCopyStatus = $t('reader_copy_diagnostic_success');
 			} catch {
-				diagnosticCopyStatus = 'Could not copy diagnostic ID.';
+				diagnosticCopyStatus = $t('reader_copy_diagnostic_failed');
 			}
 		}
 	}
@@ -236,8 +237,17 @@
 	}
 
 	function formatAttemptTime(value: string): string {
-		const date = new Date(value);
-		return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+		const parsed = new Date(value);
+		return Number.isNaN(parsed.getTime())
+			? value
+			: $date(parsed, {
+					year: 'numeric',
+					month: 'numeric',
+					day: 'numeric',
+					hour: 'numeric',
+					minute: 'numeric',
+					second: 'numeric'
+				});
 	}
 </script>
 
@@ -298,27 +308,29 @@
 		{#if activeTab === 'reader' && !readableReady}
 			<div class="content-loading" data-testid="preparing-reader">
 				<span class="loading-text">
-					{readerFailure ? readerFailure.title : 'Preparing readable content...'}
+					{readerFailure ? readerFailure.title : $t('reader_preparing_readable')}
 				</span>
 				{#if showReaderRetry || readerRetryStatus}
 					{#if showReaderRetry}
 						<p class="loading-hint">
-							{readerFailure ? readerFailure.guidance : 'This is taking longer than usual.'}
+							{readerFailure ? readerFailure.guidance : $t('reader_preparing_slow')}
 						</p>
 					{/if}
 					{#if readerFailure}
 						<div class="failure-diagnostics">
 							<div class="failure-meta">
 								<span>
-									Attempted
+									{$t('reader_attempted')}
 									<time datetime={readerFailure.attemptedAt} data-testid="reader-failure-attempt"
 										>{formatAttemptTime(readerFailure.attemptedAt)}</time
 									>
 								</span>
 								<span class="diagnostic-id">
-									Diagnostic ID <code>{readerFailure.diagnosticId}</code>
-									<button type="button" onclick={copyDiagnosticId} aria-label="Copy diagnostic ID"
-										>Copy</button
+									{$t('reader_diagnostic_id')} <code>{readerFailure.diagnosticId}</code>
+									<button
+										type="button"
+										onclick={copyDiagnosticId}
+										aria-label={$t('reader_copy_diagnostic')}>{$t('common_copy')}</button
 									>
 									{#if diagnosticCopyStatus}
 										<span
@@ -332,7 +344,7 @@
 							</div>
 							{#if readerFailure.technicalReason}
 								<details>
-									<summary>Technical details</summary>
+									<summary>{$t('reader_technical_details')}</summary>
 									<code>{readerFailure.technicalReason}</code>
 								</details>
 							{/if}
@@ -358,11 +370,8 @@
 		{:else if activeTab === 'reader'}
 			{#if transcriptUnavailable}
 				<div class="transcript-notice" role="status">
-					<strong>No transcript available</strong>
-					<span>
-						The video embed, metadata, and description remain available. Chat and Listen need a
-						transcript, so they are unavailable for this video.
-					</span>
+					<strong>{$t('reader_no_transcript_title')}</strong>
+					<span>{$t('reader_no_transcript_body')}</span>
 				</div>
 			{/if}
 			<ReaderContent
@@ -409,7 +418,7 @@
 			<ScreenshotContent downloadUrl={assetUrls.screenshot} />
 		{:else}
 			<div class="content-loading">
-				<span class="loading-text">Loading content...</span>
+				<span class="loading-text">{$t('reader_loading_content')}</span>
 			</div>
 		{/if}
 	</div>

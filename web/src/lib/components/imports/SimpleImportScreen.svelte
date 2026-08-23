@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 	import ProviderIcon from './ProviderIcon.svelte';
 	import ImportUploadCard from './ImportUploadCard.svelte';
 	import ImportProgressCard from './ImportProgressCard.svelte';
@@ -49,13 +50,13 @@
 
 <div class="screen">
 	<header class="screen-header">
-		<Button variant="tertiary" size="sm" onclick={onBack}>← Back</Button>
+		<Button variant="tertiary" size="sm" onclick={onBack}>← {$t('integrations_back')}</Button>
 		<div class="provider-identity">
 			<ProviderIcon provider={provider.id} size={32} />
 			<div class="provider-text">
 				<h2 class="provider-name">{provider.displayName}</h2>
-				{#if provider.importDescription}
-					<p class="provider-desc">{provider.importDescription}</p>
+				{#if provider.importDescriptionKey}
+					<p class="provider-desc">{$t(provider.importDescriptionKey)}</p>
 				{/if}
 			</div>
 		</div>
@@ -64,7 +65,7 @@
 	<div class="content">
 		{#if !activeJob}
 			<ImportUploadCard
-				title="Upload file"
+				title={$t('imports_upload_file')}
 				acceptedMimeTypes={provider.acceptedMimeTypes ?? []}
 				acceptedExtensions={provider.acceptedExtensions ?? []}
 				maxBytes={provider.maxBytes}
@@ -78,13 +79,17 @@
 			{#if pollError}
 				<p class="poll-error" role="alert">{pollError}</p>
 			{/if}
-			<button type="button" class="dismiss-btn" onclick={onDismiss}>Stop tracking</button>
+			<button type="button" class="dismiss-btn" onclick={onDismiss}
+				>{$t('imports_stop_tracking')}</button
+			>
 		{:else}
 			<ImportReport job={activeJob} canRollback={true} {onRollback} />
 			{#if rollbackNotice}
 				<p class="rollback-notice" role="status">{rollbackNotice}</p>
 			{/if}
-			<button type="button" class="dismiss-btn" onclick={onDismiss}>Dismiss</button>
+			<button type="button" class="dismiss-btn" onclick={onDismiss}
+				>{$t('integrations_dismiss')}</button
+			>
 		{/if}
 	</div>
 </div>

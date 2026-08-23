@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import type { Feed } from '../feed-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -14,15 +15,16 @@
 
 <ConfirmDialog
 	{open}
-	title="Remove Feed"
-	confirmLabel="Remove"
-	cancelLabel="Cancel"
+	title={$t('feed_management_remove_feed')}
+	confirmLabel={$t('common_remove')}
+	cancelLabel={$t('common_cancel')}
 	{onConfirm}
 	{onCancel}
 >
 	<p class="delete-copy">
-		Are you sure you want to unsubscribe from
-		<strong>{feed?.name ?? 'this feed'}</strong>? This cannot be undone.
+		{$t('feed_management_remove_confirm', {
+			values: { feed: feed?.name ?? $t('feed_management_this_feed') }
+		})}
 	</p>
 </ConfirmDialog>
 
@@ -33,10 +35,5 @@
 		font-size: 14px;
 		color: var(--text-secondary);
 		line-height: 1.5;
-	}
-
-	strong {
-		color: var(--text-primary);
-		font-weight: 600;
 	}
 </style>

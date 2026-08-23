@@ -1,5 +1,6 @@
 <script lang="ts">
 	import IntegrationConnectionCard from '$lib/components/integrations/IntegrationConnectionCard.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		inboxAddress: string;
@@ -13,8 +14,8 @@
 </script>
 
 <IntegrationConnectionCard
-	title="Email Forwarding"
-	tagline="Forward newsletters to your library or feed."
+	title={$t('integrations_hub_email_forwarding')}
+	tagline={$t('integrations_hub_email_forwarding_hint')}
 	variant="banner"
 	markClass="email"
 	testId="email-connection-card"
@@ -28,15 +29,12 @@
 	{#snippet body()}
 		<div class="addresses">
 			<div class="slot">
-				<span class="slot-label">Library Inbox</span>
+				<span class="slot-label">{$t('integrations_hub_library_inbox')}</span>
 				<div class="address-row">
 					{#if inboxAddress}
 						<span class="mono-address">{inboxAddress}</span>
 					{:else}
-						<span class="unavailable-note"
-							>Not available on this server — an administrator must configure an email ingest
-							domain.</span
-						>
+						<span class="unavailable-note">{$t('email_unavailable_hint')}</span>
 					{/if}
 					<button
 						type="button"
@@ -44,31 +42,28 @@
 						class:copied={copiedInbox}
 						disabled={!inboxAddress}
 						onclick={() => onCopy(inboxAddress, 'inbox')}
-						aria-label="Copy library inbox address"
+						aria-label={$t('integrations_hub_copy_library_inbox')}
 					>
 						{#if copiedInbox}
 							<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
-							Copied
+							{$t('common_copied')}
 						{:else}
 							<svg viewBox="0 0 24 24" aria-hidden="true">
 								<rect x="9" y="9" width="13" height="13" rx="2" />
 								<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 							</svg>
-							Copy
+							{$t('common_copy')}
 						{/if}
 					</button>
 				</div>
 			</div>
 			<div class="slot">
-				<span class="slot-label">Feed</span>
+				<span class="slot-label">{$t('common_feed')}</span>
 				<div class="address-row">
 					{#if feedAddress}
 						<span class="mono-address">{feedAddress}</span>
 					{:else}
-						<span class="unavailable-note"
-							>Not available on this server — an administrator must configure an email ingest
-							domain.</span
-						>
+						<span class="unavailable-note">{$t('email_unavailable_hint')}</span>
 					{/if}
 					<button
 						type="button"
@@ -76,17 +71,17 @@
 						class:copied={copiedFeed}
 						disabled={!feedAddress}
 						onclick={() => onCopy(feedAddress, 'feed')}
-						aria-label="Copy feed address"
+						aria-label={$t('integrations_hub_copy_feed')}
 					>
 						{#if copiedFeed}
 							<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
-							Copied
+							{$t('common_copied')}
 						{:else}
 							<svg viewBox="0 0 24 24" aria-hidden="true">
 								<rect x="9" y="9" width="13" height="13" rx="2" />
 								<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 							</svg>
-							Copy
+							{$t('common_copy')}
 						{/if}
 					</button>
 				</div>

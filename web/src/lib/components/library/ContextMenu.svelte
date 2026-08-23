@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { DocumentListEntry, TriageModeDto } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import { triageOptionsForMode, type TriageTab } from '$lib/stores/library.svelte';
 
 	interface Props {
@@ -58,10 +59,12 @@
 				state: option.value,
 				label:
 					option.value === 'archive'
-						? 'Archive'
+						? $t('library_action_archive')
 						: option.value === 'later'
-							? 'Save for Later'
-							: `Move to ${option.label}`
+							? $t('library_action_save_for_later')
+							: $t('library_action_move_to', {
+									values: { label: $t(option.labelKey) }
+								})
 			}))
 	);
 </script>
@@ -71,7 +74,7 @@
 	class="context-menu"
 	style="left: {adjustedX}px; top: {adjustedY}px;"
 	role="menu"
-	aria-label="Item actions"
+	aria-label={$t('library_action_item_actions')}
 >
 	<div class="menu-header">
 		<span class="menu-title">{item.title}</span>
@@ -129,14 +132,14 @@
 					<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
 					<line x1="7" y1="7" x2="7.01" y2="7" />
 				</svg>
-				Add Tags
+				{$t('library_action_add_tags')}
 			</button>
 		{/if}
 		<button type="button" class="menu-item menu-item-stub" role="menuitem" disabled>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
 			</svg>
-			Move to Collection
+			{$t('library_action_move_to_collection')}
 		</button>
 		<button type="button" class="menu-item menu-item-stub" role="menuitem" disabled>
 			<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -146,7 +149,7 @@
 				<line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
 				<line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
 			</svg>
-			Share
+			{$t('library_action_share')}
 		</button>
 	</div>
 
@@ -168,7 +171,7 @@
 					<polyline points="15 3 21 3 21 9" />
 					<line x1="10" y1="14" x2="21" y2="3" />
 				</svg>
-				Open Original
+				{$t('library_action_open_original')}
 			</button>
 		{/if}
 		{#if onDelete}
@@ -187,7 +190,7 @@
 					<path d="M10 11v6M14 11v6" />
 					<path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
 				</svg>
-				Delete
+				{$t('library_action_delete')}
 			</button>
 		{/if}
 	</div>

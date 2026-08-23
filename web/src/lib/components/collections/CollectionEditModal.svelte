@@ -2,6 +2,7 @@
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { getCollections } from '$lib/stores/collections.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		collection?: CollectionResponse | null;
@@ -75,7 +76,7 @@
 				onSaved(updated);
 				onClose();
 			} else {
-				error = 'Failed to update collection';
+				error = $t('collection_error_update');
 			}
 		} else {
 			const created = await store.createCollection(body);
@@ -83,7 +84,7 @@
 				onSaved(created);
 				onClose();
 			} else {
-				error = 'Failed to create collection';
+				error = $t('collection_error_create');
 			}
 		}
 
@@ -95,7 +96,7 @@
 	class="cmd-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label={isEdit ? 'Edit collection' : 'New collection'}
+	aria-label={isEdit ? $t('collection_edit') : $t('collection_new')}
 	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(e) => {
@@ -126,7 +127,7 @@
 					type="text"
 					class="cmd-name-input"
 					bind:value={name}
-					placeholder="Collection name"
+					placeholder={$t('collection_name')}
 					required
 					autofocus
 				/>
@@ -145,35 +146,35 @@
 			{/if}
 
 			<div class="cmd-field">
-				<span class="cmd-label">Icon (optional)</span>
+				<span class="cmd-label">{$t('collection_icon_optional')}</span>
 				<div class="emoji-row">
 					<span class="emoji-preview" aria-hidden="true">{icon || '📨'}</span>
 					<input
 						type="text"
 						class="emoji-input"
 						bind:value={icon}
-						placeholder="Paste or type an emoji…"
+						placeholder={$t('collection_emoji_placeholder')}
 						maxlength="2"
 					/>
 				</div>
-				<p class="emoji-hint">Leave blank to use 📨 as the default</p>
+				<p class="emoji-hint">{$t('collection_emoji_hint')}</p>
 			</div>
 
 			<div class="cmd-field">
-				<span class="cmd-label">Description (optional)</span>
+				<span class="cmd-label">{$t('collection_description_optional')}</span>
 				<textarea
 					class="cmd-textarea"
 					bind:value={description}
-					placeholder="A short description of this collection"
+					placeholder={$t('collection_description_placeholder')}
 					rows="2"
 				></textarea>
 			</div>
 
 			<div class="cmd-field">
-				<span class="cmd-label">Parent collection</span>
+				<span class="cmd-label">{$t('collection_parent')}</span>
 				<div class="select-wrap">
 					<select class="cmd-select" bind:value={selectedParentId}>
-						<option value={null}>None (top-level)</option>
+						<option value={null}>{$t('collection_parent_none')}</option>
 						{#each parentOptions as col (col.id)}
 							<option value={col.id}>{col.name}</option>
 						{/each}
@@ -194,9 +195,9 @@
 			</div>
 
 			<div class="cmd-controls">
-				<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+				<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 				<button type="submit" class="cmd-action" disabled={!canSave}>
-					{saving ? 'Saving…' : isEdit ? 'Save Collection' : 'Create Collection'}
+					{saving ? $t('common_saving') : isEdit ? $t('collection_save') : $t('collection_create')}
 				</button>
 			</div>
 		</form>

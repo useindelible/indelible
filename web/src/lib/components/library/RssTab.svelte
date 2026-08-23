@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	// RSS feed subscription is not yet implemented. This tab is a placeholder
 	// displayed as disabled in the tab bar until the feed management API exists.
 </script>
@@ -17,9 +18,9 @@
 		<path d="M4 4a16 16 0 0 1 16 16" />
 		<circle cx="5" cy="19" r="1" fill="currentColor" stroke="none" />
 	</svg>
-	<p class="rss-title">RSS / Atom coming soon</p>
+	<p class="rss-title">{$t('library_rss_coming_soon')}</p>
 	<p class="rss-description">
-		Subscribe to feeds directly from Indelible. This feature is under development.
+		{$t('library_rss_description')}
 	</p>
 </div>
 

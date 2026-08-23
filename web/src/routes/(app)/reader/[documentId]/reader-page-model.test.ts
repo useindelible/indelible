@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 
 import type { DocumentListEntry, DocumentReaderAssetResponse } from '$lib/api';
 
@@ -76,6 +78,8 @@ describe('isTranscriptUnavailableVideo', () => {
 });
 
 describe('readerFailurePresentation', () => {
+	const translate = get(t);
+
 	it.each([
 		[
 			'external service error from renderer: error sending request for url',
@@ -94,7 +98,7 @@ describe('readerFailurePresentation', () => {
 		],
 		['unexpected preparation failure', 'unknown', 'Readable content unavailable']
 	] as const)('classifies %s without inventing a source diagnosis', (reason, kind, title) => {
-		expect(readerFailurePresentation([readableAsset('failed', reason)])).toEqual({
+		expect(readerFailurePresentation(translate, [readableAsset('failed', reason)])).toEqual({
 			kind,
 			title,
 			guidance:
@@ -117,7 +121,7 @@ describe('readerFailurePresentation', () => {
 		'validation error on field `url`: renderer rejected url: {"error":"could not resolve the URL host"}',
 		'readable extraction timed out while loading the source'
 	])('uses neutral copy when %s does not prove access or policy blocking', (reason) => {
-		expect(readerFailurePresentation([readableAsset('failed', reason)]))?.toMatchObject({
+		expect(readerFailurePresentation(translate, [readableAsset('failed', reason)]))?.toMatchObject({
 			kind: 'unknown',
 			title: 'Readable content unavailable'
 		});
@@ -129,7 +133,7 @@ describe('readerFailurePresentation', () => {
 		'validation error on field `url`: renderer rejected url: {"error":"URL host is not allowed"}',
 		'validation error on field `url`: renderer rejected url: {"error":"URL resolves to a private or internal address"}'
 	])('uses access copy only for explicit access or policy evidence: %s', (reason) => {
-		expect(readerFailurePresentation([readableAsset('failed', reason)]))?.toMatchObject({
+		expect(readerFailurePresentation(translate, [readableAsset('failed', reason)]))?.toMatchObject({
 			kind: 'access_or_policy',
 			title: 'Capture blocked'
 		});
@@ -141,7 +145,7 @@ describe('readerFailurePresentation', () => {
 			asset_kind: 'extracted_text'
 		};
 
-		expect(readerFailurePresentation([extractedTextFailure])).toBeNull();
-		expect(readerFailurePresentation([readableAsset('completed', null)])).toBeNull();
+		expect(readerFailurePresentation(translate, [extractedTextFailure])).toBeNull();
+		expect(readerFailurePresentation(translate, [readableAsset('completed', null)])).toBeNull();
 	});
 });

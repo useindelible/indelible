@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { flushSync } from 'svelte';
 import { createApiModuleMock } from './helpers/api-module-mock';
+import en from '$lib/i18n/locales/en.json';
 
 vi.mock('$lib/api', () => createApiModuleMock());
 
@@ -31,6 +32,8 @@ describe('auth store', () => {
 
 	async function load() {
 		const apiModule = await import('$lib/api');
+		const { setupI18nSync } = await import('$lib/i18n');
+		setupI18nSync({ en });
 		const authModule = await import('$lib/stores/auth.svelte');
 		return {
 			getAuth: authModule.getAuth,

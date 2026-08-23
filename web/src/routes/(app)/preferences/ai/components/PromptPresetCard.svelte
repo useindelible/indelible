@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MilaPromptPresetResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		expanded: boolean;
@@ -30,39 +31,39 @@
 		<span class="preset-name">{preset.name}</span>
 		<span class="preset-prompt-snip">{preset.system_prompt}</span>
 		<span class="preset-badges">
-			{#if preset.is_default}<span class="badge default">Default</span>{/if}
-			{#if preset.is_built_in}<span class="badge built-in">Built-in</span>{/if}
+			{#if preset.is_default}<span class="badge default">{$t('prefs_ai_default')}</span>{/if}
+			{#if preset.is_built_in}<span class="badge built-in">{$t('prefs_ai_built_in')}</span>{/if}
 		</span>
 		{#if !preset.is_built_in}
 			<div class="preset-actions-row">
 				<button
 					type="button"
 					class="icon-btn"
-					aria-label="Edit preset"
+					aria-label={$t('prefs_ai_edit_preset')}
 					onclick={(event) => {
 						event.stopPropagation();
 						onEdit(preset);
 					}}
 				>
-					Edit
+					{$t('prefs_ai_edit')}
 				</button>
 				<button
 					type="button"
 					class="icon-btn danger"
-					aria-label="Delete preset"
+					aria-label={$t('prefs_ai_delete_preset')}
 					onclick={(event) => {
 						event.stopPropagation();
 						if (preset.id) onDelete(preset.id);
 					}}
 				>
-					Delete
+					{$t('common_delete')}
 				</button>
 			</div>
 		{/if}
 	</div>
 	<div class="preset-detail">
 		<div class="preset-detail-inner">
-			<div class="preset-detail-label">System prompt</div>
+			<div class="preset-detail-label">{$t('prefs_ai_system_prompt')}</div>
 			<pre class="preset-detail-prompt">{preset.system_prompt}</pre>
 		</div>
 	</div>

@@ -5,6 +5,7 @@
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ProgressBar from '$lib/components/onboarding/ProgressBar.svelte';
+	import { t } from '$lib/i18n';
 
 	const onboarding = getOnboarding();
 	const auth = getAuth();
@@ -74,9 +75,9 @@
 		</svg>
 	</div>
 
-	<h1 class="ready-title">You're all set!</h1>
+	<h1 class="ready-title">{$t('onboarding_ready_title')}</h1>
 	<p class="ready-subtitle">
-		Your reading archive is ready. Here are a few tips to get the most out of Indelible.
+		{$t('onboarding_ready_description')}
 	</p>
 
 	<ul class="tips-list">
@@ -101,8 +102,8 @@
 				</svg>
 			</div>
 			<div class="tip-text">
-				<span class="tip-title">Keyboard shortcuts</span>
-				<span class="tip-desc">Press ? anywhere to see all shortcuts</span>
+				<span class="tip-title">{$t('onboarding_tip_shortcuts')}</span>
+				<span class="tip-desc">{$t('onboarding_tip_shortcuts_description')}</span>
 			</div>
 		</li>
 		<li class="tip-row">
@@ -125,8 +126,8 @@
 				</svg>
 			</div>
 			<div class="tip-text">
-				<span class="tip-title">Highlight text</span>
-				<span class="tip-desc">Select any text while reading to highlight and annotate</span>
+				<span class="tip-title">{$t('onboarding_tip_highlight')}</span>
+				<span class="tip-desc">{$t('onboarding_tip_highlight_description')}</span>
 			</div>
 		</li>
 		<li class="tip-row">
@@ -143,8 +144,8 @@
 				</svg>
 			</div>
 			<div class="tip-text">
-				<span class="tip-title">Daily review</span>
-				<span class="tip-desc">Resurface saved highlights every morning</span>
+				<span class="tip-title">{$t('onboarding_tip_review')}</span>
+				<span class="tip-desc">{$t('onboarding_tip_review_description')}</span>
 			</div>
 		</li>
 		<li class="tip-row">
@@ -165,8 +166,8 @@
 				</svg>
 			</div>
 			<div class="tip-text">
-				<span class="tip-title">Save from anywhere</span>
-				<span class="tip-desc">Install the browser extension for one-click saving</span>
+				<span class="tip-title">{$t('onboarding_tip_save_anywhere')}</span>
+				<span class="tip-desc">{$t('onboarding_tip_save_anywhere_description')}</span>
 			</div>
 		</li>
 	</ul>
@@ -176,7 +177,7 @@
 			<p class="submit-error" role="alert">{onboarding.error || auth.error}</p>
 		{/if}
 		<Button variant="primary" size="xl" fullWidth loading={submitting} onclick={handleGoToLibrary}>
-			Go to Library
+			{$t('onboarding_go_to_library')}
 			{#snippet iconTrailing()}
 				<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
 					<path

@@ -26,7 +26,7 @@ describe('DeleteAccountDialog', () => {
 	it('renders destructive account deletion copy and disables delete until confirmed', () => {
 		renderDialog();
 		expect(screen.getByRole('dialog', { name: 'Delete your account' })).toBeTruthy();
-		expect(screen.getByText('user@example.com')).toBeTruthy();
+		expect(screen.getByText(/tied to user@example\.com\. This cannot be recovered\./)).toBeTruthy();
 		expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Delete forever' }).disabled).toBe(
 			true
 		);

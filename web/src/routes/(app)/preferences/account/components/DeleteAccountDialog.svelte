@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		email: string;
 		confirmEmail: string;
@@ -25,7 +27,7 @@
 <button
 	type="button"
 	class="modal-backdrop"
-	aria-label="Close"
+	aria-label={$t('common_close')}
 	onclick={(event) => {
 		if (event.currentTarget === event.target) onClose();
 	}}
@@ -39,33 +41,36 @@
 				<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
 			</svg>
 		</div>
-		<h2 id="delete-title">Delete your account</h2>
+		<h2 id="delete-title">{$t('account_delete_title')}</h2>
 		<p>
-			This will permanently remove every item, highlight, collection, and integration tied to
-			<strong>{email || 'your account'}</strong>. There is no recovery.
+			{$t('account_delete_dialog_body', {
+				values: { account: email || $t('account_your_account_lower') }
+			})}
 		</p>
-		<p>To confirm, type your email below.</p>
+		<p>{$t('account_delete_confirm_hint')}</p>
 		<input
 			class="input modal-input"
 			type="email"
 			value={confirmEmail}
-			placeholder={email || 'your@email.com'}
+			placeholder={email || $t('account_email_placeholder')}
 			autocomplete="off"
-			aria-label="Type your email to confirm"
+			aria-label={$t('account_delete_confirm_aria')}
 			oninput={(event) => onConfirmEmailChange((event.currentTarget as HTMLInputElement).value)}
 		/>
 		{#if error}
 			<p class="modal-error">{error}</p>
 		{/if}
 		<div class="modal-actions">
-			<button type="button" class="btn ghost" onclick={onClose} disabled={deleting}>Cancel</button>
+			<button type="button" class="btn ghost" onclick={onClose} disabled={deleting}
+				>{$t('common_cancel')}</button
+			>
 			<button
 				type="button"
 				class="btn danger"
 				onclick={onDelete}
 				disabled={!deleteEmailMatches || deleting}
 			>
-				{deleting ? 'Deleting…' : 'Delete forever'}
+				{deleting ? $t('account_deleting') : $t('account_delete_forever')}
 			</button>
 		</div>
 	</div>

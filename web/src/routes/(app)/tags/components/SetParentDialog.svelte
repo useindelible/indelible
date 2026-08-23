@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		options: TagResponse[];
@@ -16,7 +17,7 @@
 	class="cmd-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label="Set parent tag"
+	aria-label={$t('tag_set_parent')}
 	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(event) => {
@@ -35,15 +36,15 @@
 				value={selectedParentId}
 				onchange={(event) => onParentChange(event.currentTarget.value)}
 			>
-				<option value="">None — top-level</option>
+				<option value="">{$t('tag_none_top_level')}</option>
 				{#each options as option (option.id)}
 					<option value={option.id}>{option.name}</option>
 				{/each}
 			</select>
 		</div>
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
-			<button type="button" class="cmd-action" onclick={onSubmit}>Save</button>
+			<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
+			<button type="button" class="cmd-action" onclick={onSubmit}>{$t('common_save')}</button>
 		</div>
 	</div>
 </div>

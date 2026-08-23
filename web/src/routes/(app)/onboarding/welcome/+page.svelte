@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { t } from '$lib/i18n';
 </script>
 
 <div class="welcome">
@@ -111,7 +112,7 @@
 		</svg>
 	</div>
 
-	<p class="welcome-to">Welcome to</p>
+	<p class="welcome-to">{$t('onboarding_welcome_to')}</p>
 	<p class="welcome-brand">indelible</p>
 
 	<ul class="feature-list">
@@ -122,7 +123,7 @@
 					<path d="M12 3v18M3 12h18" stroke="#0071E3" stroke-width="1.5" stroke-linecap="round" />
 				</svg>
 			</div>
-			<span>Save anything from the web</span>
+			<span>{$t('onboarding_welcome_save_web')}</span>
 		</li>
 		<li class="feature-item">
 			<div class="feature-icon feature-icon--amber" aria-hidden="true">
@@ -137,7 +138,7 @@
 					<circle cx="12" cy="9" r="2" stroke="#D97706" stroke-width="1.5" />
 				</svg>
 			</div>
-			<span>AI-powered reading with Mila</span>
+			<span>{$t('onboarding_welcome_mila')}</span>
 		</li>
 		<li class="feature-item">
 			<div class="feature-icon feature-icon--emerald" aria-hidden="true">
@@ -155,7 +156,7 @@
 					<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
 				</svg>
 			</div>
-			<span>Sync highlights to Obsidian & Notion</span>
+			<span>{$t('onboarding_welcome_sync')}</span>
 		</li>
 	</ul>
 
@@ -166,7 +167,7 @@
 			fullWidth
 			onclick={() => goto(resolve('/onboarding/account'))}
 		>
-			Get Started
+			{$t('onboarding_get_started')}
 		</Button>
 	</div>
 </div>

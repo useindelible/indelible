@@ -5,6 +5,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { fetchAllPages } from '$lib/api/pagination';
 	import { getCollections } from '$lib/stores/collections.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		collectionId: string;
@@ -18,13 +19,21 @@
 	const store = getCollections();
 
 	type ItemType = 'article' | 'video' | 'pdf' | 'epub' | 'tweet';
-	const TYPE_FILTERS: { label: string; value: ItemType | null }[] = [
-		{ label: 'All', value: null },
-		{ label: 'Articles', value: 'article' },
-		{ label: 'Books', value: 'epub' },
-		{ label: 'PDFs', value: 'pdf' },
-		{ label: 'Videos', value: 'video' }
+	const TYPE_FILTERS: { labelKey: MessageKey; value: ItemType | null }[] = [
+		{ labelKey: 'common_all', value: null },
+		{ labelKey: 'library_nav_articles', value: 'article' },
+		{ labelKey: 'library_nav_books', value: 'epub' },
+		{ labelKey: 'library_nav_pdfs', value: 'pdf' },
+		{ labelKey: 'library_nav_videos', value: 'video' }
 	];
+
+	const ITEM_TYPE_KEYS: Partial<Record<ItemType, MessageKey>> = {
+		article: 'library_filter_value_article',
+		epub: 'library_filter_value_book',
+		pdf: 'library_filter_value_pdf',
+		tweet: 'library_filter_value_tweet',
+		video: 'library_filter_value_video'
+	};
 
 	let allItems = $state<DocumentListEntry[]>([]);
 	let loadingItems = $state(true);
@@ -130,7 +139,8 @@
 	}
 
 	function formatType(type: string): string {
-		return type.charAt(0).toUpperCase() + type.slice(1);
+		const key = ITEM_TYPE_KEYS[type as ItemType];
+		return key ? $t(key) : type;
 	}
 </script>
 
@@ -139,13 +149,13 @@
 	onkeydown={handleKeydown}
 	role="dialog"
 	aria-modal="true"
-	aria-label="Add items to collection"
+	aria-label={$t('collection_add_items_to_collection')}
 >
 	<div class="drawer-backdrop" onclick={onClose} role="presentation"></div>
 	<div class="drawer-panel">
 		<div class="drawer-header">
-			<h2 class="drawer-title">Add items</h2>
-			<button type="button" class="close-btn" aria-label="Close" onclick={onClose}>
+			<h2 class="drawer-title">{$t('collection_add_items')}</h2>
+			<button type="button" class="close-btn" aria-label={$t('common_close')} onclick={onClose}>
 				<svg
 					viewBox="0 0 24 24"
 					fill="none"
@@ -177,7 +187,7 @@
 				<input
 					type="search"
 					class="search-input"
-					placeholder="Search your library..."
+					placeholder={$t('collection_search_library')}
 					bind:value={searchQuery}
 					autofocus
 				/>
@@ -185,7 +195,7 @@
 		</div>
 
 		<div class="type-filters">
-			{#each TYPE_FILTERS as filter (filter.label)}
+			{#each TYPE_FILTERS as filter (filter.labelKey)}
 				<button
 					type="button"
 					class="filter-chip"
@@ -194,7 +204,7 @@
 						activeTypeFilter = filter.value;
 					}}
 				>
-					{filter.label}
+					{$t(filter.labelKey)}
 				</button>
 			{/each}
 		</div>
@@ -202,11 +212,11 @@
 		<div class="drawer-list">
 			{#if loadingItems}
 				<div class="list-state">
-					<span class="state-text">Loading your library...</span>
+					<span class="state-text">{$t('collection_loading_library')}</span>
 				</div>
 			{:else if filteredItems.length === 0}
 				<div class="list-state">
-					<span class="state-text">No items found</span>
+					<span class="state-text">{$t('collection_no_items')}</span>
 				</div>
 			{:else}
 				{#each filteredItems as item (item.library_entry_id ?? item.id)}
@@ -277,13 +287,13 @@
 		<div class="drawer-footer">
 			<span class="footer-count">
 				{#if addingCount > 0}
-					<strong>{addingCount}</strong> item{addingCount !== 1 ? 's' : ''} selected
+					{$t('collection_selected_count', { values: { count: addingCount } })}
 				{:else}
-					No new items selected
+					{$t('collection_no_new_items')}
 				{/if}
 			</span>
 			<button type="button" class="btn btn-primary" disabled={!hasChanges || saving} onclick={save}>
-				{saving ? 'Saving…' : 'Add to collection'}
+				{saving ? $t('common_saving') : $t('collection_add_to_collection')}
 			</button>
 		</div>
 	</div>
@@ -595,11 +605,6 @@
 		font-size: 13px;
 		color: var(--text-secondary);
 		flex-shrink: 0;
-	}
-
-	.footer-count strong {
-		color: var(--accent);
-		font-weight: 600;
 	}
 
 	.btn {

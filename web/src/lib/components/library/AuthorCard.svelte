@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		name: string;
 		handle?: string | null;
@@ -28,7 +29,12 @@
 			<div class="author-handle">{handle}</div>
 		{/if}
 	</div>
-	<button class="follow-btn" type="button" disabled aria-label="Follow author (not yet available)">
+	<button
+		class="follow-btn"
+		type="button"
+		disabled
+		aria-label={$t('library_author_follow_unavailable')}
+	>
 		<svg
 			viewBox="0 0 24 24"
 			fill="none"
@@ -44,7 +50,7 @@
 				d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
 			/>
 		</svg>
-		Follow
+		{$t('library_author_follow')}
 	</button>
 </div>
 

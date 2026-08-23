@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ObsidianSettingsDto } from '$lib/api';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		settings: ObsidianSettingsDto;
@@ -10,26 +11,25 @@
 	let { settings, onChange, onFolderTemplateChange }: Props = $props();
 
 	const folders = [
-		{ key: 'books', label: 'Books', fallback: 'books' },
-		{ key: 'articles', label: 'Articles', fallback: 'articles' },
-		{ key: 'tweets', label: 'Tweets', fallback: 'tweets' }
-	];
+		{ key: 'books', labelKey: 'integrations_obsidian_books', fallback: 'books' },
+		{ key: 'articles', labelKey: 'integrations_obsidian_articles', fallback: 'articles' },
+		{ key: 'tweets', labelKey: 'integrations_obsidian_tweets', fallback: 'tweets' }
+	] satisfies { key: string; labelKey: MessageKey; fallback: string }[];
 </script>
 
 <section class="section">
 	<div class="section-head">
-		<h2 class="section-title">Paths</h2>
-		<p class="section-sub">Where each note ends up in the vault</p>
+		<h2 class="section-title">{$t('integrations_obsidian_paths')}</h2>
+		<p class="section-sub">{$t('integrations_obsidian_paths_hint')}</p>
 	</div>
 	<div class="card card-stack">
 		<div class="row-block">
 			<div class="row-block-head">
-				<p class="row-title">File name template</p>
+				<p class="row-title">{$t('integrations_obsidian_file_name_template')}</p>
 				<span class="row-tag">.md</span>
 			</div>
 			<p class="row-sub-inline">
-				Vault root: <code>Indelible/</code>. Forbidden chars become <code>-</code>; colliding
-				filenames keep the readable title and receive a stable suffix.
+				{$t('integrations_obsidian_file_name_template_hint')}
 			</p>
 			<input
 				class="input-base"
@@ -42,12 +42,13 @@
 
 		<div class="row-block">
 			<div class="row-block-head">
-				<p class="row-title">Category folders</p>
-				<span class="row-count">3 folder groups</span>
+				<p class="row-title">{$t('integrations_obsidian_category_folders')}</p>
+				<span class="row-count"
+					>{$t('integrations_obsidian_folder_group_count', { values: { count: 3 } })}</span
+				>
 			</div>
 			<p class="row-sub-inline">
-				Folder group, relative to <code>Indelible/</code>. Each is a MiniJinja template; the live
-				preview path below reflects these values.
+				{$t('integrations_obsidian_category_folders_hint')}
 			</p>
 		</div>
 
@@ -55,7 +56,7 @@
 			{#each folders as folder (folder.key)}
 				<div class="path-field">
 					<label class="path-label" for={`path-${folder.key}`}>
-						{folder.label} <span class="arr">-&gt;</span>
+						{$t(folder.labelKey)} <span class="arr">-&gt;</span>
 					</label>
 					<input
 						id={`path-${folder.key}`}
@@ -130,14 +131,8 @@
 		font-size: 11.5px;
 		color: var(--text-tertiary);
 	}
-	code,
 	.row-tag {
 		font-family: var(--font-mono, ui-monospace, monospace);
-	}
-	code {
-		background: transparent;
-		color: var(--text-primary);
-		font-size: 12px;
 	}
 	.input-base {
 		width: 100%;

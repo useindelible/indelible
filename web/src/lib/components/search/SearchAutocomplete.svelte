@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SearchSuggestionResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		suggestions: SearchSuggestionResponse[];
@@ -32,7 +33,7 @@
 	}
 </script>
 
-<div class="autocomplete-dropdown" role="listbox" aria-label="Search suggestions">
+<div class="autocomplete-dropdown" role="listbox" aria-label={$t('search_suggestions')}>
 	{#each suggestions as suggestion, i (suggestion.insert_text)}
 		<button
 			type="button"

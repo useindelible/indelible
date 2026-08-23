@@ -5,6 +5,8 @@
 	import BookInfoPanel from './BookInfoPanel.svelte';
 	import NotebookTab from '$lib/components/library/NotebookTab.svelte';
 	import ChatTab from '$lib/components/library/ChatTab.svelte';
+	import type { MessageKey } from '$lib/i18n';
+	import { t } from '$lib/i18n';
 
 	export type DetailTab = 'info' | 'notebook' | 'chat';
 
@@ -19,10 +21,10 @@
 
 	let activeTab = $state<DetailTab>('info');
 
-	const tabOptions = $derived([
-		{ value: 'info', label: 'Info' },
-		{ value: 'notebook', label: 'Notebook' },
-		...(textAvailable ? [{ value: 'chat', label: 'Chat' }] : [])
+	const tabOptions: { value: DetailTab; labelKey: MessageKey }[] = $derived([
+		{ value: 'info', labelKey: 'common_info' },
+		{ value: 'notebook', labelKey: 'common_notebook' },
+		...(textAvailable ? [{ value: 'chat' as const, labelKey: 'common_chat' as const }] : [])
 	]);
 
 	$effect(() => {
@@ -38,7 +40,7 @@
 
 <div class="right-panel" class:chat-mode={activeTab === 'chat'}>
 	<div class="right-header">
-		<span class="tabs-eyebrow">Details</span>
+		<span class="tabs-eyebrow">{$t('common_details')}</span>
 		<MorphSwitcher options={tabOptions} value={activeTab} onchange={onTabChange} size="sm" />
 	</div>
 	{#if activeTab === 'info'}

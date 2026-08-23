@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		initialName?: string;
 		onClose: () => void;
@@ -47,13 +48,18 @@
 					<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
 				</svg>
 				<!-- svelte-ignore a11y_autofocus -->
-				<input class="cmd-input" placeholder="Name this view..." bind:value={name} autofocus />
+				<input
+					class="cmd-input"
+					placeholder={$t('library_save_view_name')}
+					bind:value={name}
+					autofocus
+				/>
 			</div>
 		</div>
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+			<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 			<button type="button" class="cmd-action" onclick={handleSave} disabled={!name.trim()}>
-				Save
+				{$t('common_save')}
 			</button>
 		</div>
 	</div>

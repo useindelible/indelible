@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 	import type { DuplicateAction, DuplicateSensitivity } from '../archival-model';
 
 	interface Props {
@@ -31,18 +32,12 @@
 	}
 </script>
 
-<SettingsGroup
-	title="Duplicate detection"
-	meta="When you save something you’ve already saved, Indelible can warn you, skip silently, or merge into the existing item."
->
+<SettingsGroup title={$t('archival_duplicate_title')} meta={$t('archival_duplicate_meta')}>
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Detect near-duplicates</div>
-				<div class="hint">
-					Uses SimHash similarity scoring on the readable text — catches reposts, re-publishes, and
-					tiny edits.
-				</div>
+				<div class="label">{$t('archival_duplicate_detect')}</div>
+				<div class="hint">{$t('archival_duplicate_detect_hint')}</div>
 			</div>
 			<button
 				type="button"
@@ -50,17 +45,15 @@
 				class:on={dupEnabled}
 				role="switch"
 				aria-checked={dupEnabled}
-				aria-label="Enable duplicate detection"
+				aria-label={$t('archival_duplicate_enable')}
 				onclick={() => onEnabledChange(!dupEnabled)}
 			></button>
 		</div>
 
 		<div class="slider-row" class:disabled={!dupEnabled}>
 			<div>
-				<div class="row-label">Sensitivity</div>
-				<div class="row-hint">
-					How similar two items must be before they’re flagged. Higher = more aggressive matching.
-				</div>
+				<div class="row-label">{$t('archival_sensitivity')}</div>
+				<div class="row-hint">{$t('archival_sensitivity_hint')}</div>
 				<div class="sensitivity">
 					<div class="sensitivity-track">
 						<input
@@ -72,13 +65,13 @@
 							value={dupSensitivity}
 							disabled={!dupEnabled}
 							oninput={handleSensitivityInput}
-							aria-label="Duplicate sensitivity"
+							aria-label={$t('archival_duplicate_sensitivity')}
 						/>
 					</div>
 					<div class="sensitivity-meta">
-						<span class:current={dupEnabled && dupSensitivity === 1}>Low</span>
-						<span class:current={dupEnabled && dupSensitivity === 2}>Medium</span>
-						<span class:current={dupEnabled && dupSensitivity === 3}>High</span>
+						<span class:current={dupEnabled && dupSensitivity === 1}>{$t('archival_low')}</span>
+						<span class:current={dupEnabled && dupSensitivity === 2}>{$t('archival_medium')}</span>
+						<span class:current={dupEnabled && dupSensitivity === 3}>{$t('archival_high')}</span>
 					</div>
 				</div>
 			</div>
@@ -87,14 +80,14 @@
 					class="select"
 					value={dupAction}
 					disabled={!dupEnabled}
-					aria-label="Duplicate action"
+					aria-label={$t('archival_duplicate_action')}
 					onchange={handleActionChange}
 				>
-					<option value="notify">Notify me</option>
-					<option value="skip">Skip silently</option>
-					<option value="merge">Merge with existing</option>
+					<option value="notify">{$t('archival_duplicate_notify')}</option>
+					<option value="skip">{$t('archival_duplicate_skip')}</option>
+					<option value="merge">{$t('archival_duplicate_merge')}</option>
 				</select>
-				<div class="help">When a duplicate is found</div>
+				<div class="help">{$t('archival_duplicate_action_hint')}</div>
 			</div>
 		</div>
 	</div>

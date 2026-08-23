@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as apiSdk from '$lib/api';
 	import type { FeedSourceResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 
 	const modal = getModalStore();
@@ -31,24 +32,24 @@
 
 	function validate(value: string): string {
 		const trimmed = value.trim();
-		if (!trimmed) return 'Enter a channel or handle';
+		if (!trimmed) return $t('library_youtube_channel_or_handle');
 		const normalized = normalizeInput(trimmed);
 		try {
 			const parsed = new URL(normalized);
 			if (parsed.hostname !== 'youtube.com' && parsed.hostname !== 'www.youtube.com')
-				return 'Must be a youtube.com URL';
+				return $t('library_youtube_must_be_url');
 			const segments = parsed.pathname.split('/').filter(Boolean);
-			if (segments.length === 0) return 'Enter a channel URL or handle (e.g. @channelname)';
+			if (segments.length === 0) return $t('library_youtube_channel_required');
 			const first = segments[0] ?? '';
 			if (first.startsWith('@')) {
-				if (first.length <= 1) return 'Enter a channel handle (e.g. @channelname)';
+				if (first.length <= 1) return $t('library_youtube_handle_required');
 			} else if (['channel', 'user', 'c'].includes(first)) {
-				if (!segments[1]) return 'Unsupported URL — use a channel, user, or @handle URL';
+				if (!segments[1]) return $t('library_youtube_unsupported_url');
 			} else {
-				return 'Unsupported URL — use a channel, user, or @handle URL';
+				return $t('library_youtube_unsupported_url');
 			}
 		} catch {
-			return 'Enter a valid URL or handle';
+			return $t('library_youtube_invalid');
 		}
 		return '';
 	}
@@ -133,13 +134,14 @@
 			});
 			if (error) {
 				const problem = error as { detail?: string; errors?: Array<{ message: string }> } | null;
-				submitError = problem?.detail ?? problem?.errors?.[0]?.message ?? 'Failed to subscribe';
+				submitError =
+					problem?.detail ?? problem?.errors?.[0]?.message ?? $t('library_rss_error_subscribe');
 			} else {
 				modal.notifySubscribed();
 				close();
 			}
 		} catch (err) {
-			submitError = err instanceof Error ? err.message : 'An unexpected error occurred.';
+			submitError = err instanceof Error ? err.message : $t('library_error_unexpected');
 		} finally {
 			submitting = false;
 		}
@@ -149,7 +151,7 @@
 <dialog
 	bind:this={dialogEl}
 	class="modal-backdrop"
-	aria-label="Subscribe to YouTube Channel"
+	aria-label={$t('library_youtube_subscribe_channel')}
 	onclick={handleBackdropClick}
 	onclose={close}
 >
@@ -168,7 +170,7 @@
 					bind:value={channelUrl}
 					class="cmd-input"
 					type="text"
-					placeholder="@channelname or youtube.com/..."
+					placeholder={$t('library_youtube_input')}
 					autocomplete="off"
 					onkeydown={(e) => {
 						if (suggestionsVisible) {
@@ -239,9 +241,9 @@
 			<button type="button" class="cmd-action" disabled={!canSubscribe} onclick={handleSubscribe}>
 				{#if submitting}
 					<span class="spinner" aria-hidden="true"></span>
-					<span class="sr-only">Subscribing...</span>
+					<span class="sr-only">{$t('library_youtube_subscribing')}</span>
 				{:else}
-					Subscribe
+					{$t('library_youtube_subscribe')}
 				{/if}
 			</button>
 		</div>

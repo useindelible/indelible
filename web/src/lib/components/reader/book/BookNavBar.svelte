@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { epubChapterSequence, type TocEntry } from './book-source';
 
 	interface Props {
@@ -36,22 +37,28 @@
 	const hasNext = $derived(isPdf ? currentIndex < totalChapters - 1 : nextEntry != null);
 
 	function prevLabel(): string {
-		if (isPdf) return `Page ${currentIndex}`;
+		if (isPdf) return $t('reader_page_label', { values: { number: currentIndex } });
 		if (!prevEntry) return '';
 		const num = chapterEntries.indexOf(prevEntry) + 1;
-		return `Ch. ${num}: ${prevEntry.title}`;
+		return $t('reader_chapter_label', { values: { number: num, title: prevEntry.title } });
 	}
 
 	function nextLabel(): string {
-		if (isPdf) return `Page ${currentIndex + 2}`;
+		if (isPdf) return $t('reader_page_label', { values: { number: currentIndex + 2 } });
 		if (!nextEntry) return '';
 		const num = chapterEntries.indexOf(nextEntry) + 1;
-		return `Ch. ${num}: ${nextEntry.title}`;
+		return $t('reader_chapter_label', { values: { number: num, title: nextEntry.title } });
 	}
 
 	function centerLabel(): string {
-		if (isPdf) return `Page ${currentIndex + 1} of ${totalChapters}`;
-		return `${currentChapterNum} of ${chapterEntries.length} chapters`;
+		if (isPdf) {
+			return $t('reader_page_position', {
+				values: { current: currentIndex + 1, total: totalChapters }
+			});
+		}
+		return $t('reader_chapter_position', {
+			values: { current: currentChapterNum, total: chapterEntries.length }
+		});
 	}
 </script>
 

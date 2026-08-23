@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		hints: string[];
 		tipsVisible: boolean;
@@ -9,7 +11,7 @@
 </script>
 
 <div class="search-hints">
-	Syntax:
+	{$t('search_syntax')}
 	{#each hints as hint (hint)}
 		<code>{hint}</code>
 	{/each}
@@ -18,7 +20,7 @@
 		class="tips-trigger"
 		role="button"
 		tabindex="0"
-		aria-label="Search tips"
+		aria-label={$t('search_tips')}
 		onmouseenter={() => onTipsVisibleChange(true)}
 		onmouseleave={() => onTipsVisibleChange(false)}
 		onfocus={() => onTipsVisibleChange(true)}
@@ -29,23 +31,24 @@
 		>
 		{#if tipsVisible}
 			<div class="tips-popover" role="tooltip">
-				<span class="tips-popover-title">Search Tips</span>
+				<span class="tips-popover-title">{$t('search_tips')}</span>
 				<ul class="tips-popover-list">
-					<li><code>tag:research</code> Filter by tag</li>
-					<li><code>type:pdf</code> Filter by content type</li>
-					<li><code>sender:news@example.com</code> Filter by sender</li>
-					<li><code>sender_domain:example.com</code> Filter by sender domain</li>
-					<li><code>list:weekly.example.com</code> Filter by List-ID</li>
-					<li><code>subject:"weekly brief"</code> Filter by email subject</li>
-					<li><code>collection:reading-list</code> Filter by collection</li>
-					<li><code>before:2026-01-01</code> Date range</li>
-					<li><code>is:read</code> / <code>is:unread</code> Reading status</li>
+					<li><code>tag:research</code> {$t('search_tip_tag')}</li>
+					<li><code>type:pdf</code> {$t('search_tip_content_type')}</li>
+					<li><code>sender:news@example.com</code> {$t('search_tip_sender')}</li>
+					<li><code>sender_domain:example.com</code> {$t('search_tip_sender_domain')}</li>
+					<li><code>list:weekly.example.com</code> {$t('search_tip_list_id')}</li>
+					<li><code>subject:"weekly brief"</code> {$t('search_tip_subject')}</li>
+					<li><code>collection:reading-list</code> {$t('search_tip_collection')}</li>
+					<li><code>before:2026-01-01</code> {$t('search_tip_date_range')}</li>
+					<li><code>is:read</code> / <code>is:unread</code> {$t('search_tip_reading_status')}</li>
 					<li>
 						<code>has:highlights</code> / <code>has:notes</code> /
-						<code>has:unsubscribe</code> Presence filters
+						<code>has:unsubscribe</code>
+						{$t('search_tip_presence')}
 					</li>
-					<li><code>is:blocked</code> Filter blocked email senders</li>
-					<li><code>!tag:read</code> Negation with <code>!</code> or <code>-</code></li>
+					<li><code>is:blocked</code> {$t('search_tip_blocked_senders')}</li>
+					<li><code>!tag:read</code> {$t('search_tip_negation')}</li>
 				</ul>
 			</div>
 		{/if}

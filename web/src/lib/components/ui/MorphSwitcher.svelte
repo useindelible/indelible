@@ -1,9 +1,10 @@
 <script lang="ts">
-	interface Option {
+	import { t, type MessageKey } from '$lib/i18n';
+
+	type Option = {
 		value: string;
-		label: string;
 		count?: number | null;
-	}
+	} & ({ label: string; labelKey?: never } | { labelKey: MessageKey; label?: never });
 
 	interface Props {
 		options: readonly Option[];
@@ -17,6 +18,10 @@
 	function select(v: string) {
 		value = v;
 		onchange?.(v);
+	}
+
+	function optionLabel(option: Option): string {
+		return option.labelKey ? $t(option.labelKey) : option.label;
 	}
 </script>
 
@@ -57,19 +62,20 @@
 
 <div class="morph" class:sm={size === 'sm'} role="tablist">
 	{#each options as option (option.value)}
+		{@const label = optionLabel(option)}
 		<button
 			type="button"
 			role="tab"
 			class="morph-btn"
 			class:on={value === option.value}
 			aria-selected={value === option.value}
-			title={option.label}
+			title={label}
 			onclick={() => select(option.value)}
 		>
 			{@render icon(option.value)}
 			<span class="m-rest">
 				<span class="m-inner">
-					<span class="m-label">{option.label}</span>
+					<span class="m-label">{label}</span>
 					{#if option.count != null}
 						<span class="m-count">{option.count}</span>
 					{/if}

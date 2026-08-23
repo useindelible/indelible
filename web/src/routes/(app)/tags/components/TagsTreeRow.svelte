@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		tag: TagResponse;
@@ -53,7 +54,9 @@
 		type="button"
 		class="tag-checkbox"
 		class:checked={selected}
-		aria-label={selected ? `Deselect ${tag.name}` : `Select ${tag.name}`}
+		aria-label={$t(selected ? 'tag_deselect_named' : 'tag_select_named', {
+			values: { name: tag.name }
+		})}
 		onclick={(event) => {
 			event.stopPropagation();
 			onToggleSelect(tag.id);
@@ -71,7 +74,7 @@
 			type="button"
 			class="tag-disclosure"
 			class:expanded
-			aria-label={expanded ? 'Collapse children' : 'Expand children'}
+			aria-label={$t(expanded ? 'tag_collapse_children' : 'tag_expand_children')}
 			onclick={(event) => {
 				event.stopPropagation();
 				onToggleExpand(tag.id);
@@ -90,7 +93,7 @@
 	<div class="tag-info">
 		<span class="tag-name">{tag.name}</span>
 		{#if tag.aliases.length > 0}
-			<span class="tag-aka-badge" title={tag.aliases.join(', ')}>aka</span>
+			<span class="tag-aka-badge" title={tag.aliases.join(', ')}>{$t('tag_aka')}</span>
 		{/if}
 	</div>
 
@@ -99,7 +102,7 @@
 	<button
 		type="button"
 		class="tag-more-btn"
-		aria-label="More actions for {tag.name}"
+		aria-label={$t('tag_more_actions', { values: { name: tag.name } })}
 		onclick={(event) => {
 			event.stopPropagation();
 			const rect = event.currentTarget.getBoundingClientRect();

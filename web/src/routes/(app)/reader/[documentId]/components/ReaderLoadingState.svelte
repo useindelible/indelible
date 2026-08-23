@@ -1,7 +1,9 @@
-<script lang="ts"></script>
+<script lang="ts">
+	import { t } from '$lib/i18n';
+</script>
 
 <div class="reader-loading-page">
-	<span class="loading-text">Loading...</span>
+	<span class="loading-text">{$t('common_loading')}</span>
 </div>
 
 <style>

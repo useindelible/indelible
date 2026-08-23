@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { HighlightColorOption } from './highlight-toolbar-model';
+	import { HIGHLIGHT_COLOR_LABEL_KEYS, type HighlightColorOption } from './highlight-toolbar-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		x: number;
@@ -28,6 +29,11 @@
 		onMouseEnter,
 		onMouseLeave
 	}: Props = $props();
+
+	function colorLabel(name: string): string {
+		const key = HIGHLIGHT_COLOR_LABEL_KEYS[name];
+		return key ? $t(key) : name;
+	}
 </script>
 
 <div
@@ -45,12 +51,16 @@
 			class="hl-color-btn"
 			class:active-color={activeColor === color.name}
 			style:background={color.hex}
-			aria-label="Change to {color.name}"
+			aria-label={$t('reader_change_highlight_color', {
+				values: {
+					color: colorLabel(color.name)
+				}
+			})}
 			onclick={() => onColorChange(color.name)}
 		></button>
 	{/each}
 	<div class="hl-divider"></div>
-	<button type="button" class="hl-action-btn" onclick={onCopy}> Copy </button>
+	<button type="button" class="hl-action-btn" onclick={onCopy}> {$t('common_copy')} </button>
 	<button type="button" class="hl-action-btn hl-tag-btn" class:has-tags={hasTags} onclick={onTag}>
 		<svg
 			viewBox="0 0 24 24"
@@ -66,9 +76,11 @@
 				y2="7"
 			/></svg
 		>
-		Tag
+		{$t('common_tags')}
 	</button>
-	<button type="button" class="hl-action-btn hl-delete-btn" onclick={onDelete}>Delete</button>
+	<button type="button" class="hl-action-btn hl-delete-btn" onclick={onDelete}
+		>{$t('common_delete')}</button
+	>
 </div>
 
 <style>

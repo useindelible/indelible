@@ -1,6 +1,7 @@
 <script lang="ts">
 	import FeedRowErrorDetail from './FeedRowErrorDetail.svelte';
 	import { formatSchedule, isFresh, type Feed } from '../feed-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		feed: Feed;
@@ -48,7 +49,7 @@
 		{#if feed.status === 'active'}
 			<span class="status-pill active">
 				<svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10" /></svg>
-				Active
+				{$t('feed_management_active')}
 			</span>
 		{:else if feed.status === 'paused'}
 			<span class="status-pill paused">
@@ -56,12 +57,12 @@
 					<rect x="6" y="5" width="4" height="14" />
 					<rect x="14" y="5" width="4" height="14" />
 				</svg>
-				Paused
+				{$t('feed_management_paused')}
 			</span>
 		{:else}
 			<span class="status-pill error">
 				<span class="err-dot"></span>
-				Error
+				{$t('feed_management_error')}
 			</span>
 		{/if}
 	</td>
@@ -72,7 +73,9 @@
 			class:on={feed.autoSave}
 			role="switch"
 			aria-checked={feed.autoSave}
-			aria-label={feed.autoSave ? 'Disable auto-save to library' : 'Enable auto-save to library'}
+			aria-label={feed.autoSave
+				? $t('feed_management_disable_auto_save')
+				: $t('feed_management_enable_auto_save')}
 			onclick={() => onToggleAutoSave(feed.id)}
 		>
 			<span class="toggle-track"></span>
@@ -94,7 +97,7 @@
 				type="button"
 				class="kebab"
 				class:open={menuOpen}
-				aria-label="Feed actions"
+				aria-label={$t('feed_management_actions')}
 				aria-haspopup="menu"
 				aria-expanded={menuOpen}
 				onclick={(event) => onToggleMenu(feed.id, event)}
@@ -123,7 +126,7 @@
 							<path d="M12 20h9" />
 							<path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
 						</svg>
-						Edit details
+						{$t('feed_management_edit_details')}
 					</button>
 					{#if feed.status === 'paused'}
 						<button
@@ -133,7 +136,7 @@
 							onclick={() => menuAction(onToggleFeed)}
 						>
 							<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-							Resume polling
+							{$t('feed_management_resume_polling')}
 						</button>
 					{:else}
 						<button
@@ -146,7 +149,7 @@
 								<rect x="6" y="5" width="4" height="14" />
 								<rect x="14" y="5" width="4" height="14" />
 							</svg>
-							Pause feed
+							{$t('feed_management_pause_feed')}
 						</button>
 					{/if}
 					{#if feed.status === 'error'}
@@ -160,7 +163,7 @@
 								<polyline points="23 4 23 10 17 10" />
 								<path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
 							</svg>
-							Retry now
+							{$t('feed_management_retry_now')}
 						</button>
 					{/if}
 					<div class="kebab-divider"></div>
@@ -175,7 +178,7 @@
 							<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 							<path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
 						</svg>
-						Unsubscribe
+						{$t('email_unsubscribe')}
 					</button>
 				</div>
 			{/if}

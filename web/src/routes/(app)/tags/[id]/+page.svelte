@@ -8,6 +8,7 @@
 	import { sanitizeColor } from '$lib/utils/color';
 	import TagColorPicker from '$lib/components/tags/TagColorPicker.svelte';
 	import ItemList from '$lib/components/library/ItemList.svelte';
+	import { date, t, type MessageKey } from '$lib/i18n';
 
 	const store = getTags();
 	const lib = getLibrary();
@@ -69,6 +70,15 @@
 	function itemTypeLabel(value?: string | null): string {
 		if (!value) return '';
 		if (value === 'pdf' || value === 'epub') return value.toUpperCase();
+		const keys: Record<string, MessageKey> = {
+			article: 'library_filter_value_article',
+			book: 'library_filter_value_book',
+			email: 'library_filter_value_email',
+			podcast: 'library_filter_value_podcast',
+			tweet: 'library_filter_value_tweet',
+			video: 'library_filter_value_video'
+		};
+		if (keys[value]) return $t(keys[value]);
 		return value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase());
 	}
 
@@ -77,20 +87,24 @@
 			highlight.item_title?.trim() ||
 			highlight.item_domain?.trim() ||
 			itemTypeLabel(highlight.item_type) ||
-			'Saved item'
+			$t('tag_saved_item')
 		);
 	}
 
 	function highlightLocator(highlight: (typeof store.tagHighlights)[number]): string {
 		const locator = highlight.locator;
-		if (!locator) return 'Text highlight';
-		if (locator.type === 'pdf' && locator.page) return `Page ${locator.page}`;
-		if (locator.type === 'epub' && locator.chapter) return `Chapter ${locator.chapter}`;
-		return 'Text highlight';
+		if (!locator) return $t('tag_highlight_text');
+		if (locator.type === 'pdf' && locator.page) {
+			return $t('tag_highlight_page', { values: { page: locator.page } });
+		}
+		if (locator.type === 'epub' && locator.chapter) {
+			return $t('tag_highlight_chapter', { values: { chapter: locator.chapter } });
+		}
+		return $t('tag_highlight_text');
 	}
 
 	function highlightDate(value: string): string {
-		return new Date(value).toLocaleDateString('en-GB', {
+		return $date(new Date(value), {
 			day: 'numeric',
 			month: 'short',
 			year: 'numeric'
@@ -106,7 +120,7 @@
 <div class="tag-detail">
 	{#if store.loading && !store.currentTag}
 		<div class="loading-state">
-			<span class="loading-text">Loading tag...</span>
+			<span class="loading-text">{$t('tag_loading')}</span>
 		</div>
 	{:else if store.currentTag}
 		{@const tag = store.currentTag}
@@ -118,7 +132,7 @@
 					type="button"
 					class="menu-btn"
 					onclick={() => vp.openMobileNav()}
-					aria-label="Open navigation"
+					aria-label={$t('common_open_navigation')}
 				>
 					<svg
 						viewBox="0 0 24 24"
@@ -142,11 +156,11 @@
 					></span>
 					<h1 class="header-title">{tag.name}</h1>
 					{#if tag.aliases.length > 0}
-						<span class="header-aka" title={tag.aliases.join(', ')}>aka</span>
+						<span class="header-aka" title={tag.aliases.join(', ')}>{$t('tag_aka')}</span>
 					{/if}
 				</div>
 				<div class="header-actions">
-					<button type="button" class="action-btn" aria-label="Edit tag" onclick={openEdit}>
+					<button type="button" class="action-btn" aria-label={$t('tag_edit')} onclick={openEdit}>
 						<svg
 							viewBox="0 0 24 24"
 							fill="none"
@@ -161,7 +175,7 @@
 					<button
 						type="button"
 						class="action-btn action-btn-danger"
-						aria-label="Delete tag"
+						aria-label={$t('tag_delete')}
 						onclick={() => {
 							showDeleteConfirm = true;
 						}}
@@ -183,10 +197,12 @@
 				</div>
 			</div>
 			<div class="header-meta">
-				<span class="meta-count">{tag.item_count} doc{tag.item_count !== 1 ? 's' : ''}</span>
+				<span class="meta-count"
+					>{$t('tag_document_count', { values: { count: tag.item_count } })}</span
+				>
 				<span class="meta-sep">·</span>
 				<span class="meta-count"
-					>{tag.highlight_count} highlight{tag.highlight_count !== 1 ? 's' : ''}</span
+					>{$t('tag_highlight_count', { values: { count: tag.highlight_count } })}</span
 				>
 			</div>
 		</div>
@@ -201,7 +217,7 @@
 					activeTab = 'items';
 				}}
 			>
-				Documents ({tag.item_count})
+				{$t('tag_documents', { values: { count: tag.item_count } })}
 			</button>
 			<button
 				type="button"
@@ -211,7 +227,7 @@
 					activeTab = 'highlights';
 				}}
 			>
-				Highlights ({tag.highlight_count})
+				{$t('tag_highlights', { values: { count: tag.highlight_count } })}
 			</button>
 		</div>
 
@@ -238,11 +254,11 @@
 			<div class="highlights-list">
 				{#if store.highlightsLoading && store.tagHighlights.length === 0}
 					<div class="loading-state">
-						<span class="loading-text">Loading highlights...</span>
+						<span class="loading-text">{$t('tag_loading_highlights')}</span>
 					</div>
 				{:else if store.tagHighlights.length === 0}
 					<div class="empty-state">
-						<p class="empty-heading">No highlights with this tag</p>
+						<p class="empty-heading">{$t('tag_no_highlights')}</p>
 					</div>
 				{:else}
 					{#each store.tagHighlights as hl (hl.id)}
@@ -279,7 +295,7 @@
 
 					{#if store.highlightsLoadingMore}
 						<div class="loading-state">
-							<span class="loading-text">Loading more...</span>
+							<span class="loading-text">{$t('tag_loading_more')}</span>
 						</div>
 					{:else if store.highlightsHasMore}
 						<button
@@ -287,7 +303,7 @@
 							class="btn btn-secondary load-more-btn"
 							onclick={handleLoadMoreHighlights}
 						>
-							Load more
+							{$t('tag_load_more')}
 						</button>
 					{/if}
 				{/if}
@@ -296,14 +312,14 @@
 	{:else if store.fetchError}
 		<div class="error-state">
 			<p class="error-text">{store.fetchError}</p>
-			<a href={resolve('/(app)/tags')} class="btn btn-secondary">Back to tags</a>
+			<a href={resolve('/(app)/tags')} class="btn btn-secondary">{$t('tag_back_to_all')}</a>
 		</div>
 	{/if}
 </div>
 
 <!-- Edit modal -->
 {#if showEditModal}
-	<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit tag">
+	<div class="modal-overlay" role="dialog" aria-modal="true" aria-label={$t('tag_edit')}>
 		<div
 			class="modal-backdrop"
 			onclick={() => {
@@ -312,7 +328,7 @@
 			role="presentation"
 		></div>
 		<div class="modal-panel">
-			<h2 class="modal-title">Edit Tag</h2>
+			<h2 class="modal-title">{$t('tag_edit')}</h2>
 			<form
 				class="modal-body"
 				onsubmit={(e) => {
@@ -321,18 +337,18 @@
 				}}
 			>
 				<label class="field">
-					<span class="field-label">Name</span>
+					<span class="field-label">{$t('tag_name')}</span>
 					<input
 						type="text"
 						class="field-input"
 						bind:value={formName}
-						placeholder="Tag name"
+						placeholder={$t('tag_name_placeholder')}
 						required
 						autofocus
 					/>
 				</label>
 				<div class="field">
-					<span class="field-label">Color</span>
+					<span class="field-label">{$t('tag_color')}</span>
 					<TagColorPicker
 						value={formColor}
 						onChange={(c) => {
@@ -346,9 +362,11 @@
 						class="btn btn-secondary"
 						onclick={() => {
 							showEditModal = false;
-						}}>Cancel</button
+						}}>{$t('common_cancel')}</button
 					>
-					<button type="submit" class="btn btn-primary" disabled={!formName.trim()}>Save</button>
+					<button type="submit" class="btn btn-primary" disabled={!formName.trim()}
+						>{$t('common_save')}</button
+					>
 				</div>
 			</form>
 		</div>
@@ -357,7 +375,7 @@
 
 <!-- Delete confirm -->
 {#if showDeleteConfirm}
-	<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Delete tag">
+	<div class="modal-overlay" role="dialog" aria-modal="true" aria-label={$t('tag_delete')}>
 		<div
 			class="modal-backdrop"
 			onclick={() => {
@@ -366,17 +384,21 @@
 			role="presentation"
 		></div>
 		<div class="modal-panel">
-			<h2 class="modal-title">Delete "{store.currentTag?.name}"?</h2>
-			<p class="modal-desc">This tag will be removed from all items and highlights.</p>
+			<h2 class="modal-title">
+				{$t('tag_delete_question', { values: { name: store.currentTag?.name ?? '' } })}
+			</h2>
+			<p class="modal-desc">{$t('tag_delete_body')}</p>
 			<div class="modal-actions">
 				<button
 					type="button"
 					class="btn btn-secondary"
 					onclick={() => {
 						showDeleteConfirm = false;
-					}}>Cancel</button
+					}}>{$t('common_cancel')}</button
 				>
-				<button type="button" class="btn btn-danger" onclick={confirmDelete}>Delete</button>
+				<button type="button" class="btn btn-danger" onclick={confirmDelete}
+					>{$t('common_delete')}</button
+				>
 			</div>
 		</div>
 	</div>

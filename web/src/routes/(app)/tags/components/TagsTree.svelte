@@ -1,5 +1,6 @@
 <script lang="ts">
 	import TagsTreeRow from './TagsTreeRow.svelte';
+	import { t } from '$lib/i18n';
 	import { getTagCountLabel, tagDisplayColor, type TagNode, type TagScope } from '../tag-tree';
 
 	interface Props {
@@ -40,7 +41,7 @@
 <div class="tags-list-area">
 	{#if loading}
 		<div class="empty-state">
-			<span class="state-text">Loading tags…</span>
+			<span class="state-text">{$t('tag_loading_all')}</span>
 		</div>
 	{:else if isEmpty}
 		<div class="empty-state">
@@ -52,14 +53,14 @@
 					<circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
 				</svg>
 			</div>
-			<p class="empty-heading">No tags yet</p>
-			<p class="empty-sub">Create a tag to start organizing your content.</p>
-			<button type="button" class="cmd-action" onclick={onCreate}>Create your first tag</button>
+			<p class="empty-heading">{$t('tag_no_tags_title')}</p>
+			<p class="empty-sub">{$t('tag_no_tags_body')}</p>
+			<button type="button" class="cmd-action" onclick={onCreate}>{$t('tag_create_first')}</button>
 		</div>
 	{:else if totalCount === 0}
 		<div class="empty-state">
-			<p class="empty-heading">No matching tags</p>
-			<p class="empty-sub">Try a different search term.</p>
+			<p class="empty-heading">{$t('tag_no_matching_title')}</p>
+			<p class="empty-sub">{$t('tag_no_matching_body')}</p>
 		</div>
 	{:else}
 		{#each nodes as node (node.tag.id)}
@@ -70,7 +71,7 @@
 				expanded={expandedParents.has(node.tag.id)}
 				selected={selectedIds.has(node.tag.id)}
 				color={tagDisplayColor(node.tag)}
-				countLabel={getTagCountLabel(node.tag, activeScope, rolledUpCounts)}
+				countLabel={getTagCountLabel($t, node.tag, activeScope, rolledUpCounts)}
 				{onContextMenu}
 				{onOpen}
 				{onToggleExpand}
@@ -86,7 +87,7 @@
 
 {#if totalCount > 0}
 	<span class="item-count" aria-live="polite">
-		{totalCount} tag{totalCount !== 1 ? 's' : ''}
+		{$t('tag_count', { values: { count: totalCount } })}
 	</span>
 {/if}
 

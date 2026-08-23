@@ -1,4 +1,5 @@
 import type { IntegrationConnectionDto } from '$lib/api';
+import type { MessageKey, Translate } from '$lib/i18n';
 import type { ConnectionState } from '$lib/integrations/status';
 
 export function getNotionWorkspaceName(
@@ -15,35 +16,39 @@ export function getNotionWorkspaceIcon(
 	return connection.config.workspace_icon ?? null;
 }
 
-export function getNotionDatabaseLabel(workspaceName: string | null): string {
-	return workspaceName ? `${workspaceName} · Indelible` : 'Indelible Library';
+export function getNotionDatabaseLabel(workspaceName: string | null, translate: Translate): string {
+	return workspaceName
+		? `${workspaceName} · Indelible`
+		: translate('integrations_notion_default_database_name');
 }
 
-export function getNotionHeroStatus(connectionState: ConnectionState): string {
+export function getNotionHeroStatus(connectionState: ConnectionState): MessageKey {
 	switch (connectionState) {
 		case 'failed':
-			return 'Attention';
+			return 'integrations_notion_attention';
 		case 'syncing':
-			return 'Syncing';
+			return 'integrations_notion_syncing';
 		case 'disconnected':
-			return 'Disconnected';
+			return 'integrations_hub_status_not_connected';
 		case 'unavailable':
-			return 'Unavailable';
+			return 'integrations_notion_status_unavailable';
 		default:
-			return 'Connected';
+			return 'integrations_hub_status_connected';
 	}
 }
 
 export function formatNotionHeroLastSync(
 	lastSyncAt: string | null | undefined,
-	now = Date.now(),
-	locale?: string | string[]
+	translate: Translate,
+	locale: string | null | undefined,
+	now = Date.now()
 ): string {
-	if (!lastSyncAt) return 'Never';
+	if (!lastSyncAt) return translate('integrations_notion_never_synced');
 	const parsed = new Date(lastSyncAt);
-	if (Number.isNaN(parsed.getTime())) return 'Never';
-	const relativeFormatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-	const dateFormatter = new Intl.DateTimeFormat(locale, {
+	if (Number.isNaN(parsed.getTime())) return translate('integrations_notion_never_synced');
+	const activeLocale = locale ?? 'en';
+	const relativeFormatter = new Intl.RelativeTimeFormat(activeLocale, { numeric: 'auto' });
+	const dateFormatter = new Intl.DateTimeFormat(activeLocale, {
 		month: 'short',
 		day: 'numeric'
 	});

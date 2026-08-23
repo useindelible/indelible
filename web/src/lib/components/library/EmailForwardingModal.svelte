@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 	import { getAuth } from '$lib/stores/auth.svelte';
+	import { t } from '$lib/i18n';
 
 	const modal = getModalStore();
 	const auth = getAuth();
@@ -53,7 +54,7 @@
 <dialog
 	bind:this={dialogEl}
 	class="modal-backdrop"
-	aria-label="Email Forwarding"
+	aria-label={$t('library_email_forwarding')}
 	onclick={handleBackdropClick}
 	onclose={close}
 >
@@ -69,8 +70,8 @@
 					</svg>
 				</div>
 				<div class="email-card-body">
-					<div class="email-card-title">Feed Email</div>
-					<div class="email-card-desc">New items appear in your Feed for review</div>
+					<div class="email-card-title">{$t('library_email_feed_title')}</div>
+					<div class="email-card-desc">{$t('library_email_feed_description')}</div>
 				</div>
 				<div class="email-card-right">
 					<span class="email-card-address">{FEED_EMAIL}</span>
@@ -78,7 +79,7 @@
 						type="button"
 						class="copy-btn"
 						class:copied={feedCopied}
-						aria-label="Copy feed email"
+						aria-label={$t('library_email_copy_feed')}
 						onclick={() => copyToClipboard(FEED_EMAIL, 'feed')}
 					>
 						{#if feedCopied}
@@ -104,8 +105,8 @@
 					</svg>
 				</div>
 				<div class="email-card-body">
-					<div class="email-card-title">Library Email</div>
-					<div class="email-card-desc">Items are saved directly to your Library</div>
+					<div class="email-card-title">{$t('library_email_library_title')}</div>
+					<div class="email-card-desc">{$t('library_email_library_description')}</div>
 				</div>
 				<div class="email-card-right">
 					<span class="email-card-address">{LIBRARY_EMAIL}</span>
@@ -113,7 +114,7 @@
 						type="button"
 						class="copy-btn"
 						class:copied={libraryCopied}
-						aria-label="Copy library email"
+						aria-label={$t('library_email_copy_library')}
 						onclick={() => copyToClipboard(LIBRARY_EMAIL, 'library')}
 					>
 						{#if libraryCopied}

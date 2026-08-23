@@ -6,6 +6,8 @@ import {
 	streamMilaChat
 } from '$lib/api';
 import type { MilaMessageResponse } from '$lib/api/generated/types.gen';
+import { t } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 // -- Config singleton --
 
@@ -81,7 +83,7 @@ export function createMilaChat(scope: ChatScope) {
 	}
 
 	function finishCanceledResponse() {
-		error = 'Response canceled.';
+		error = get(t)('mila_error_canceled');
 		messages = messages.filter((message) => !message.streaming);
 	}
 
@@ -111,7 +113,7 @@ export function createMilaChat(scope: ChatScope) {
 
 			await startNewSession();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to initialize chat';
+			error = e instanceof Error ? e.message : get(t)('mila_error_initialize');
 		} finally {
 			loading = false;
 		}
@@ -236,7 +238,7 @@ export function createMilaChat(scope: ChatScope) {
 				if (canceledByUser) finishCanceledResponse();
 				return;
 			}
-			error = e instanceof Error ? e.message : 'Chat failed';
+			error = e instanceof Error ? e.message : get(t)('mila_error_chat_failed');
 			// Remove the partial streaming assistant message on error
 			messages = messages.filter((m) => !m.streaming);
 		} finally {
@@ -305,29 +307,27 @@ export function createMilaChat(scope: ChatScope) {
 function toChatStreamError(failure: unknown): Error {
 	const message = failure instanceof Error ? failure.message : String(failure);
 	if (message.includes('503')) {
-		return new Error(
-			'Your AI provider is unreachable. Start it (e.g. LM Studio), then press Retry.'
-		);
+		return new Error(get(t)('mila_error_provider_unreachable'));
 	}
-	return new Error('Chat failed — please try again.');
+	return new Error(get(t)('mila_error_chat_retry'));
 }
 
 export function formatRetrievalWarning(reason: string) {
 	const reasons = reason.split(',').map((part) => part.trim());
 	if (reasons.includes('fts_failed') && reasons.includes('vector_failed')) {
-		return 'Mila used partial collection search; lexical and semantic retrieval both degraded.';
+		return get(t)('mila_retrieval_partial_both_degraded');
 	}
 	if (reasons.includes('fts_failed') && reasons.includes('embedding_failed')) {
-		return 'Mila used partial collection search; lexical search and embeddings were unavailable.';
+		return get(t)('mila_retrieval_lexical_and_embeddings_unavailable');
 	}
 	if (reasons.includes('fts_failed')) {
-		return 'Mila used semantic matches only; lexical search was unavailable.';
+		return get(t)('mila_retrieval_semantic_only');
 	}
 	if (reasons.includes('embedding_failed')) {
-		return 'Mila used lexical matches only; embeddings were unavailable.';
+		return get(t)('mila_retrieval_lexical_only_embeddings_unavailable');
 	}
 	if (reasons.includes('vector_failed')) {
-		return 'Mila used lexical matches only; semantic search was unavailable.';
+		return get(t)('mila_retrieval_lexical_only_semantic_unavailable');
 	}
-	return 'Mila used partial collection search for this answer.';
+	return get(t)('mila_retrieval_partial');
 }

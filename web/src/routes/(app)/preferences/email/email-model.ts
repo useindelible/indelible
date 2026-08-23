@@ -4,6 +4,9 @@ import type {
 	EmailAliasResponse,
 	EmailSenderResponse
 } from '$lib/api';
+import type { Translate } from '$lib/i18n';
+import { date } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 export type SenderFilter = 'all' | 'feed' | 'library' | 'blocked' | 'quiet';
 
@@ -106,7 +109,7 @@ export function formatRelative(iso: string | null | undefined): string {
 	if (days < 7) return `${days}d ago`;
 	const weeks = Math.floor(days / 7);
 	if (weeks < 8) return `${weeks}w ago`;
-	return new Date(iso).toLocaleDateString(undefined, {
+	return get(date)(new Date(iso), {
 		month: 'short',
 		day: 'numeric',
 		year: 'numeric'
@@ -115,7 +118,7 @@ export function formatRelative(iso: string | null | undefined): string {
 
 export function formatIssued(iso: string | null | undefined): string {
 	if (!iso) return '-';
-	return new Date(iso).toLocaleDateString(undefined, {
+	return get(date)(new Date(iso), {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric'
@@ -147,7 +150,8 @@ export function isValidLocalPart(value: string): boolean {
 export function extractErrorMessage(
 	apiError: unknown,
 	response: Response | undefined,
-	fallback: string
+	fallback: string,
+	translate: Translate
 ): string {
 	if (apiError && typeof apiError === 'object') {
 		const err = apiError as Record<string, unknown>;
@@ -158,7 +162,7 @@ export function extractErrorMessage(
 		if (typeof err.detail === 'string') return err.detail;
 		if (typeof err.message === 'string') return err.message;
 	}
-	if (response?.status === 409) return 'That alias is already taken';
-	if (response?.status === 422) return 'Invalid alias';
+	if (response?.status === 409) return translate('email_error_alias_taken');
+	if (response?.status === 422) return translate('email_error_invalid_alias');
 	return fallback;
 }

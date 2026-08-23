@@ -93,9 +93,9 @@ describe('obsidian settings model', () => {
 		expect(obsidianHeroState(undefined, 'unavailable')).toBe('disconnected');
 		expect(obsidianHeroState(connection(), 'syncing')).toBe('syncing');
 		expect(obsidianHeroState(connection(), 'failed')).toBe('error');
-		expect(obsidianHeroStatusLabel('error')).toBe('Last sync failed');
+		expect(obsidianHeroStatusLabel('error')).toBe('integrations_obsidian_last_sync_failed');
 		expect(formatObsidianLastSync(connection({ last_sync_at: '2026-06-10T13:40:00Z' }))).toBe(
-			'20m ago'
+			'20 minutes ago'
 		);
 		vi.useRealTimers();
 	});

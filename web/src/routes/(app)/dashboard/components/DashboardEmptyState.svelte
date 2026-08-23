@@ -1,4 +1,6 @@
-<script lang="ts"></script>
+<script lang="ts">
+	import { t } from '$lib/i18n';
+</script>
 
 <div class="empty-state">
 	<div class="empty-icon" aria-hidden="true">
@@ -16,8 +18,8 @@
 			<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
 		</svg>
 	</div>
-	<p class="empty-title">Your library is empty</p>
-	<p class="empty-subtitle">Save your first article, book, or PDF to get started.</p>
+	<p class="empty-title">{$t('dashboard_empty_title')}</p>
+	<p class="empty-subtitle">{$t('dashboard_empty_body')}</p>
 </div>
 
 <style>

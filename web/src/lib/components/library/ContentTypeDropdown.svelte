@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { t, type MessageKey } from '$lib/i18n';
 	import { getLibrary } from '$lib/stores/library.svelte';
 
 	const lib = getLibrary();
@@ -19,22 +20,24 @@
 		| '/library/podcasts';
 
 	type ContentOption = {
-		label: string;
+		labelKey: MessageKey;
 		type: string | undefined;
 		href: LibraryRoute;
 	};
 
 	const options: ContentOption[] = [
-		{ label: 'All', type: undefined, href: '/library' },
-		{ label: 'Articles', type: 'articles', href: '/library/articles' },
-		{ label: 'Books', type: 'books', href: '/library/books' },
-		{ label: 'Emails', type: 'emails', href: '/library/emails' },
-		{ label: 'PDFs', type: 'pdfs', href: '/library/pdfs' },
-		{ label: 'Tweets', type: 'tweets', href: '/library/tweets' },
-		{ label: 'Videos', type: 'videos', href: '/library/videos' }
+		{ labelKey: 'common_all', type: undefined, href: '/library' },
+		{ labelKey: 'library_nav_articles', type: 'articles', href: '/library/articles' },
+		{ labelKey: 'library_nav_books', type: 'books', href: '/library/books' },
+		{ labelKey: 'library_nav_emails', type: 'emails', href: '/library/emails' },
+		{ labelKey: 'library_nav_pdfs', type: 'pdfs', href: '/library/pdfs' },
+		{ labelKey: 'library_nav_tweets', type: 'tweets', href: '/library/tweets' },
+		{ labelKey: 'library_nav_videos', type: 'videos', href: '/library/videos' }
 	];
 
-	const currentLabel = $derived(options.find((o) => o.type === lib.activeType)?.label ?? 'Library');
+	const currentLabel = $derived(
+		$t(options.find((option) => option.type === lib.activeType)?.labelKey ?? 'common_library')
+	);
 
 	$effect(() => {
 		if (!open) return;
@@ -87,7 +90,7 @@
 	</button>
 
 	{#if open}
-		<div class="content-type-popover" role="listbox" aria-label="Content type filter">
+		<div class="content-type-popover" role="listbox" aria-label={$t('library_content_type_filter')}>
 			{#each options as opt (opt.href)}
 				<button
 					type="button"
@@ -97,7 +100,7 @@
 					class:selected={lib.activeType === opt.type}
 					onclick={() => select(opt)}
 				>
-					{opt.label}
+					{$t(opt.labelKey)}
 					{#if lib.activeType === opt.type}
 						<svg
 							viewBox="0 0 24 24"

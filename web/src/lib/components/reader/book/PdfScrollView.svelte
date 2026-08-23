@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount, untrack } from 'svelte';
 	import { SvelteSet, SvelteMap } from 'svelte/reactivity';
 	import type { BookSource } from './book-source';
@@ -311,7 +312,7 @@
 	</div>
 {:else}
 	<div class="pdf-scroll-loading">
-		<span class="loading-text">Loading PDF...</span>
+		<span class="loading-text">{$t('reader_loading_pdf')}</span>
 	</div>
 {/if}
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ArticleTocEntry } from '$lib/api';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		entries: ArticleTocEntry[];
@@ -16,11 +17,13 @@
 	}
 </script>
 
-<nav class="toc-panel" aria-label="Table of contents">
+<nav class="toc-panel" aria-label={$t('reader_table_of_contents')}>
 	<div class="toc-heading-row">
-		<span class="toc-heading">Contents</span>
+		<span class="toc-heading">{$t('reader_contents')}</span>
 		{#if progress != null}
-			<span class="toc-progress">{Math.round(progress)}% read</span>
+			<span class="toc-progress"
+				>{$t('reader_percent_read', { values: { progress: Math.round(progress) } })}</span
+			>
 		{/if}
 	</div>
 	{#each entries as entry, index (`${entry.source_heading_index}-${entry.id}`)}
@@ -32,7 +35,11 @@
 			onclick={() => onNavigate(entry, index)}
 		>
 			<span class="toc-label">{entry.title}</span>
-			<span class="toc-min">{minutes(entry.word_count)} min</span>
+			<span class="toc-min"
+				>{$t('common_reading_time_minutes', {
+					values: { minutes: minutes(entry.word_count) }
+				})}</span
+			>
 		</button>
 	{/each}
 </nav>

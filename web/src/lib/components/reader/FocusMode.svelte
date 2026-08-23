@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { beforeNavigate } from '$app/navigation';
+	import { t } from '$lib/i18n';
 
 	type FocusModeState = 'selecting' | 'active' | 'paused' | 'completed';
 
@@ -129,21 +130,21 @@
 
 {#if focusState === 'selecting'}
 	<div class="focus-selector">
-		<span class="focus-label">Focus for</span>
+		<span class="focus-label">{$t('reader_focus_for')}</span>
 		<div class="preset-row">
 			{#each PRESETS as preset (preset.minutes)}
 				<button type="button" class="preset-btn" onclick={() => startTimer(preset.minutes)}>
-					{preset.label} min
+					{$t('common_reading_time_minutes', { values: { minutes: preset.label } })}
 				</button>
 			{/each}
 		</div>
-		<button type="button" class="focus-cancel" onclick={onExit}> Cancel </button>
+		<button type="button" class="focus-cancel" onclick={onExit}> {$t('common_cancel')} </button>
 	</div>
 {/if}
 
 {#if focusState === 'active' || focusState === 'paused'}
 	<div class="focus-timer-bar" aria-live="polite">
-		<div class="timer-display" role="timer" aria-label="Focus timer">
+		<div class="timer-display" role="timer" aria-label={$t('reader_focus_timer')}>
 			<svg viewBox="0 0 48 48" class="timer-ring">
 				<circle
 					cx="24"
@@ -170,14 +171,24 @@
 		</div>
 
 		{#if focusState === 'active'}
-			<button type="button" class="focus-control-btn" onclick={handlePause} aria-label="Pause">
+			<button
+				type="button"
+				class="focus-control-btn"
+				onclick={handlePause}
+				aria-label={$t('reader_pause')}
+			>
 				<svg viewBox="0 0 24 24" fill="currentColor">
 					<rect x="6" y="4" width="4" height="16" rx="1" />
 					<rect x="14" y="4" width="4" height="16" rx="1" />
 				</svg>
 			</button>
 		{:else}
-			<button type="button" class="focus-control-btn" onclick={handleResume} aria-label="Resume">
+			<button
+				type="button"
+				class="focus-control-btn"
+				onclick={handleResume}
+				aria-label={$t('reader_resume')}
+			>
 				<svg viewBox="0 0 24 24" fill="currentColor">
 					<polygon points="5,3 19,12 5,21" />
 				</svg>
@@ -188,7 +199,7 @@
 			type="button"
 			class="focus-control-btn exit-btn"
 			onclick={onExit}
-			aria-label="Exit focus mode"
+			aria-label={$t('reader_exit_focus_mode')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -207,24 +218,26 @@
 {#if focusState === 'completed'}
 	<div class="focus-completion-overlay">
 		<div class="completion-card">
-			<h3 class="completion-title">Session Complete</h3>
+			<h3 class="completion-title">{$t('reader_focus_complete')}</h3>
 
 			<div class="completion-stats">
 				<div class="stat">
 					<span class="stat-value">{elapsedDisplay}</span>
-					<span class="stat-label">Time Focused</span>
+					<span class="stat-label">{$t('reader_focus_time')}</span>
 				</div>
 				<div class="stat">
 					<span class="stat-value">{progressGained}%</span>
-					<span class="stat-label">Progress</span>
+					<span class="stat-label">{$t('reader_progress')}</span>
 				</div>
 				<div class="stat">
 					<span class="stat-value">{highlightsCreated}</span>
-					<span class="stat-label">Highlights</span>
+					<span class="stat-label">{$t('reader_highlights')}</span>
 				</div>
 			</div>
 
-			<button type="button" class="completion-done-btn" onclick={onExit}> Done </button>
+			<button type="button" class="completion-done-btn" onclick={onExit}>
+				{$t('reader_done')}
+			</button>
 		</div>
 	</div>
 {/if}
@@ -232,8 +245,8 @@
 {#if showNavConfirm}
 	<div class="focus-completion-overlay">
 		<div class="completion-card">
-			<h3 class="completion-title">Leave Focus Session?</h3>
-			<p class="nav-confirm-text">Your focus session is still in progress.</p>
+			<h3 class="completion-title">{$t('reader_focus_leave_question')}</h3>
+			<p class="nav-confirm-text">{$t('reader_focus_in_progress')}</p>
 			<div class="nav-confirm-actions">
 				<button
 					type="button"
@@ -242,9 +255,11 @@
 						showNavConfirm = false;
 					}}
 				>
-					Stay
+					{$t('reader_stay')}
 				</button>
-				<button type="button" class="nav-confirm-leave" onclick={confirmExit}> Leave </button>
+				<button type="button" class="nav-confirm-leave" onclick={confirmExit}>
+					{$t('reader_leave')}
+				</button>
 			</div>
 		</div>
 	</div>

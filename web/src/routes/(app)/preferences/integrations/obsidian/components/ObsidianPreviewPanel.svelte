@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PreviewView } from '../obsidian-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		previewView: PreviewView;
@@ -34,23 +35,21 @@
 
 <section class="section">
 	<div class="section-head">
-		<h2 class="section-title">Preview</h2>
-		<p class="section-sub">
-			Rendered against a sample document — switch between note and full-text companion
-		</p>
+		<h2 class="section-title">{$t('integrations_obsidian_preview')}</h2>
+		<p class="section-sub">{$t('integrations_obsidian_preview_hint')}</p>
 	</div>
 
 	<div class="preview-card">
 		<div class="preview-head">
 			<div class="preview-spacer"></div>
-			<div class="seg" role="tablist" aria-label="Preview view">
+			<div class="seg" role="tablist" aria-label={$t('integrations_obsidian_preview_view')}>
 				<button
 					type="button"
 					class="seg-btn"
 					class:is-active={previewView === 'note'}
 					role="tab"
 					aria-selected={previewView === 'note'}
-					onclick={() => onSetPreviewView('note')}>Note</button
+					onclick={() => onSetPreviewView('note')}>{$t('integrations_obsidian_note')}</button
 				>
 				<button
 					type="button"
@@ -58,7 +57,7 @@
 					class:is-active={previewView === 'full'}
 					role="tab"
 					aria-selected={previewView === 'full'}
-					onclick={() => onSetPreviewView('full')}>Full text</button
+					onclick={() => onSetPreviewView('full')}>{$t('integrations_obsidian_full_text')}</button
 				>
 			</div>
 			<button
@@ -83,13 +82,13 @@
 						stroke-linejoin="round"
 					/>
 				</svg>
-				Re-render
+				{$t('integrations_obsidian_rerender')}
 			</button>
 		</div>
 
 		{#if previewFilePath}
 			<div class="preview-path">
-				<span class="pp-label">vault path</span>
+				<span class="pp-label">{$t('integrations_obsidian_vault_path')}</span>
 				<span class="pp-path">{previewFilePath}</span>
 			</div>
 		{/if}
@@ -110,10 +109,8 @@
 						</svg>
 					</span>
 					<div>
-						<p class="alert-title">Preview failed</p>
-						<p class="alert-body">
-							MiniJinja could not render your templates. Fix the syntax to re-enable preview.
-						</p>
+						<p class="alert-title">{$t('integrations_obsidian_preview_failed')}</p>
+						<p class="alert-body">{$t('integrations_obsidian_preview_failed_hint')}</p>
 						<span class="alert-code">{previewError}</span>
 					</div>
 				</div>
@@ -126,29 +123,28 @@
 					<pre class="full-text-body">{previewBody}</pre>
 				{:else if fullTextOffAndMissing}
 					<div class="full-text-cta">
-						<p class="full-text-cta-label">Export full text is off.</p>
+						<p class="full-text-cta-label">{$t('integrations_obsidian_full_text_off')}</p>
 						<button type="button" class="full-text-cta-btn" onclick={onEnableFullText}
-							>Turn on</button
+							>{$t('integrations_obsidian_turn_on')}</button
 						>
 					</div>
 				{:else if fullTextMissing}
 					<p class="preview-empty">
-						This sample has no prepared readable asset, so no full-text companion is rendered.
+						{$t('integrations_obsidian_full_text_missing')}
 					</p>
 				{:else if !previewing}
-					<p class="preview-empty">Save your settings to see the rendered preview.</p>
+					<p class="preview-empty">{$t('integrations_obsidian_save_to_preview')}</p>
 				{/if}
 			{:else if previewBody}
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				<div class="md">{@html previewBodyHtml}</div>
 				{#if previewMissingSummary}
 					<p class="preview-hint">
-						No summary rendered for this preview. Documents without a stored summary omit the
-						default Summary row.
+						{$t('integrations_obsidian_preview_no_summary')}
 					</p>
 				{/if}
 			{:else if !previewing}
-				<p class="preview-empty">Save your settings to see the rendered preview.</p>
+				<p class="preview-empty">{$t('integrations_obsidian_save_to_preview')}</p>
 			{/if}
 		</div>
 	</div>

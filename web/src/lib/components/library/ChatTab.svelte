@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { createMilaChat, getMilaConfig, type ChatScope } from '$lib/stores/mila.svelte';
 	import { renderMilaMessageMarkdown } from '$lib/utils/mila-citations';
@@ -54,16 +55,14 @@
 	}
 
 	const placeholder = $derived(
-		scope.type === 'collection'
-			? 'Ask Mila about this collection…'
-			: 'Ask Mila about this article...'
+		scope.type === 'collection' ? $t('library_chat_ask_collection') : $t('library_chat_ask_article')
 	);
 	const responsePhaseLabel = $derived(
 		chat.phase === 'generating'
-			? 'Generating response'
+			? $t('library_chat_generating')
 			: chat.elapsedSeconds >= 30
-				? 'Still preparing — the provider may be starting'
-				: 'Preparing response'
+				? $t('library_chat_still_preparing')
+				: $t('library_chat_preparing')
 	);
 </script>
 
@@ -84,21 +83,25 @@
 	<div class="chat-messages" bind:this={messagesEl}>
 		{#if !config.loaded || config.loading}
 			<div class="chat-state-center">
-				<div class="chat-spinner" aria-label="Loading…"></div>
+				<div class="chat-spinner" aria-label={$t('common_loading')}></div>
 			</div>
 		{:else if !config.configured}
 			<div class="chat-state-center">
 				<p class="chat-empty-hint">
-					Mila is not configured. <a href={resolve('/preferences/ai')}>Set up Mila</a> to start chatting.
+					{$t('library_chat_not_configured')}
+					<a href={resolve('/preferences/ai')}>{$t('library_chat_set_up_mila')}</a>
+					{$t('library_chat_to_start')}
 				</p>
 			</div>
 		{:else if chat.loading}
 			<div class="chat-state-center">
-				<div class="chat-spinner" aria-label="Loading session…"></div>
+				<div class="chat-spinner" aria-label={$t('library_chat_loading_session')}></div>
 			</div>
 		{:else if scope.type === 'collection' && chat.messages.length === 0}
 			<div class="chat-state-center">
-				<p class="chat-empty-hint">Ask Mila about <strong>{label}</strong>…</p>
+				<p class="chat-empty-hint">
+					{$t('library_chat_ask_named_collection', { values: { label } })}
+				</p>
 			</div>
 		{:else}
 			{#each chat.messages.filter((m) => m.role === 'user') as userMsg (userMsg.id)}
@@ -117,8 +120,10 @@
 										{responsePhaseLabel}
 										<span aria-hidden="true"> · {chat.elapsedSeconds}s</span>
 									</span>
-									<button type="button" onclick={() => chat.cancel()} aria-label="Cancel response"
-										>Cancel</button
+									<button
+										type="button"
+										onclick={() => chat.cancel()}
+										aria-label={$t('library_chat_cancel_response')}>{$t('common_cancel')}</button
 									>
 								</div>
 							{/if}
@@ -153,7 +158,9 @@
 			{#if chat.error}
 				<div class="chat-error-row">
 					<span class="chat-error-text">{chat.error}</span>
-					<button type="button" class="chat-retry-btn" onclick={() => chat.retry()}>Retry</button>
+					<button type="button" class="chat-retry-btn" onclick={() => chat.retry()}
+						>{$t('common_retry')}</button
+					>
 				</div>
 			{/if}
 		{/if}
@@ -177,7 +184,7 @@
 		<button
 			type="button"
 			class="chat-send"
-			aria-label="Send message"
+			aria-label={$t('library_chat_send')}
 			disabled={!inputValue.trim() || chat.streaming || !config.configured || chat.loading}
 			onclick={handleSend}
 		>

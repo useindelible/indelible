@@ -13,6 +13,7 @@
 	import AddItemsDrawer from '$lib/components/collections/AddItemsDrawer.svelte';
 	import DetailPanel from '$lib/components/library/DetailPanel.svelte';
 	import ItemList from '$lib/components/library/ItemList.svelte';
+	import { t } from '$lib/i18n';
 
 	const store = getCollections();
 	const lib = getLibrary();
@@ -86,7 +87,7 @@
 <div class="detail-layout">
 	{#if store.loading && !store.currentCollection}
 		<div class="loading-state">
-			<span class="loading-text">Loading collection...</span>
+			<span class="loading-text">{$t('collection_loading')}</span>
 		</div>
 	{:else if store.currentCollection}
 		{@const col = store.currentCollection}
@@ -98,7 +99,7 @@
 						type="button"
 						class="menu-btn"
 						onclick={() => vp.openMobileNav()}
-						aria-label="Open navigation"
+						aria-label={$t('common_open_navigation')}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -132,14 +133,14 @@
 						{/if}
 						<div class="hero-stats">
 							<span class="stat"
-								>{store.items.length} item{store.items.length !== 1 ? 's' : ''}</span
+								>{$t('collection_item_count', { values: { count: store.items.length } })}</span
 							>
 							{#if store.children.length > 0}
 								<span class="stat-sep">·</span>
 								<span class="stat"
-									>{store.children.length} sub-collection{store.children.length !== 1
-										? 's'
-										: ''}</span
+									>{$t('collection_subcollection_count', {
+										values: { count: store.children.length }
+									})}</span
 								>
 							{/if}
 						</div>
@@ -152,12 +153,12 @@
 								showAddItems = true;
 							}}
 						>
-							Add items
+							{$t('collection_add_items')}
 						</button>
 						<button
 							type="button"
 							class="action-btn"
-							aria-label="Edit collection"
+							aria-label={$t('collection_edit')}
 							onclick={() => {
 								showEditModal = true;
 							}}
@@ -177,7 +178,7 @@
 						<button
 							type="button"
 							class="action-btn action-btn-danger"
-							aria-label="Delete collection"
+							aria-label={$t('collection_delete_dialog')}
 							onclick={() => {
 								showDeleteConfirm = true;
 							}}
@@ -201,8 +202,12 @@
 								class="action-btn"
 								class:panel-active={compactDetailOpen}
 								onclick={() => (compactDetailOpen = !compactDetailOpen)}
-								aria-label={compactDetailOpen ? 'Hide detail panel' : 'Show detail panel'}
-								title={compactDetailOpen ? 'Hide detail panel' : 'Show detail panel'}
+								aria-label={$t(
+									compactDetailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel'
+								)}
+								title={$t(
+									compactDetailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel'
+								)}
 							>
 								<svg
 									viewBox="0 0 20 20"
@@ -251,7 +256,7 @@
 						}}
 					>
 						<span class="chip-icon" aria-hidden="true">+</span>
-						<span class="chip-name">New sub-collection</span>
+						<span class="chip-name">{$t('collection_new_subcollection')}</span>
 					</button>
 				</div>
 			{/if}
@@ -270,8 +275,8 @@
 							<path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
 						</svg>
 					</div>
-					<p class="empty-title">No items yet</p>
-					<p class="empty-desc">Add items from your library to this collection.</p>
+					<p class="empty-title">{$t('collection_no_items_title')}</p>
+					<p class="empty-desc">{$t('collection_no_items_body')}</p>
 					<button
 						type="button"
 						class="btn btn-primary"
@@ -279,7 +284,7 @@
 							showAddItems = true;
 						}}
 					>
-						Add items
+						{$t('collection_add_items')}
 					</button>
 				</div>
 			{:else}
@@ -315,7 +320,7 @@
 								type="button"
 								class="m-back"
 								onclick={() => (compactDetailOpen = false)}
-								aria-label="Back to collection"
+								aria-label={$t('collection_back_to_current')}
 							>
 								<svg
 									viewBox="0 0 24 24"
@@ -329,7 +334,7 @@
 									<polyline points="15 18 9 12 15 6" />
 								</svg>
 							</button>
-							<span class="m-dtitle">{selectedItem?.title ?? 'Details'}</span>
+							<span class="m-dtitle">{selectedItem?.title ?? $t('common_details')}</span>
 						</div>
 						<DetailPanel item={selectedItem} collectionId={col.id} collectionName={col.name} />
 					</div>
@@ -348,7 +353,9 @@
 	{:else if store.fetchError}
 		<div class="error-state">
 			<p class="error-text">{store.fetchError}</p>
-			<a href={resolve('/(app)/collections')} class="btn btn-secondary">Back to collections</a>
+			<a href={resolve('/(app)/collections')} class="btn btn-secondary"
+				>{$t('collection_back_to_all')}</a
+			>
 		</div>
 	{/if}
 </div>
@@ -394,7 +401,12 @@
 {/if}
 
 {#if showDeleteConfirm}
-	<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Delete collection">
+	<div
+		class="modal-overlay"
+		role="dialog"
+		aria-modal="true"
+		aria-label={$t('collection_delete_dialog')}
+	>
 		<div
 			class="modal-backdrop"
 			onclick={() => {
@@ -403,19 +415,23 @@
 			role="presentation"
 		></div>
 		<div class="modal-panel">
-			<h2 class="modal-title">Delete "{store.currentCollection?.name}"?</h2>
-			<p class="modal-desc">
-				This collection will be permanently deleted. Items inside will not be deleted.
-			</p>
+			<h2 class="modal-title">
+				{$t('collection_delete_question', {
+					values: { name: store.currentCollection?.name ?? '' }
+				})}
+			</h2>
+			<p class="modal-desc">{$t('collection_delete_body')}</p>
 			<div class="modal-actions">
 				<button
 					type="button"
 					class="btn btn-secondary"
 					onclick={() => {
 						showDeleteConfirm = false;
-					}}>Cancel</button
+					}}>{$t('common_cancel')}</button
 				>
-				<button type="button" class="btn btn-danger" onclick={confirmDelete}>Delete</button>
+				<button type="button" class="btn btn-danger" onclick={confirmDelete}
+					>{$t('common_delete')}</button
+				>
 			</div>
 		</div>
 	</div>

@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import type { IntegrationConnectionDto } from '$lib/api';
 	import type { ObsidianHeroState } from '../obsidian-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		connection: IntegrationConnectionDto;
@@ -13,51 +14,42 @@
 
 <section class="section">
 	<div class="section-head">
-		<h2 class="section-title">Sync</h2>
-		<p class="section-sub">Vault writes happen from the Obsidian plugin</p>
+		<h2 class="section-title">{$t('integrations_obsidian_sync')}</h2>
+		<p class="section-sub">{$t('integrations_obsidian_sync_hint')}</p>
 	</div>
 	<div class="card card-stack">
 		<div class="row">
 			<div>
-				<p class="row-title">Manual vault sync</p>
-				<p class="row-sub">
-					Run this from the Obsidian plugin settings or command palette. The plugin downloads
-					server-rendered artifacts and writes them into your open vault.
-				</p>
+				<p class="row-title">{$t('integrations_obsidian_manual_sync')}</p>
+				<p class="row-sub">{$t('integrations_obsidian_manual_sync_hint')}</p>
 			</div>
-			<span class="tag-pill">In Obsidian</span>
+			<span class="tag-pill">{$t('integrations_obsidian_in_obsidian')}</span>
 		</div>
 
 		<div class="row">
 			<div>
-				<p class="row-title">Plugin settings</p>
-				<p class="row-sub">
-					Schedule, sync-on-open, deleted-file resync, and current-file reimport confirmation live
-					in the Obsidian plugin's settings.
-				</p>
+				<p class="row-title">{$t('integrations_obsidian_plugin_settings')}</p>
+				<p class="row-sub">{$t('integrations_obsidian_plugin_settings_hint')}</p>
 			</div>
-			<span class="tag-pill">In Obsidian</span>
+			<span class="tag-pill">{$t('integrations_obsidian_in_obsidian')}</span>
 		</div>
 
 		<div class="row">
 			<div>
-				<p class="row-title">Plugin access token</p>
-				<p class="row-sub">
-					The Obsidian plugin authenticates with a personal access token scoped to exports. Generate
-					one in Developer settings, then paste it into the plugin.
-				</p>
+				<p class="row-title">{$t('integrations_obsidian_plugin_token')}</p>
+				<p class="row-sub">{$t('integrations_obsidian_plugin_token_hint')}</p>
 			</div>
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- href uses resolve() for the route and appends a query string. -->
 			<a class="btn" href={`${resolve('/preferences/developer')}?permission=obsidian%3Async`}
-				>Generate token</a
+				>{$t('integrations_obsidian_generate_token')}</a
 			>
 		</div>
 
 		{#if heroState === 'error' && connection.last_error}
 			<div class="alert-block">
 				<div class="alert">
-					<strong>Last sync failed</strong>
-					<p>Indelible will retry when the plugin next runs from Obsidian.</p>
+					<strong>{$t('integrations_obsidian_last_sync_failed')}</strong>
+					<p>{$t('integrations_obsidian_retry_hint')}</p>
 					<span>{connection.last_error}</span>
 				</div>
 			</div>

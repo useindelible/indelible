@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { RecentSearchResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		recentLoading: boolean;
@@ -23,8 +24,10 @@
 	{:else if recentSearches.length > 0}
 		<div class="recent-section">
 			<div class="recent-header">
-				<span class="recent-title">Recent Searches</span>
-				<button type="button" class="recent-clear-btn" onclick={onClearAll}>Clear All</button>
+				<span class="recent-title">{$t('search_recent_title')}</span>
+				<button type="button" class="recent-clear-btn" onclick={onClearAll}
+					>{$t('search_recent_clear_all')}</button
+				>
 			</div>
 			<ul class="recent-list" role="list">
 				{#each recentSearches as recent (recent.id)}
@@ -44,7 +47,7 @@
 							type="button"
 							class="recent-delete-btn"
 							onclick={() => onDeleteRecent(recent.id)}
-							aria-label="Remove recent search"
+							aria-label={$t('search_recent_remove')}
 						>
 							<svg viewBox="0 0 24 24"
 								><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg
@@ -61,10 +64,8 @@
 					><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg
 				>
 			</div>
-			<p class="empty-title">Search your Library</p>
-			<p class="empty-subtitle">
-				Find articles, books, highlights, and notes across your entire collection.
-			</p>
+			<p class="empty-title">{$t('search_recent_empty_title')}</p>
+			<p class="empty-subtitle">{$t('search_recent_empty_body')}</p>
 		</div>
 	{/if}
 </div>

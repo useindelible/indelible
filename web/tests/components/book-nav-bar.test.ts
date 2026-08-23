@@ -1,10 +1,14 @@
 import { render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import BookNavBar from '$lib/components/reader/book/BookNavBar.svelte';
 import type { TocEntry } from '$lib/components/reader/book/book-source';
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
 
 describe('BookNavBar', () => {
+	afterEach(() => locale.set('en'));
+
 	it('keeps every distinct spine in a mixed-depth table of contents', () => {
 		const toc: TocEntry[] = [
 			{ id: 'opening', title: 'Opening', depth: 1, index: 0 },
@@ -61,5 +65,25 @@ describe('BookNavBar', () => {
 
 		expect(screen.getByText('1 of 2 chapters')).toBeTruthy();
 		expect(screen.queryByText('0 of 2 chapters')).toBeNull();
+	});
+
+	it('renders the chapter position in the active locale', () => {
+		setupI18nSync({ fr }, 'fr');
+		const toc: TocEntry[] = [
+			{ id: 'opening', title: 'Opening', depth: 1, index: 0 },
+			{ id: 'signal', title: 'Signal', depth: 1, index: 1 }
+		];
+
+		render(BookNavBar, {
+			props: {
+				toc,
+				currentIndex: 0,
+				totalChapters: 2,
+				onPrev: vi.fn(),
+				onNext: vi.fn()
+			}
+		});
+
+		expect(screen.getByText('1 sur 2 chapitres')).toBeTruthy();
 	});
 });

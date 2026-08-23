@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		tags: string[];
 		addingTag: boolean;
@@ -32,7 +33,7 @@
 		<button
 			type="button"
 			class="tag-x"
-			aria-label="Remove tag {tag}"
+			aria-label={$t('library_tag_remove', { values: { tag } })}
 			onclick={() => onRemoveTag(tag)}>&times;</button
 		>
 	</span>
@@ -44,7 +45,7 @@
 		bind:value={newTagValue}
 		class="tag-inline-input"
 		type="text"
-		placeholder="tag name"
+		placeholder={$t('library_tag_name')}
 		onkeydown={onTagKeydown}
 		onblur={() => {
 			if (newTagValue.trim()) onAddTag(newTagValue);
@@ -55,7 +56,7 @@
 	<button
 		type="button"
 		class="tag-add-sm"
-		aria-label="Add tag"
+		aria-label={$t('library_tag_add')}
 		onclick={() => {
 			addingTag = true;
 		}}>+</button

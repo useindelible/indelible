@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		path: CollectionResponse[];
@@ -9,10 +10,10 @@
 	let { path }: Props = $props();
 </script>
 
-<nav class="breadcrumbs" aria-label="Collection breadcrumbs">
+<nav class="breadcrumbs" aria-label={$t('collection_breadcrumbs')}>
 	<ol>
 		<li>
-			<a href={resolve('/(app)/collections')} class="crumb">Collections</a>
+			<a href={resolve('/(app)/collections')} class="crumb">{$t('library_collections')}</a>
 		</li>
 		{#each path as segment, i (segment.id)}
 			<li>

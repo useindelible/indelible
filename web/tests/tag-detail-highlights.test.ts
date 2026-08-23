@@ -82,7 +82,7 @@ describe('tag highlight results', () => {
 		expect(screen.getByText('example.com · PDF')).toBeTruthy();
 		expect(screen.getByText('Compare this with the architecture notes.')).toBeTruthy();
 		expect(screen.getByText('Page 7')).toBeTruthy();
-		expect(screen.getByText(/12 Aug 2026/)).toBeTruthy();
+		expect(screen.getByText(/Aug 12, 2026/)).toBeTruthy();
 	});
 
 	it('falls back to domain without an empty type separator', async () => {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ArticleTocEntry } from '$lib/api';
 	import TocPanel from './TocPanel.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		entries: ArticleTocEntry[];
@@ -35,7 +36,7 @@
 	});
 </script>
 
-<nav class="toc-rail-zone" aria-label="Table of contents">
+<nav class="toc-rail-zone" aria-label={$t('reader_table_of_contents')}>
 	<div class="toc-rail" class:dense>
 		{#each entries as entry, index (`${entry.source_heading_index}-${entry.id}`)}
 			<button

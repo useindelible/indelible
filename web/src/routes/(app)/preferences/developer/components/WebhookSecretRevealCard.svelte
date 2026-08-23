@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface WebhookSecret {
 		name: string;
 		raw_secret: string;
@@ -18,22 +19,26 @@
 	<div class="reveal">
 		<div class="reveal-head">
 			<div class="reveal-title">
-				Signing secret ready <span class="badge-warn">Shown once</span>
+				{$t('prefs_developer_signing_secret_ready')}
+				<span class="badge-warn">{$t('prefs_developer_shown_once')}</span>
 			</div>
-			<button type="button" class="btn ghost compact" onclick={onDismiss}>Dismiss</button>
+			<button type="button" class="btn ghost compact" onclick={onDismiss}
+				>{$t('common_dismiss')}</button
+			>
 		</div>
 		<div class="reveal-desc">
-			Copy this secret into {secret.name}. Indelible stores it encrypted and uses it to sign every
-			webhook payload.
+			{$t('prefs_developer_signing_secret_hint', { values: { name: secret.name } })}
 		</div>
 		<div class="reveal-token">
 			<code>{secret.raw_secret}</code>
 			<button type="button" class="btn ghost compact" onclick={onCopy}>
-				{copied ? 'Copied' : 'Copy'}
+				{$t(copied ? 'common_copied' : 'common_copy')}
 			</button>
 		</div>
 		<div class="reveal-foot">
-			<button type="button" class="btn primary" onclick={onDismiss}>I've saved it</button>
+			<button type="button" class="btn primary" onclick={onDismiss}
+				>{$t('prefs_developer_saved_secret')}</button
+			>
 		</div>
 	</div>
 {/if}

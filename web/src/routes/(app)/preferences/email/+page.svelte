@@ -14,6 +14,7 @@
 		RenderDefaultDto
 	} from '$lib/api';
 	import { getAuth } from '$lib/stores/auth.svelte';
+	import { t } from '$lib/i18n';
 	import EmailHero from './components/EmailHero.svelte';
 	import EmailInboxesSection from './components/EmailInboxesSection.svelte';
 	import EmailSenderFilters from './components/EmailSenderFilters.svelte';
@@ -80,14 +81,15 @@
 				loadError = extractErrorMessage(
 					aliasResult.error,
 					aliasResult.response,
-					'Failed to load aliases'
+					$t('email_error_load_aliases'),
+					$t
 				);
 			}
 			if (senderResult.data) {
 				senders = senderResult.data.data;
 			}
 		} catch {
-			loadError = 'An unexpected error occurred';
+			loadError = $t('auth_error_unexpected');
 		} finally {
 			loading = false;
 		}
@@ -122,10 +124,10 @@
 				await load();
 				closeComposer();
 			} else {
-				createError = extractErrorMessage(error, response, 'Failed to create alias');
+				createError = extractErrorMessage(error, response, $t('email_error_create_alias'), $t);
 			}
 		} catch {
-			createError = 'An unexpected error occurred';
+			createError = $t('auth_error_unexpected');
 		} finally {
 			creating = false;
 		}
@@ -238,14 +240,13 @@
 		<section class="page-section" aria-labelledby="senders-heading">
 			<div class="section-head">
 				<div>
-					<div class="section-eyebrow">Section ii · Register</div>
-					<h2 class="section-title" id="senders-heading">The senders <em>register</em></h2>
-					<p class="section-desc">
-						Every address that has written to you. Set how each one is rendered, where each lands,
-						block what you don&rsquo;t want, unsubscribe what you no longer need.
-					</p>
+					<div class="section-eyebrow">{$t('email_senders_eyebrow')}</div>
+					<h2 class="section-title" id="senders-heading">
+						{$t('email_senders_title')} <em>{$t('email_senders_title_emphasis')}</em>
+					</h2>
+					<p class="section-desc">{$t('email_senders_description')}</p>
 				</div>
-				<div class="section-meta">{senders.length} entries</div>
+				<div class="section-meta">{$t('email_entries', { values: { count: senders.length } })}</div>
 			</div>
 
 			<EmailSenderFilters
@@ -257,7 +258,7 @@
 			/>
 
 			{#if loading}
-				<div class="ledger-loading">Loading senders…</div>
+				<div class="ledger-loading">{$t('email_loading_senders')}</div>
 			{:else}
 				<EmailSenderTable
 					senders={filteredSenders}

@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import * as apiSdk from '$lib/api';
 	import type { EntitySummaryResponse } from '$lib/api/generated/types.gen';
+	import { t, type MessageKey } from '$lib/i18n';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { addDomainEventHandler } from '$lib/realtime/domain-events';
 	import { READER_AI_DOMAIN_EVENT_TYPES } from '$lib/realtime/event-types';
@@ -15,18 +16,18 @@
 	type EntityKind = 'person' | 'organization' | 'location' | 'event' | 'topic';
 
 	interface EntityGroup {
-		label: string;
+		labelKey: MessageKey;
 		kind: EntityKind;
 		items: EntitySummaryResponse[];
 	}
 
 	const KIND_ORDER: EntityKind[] = ['person', 'organization', 'location', 'event', 'topic'];
-	const KIND_LABELS: Record<EntityKind, string> = {
-		person: 'People',
-		organization: 'Organizations',
-		location: 'Locations',
-		event: 'Events',
-		topic: 'Topics'
+	const KIND_LABELS: Record<EntityKind, MessageKey> = {
+		person: 'library_entities_people',
+		organization: 'library_entities_organizations',
+		location: 'library_entities_locations',
+		event: 'library_entities_events',
+		topic: 'library_entities_topics'
 	};
 
 	let entities = $state<EntitySummaryResponse[]>([]);
@@ -59,7 +60,7 @@
 			if (payload.document_id !== itemId) return;
 			if (payload.action !== 'entities') return;
 			if (event.type === 'ai.output.failed') {
-				failure = "Mila couldn't extract entities.";
+				failure = $t('library_entities_error');
 				return;
 			}
 			failure = null;
@@ -79,7 +80,7 @@
 			byKind.set(kind, existing);
 		}
 		return KIND_ORDER.filter((kind) => byKind.has(kind)).map((kind) => ({
-			label: KIND_LABELS[kind],
+			labelKey: KIND_LABELS[kind],
 			kind,
 			items: byKind.get(kind)!
 		}));
@@ -88,14 +89,14 @@
 
 <div class="entities-section">
 	<div class="entities-header">
-		<div class="section-heading">Entities</div>
-		<p class="section-subtext">Extracted by Mila</p>
+		<div class="section-heading">{$t('library_entities_title')}</div>
+		<p class="section-subtext">{$t('library_entities_extracted_by_mila')}</p>
 	</div>
 
 	{#if loading}
-		<div class="entities-loading">Loading...</div>
+		<div class="entities-loading">{$t('common_loading')}</div>
 	{:else if groups.length === 0}
-		<p class="entities-empty">{failure ?? 'No entities extracted yet.'}</p>
+		<p class="entities-empty">{failure ?? $t('library_entities_empty')}</p>
 	{:else}
 		{#each groups as group (group.kind)}
 			<div class="entity-group">
@@ -175,7 +176,7 @@
 							<line x1="12" y1="16" x2="12.01" y2="16" />
 						</svg>
 					{/if}
-					{group.label}
+					{$t(group.labelKey)}
 				</div>
 				{#each group.items as entity (entity.id)}
 					<div class="entity-row">
@@ -183,7 +184,11 @@
 							>{entity.name}</a
 						>
 						{#if entity.item_count > 1}
-							<span class="entity-badge">{entity.item_count - 1} other docs</span>
+							<span class="entity-badge"
+								>{$t('library_entities_other_documents', {
+									values: { count: entity.item_count - 1 }
+								})}</span
+							>
 						{/if}
 					</div>
 				{/each}

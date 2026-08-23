@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { AliasDestinationDto, EmailAliasResponse } from '$lib/api';
 	import { formatIssued } from '../email-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		dest: AliasDestinationDto;
@@ -14,6 +15,7 @@
 	}
 
 	let { dest, label, headline, address, primary, copied, onCopy, onOpenComposer }: Props = $props();
+	const destinationLabel = $derived(dest === 'feed' ? $t('common_feed') : $t('common_library'));
 </script>
 
 <article class="envelope envelope-{dest}">
@@ -27,51 +29,53 @@
 
 	<section class="envelope-section">
 		{#if address}
-			<div class="envelope-cap">Primary address</div>
+			<div class="envelope-cap">{$t('email_primary_address')}</div>
 			<div class="envelope-address-row">
 				<div class="envelope-address">{address}</div>
 				<button
 					class="copy-btn"
 					type="button"
-					aria-label="Copy {dest} address"
+					aria-label={$t('email_copy_address', { values: { destination: destinationLabel } })}
 					onclick={() => onCopy(`primary-${dest}`, address)}
 				>
 					{#if copied}
 						<svg viewBox="0 0 24 24" aria-hidden="true">
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
-						Copied
+						{$t('common_copied')}
 					{:else}
 						<svg viewBox="0 0 24 24" aria-hidden="true">
 							<rect x="9" y="9" width="13" height="13" rx="2" />
 							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 						</svg>
-						Copy
+						{$t('common_copy')}
 					{/if}
 				</button>
 			</div>
 			<div class="envelope-meta">
 				<span class="envelope-since">
-					{primary ? `Issued · ${formatIssued(primary.created_at)}` : 'Default address'}
+					{primary
+						? $t('email_issued', { values: { date: formatIssued(primary.created_at) } })
+						: $t('email_default_address')}
 				</span>
 				<span class="envelope-sep" aria-hidden="true">·</span>
 				<button
 					class="envelope-rotate"
 					type="button"
-					aria-label="Create a new {dest} address"
+					aria-label={$t('email_create_address', { values: { destination: destinationLabel } })}
 					onclick={(event) => onOpenComposer(dest, event.currentTarget)}
 				>
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M12 5v14M5 12h14" />
 					</svg>
-					New {dest === 'feed' ? 'Feed' : 'Library'} address
+					{$t('email_new_address', {
+						values: { destination: dest === 'feed' ? $t('common_feed') : $t('common_library') }
+					})}
 				</button>
 			</div>
 		{:else}
-			<div class="envelope-cap">Unavailable</div>
-			<p class="envelope-unavailable">
-				Not available on this server — an administrator must configure an email ingest domain.
-			</p>
+			<div class="envelope-cap">{$t('email_unavailable')}</div>
+			<p class="envelope-unavailable">{$t('email_unavailable_hint')}</p>
 		{/if}
 	</section>
 </article>

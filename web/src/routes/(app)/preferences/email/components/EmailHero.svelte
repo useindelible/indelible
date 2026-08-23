@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatRelative } from '../email-model';
+	import { date, number, t } from '$lib/i18n';
 
 	interface Props {
 		senderCount: number;
@@ -11,15 +12,15 @@
 	let { senderCount, totalDeliveries, totalBlocked, lastDelivery }: Props = $props();
 </script>
 
-<section class="hero" aria-label="Email hero">
+<section class="hero" aria-label={$t('email_hero_aria')}>
 	<div class="airmail-strip" aria-hidden="true"></div>
 	<div class="hero-postmark" aria-hidden="true">
 		<div class="pm-arc-top">Indelible · Postroom</div>
 		<div class="pm-rule"></div>
-		<div class="pm-date">No. {senderCount || '—'}</div>
+		<div class="pm-date">{$t('email_number', { values: { count: senderCount || '—' } })}</div>
 		<div class="pm-rule"></div>
 		<div class="pm-arc-bottom">
-			{new Date().toLocaleDateString(undefined, {
+			{$date(new Date(), {
 				day: '2-digit',
 				month: 'short',
 				year: 'numeric'
@@ -28,33 +29,32 @@
 	</div>
 
 	<div class="hero-inner">
-		<div class="hero-eyebrow">Postroom · {senderCount} senders on file</div>
-		<h1 class="hero-headline">Newsletters arrive here. <em>You decide where they go.</em></h1>
-		<p class="hero-sub">
-			Two inboxes — one for the Feed, one for the Library. Every sender is logged, sorted, and one
-			click from a clean unsubscribe.
-		</p>
+		<div class="hero-eyebrow">{$t('email_hero_eyebrow', { values: { count: senderCount } })}</div>
+		<h1 class="hero-headline">
+			{$t('email_hero_title')} <em>{$t('email_hero_title_emphasis')}</em>
+		</h1>
+		<p class="hero-sub">{$t('email_hero_subtitle')}</p>
 
-		<div class="stats-card" role="group" aria-label="Email statistics">
+		<div class="stats-card" role="group" aria-label={$t('email_statistics')}>
 			<div class="stat-cell">
 				<div class="stat-num">{senderCount}</div>
-				<div class="stat-label">Senders</div>
-				<div class="stat-sub">On file, all time</div>
+				<div class="stat-label">{$t('email_senders')}</div>
+				<div class="stat-sub">{$t('email_senders_all_time')}</div>
 			</div>
 			<div class="stat-cell">
-				<div class="stat-num">{totalDeliveries.toLocaleString()}</div>
-				<div class="stat-label">Deliveries</div>
-				<div class="stat-sub">Across both inboxes</div>
+				<div class="stat-num">{$number(totalDeliveries)}</div>
+				<div class="stat-label">{$t('email_deliveries')}</div>
+				<div class="stat-sub">{$t('email_deliveries_both')}</div>
 			</div>
 			<div class="stat-cell" class:blocked={totalBlocked > 0}>
 				<div class="stat-num">{totalBlocked}</div>
-				<div class="stat-label">Blocked</div>
-				<div class="stat-sub">Held at the door</div>
+				<div class="stat-label">{$t('email_blocked')}</div>
+				<div class="stat-sub">{$t('email_blocked_hint')}</div>
 			</div>
 			<div class="stat-cell">
 				<div class="stat-num">{formatRelative(lastDelivery)}</div>
-				<div class="stat-label">Last delivery</div>
-				<div class="stat-sub">Most recent arrival</div>
+				<div class="stat-label">{$t('email_last_delivery')}</div>
+				<div class="stat-sub">{$t('email_last_delivery_hint')}</div>
 			</div>
 		</div>
 	</div>

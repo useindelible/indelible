@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		itemCount: number;
 		onConfirm: () => void;
@@ -13,7 +15,7 @@
 	class="cmd-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label="Empty Trash"
+	aria-label={$t('trash_empty')}
 	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(e) => {
@@ -25,22 +27,20 @@
 >
 	<div class="cmd-card" role="none" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 		<div class="cmd-body">
-			<h2 class="dialog-title">Empty Trash</h2>
+			<h2 class="dialog-title">{$t('trash_empty')}</h2>
 			<p class="dialog-text">
-				Are you sure you want to permanently delete all <strong
-					>{itemCount} item{itemCount !== 1 ? 's' : ''}</strong
-				> in Trash? This action cannot be undone.
+				{$t('trash_empty_confirmation', { values: { count: itemCount } })}
 			</p>
 		</div>
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+			<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 			<button
 				type="button"
 				class="cmd-action cmd-action-danger"
 				disabled={confirming}
 				onclick={onConfirm}
 			>
-				{confirming ? 'Deleting...' : 'Delete All'}
+				{confirming ? $t('trash_deleting') : $t('trash_delete_all')}
 			</button>
 		</div>
 	</div>

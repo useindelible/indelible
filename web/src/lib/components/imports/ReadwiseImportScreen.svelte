@@ -11,6 +11,7 @@
 	} from '$lib/api/imports';
 	import { findProvider } from '$lib/integrations/providers';
 	import type { ImportJobStatusResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		activeJob: ImportJobStatusResponse | null;
@@ -93,7 +94,7 @@
 			libraryCsv = file;
 			csvRowCount = countCsvRows(text);
 		} catch {
-			csvError = 'Could not read the CSV file.';
+			csvError = $t('imports_readwise_csv_read_error');
 		}
 	}
 
@@ -113,7 +114,9 @@
 		const arr = Array.from(files);
 		for (const file of arr) {
 			if (file.size > maxPerFile) {
-				dropError = `${file.name} exceeds the ${Math.round(maxPerFile / 1_048_576)} MB per-file limit.`;
+				dropError = $t('imports_readwise_file_limit', {
+					values: { name: file.name, size: Math.round(maxPerFile / 1_048_576) }
+				});
 				continue;
 			}
 			const lower = file.name.toLowerCase();
@@ -124,7 +127,7 @@
 			} else if (lower.endsWith('.opml') || lower.endsWith('.xml')) {
 				await stageOpml(file);
 			} else {
-				dropError = `${file.name}: unsupported type. Accepted: .csv, .zip, .opml, .xml`;
+				dropError = $t('imports_readwise_unsupported_file', { values: { name: file.name } });
 			}
 		}
 	}
@@ -186,13 +189,13 @@
 
 <div class="screen">
 	<header class="screen-header">
-		<Button variant="tertiary" size="sm" onclick={onBack}>← Back</Button>
+		<Button variant="tertiary" size="sm" onclick={onBack}>← {$t('integrations_back')}</Button>
 		<div class="provider-identity">
 			<ProviderIcon provider="readwise" size={32} />
 			<div class="provider-text">
-				<h2 class="provider-name">Import from Readwise Reader</h2>
+				<h2 class="provider-name">{$t('imports_readwise_title')}</h2>
 				<p class="provider-desc">
-					Drop any combination of CSV, ZIP archive, and OPML — we'll route each automatically.
+					{$t('imports_readwise_description')}
 				</p>
 			</div>
 		</div>
@@ -227,9 +230,9 @@
 					bind:this={fileInputEl}
 					onchange={onFileChange}
 				/>
-				<p class="dropzone-prompt">Drop files here or click to browse</p>
+				<p class="dropzone-prompt">{$t('imports_readwise_drop_files')}</p>
 				<p class="dropzone-hint">
-					Accepts .csv, .zip, .opml — up to {Math.round(maxPerFile / 1_048_576)} MB per file
+					{$t('imports_readwise_accepts', { values: { size: Math.round(maxPerFile / 1_048_576) } })}
 				</p>
 			</div>
 
@@ -255,11 +258,13 @@
 								<span class="file-name">{libraryCsv.name}</span>
 								<span class="file-meta">
 									{formatSize(libraryCsv.size)}{csvRowCount !== null
-										? ` · ${csvRowCount} rows`
+										? ` · ${$t('imports_readwise_rows', { values: { count: csvRowCount } })}`
 										: ''} · CSV
 								</span>
 							</div>
-							<Button variant="tertiary" size="sm" onclick={() => removeFile('csv')}>Remove</Button>
+							<Button variant="tertiary" size="sm" onclick={() => removeFile('csv')}
+								>{$t('common_remove')}</Button
+							>
 						</li>
 					{/if}
 					{#if archiveZip}
@@ -267,9 +272,13 @@
 							<span class="file-icon file-icon-zip">ZIP</span>
 							<div class="file-info">
 								<span class="file-name">{archiveZip.name}</span>
-								<span class="file-meta">{formatSize(archiveZip.size)} · ZIP archive</span>
+								<span class="file-meta"
+									>{formatSize(archiveZip.size)} · {$t('imports_readwise_zip_archive')}</span
+								>
 							</div>
-							<Button variant="tertiary" size="sm" onclick={() => removeFile('zip')}>Remove</Button>
+							<Button variant="tertiary" size="sm" onclick={() => removeFile('zip')}
+								>{$t('common_remove')}</Button
+							>
 						</li>
 					{/if}
 					{#if feedsOpml}
@@ -279,11 +288,12 @@
 								<span class="file-name">{feedsOpml.name}</span>
 								<span class="file-meta">
 									{formatSize(feedsOpml.size)}{opmlFeedCount !== null
-										? ` · ${opmlFeedCount} feeds`
+										? ` · ${$t('imports_readwise_feeds', { values: { count: opmlFeedCount } })}`
 										: ''} · OPML
 								</span>
 							</div>
-							<Button variant="tertiary" size="sm" onclick={() => removeFile('opml')}>Remove</Button
+							<Button variant="tertiary" size="sm" onclick={() => removeFile('opml')}
+								>{$t('common_remove')}</Button
 							>
 						</li>
 					{/if}
@@ -291,27 +301,32 @@
 
 				<!-- Pre-commit preview -->
 				<section class="preview">
-					<h3 class="preview-title">Pre-commit preview</h3>
+					<h3 class="preview-title">{$t('imports_readwise_preview_title')}</h3>
 					<p class="preview-note">
-						{csvRowCount !== null ? `${csvRowCount} CSV rows staged` : 'No CSV staged'}
-						{opmlFeedCount !== null ? ` · ${opmlFeedCount} OPML feeds detected` : ''}. Matched /
-						unmatched archive counts will appear once the import runs.
+						{$t('imports_readwise_preview', {
+							values: {
+								csvCount: csvRowCount ?? 0,
+								hasCsv: String(csvRowCount !== null),
+								opmlCount: opmlFeedCount ?? 0,
+								hasOpml: String(opmlFeedCount !== null)
+							}
+						})}
 					</p>
 					<dl class="stats-grid">
 						<div class="stat-card">
-							<dt>CSV rows</dt>
+							<dt>{$t('imports_readwise_csv_rows')}</dt>
 							<dd>{csvRowCount !== null ? csvRowCount : '—'}</dd>
 						</div>
 						<div class="stat-card">
-							<dt>Archive ZIP</dt>
+							<dt>{$t('imports_readwise_archive_zip')}</dt>
 							<dd>{archiveZip ? formatSize(archiveZip.size) : '—'}</dd>
 						</div>
 						<div class="stat-card">
-							<dt>OPML feeds</dt>
+							<dt>{$t('imports_readwise_opml_feeds')}</dt>
 							<dd>{opmlFeedCount !== null ? opmlFeedCount : '—'}</dd>
 						</div>
 						<div class="stat-card">
-							<dt>Total size</dt>
+							<dt>{$t('imports_readwise_total_size')}</dt>
 							<dd>{totalSize > 0 ? formatSize(totalSize) : '—'}</dd>
 						</div>
 					</dl>
@@ -320,13 +335,12 @@
 
 			{#if zipWithoutCsv}
 				<div class="zip-warning" role="note">
-					<strong>No CSV staged</strong> — archive documents will import without metadata (URL, tags,
-					reading progress). Add your Readwise library CSV to preserve this.
+					{$t('imports_readwise_no_csv_warning')}
 				</div>
 			{/if}
 
 			<div class="staging-actions">
-				<Button variant="secondary" size="sm" onclick={onBack}>Cancel</Button>
+				<Button variant="secondary" size="sm" onclick={onBack}>{$t('common_cancel')}</Button>
 				<Button
 					variant="primary"
 					size="sm"
@@ -334,7 +348,7 @@
 					loading={isCommitting}
 					onclick={commitImport}
 				>
-					Commit import
+					{$t('imports_readwise_commit')}
 				</Button>
 			</div>
 		</section>
@@ -350,10 +364,9 @@
 			{#if readwiseReport && (readwiseReport.opml_feeds_created ?? 0) > 0}
 				<div class="opml-callout">
 					<p class="opml-text">
-						OPML routed to Feeds. We added {readwiseReport.opml_feeds_created} RSS subscription{readwiseReport.opml_feeds_created ===
-						1
-							? ''
-							: 's'} to your Feeds manager.
+						{$t('imports_readwise_opml_routed', {
+							values: { count: readwiseReport.opml_feeds_created }
+						})}
 					</p>
 				</div>
 			{/if}
@@ -363,36 +376,50 @@
 					<div class="match-panel match-panel-matched">
 						<header class="match-header">
 							<span class="match-icon match-icon-success" aria-hidden="true">✓</span>
-							<h4 class="match-title">Matched</h4>
+							<h4 class="match-title">{$t('imports_readwise_matched')}</h4>
 						</header>
-						<p class="match-count">{readwiseReport.zip_files_matched ?? 0} archive files</p>
-						<p class="match-sub">matched to CSV rows · highlights anchored to existing items</p>
+						<p class="match-count">
+							{$t('imports_readwise_archive_files', {
+								values: { count: readwiseReport.zip_files_matched ?? 0 }
+							})}
+						</p>
+						<p class="match-sub">{$t('imports_readwise_matched_description')}</p>
 					</div>
 					<div class="match-panel match-panel-unmatched">
 						<header class="match-header">
 							<span class="match-icon match-icon-warning" aria-hidden="true">!</span>
-							<h4 class="match-title">Unmatched</h4>
+							<h4 class="match-title">{$t('imports_readwise_unmatched')}</h4>
 						</header>
 						{#if unmatchedToShow.length > 0}
 							<ul class="unmatched-list">
 								{#each unmatchedToShow as asset (asset)}
 									<li class="unmatched-item">
 										<span class="unmatched-name">{asset}</span>
-										<span class="unmatched-meta">URL-only · re-archive pending</span>
+										<span class="unmatched-meta"
+											>{$t('imports_readwise_unmatched_description')}</span
+										>
 									</li>
 								{/each}
 							</ul>
 							{#if unmatchedExtra > 0}
-								<p class="unmatched-more">+ {unmatchedExtra} more</p>
+								<p class="unmatched-more">
+									{$t('imports_readwise_more', { values: { count: unmatchedExtra } })}
+								</p>
 							{/if}
 						{:else}
-							<p class="match-count">{readwiseReport.zip_files_unmatched ?? 0} unmatched</p>
+							<p class="match-count">
+								{$t('imports_readwise_unmatched_count', {
+									values: { count: readwiseReport.zip_files_unmatched ?? 0 }
+								})}
+							</p>
 						{/if}
 					</div>
 				</div>
 			{/if}
 
-			<button type="button" class="dismiss-btn" onclick={onDismiss}>Stop tracking</button>
+			<button type="button" class="dismiss-btn" onclick={onDismiss}
+				>{$t('imports_stop_tracking')}</button
+			>
 		</section>
 	{:else}
 		<!-- Report phase -->
@@ -401,7 +428,9 @@
 			{#if rollbackNotice}
 				<p class="rollback-notice" role="status">{rollbackNotice}</p>
 			{/if}
-			<Button variant="secondary" size="sm" onclick={onBack}>Back to imports</Button>
+			<Button variant="secondary" size="sm" onclick={onBack}
+				>{$t('imports_readwise_back_to_imports')}</Button
+			>
 		</section>
 	{/if}
 </div>
@@ -653,10 +682,6 @@
 		font-size: 13px;
 		color: var(--text-primary);
 		line-height: 1.4;
-	}
-
-	.zip-warning strong {
-		font-weight: 600;
 	}
 
 	.staging-actions {

@@ -7,6 +7,7 @@
 	import { applyTheme, saveTheme, type ThemePreference } from '$lib/styles/theme';
 	import { updateProfile } from '$lib/api';
 	import { uploadAvatar, MAX_AVATAR_SIZE_BYTES } from '$lib/api/avatar';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	const auth = getAuth();
 	const onboarding = getOnboarding();
@@ -20,10 +21,10 @@
 	let formError = $state('');
 	let fileInput: HTMLInputElement | undefined = $state();
 
-	const themeOptions: { value: ThemePreference; label: string }[] = [
-		{ value: 'light', label: 'Light' },
-		{ value: 'dark', label: 'Dark' },
-		{ value: 'system', label: 'Auto' }
+	const themeOptions: { value: ThemePreference; labelKey: MessageKey }[] = [
+		{ value: 'light', labelKey: 'onboarding_theme_light' },
+		{ value: 'dark', labelKey: 'onboarding_theme_dark' },
+		{ value: 'system', labelKey: 'onboarding_theme_auto' }
 	];
 
 	function selectTheme(value: ThemePreference) {
@@ -41,11 +42,11 @@
 		if (!file) return;
 
 		if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-			avatarError = 'Please select a JPEG, PNG, or WebP image';
+			avatarError = $t('onboarding_avatar_invalid');
 			return;
 		}
 		if (file.size > MAX_AVATAR_SIZE_BYTES) {
-			avatarError = 'Image must be smaller than 2 MB';
+			avatarError = $t('onboarding_avatar_too_large');
 			return;
 		}
 
@@ -63,7 +64,7 @@
 				body: { display_name: displayName, theme }
 			});
 			if (!profile || error) {
-				formError = 'Could not save your profile. Please try again.';
+				formError = $t('onboarding_profile_save_failed');
 				return;
 			}
 
@@ -73,10 +74,10 @@
 					if (!result.success) {
 						switch (result.error.code) {
 							case 'invalid_type':
-								avatarError = 'Unsupported image type';
+								avatarError = $t('onboarding_avatar_unsupported');
 								break;
 							case 'too_large':
-								avatarError = 'Image must be smaller than 2 MB';
+								avatarError = $t('onboarding_avatar_too_large');
 								break;
 							default:
 								avatarError = result.error.message;
@@ -84,7 +85,7 @@
 						return;
 					}
 				} catch {
-					avatarError = 'Upload failed. Please try again or skip.';
+					avatarError = $t('onboarding_avatar_upload_failed');
 					return;
 				}
 			}
@@ -101,8 +102,8 @@
 </script>
 
 <StepLayout
-	title="Set up your profile"
-	description="Personalize your Indelible experience."
+	title={$t('onboarding_profile_title')}
+	description={$t('onboarding_profile_description')}
 	currentStep={1}
 	{submitting}
 	onContinue={handleContinue}
@@ -115,11 +116,11 @@
 			<button
 				type="button"
 				class="avatar-placeholder"
-				aria-label="Upload profile picture (optional)"
+				aria-label={$t('onboarding_avatar_upload')}
 				onclick={handleAvatarClick}
 			>
 				{#if avatarPreview}
-					<img src={avatarPreview} alt="Profile preview" class="avatar-preview" />
+					<img src={avatarPreview} alt={$t('onboarding_avatar_preview')} class="avatar-preview" />
 				{:else}
 					<svg
 						width="28"
@@ -154,7 +155,7 @@
 					</svg>
 				</div>
 			</button>
-			<span class="avatar-label">Optional</span>
+			<span class="avatar-label">{$t('onboarding_optional')}</span>
 			{#if avatarError}
 				<span class="avatar-error">{avatarError}</span>
 			{/if}
@@ -169,19 +170,19 @@
 
 		<label class="field">
 			<span class="field-label"
-				>Display name <span class="required" aria-hidden="true">*</span></span
+				>{$t('auth_display_name')} <span class="required" aria-hidden="true">*</span></span
 			>
 			<input
 				type="text"
 				class="field-input"
 				bind:value={displayName}
-				placeholder="Your name"
+				placeholder={$t('auth_name_placeholder')}
 				autocomplete="name"
 			/>
 		</label>
 
 		<div class="field">
-			<span class="field-label">Theme preference</span>
+			<span class="field-label">{$t('onboarding_theme_preference')}</span>
 			<div class="theme-grid">
 				{#each themeOptions as opt (opt.value)}
 					<button
@@ -245,7 +246,7 @@
 								</svg>
 							{/if}
 						</div>
-						<span class="theme-label">{opt.label}</span>
+						<span class="theme-label">{$t(opt.labelKey)}</span>
 					</button>
 				{/each}
 			</div>

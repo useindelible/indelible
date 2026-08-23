@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
 
 import ConnectionsSection from '../../src/routes/(app)/preferences/integrations/components/ConnectionsSection.svelte';
 
@@ -31,6 +34,8 @@ function sectionProps(overrides: Record<string, unknown> = {}) {
 }
 
 describe('Notion connect availability gating', () => {
+	afterEach(() => locale.set('en'));
+
 	it('disables Connect and explains the missing server configuration', () => {
 		render(ConnectionsSection, { props: sectionProps({ notionAvailable: false }) });
 
@@ -44,6 +49,14 @@ describe('Notion connect availability gating', () => {
 		expect(screen.getByText(/AUTH_CREDENTIAL_KEY/)).toBeTruthy();
 	});
 
+	it('renders the unavailable notice in French', () => {
+		setupI18nSync({ fr }, 'fr');
+		render(ConnectionsSection, { props: sectionProps({ notionAvailable: false }) });
+
+		expect(screen.getByText(/Notion n’est pas configuré sur ce serveur/)).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Connecter Notion' })).toBeTruthy();
+	});
+
 	it('keeps Connect enabled when the server holds Notion credentials', () => {
 		render(ConnectionsSection, { props: sectionProps({ notionAvailable: true }) });
 
@@ -55,6 +68,6 @@ describe('Notion connect availability gating', () => {
 		expect(
 			screen.getByText(/authorization page grants access; it does not choose a destination/i)
 		).toBeTruthy();
-		expect(screen.getByText(/creates its managed database in Notion Private/i)).toBeTruthy();
+		expect(screen.getByText(/creates the managed database in Notion Private/i)).toBeTruthy();
 	});
 });

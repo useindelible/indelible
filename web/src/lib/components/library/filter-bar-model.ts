@@ -1,9 +1,11 @@
 import type { CollectionResponse } from '$lib/api/generated/types.gen';
+import { t } from '$lib/i18n';
 import type { FilterCondition } from '$lib/utils/filter-expression';
 import {
 	getLibraryFilterFieldDef,
 	type LibraryFilterFieldDef
 } from '$lib/utils/library-filter-fields';
+import { get } from 'svelte/store';
 
 export type FilterCollection = Pick<CollectionResponse, 'id' | 'name'>;
 
@@ -61,14 +63,17 @@ export function getFilterValueLabel(
 ): string {
 	if (def.valueType === 'boolean') {
 		return condition.value === true
-			? (def.booleanLabels?.true ?? 'is true')
-			: (def.booleanLabels?.false ?? 'is false');
+			? get(t)(def.booleanLabelKeys?.true ?? 'library_filter_boolean_true')
+			: get(t)(def.booleanLabelKeys?.false ?? 'library_filter_boolean_false');
 	}
 
 	if (Array.isArray(condition.value)) {
-		if (condition.value.length === 0) return 'Select...';
+		if (condition.value.length === 0) return get(t)('library_filter_select');
 		return condition.value
-			.map((value) => def.options?.find((option) => option.value === value)?.label ?? value)
+			.map((value) => {
+				const option = def.options?.find((candidate) => candidate.value === value);
+				return option ? get(t)(option.labelKey) : value;
+			})
 			.join(', ');
 	}
 
@@ -79,10 +84,10 @@ export function getFilterValueLabel(
 
 	if (def.options) {
 		const option = def.options.find((candidate) => candidate.value === String(condition.value));
-		if (option) return option.label;
+		if (option) return get(t)(option.labelKey);
 	}
 
-	if (condition.value === '' || condition.value === 0) return 'Select...';
+	if (condition.value === '' || condition.value === 0) return get(t)('library_filter_select');
 	return String(condition.value);
 }
 

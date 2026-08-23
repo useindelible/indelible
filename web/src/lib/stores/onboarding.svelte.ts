@@ -1,16 +1,18 @@
 import * as apiSdk from '$lib/api';
 import type { OnboardingStepResponse, StepData } from '$lib/api';
+import { t, type MessageKey } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 type OnboardingStep = OnboardingStepResponse;
 
 export const ONBOARDING_STEPS = [
-	{ path: 'welcome', label: 'Welcome', backendStep: null },
-	{ path: 'account', label: 'Account Setup', backendStep: 1 },
-	{ path: 'add-content', label: 'Add Content', backendStep: 2 },
-	{ path: 'feeds', label: 'RSS Feeds', backendStep: 3 },
-	{ path: 'ai', label: 'AI Setup', backendStep: 4 },
-	{ path: 'ready', label: 'Ready', backendStep: 5 }
-] as const;
+	{ path: 'welcome', labelKey: 'onboarding_step_welcome', backendStep: null },
+	{ path: 'account', labelKey: 'onboarding_step_account', backendStep: 1 },
+	{ path: 'add-content', labelKey: 'onboarding_step_add_content', backendStep: 2 },
+	{ path: 'feeds', labelKey: 'onboarding_step_feeds', backendStep: 3 },
+	{ path: 'ai', labelKey: 'onboarding_step_ai', backendStep: 4 },
+	{ path: 'ready', labelKey: 'onboarding_step_ready', backendStep: 5 }
+] as const satisfies readonly { path: string; labelKey: MessageKey; backendStep: number | null }[];
 
 export type StepPath = (typeof ONBOARDING_STEPS)[number]['path'];
 
@@ -80,10 +82,10 @@ async function completeStep(backendStep: number, payload?: StepData): Promise<bo
 			steps = data.steps;
 			return true;
 		}
-		error = extractErrorMessage(apiError, response, 'Failed to update onboarding');
+		error = extractErrorMessage(apiError, response, get(t)('onboarding_error_update'));
 		return false;
 	} catch {
-		error = 'An unexpected error occurred';
+		error = get(t)('auth_error_unexpected');
 		return false;
 	}
 }
@@ -98,10 +100,10 @@ async function skipAll(): Promise<boolean> {
 			steps = data.steps;
 			return true;
 		}
-		error = extractErrorMessage(apiError, response, 'Failed to skip onboarding');
+		error = extractErrorMessage(apiError, response, get(t)('onboarding_error_skip'));
 		return false;
 	} catch {
-		error = 'An unexpected error occurred';
+		error = get(t)('auth_error_unexpected');
 		return false;
 	}
 }
@@ -121,7 +123,7 @@ function extractErrorMessage(
 		if (typeof err.detail === 'string') return err.detail;
 		if (typeof err.message === 'string') return err.message;
 	}
-	if (response?.status === 422) return 'Please check your onboarding details and try again';
+	if (response?.status === 422) return get(t)('onboarding_error_invalid_details');
 	return fallback;
 }
 

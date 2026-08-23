@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { getAuth } from '$lib/stores/auth.svelte';
 
 	const auth = getAuth();
 
-	const ingestAddress = $derived(auth.user?.ingest_library_email ?? 'loading...');
+	const ingestAddress = $derived(auth.user?.ingest_library_email ?? $t('common_loading'));
 
 	let copied = $state(false);
 
@@ -23,12 +24,19 @@
 
 <div class="email-tab">
 	<p class="email-description">
-		Forward emails directly to your Indelible library using your personal ingest address.
+		{$t('library_email_description')}
 	</p>
 
 	<div class="address-row">
-		<span class="address-value" aria-label="Ingest email address">{ingestAddress}</span>
-		<button type="button" class="copy-btn" onclick={copyAddress} aria-label="Copy ingest address">
+		<span class="address-value" aria-label={$t('library_email_ingest_address')}
+			>{ingestAddress}</span
+		>
+		<button
+			type="button"
+			class="copy-btn"
+			onclick={copyAddress}
+			aria-label={$t('library_email_copy_ingest')}
+		>
 			{#if copied}
 				<svg
 					viewBox="0 0 24 24"
@@ -40,7 +48,7 @@
 				>
 					<polyline points="20 6 9 17 4 12" />
 				</svg>
-				Copied
+				{$t('common_copied')}
 			{:else}
 				<svg
 					viewBox="0 0 24 24"
@@ -53,13 +61,13 @@
 					<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
 					<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 				</svg>
-				Copy
+				{$t('common_copy')}
 			{/if}
 		</button>
 	</div>
 
 	<p class="email-note">
-		Emails sent to this address are processed and added to your library automatically.
+		{$t('library_email_note')}
 	</p>
 </div>
 

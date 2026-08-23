@@ -5,6 +5,7 @@
 		type ReaderTheme,
 		type ReaderTypeface
 	} from '$lib/stores/reader-preferences.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		anchorEl: HTMLElement;
@@ -32,11 +33,11 @@
 		}
 	});
 
-	const themes: { value: ReaderTheme; label: string }[] = [
-		{ value: 'light', label: 'Light' },
-		{ value: 'dark', label: 'Dark' },
-		{ value: 'sepia', label: 'Sepia' },
-		{ value: 'auto', label: 'Auto' }
+	const themes: { value: ReaderTheme; labelKey: MessageKey }[] = [
+		{ value: 'light', labelKey: 'reader_theme_light' },
+		{ value: 'dark', labelKey: 'reader_theme_dark' },
+		{ value: 'sepia', labelKey: 'reader_theme_sepia' },
+		{ value: 'auto', labelKey: 'reader_theme_auto' }
 	];
 
 	const typefaces: { value: ReaderTypeface; label: string; preview: string }[] = [
@@ -80,28 +81,28 @@
 	style:right="{popoverRight}px"
 >
 	<!-- Theme -->
-	<div class="control-section" role="group" aria-label="Theme">
-		<span class="control-label">Theme</span>
+	<div class="control-section" role="group" aria-label={$t('reader_theme')}>
+		<span class="control-label">{$t('reader_theme')}</span>
 		<div class="button-row">
-			{#each themes as t (t.value)}
+			{#each themes as theme (theme.value)}
 				<button
 					type="button"
 					class="theme-btn"
-					class:active={prefs.theme === t.value}
-					aria-pressed={prefs.theme === t.value}
+					class:active={prefs.theme === theme.value}
+					aria-pressed={prefs.theme === theme.value}
 					onclick={() => {
-						prefs.theme = t.value;
+						prefs.theme = theme.value;
 					}}
 				>
-					{t.label}
+					{$t(theme.labelKey)}
 				</button>
 			{/each}
 		</div>
 	</div>
 
 	<!-- Typeface -->
-	<div class="control-section" role="group" aria-label="Typeface">
-		<span class="control-label">Typeface</span>
+	<div class="control-section" role="group" aria-label={$t('reader_typeface')}>
+		<span class="control-label">{$t('reader_typeface')}</span>
 		<div class="button-row typeface-row">
 			{#each typefaces as tf (tf.value)}
 				<button
@@ -123,7 +124,7 @@
 	<!-- Font Size -->
 	<div class="control-section">
 		<div class="control-header">
-			<label class="control-label" for="font-size-slider">Font Size</label>
+			<label class="control-label" for="font-size-slider">{$t('reader_font_size')}</label>
 			<span class="control-value">{prefs.fontSize}px</span>
 		</div>
 		<input
@@ -136,7 +137,7 @@
 			oninput={(e) => {
 				prefs.fontSize = Number((e.target as HTMLInputElement).value);
 			}}
-			aria-label="Font size"
+			aria-label={$t('reader_font_size')}
 			aria-valuemin={14}
 			aria-valuemax={28}
 			aria-valuenow={prefs.fontSize}
@@ -146,7 +147,7 @@
 	<!-- Line Height -->
 	<div class="control-section">
 		<div class="control-header">
-			<label class="control-label" for="line-height-slider">Line Height</label>
+			<label class="control-label" for="line-height-slider">{$t('reader_line_height')}</label>
 			<span class="control-value">{prefs.lineHeight.toFixed(1)}</span>
 		</div>
 		<input
@@ -159,7 +160,7 @@
 			oninput={(e) => {
 				prefs.lineHeight = Number((e.target as HTMLInputElement).value);
 			}}
-			aria-label="Line height"
+			aria-label={$t('reader_line_height')}
 			aria-valuemin={1.4}
 			aria-valuemax={2.2}
 			aria-valuenow={prefs.lineHeight}
@@ -169,7 +170,7 @@
 	<!-- Content Width -->
 	<div class="control-section">
 		<div class="control-header">
-			<label class="control-label" for="content-width-slider">Content Width</label>
+			<label class="control-label" for="content-width-slider">{$t('reader_content_width')}</label>
 			<span class="control-value">{prefs.contentWidth}px</span>
 		</div>
 		<input
@@ -182,7 +183,7 @@
 			oninput={(e) => {
 				prefs.contentWidth = Number((e.target as HTMLInputElement).value);
 			}}
-			aria-label="Content width"
+			aria-label={$t('reader_content_width')}
 			aria-valuemin={480}
 			aria-valuemax={840}
 			aria-valuenow={prefs.contentWidth}
@@ -192,7 +193,9 @@
 	<!-- Paragraph Spacing -->
 	<div class="control-section">
 		<div class="control-header">
-			<label class="control-label" for="paragraph-spacing-slider">Paragraph Spacing</label>
+			<label class="control-label" for="paragraph-spacing-slider"
+				>{$t('reader_paragraph_spacing')}</label
+			>
 			<span class="control-value">{prefs.paragraphSpacing.toFixed(1)}em</span>
 		</div>
 		<input
@@ -205,7 +208,7 @@
 			oninput={(e) => {
 				prefs.paragraphSpacing = Number((e.target as HTMLInputElement).value);
 			}}
-			aria-label="Paragraph spacing"
+			aria-label={$t('reader_paragraph_spacing')}
 			aria-valuemin={0.6}
 			aria-valuemax={2.0}
 			aria-valuenow={prefs.paragraphSpacing}
@@ -213,8 +216,8 @@
 	</div>
 
 	<!-- Text Alignment -->
-	<div class="control-section" role="group" aria-label="Text alignment">
-		<span class="control-label">Text Alignment</span>
+	<div class="control-section" role="group" aria-label={$t('reader_text_alignment')}>
+		<span class="control-label">{$t('reader_text_alignment')}</span>
 		<div class="button-row align-row">
 			<button
 				type="button"
@@ -237,7 +240,7 @@
 					<line x1="3" y1="14" x2="19" y2="14" />
 					<line x1="3" y1="18" x2="13" y2="18" />
 				</svg>
-				Left
+				{$t('reader_align_left')}
 			</button>
 			<button
 				type="button"
@@ -260,7 +263,7 @@
 					<line x1="3" y1="14" x2="21" y2="14" />
 					<line x1="3" y1="18" x2="21" y2="18" />
 				</svg>
-				Justified
+				{$t('reader_align_justified')}
 			</button>
 		</div>
 	</div>

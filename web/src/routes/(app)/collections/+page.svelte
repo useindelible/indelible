@@ -6,6 +6,7 @@
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import CollectionCard from '$lib/components/collections/CollectionCard.svelte';
 	import CollectionEditModal from '$lib/components/collections/CollectionEditModal.svelte';
+	import { t } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 
@@ -47,7 +48,7 @@
 			type="button"
 			class="menu-btn"
 			onclick={() => vp.openMobileNav()}
-			aria-label="Open navigation"
+			aria-label={$t('common_open_navigation')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -64,10 +65,10 @@
 			</svg>
 		</button>
 		<div class="header-text">
-			<h1 class="page-title">Collections</h1>
+			<h1 class="page-title">{$t('collection_title')}</h1>
 			{#if !store.loading && !store.isEmpty}
 				<p class="page-sub">
-					{store.rootCollections.length} collection{store.rootCollections.length !== 1 ? 's' : ''}
+					{$t('collection_count', { values: { count: store.rootCollections.length } })}
 				</p>
 			{/if}
 		</div>
@@ -78,13 +79,13 @@
 				showCreateModal = true;
 			}}
 		>
-			New Collection
+			{$t('collection_new')}
 		</button>
 	</div>
 
 	{#if store.loading}
 		<div class="loading-state">
-			<span class="loading-text">Loading collections...</span>
+			<span class="loading-text">{$t('collection_loading_all')}</span>
 		</div>
 	{:else if store.isEmpty}
 		<div class="empty-state">
@@ -102,8 +103,8 @@
 					/>
 				</svg>
 			</div>
-			<p class="empty-heading">No collections yet</p>
-			<p class="empty-sub">Create a collection to organize your saved items.</p>
+			<p class="empty-heading">{$t('collection_no_collections_title')}</p>
+			<p class="empty-sub">{$t('collection_no_collections_body')}</p>
 			<button
 				type="button"
 				class="btn btn-primary"
@@ -111,7 +112,7 @@
 					showCreateModal = true;
 				}}
 			>
-				Create your first collection
+				{$t('collection_create_first')}
 			</button>
 		</div>
 	{:else}
@@ -160,7 +161,7 @@
 		class="cmd-backdrop"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Delete collection"
+		aria-label={$t('collection_delete_dialog')}
 		tabindex="-1"
 		onclick={() => {
 			deletingCollection = null;
@@ -171,9 +172,7 @@
 	>
 		<div class="cmd-card" role="none" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 			<div class="cmd-body cmd-body-form">
-				<p class="cmd-form-desc">
-					This collection will be permanently deleted. Items inside will not be deleted.
-				</p>
+				<p class="cmd-form-desc">{$t('collection_delete_body')}</p>
 			</div>
 			<div class="cmd-controls">
 				<button
@@ -181,10 +180,10 @@
 					class="cmd-secondary"
 					onclick={() => {
 						deletingCollection = null;
-					}}>Cancel</button
+					}}>{$t('common_cancel')}</button
 				>
 				<button type="button" class="cmd-action cmd-action-danger" onclick={confirmDelete}
-					>Delete</button
+					>{$t('common_delete')}</button
 				>
 			</div>
 		</div>

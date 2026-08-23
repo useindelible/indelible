@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { LocalProbe } from './local-provider';
+	import { t } from '$lib/i18n';
 
 	let {
 		endpoint = $bindable(),
@@ -18,65 +19,68 @@
 
 <div class="local-form">
 	<div class="local-form-header">
-		<span class="local-form-title">Local server details</span>
-		<span class="local-form-meta">OpenAI-compatible</span>
+		<span class="local-form-title">{$t('onboarding_ai_local_details')}</span>
+		<span class="local-form-meta">{$t('onboarding_ai_openai_compatible')}</span>
 	</div>
 
 	<label class="field">
-		<span class="field-label">Server URL</span>
+		<span class="field-label">{$t('onboarding_ai_server_url')}</span>
 		<input
 			type="url"
 			class="field-input"
 			bind:value={endpoint}
 			placeholder="http://host.docker.internal:11434"
-			aria-label="OpenAI-compatible server URL"
+			aria-label={$t('onboarding_ai_server_url_label')}
 			{disabled}
 		/>
 	</label>
 	<p class="field-hint">
-		A server on the machine hosting Indelible is http://host.docker.internal:11434 from inside
-		Docker, never localhost. Reaching it also needs EGRESS_ALLOW_PRIVATE_TARGETS=true in the
-		server's environment.
+		{$t('onboarding_ai_server_hint')}
 	</p>
 
 	<div class="model-grid">
 		<label class="field">
-			<span class="field-label">Chat model ID <small>Required</small></span>
+			<span class="field-label"
+				>{$t('onboarding_ai_chat_model')} <small>{$t('onboarding_ai_required')}</small></span
+			>
 			<input
 				type="text"
 				class="field-input model-input"
 				bind:value={chatModel}
 				placeholder="qwen3:8b"
-				aria-label="Chat model ID"
+				aria-label={$t('onboarding_ai_chat_model')}
 				{disabled}
 			/>
 		</label>
 		<label class="field">
-			<span class="field-label">Embedding model ID <small>768 dimensions</small></span>
+			<span class="field-label"
+				>{$t('onboarding_ai_embedding_model')}
+				<small>{$t('onboarding_ai_dimensions', { values: { count: 768 } })}</small></span
+			>
 			<input
 				type="text"
 				class="field-input model-input"
 				bind:value={embeddingModel}
 				placeholder="nomic-embed-text"
-				aria-label="Embedding model ID"
+				aria-label={$t('onboarding_ai_embedding_model')}
 				{disabled}
 			/>
 		</label>
 	</div>
 	<p class="field-hint">
-		Use the exact model IDs exposed by your server. Both models must be loaded before continuing.
+		{$t('onboarding_ai_models_hint')}
 	</p>
 
 	{#if probe}
 		<div class="probe-results" aria-live="polite">
 			<div class="probe-result" class:ok={probe.chatOk} class:failed={!probe.chatOk}>
 				<span class="probe-icon">{probe.chatOk ? '✓' : '!'}</span>
-				<strong>Chat model</strong>
+				<strong>{$t('onboarding_ai_chat_model')}</strong>
 				<span>{probe.chatMessage}</span>
 			</div>
 			<div class="probe-result" class:ok={probe.embeddingOk} class:failed={!probe.embeddingOk}>
 				<span class="probe-icon">{probe.embeddingOk ? '✓' : '!'}</span>
-				<strong>Embeddings</strong>
+				<strong>{$t('onboarding_ai_embeddings')}</strong>
 				<span>{probe.embeddingMessage}</span>
 			</div>
 		</div>

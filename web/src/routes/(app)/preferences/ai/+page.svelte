@@ -18,6 +18,7 @@
 		MilaStatusResponse
 	} from '$lib/api';
 	import SavePill from '$lib/components/settings/SavePill.svelte';
+	import { t } from '$lib/i18n';
 	import MilaHero from './components/MilaHero.svelte';
 	import MilaIndexingStatus from './components/MilaIndexingStatus.svelte';
 	import MilaProviderSettings from './components/MilaProviderSettings.svelte';
@@ -47,7 +48,7 @@
 	let showSaved = $state(false);
 	let saveError = $state('');
 	let testState = $state<TestState>('idle');
-	let testMessage = $state('Not tested yet');
+	let testMessage = $state('');
 	let expandedPresetId = $state<string | null>(null);
 	let editorState = $state<PresetEditorState | null>(null);
 	let editorSaving = $state(false);
@@ -76,7 +77,7 @@
 			});
 			await refreshIndexingStatus();
 		} catch {
-			loadError = 'Failed to load AI configuration.';
+			loadError = $t('prefs_ai_error_load');
 		} finally {
 			loading = false;
 		}
@@ -89,7 +90,7 @@
 			indexingStatus = data;
 			indexingStatusError = '';
 		} catch {
-			indexingStatusError = 'The status service did not respond.';
+			indexingStatusError = $t('prefs_ai_status_unavailable_hint');
 		}
 	}
 
@@ -102,7 +103,7 @@
 			config = data;
 			await refreshIndexingStatus();
 		} catch {
-			saveError = 'Failed to restart Mila indexing.';
+			saveError = $t('prefs_ai_error_restart_indexing');
 		} finally {
 			indexingRetrying = false;
 		}
@@ -120,19 +121,19 @@
 
 	async function testConnection() {
 		testState = 'testing';
-		testMessage = 'Checking embeddings and chat…';
+		testMessage = '';
 		try {
 			const { data } = await testConfig({ body: buildMilaTestBody(draft) });
 			if (data?.success) {
 				testState = 'success';
-				testMessage = 'Connection live · embedding and chat responded.';
+				testMessage = '';
 			} else {
 				testState = 'error';
-				testMessage = data?.error ?? 'Test failed';
+				testMessage = data?.error ?? $t('prefs_ai_test_failed');
 			}
 		} catch {
 			testState = 'error';
-			testMessage = 'Request failed';
+			testMessage = $t('prefs_ai_request_failed');
 		}
 	}
 
@@ -155,7 +156,7 @@
 				}, 2000);
 			}
 		} catch {
-			saveError = 'Failed to save configuration.';
+			saveError = $t('prefs_ai_error_save_config');
 		} finally {
 			saving = false;
 		}
@@ -217,7 +218,7 @@
 			editorState = null;
 			await reloadPresets();
 		} catch {
-			saveError = 'Failed to save preset.';
+			saveError = $t('prefs_ai_error_save_preset');
 		} finally {
 			editorSaving = false;
 		}
@@ -229,7 +230,7 @@
 			if (expandedPresetId === id) expandedPresetId = null;
 			await reloadPresets();
 		} catch {
-			saveError = 'Failed to delete preset.';
+			saveError = $t('prefs_ai_error_delete_preset');
 		}
 	}
 
@@ -247,7 +248,7 @@
 
 	<div class="body-area">
 		{#if loading}
-			<p class="loading-text">Loading…</p>
+			<p class="loading-text">{$t('common_loading')}</p>
 		{:else if loadError}
 			<p class="save-error">{loadError}</p>
 		{:else}
@@ -267,7 +268,7 @@
 					embeddingModel={config?.byo_enabled
 						? config.embedding_model
 						: config
-							? 'Platform default'
+							? $t('prefs_ai_platform_default')
 							: draft.embeddingModel}
 					retrying={indexingRetrying}
 					onRetry={retryIndexing}

@@ -18,6 +18,7 @@
 	import FilterBar from '$lib/components/library/FilterBar.svelte';
 	import SaveViewModal from '$lib/components/library/SaveViewModal.svelte';
 	import ViewConfigDropdown from '$lib/components/library/ViewConfigDropdown.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	const lib = getLibrary();
 	const smartListsStore = getSmartLists();
@@ -33,6 +34,17 @@
 	let compactDetailOpen = $state(false);
 
 	const detailOpen = $derived(vp.isCompact ? compactDetailOpen : lib.sidePanelOpen);
+	const typeTitleKeys: Record<string, MessageKey> = {
+		articles: 'library_nav_articles',
+		books: 'library_nav_books',
+		emails: 'library_nav_emails',
+		pdfs: 'library_nav_pdfs',
+		tweets: 'library_nav_tweets',
+		videos: 'library_nav_videos'
+	};
+	const activeTypeTitle = $derived(
+		lib.activeType ? $t(typeTitleKeys[lib.activeType] ?? 'common_library') : $t('common_library')
+	);
 
 	function toggleDetail() {
 		if (vp.isCompact) {
@@ -141,7 +153,7 @@
 			type="button"
 			class="menu-btn"
 			onclick={() => vp.openMobileNav()}
-			aria-label="Open navigation"
+			aria-label={$t('common_open_navigation')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -158,12 +170,9 @@
 			</svg>
 		</button>
 		<button type="button" class="view-dropdown-btn" onclick={() => lib.toggleViewPanel()}>
-			{lib.activeSmartList?.name ??
-				(lib.activeType
-					? lib.activeType.charAt(0).toUpperCase() + lib.activeType.slice(1)
-					: 'Library')}
+			{lib.activeSmartList?.name ?? activeTypeTitle}
 			{#if lib.smartListModified}
-				<span class="view-modified">Modified</span>
+				<span class="view-modified">{$t('library_modified')}</span>
 			{/if}
 			<svg
 				viewBox="0 0 24 24"
@@ -187,8 +196,8 @@
 			{:else if lib.groupBy === 'read_status'}
 				<MorphSwitcher
 					options={[
-						{ value: 'unseen', label: 'Unseen' },
-						{ value: 'seen', label: 'Seen' }
+						{ value: 'unseen', labelKey: 'library_read_unseen' },
+						{ value: 'seen', labelKey: 'library_read_seen' }
 					]}
 					value={lib.readStatusTab}
 					onchange={(v) => lib.setReadStatusTab(v as ReadStatusTab)}
@@ -200,9 +209,7 @@
 				class="filter-btn"
 				class:active={lib.filterBarOpen || hasActiveConditions}
 				disabled={lib.smartListAdvanced}
-				title={lib.smartListAdvanced
-					? 'This view uses an advanced filter that cannot be edited here'
-					: undefined}
+				title={lib.smartListAdvanced ? $t('library_filter_advanced_readonly') : undefined}
 				onclick={() => lib.toggleFilterBar()}
 			>
 				<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -211,7 +218,9 @@
 				{#if hasActiveConditions && !lib.smartListAdvanced}
 					<span class="filter-count">{lib.draftConditions.length}</span>
 				{/if}
-				<span class="filter-label">{lib.smartListAdvanced ? 'Advanced filter' : 'Filter'}</span>
+				<span class="filter-label"
+					>{$t(lib.smartListAdvanced ? 'library_filter_advanced' : 'common_filter')}</span
+				>
 			</button>
 			<SortDropdown />
 			<button
@@ -219,8 +228,8 @@
 				class="panel-toggle"
 				class:active={detailOpen}
 				onclick={toggleDetail}
-				aria-label={detailOpen ? 'Hide detail panel' : 'Show detail panel'}
-				title={detailOpen ? 'Hide detail panel' : 'Show detail panel'}
+				aria-label={$t(detailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel')}
+				title={$t(detailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel')}
 			>
 				<svg
 					viewBox="0 0 20 20"
@@ -330,7 +339,7 @@
 						type="button"
 						class="m-back"
 						onclick={() => (compactDetailOpen = false)}
-						aria-label="Back to list"
+						aria-label={$t('common_back_to_list')}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -344,7 +353,7 @@
 							<polyline points="15 18 9 12 15 6" />
 						</svg>
 					</button>
-					<span class="m-dtitle">{lib.selectedItem?.title ?? 'Details'}</span>
+					<span class="m-dtitle">{lib.selectedItem?.title ?? $t('common_details')}</span>
 				</div>
 				<DetailPanel item={lib.selectedItem} />
 			</div>

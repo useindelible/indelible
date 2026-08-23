@@ -2,6 +2,7 @@
 	import * as api from '$lib/api';
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
 	import { fetchAllPages } from '$lib/api/pagination';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		value?: string | null;
@@ -25,7 +26,9 @@
 		return () => document.removeEventListener('click', handleClickOutside, true);
 	});
 
-	const selectedName = $derived(collections.find((c) => c.id === value)?.name ?? 'Inbox');
+	const selectedName = $derived(
+		collections.find((collection) => collection.id === value)?.name ?? $t('library_triage_inbox')
+	);
 
 	async function loadCollections() {
 		if (loaded) return;
@@ -95,7 +98,7 @@
 				class:selected={value === null}
 				onclick={() => select(null)}
 			>
-				Inbox (no collection)
+				{$t('library_collection_inbox')}
 			</button>
 			{#each collections as col (col.id)}
 				<button

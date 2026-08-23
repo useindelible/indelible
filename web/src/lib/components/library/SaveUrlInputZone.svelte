@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	interface Props {
 		url: string;
 		hasDuplicate: boolean;
@@ -19,13 +20,13 @@
 			class="cmd-input"
 			class:has-value={hasDuplicate}
 			type="text"
-			placeholder="Paste a URL…"
+			placeholder={$t('library_save_url_paste')}
 			bind:value={url}
 			onkeydown={(event) => {
 				if (event.key === 'Enter') onSave();
 				if (event.key === 'Escape') onClose();
 			}}
-			aria-label="URL"
+			aria-label={$t('library_url')}
 		/>
 	</div>
 </div>

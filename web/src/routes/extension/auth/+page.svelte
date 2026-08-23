@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { authorizeExtension, getProfile } from '$lib/api';
 	import FormButton from '$lib/components/auth/FormButton.svelte';
+	import { t } from '$lib/i18n';
 
 	let status = $state<'loading' | 'authenticated' | 'authorizing' | 'done' | 'error'>('loading');
 	let errorMessage = $state('');
@@ -27,7 +28,7 @@
 					return;
 				}
 				status = 'error';
-				errorMessage = 'Failed to check authentication status.';
+				errorMessage = $t('extension_auth_check_failed');
 				return;
 			}
 
@@ -41,7 +42,7 @@
 	async function authorize() {
 		if (!codeChallenge || !stateParam || !redirectUri) {
 			status = 'error';
-			errorMessage = 'Missing required parameters.';
+			errorMessage = $t('extension_auth_missing_parameters');
 			return;
 		}
 
@@ -63,7 +64,7 @@
 					return;
 				}
 				status = 'error';
-				errorMessage = 'Failed to authorize extension.';
+				errorMessage = $t('extension_auth_failed');
 				return;
 			}
 
@@ -76,7 +77,7 @@
 			status = 'done';
 		} catch {
 			status = 'error';
-			errorMessage = 'Failed to authorize extension.';
+			errorMessage = $t('extension_auth_failed');
 		}
 	}
 
@@ -88,20 +89,20 @@
 </script>
 
 <svelte:head>
-	<title>Authorize Extension - Indelible</title>
+	<title>{$t('extension_auth_page_title')}</title>
 </svelte:head>
 
 {#if status === 'loading'}
-	<p class="status-text">Checking authentication...</p>
+	<p class="status-text">{$t('extension_auth_checking')}</p>
 {:else if status === 'authenticated'}
 	{#if !codeChallenge || !stateParam || !redirectUri}
 		<div class="error-banner" role="alert">
-			Invalid authorization request. Missing required parameters.
+			{$t('extension_auth_invalid_request')}
 		</div>
 	{:else}
-		<h1 class="auth-title">Authorize Extension</h1>
+		<h1 class="auth-title">{$t('extension_auth_title')}</h1>
 		<p class="auth-subtitle">
-			Allow the browser extension to access your account as <strong>{userName}</strong>?
+			{$t('extension_auth_allow_as', { values: { name: userName } })}
 		</p>
 		<form
 			onsubmit={(e) => {
@@ -110,16 +111,16 @@
 			}}
 		>
 			<div class="form-actions">
-				<FormButton>Authorize</FormButton>
+				<FormButton>{$t('extension_auth_authorize')}</FormButton>
 			</div>
 		</form>
 	{/if}
 {:else if status === 'authorizing'}
-	<h1 class="auth-title">Authorize Extension</h1>
-	<p class="status-text">Authorizing...</p>
+	<h1 class="auth-title">{$t('extension_auth_title')}</h1>
+	<p class="status-text">{$t('extension_auth_authorizing')}</p>
 {:else if status === 'done'}
-	<h1 class="auth-title">Authorize Extension</h1>
-	<p class="status-text success">Extension authorized. Redirecting...</p>
+	<h1 class="auth-title">{$t('extension_auth_title')}</h1>
+	<p class="status-text success">{$t('extension_auth_redirecting')}</p>
 {:else if status === 'error'}
 	<div class="error-banner" role="alert">{errorMessage}</div>
 	<form
@@ -129,7 +130,7 @@
 		}}
 	>
 		<div class="form-actions">
-			<FormButton>Try Again</FormButton>
+			<FormButton>{$t('common_try_again')}</FormButton>
 		</div>
 	</form>
 {/if}

@@ -12,16 +12,16 @@ import type { FilterCondition } from '../../src/lib/utils/filter-expression';
 describe('buildLibraryItemsQueryBody', () => {
 	it('maps Simple triage mode to saved and archived tabs', () => {
 		expect(triageOptionsForMode('manual')).toEqual([
-			{ value: 'inbox', label: 'Saved' },
-			{ value: 'archive', label: 'Archived' }
+			{ value: 'inbox', labelKey: 'library_triage_saved' },
+			{ value: 'archive', labelKey: 'library_triage_archived' }
 		]);
 	});
 
 	it('maps Triage mode to inbox, later, and archive tabs', () => {
 		expect(triageOptionsForMode('focus')).toEqual([
-			{ value: 'inbox', label: 'Inbox' },
-			{ value: 'later', label: 'Later' },
-			{ value: 'archive', label: 'Archive' }
+			{ value: 'inbox', labelKey: 'library_triage_inbox' },
+			{ value: 'later', labelKey: 'library_triage_later' },
+			{ value: 'archive', labelKey: 'library_triage_archive' }
 		]);
 	});
 

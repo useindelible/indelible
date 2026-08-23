@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import type { SmartListResponse } from '$lib/api/generated/types.gen';
 	import SidebarSection from '$lib/components/layout/SidebarSection.svelte';
+	import { t } from '$lib/i18n';
 	import SidebarNavItem from './SidebarNavItem.svelte';
 
 	interface Props {
@@ -15,10 +16,10 @@
 </script>
 
 <li>
-	<SidebarSection label="Collections">
+	<SidebarSection label={$t('library_collections')}>
 		<SidebarNavItem
 			href={resolve('/collections')}
-			label="All Collections"
+			label={$t('library_all_collections')}
 			icon="collections"
 			active={isActive('/collections')}
 		/>
@@ -29,7 +30,7 @@
 
 {#if pinnedSmartLists.length > 0}
 	<li>
-		<SidebarSection label="Pinned">
+		<SidebarSection label={$t('library_pinned')}>
 			<ul class="nav-sublist" role="list">
 				{#each pinnedSmartLists as smartList (smartList.id)}
 					<li>

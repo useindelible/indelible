@@ -2,6 +2,12 @@ import * as api from '$lib/api';
 import { getSidebar } from '$lib/stores/sidebar.svelte';
 import type { CollectionResponse, DocumentListEntry } from '$lib/api';
 import { fetchAllPages } from '$lib/api/pagination';
+import { t, type MessageKey } from '$lib/i18n';
+import { get } from 'svelte/store';
+
+function message(key: MessageKey): string {
+	return get(t)(key);
+}
 
 export type CollectionSort = 'name_asc' | 'name_desc' | 'item_count' | 'date_created';
 
@@ -56,7 +62,7 @@ async function loadAllCollections(): Promise<void> {
 		});
 		allCollections = results;
 	} catch {
-		fetchError = 'Failed to load collections';
+		fetchError = message('collection_error_load_all');
 	} finally {
 		loading = false;
 	}
@@ -75,7 +81,7 @@ async function loadCollection(id: string): Promise<void> {
 		}
 	} catch {
 		currentCollection = null;
-		fetchError = 'Failed to load collection';
+		fetchError = message('collection_error_load');
 	} finally {
 		loading = false;
 	}
@@ -117,7 +123,7 @@ async function loadItems(collectionId: string, reset = false): Promise<void> {
 			itemsCursor = resp.data.page?.next_cursor ?? undefined;
 		}
 	} catch {
-		fetchError = 'Failed to load items';
+		fetchError = message('collection_error_load_items');
 	} finally {
 		itemsLoading = false;
 		itemsLoadingMore = false;
@@ -139,7 +145,7 @@ async function createCollection(body: {
 			return created;
 		}
 	} catch {
-		fetchError = 'Failed to create collection';
+		fetchError = message('collection_error_create');
 	}
 	return null;
 }
@@ -165,7 +171,7 @@ async function updateCollection(
 			return updated;
 		}
 	} catch {
-		fetchError = 'Failed to update collection';
+		fetchError = message('collection_error_update');
 	}
 	return null;
 }
@@ -179,7 +185,7 @@ async function deleteCollection(id: string): Promise<boolean> {
 		}
 		return true;
 	} catch {
-		fetchError = 'Failed to delete collection';
+		fetchError = message('collection_error_delete');
 		return false;
 	}
 }

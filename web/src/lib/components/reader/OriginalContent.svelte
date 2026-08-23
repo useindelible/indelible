@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		downloadUrl: string;
 	}
@@ -9,7 +11,7 @@
 <div class="original-container">
 	<iframe
 		src={downloadUrl}
-		title="Original page"
+		title={$t('reader_original_page')}
 		sandbox="allow-same-origin"
 		class="original-iframe"
 	></iframe>

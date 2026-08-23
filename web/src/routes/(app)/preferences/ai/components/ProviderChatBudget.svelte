@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { number, t } from '$lib/i18n';
+
 	interface Props {
 		modelContextWindow: number;
 		chatContextPct: number;
@@ -18,10 +20,10 @@
 </script>
 
 <div class="section budget">
-	<div class="section-title">Chat budget</div>
+	<div class="section-title">{$t('prefs_ai_chat_budget')}</div>
 	<div class="budget-fields">
 		<div class="form-group">
-			<label class="form-label" for={windowId}>Model context window</label>
+			<label class="form-label" for={windowId}>{$t('prefs_ai_context_window')}</label>
 			<input
 				id={windowId}
 				class="form-input"
@@ -33,11 +35,11 @@
 				oninput={(event) => onWindowChange(Number(event.currentTarget.value))}
 			/>
 			<span class="field-hint">
-				The total token window of your chat model. Sizes summary, tag, and entity inputs.
+				{$t('prefs_ai_context_window_hint')}
 			</span>
 		</div>
 		<div class="form-group">
-			<label class="form-label" for={pctId}>Chat inline context</label>
+			<label class="form-label" for={pctId}>{$t('prefs_ai_inline_context')}</label>
 			<input
 				id={pctId}
 				class="form-input"
@@ -48,7 +50,7 @@
 				oninput={(event) => onPctChange(Number(event.currentTarget.value))}
 			/>
 			<span class="field-hint">
-				Percent of the window an item may fill before Mila switches to retrieval.
+				{$t('prefs_ai_inline_context_hint')}
 			</span>
 		</div>
 	</div>
@@ -56,10 +58,9 @@
 		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 8 4-16 3 8h4" /></svg>
 		<span>
 			{#if inlineTokens > 0}
-				Items under <strong>{inlineTokens.toLocaleString('en-US')} tokens</strong> go to chat whole. Longer
-				ones are retrieved in passages.
+				{$t('prefs_ai_budget_readout', { values: { tokens: $number(inlineTokens) } })}
 			{:else}
-				Every item is retrieved in passages — nothing is sent to chat whole.
+				{$t('prefs_ai_budget_zero')}
 			{/if}
 		</span>
 	</div>
@@ -156,11 +157,6 @@
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}
-	.readout strong {
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-	}
-
 	@media (max-width: 640px) {
 		.budget-fields {
 			grid-template-columns: 1fr;

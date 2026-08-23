@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { ONBOARDING_STEPS } from '$lib/stores/onboarding.svelte';
+	import { t } from '$lib/i18n';
 
 	let { currentStep }: { currentStep: number } = $props();
 </script>
 
-<nav class="progress-bar" aria-label="Onboarding progress">
+<nav class="progress-bar" aria-label={$t('onboarding_progress')}>
 	<ol>
 		{#each ONBOARDING_STEPS as step, i (step.path)}
 			<li
@@ -13,13 +14,16 @@
 				class:current={i === currentStep}
 				aria-current={i === currentStep ? 'step' : undefined}
 			>
-				<span class="sr-only"
-					>Step {i + 1}: {step.label}{i < currentStep
-						? ' (completed)'
-						: i === currentStep
-							? ' (current)'
-							: ''}</span
-				>
+				<span class="sr-only">
+					{$t(
+						i < currentStep
+							? 'onboarding_step_status_completed'
+							: i === currentStep
+								? 'onboarding_step_status_current'
+								: 'onboarding_step_status',
+						{ values: { step: i + 1, label: $t(step.labelKey) } }
+					)}
+				</span>
 			</li>
 		{/each}
 	</ol>

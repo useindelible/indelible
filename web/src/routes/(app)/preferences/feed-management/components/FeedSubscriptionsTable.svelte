@@ -1,6 +1,7 @@
 <script lang="ts">
 	import FeedRow from './FeedRow.svelte';
 	import type { Feed } from '../feed-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		feeds: Feed[];
@@ -31,11 +32,11 @@
 	<table class="feeds">
 		<thead>
 			<tr>
-				<th class="feed-col">Feed</th>
-				<th>Status</th>
-				<th>Auto-save</th>
-				<th>Schedule</th>
-				<th>Last updated</th>
+				<th class="feed-col">{$t('common_feed')}</th>
+				<th>{$t('feed_management_status')}</th>
+				<th>{$t('feed_management_auto_save')}</th>
+				<th>{$t('feed_management_schedule')}</th>
+				<th>{$t('feed_management_last_updated')}</th>
 				<th class="right action-col"></th>
 			</tr>
 		</thead>

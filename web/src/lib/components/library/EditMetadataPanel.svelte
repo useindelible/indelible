@@ -3,6 +3,7 @@
 	import * as apiSdk from '$lib/api';
 	import { getLibrary } from '$lib/stores/library.svelte';
 	import TagInput from './TagInput.svelte';
+	import { date, t } from '$lib/i18n';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -17,7 +18,7 @@
 		if (!iso) return '';
 		const d = new Date(iso);
 		if (isNaN(d.getTime())) return '';
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+		return $date(d, { month: 'short', day: 'numeric', year: 'numeric' });
 	}
 
 	function toDateInputValue(iso: string | null | undefined): string {
@@ -70,9 +71,11 @@
 	const lengthLabel = $derived(() => {
 		const mins = item.reading_time_minutes;
 		const words = item.word_count;
-		if (mins && words) return `${mins} min (${words.toLocaleString()} words)`;
-		if (mins) return `${mins} min`;
-		if (words) return `${words.toLocaleString()} words`;
+		if (mins && words) {
+			return $t('library_length_minutes_words', { values: { minutes: mins, words } });
+		}
+		if (mins) return $t('library_length_minutes', { values: { minutes: mins } });
+		if (words) return $t('library_word_count', { values: { count: words } });
 		return '—';
 	});
 
@@ -121,9 +124,9 @@
 				return;
 			}
 
-			error = 'Failed to save changes. Please try again.';
+			error = $t('library_error_save_changes');
 		} catch {
-			error = 'An unexpected error occurred.';
+			error = $t('library_error_unexpected');
 		} finally {
 			saving = false;
 		}
@@ -135,14 +138,18 @@
 	<div class="cover-wrap">
 		<div class="cover-img">
 			<span class="cover-emoji" aria-hidden="true">📄</span>
-			<button type="button" class="cover-change-btn" aria-label="Change cover image">
+			<button
+				type="button"
+				class="cover-change-btn"
+				aria-label={$t('library_edit_change_cover_image')}
+			>
 				<svg viewBox="0 0 24 24" aria-hidden="true">
 					<path
 						d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
 					/>
 					<circle cx="12" cy="13" r="4" />
 				</svg>
-				Change cover
+				{$t('library_edit_change_cover')}
 			</button>
 		</div>
 	</div>
@@ -161,35 +168,47 @@
 			bind:value={title}
 			oninput={(e) => autoResize(e.currentTarget)}
 			rows={2}
-			aria-label="Title"
+			aria-label={$t('common_title')}
 		></textarea>
 
 		<!-- Byline row -->
 		<div class="byline-row">
-			<span class="byline-by">by</span>
+			<span class="byline-by">{$t('library_edit_by')}</span>
 			<input
 				class="byline-input"
 				type="text"
 				bind:value={author}
-				placeholder="Author"
+				placeholder={$t('library_edit_author')}
 				style="width: 110px;"
-				aria-label="Author"
+				aria-label={$t('library_edit_author')}
 			/>
 			<span class="byline-sep">&middot;</span>
 			<select
 				class="byline-input byline-select"
-				aria-label="Content type"
+				aria-label={$t('library_filter_field_content_type')}
 				style="cursor: pointer; width: 80px;"
 			>
-				<option value="article" selected={item.item_type === 'article'}>Article</option>
-				<option value="book" selected={item.item_type === 'book'}>Book</option>
-				<option value="pdf" selected={item.item_type === 'pdf'}>PDF</option>
-				<option value="video" selected={item.item_type === 'video'}>Video</option>
+				<option value="article" selected={item.item_type === 'article'}
+					>{$t('library_filter_value_article')}</option
+				>
+				<option value="book" selected={item.item_type === 'book'}
+					>{$t('library_filter_value_book')}</option
+				>
+				<option value="pdf" selected={item.item_type === 'pdf'}
+					>{$t('library_filter_value_pdf')}</option
+				>
+				<option value="video" selected={item.item_type === 'video'}
+					>{$t('library_filter_value_video')}</option
+				>
 				{#if item.item_type === 'podcast'}
-					<option value="podcast" selected>Podcast</option>
+					<option value="podcast" selected>{$t('library_filter_value_podcast')}</option>
 				{/if}
-				<option value="tweet" selected={item.item_type === 'tweet'}>Tweet</option>
-				<option value="email" selected={item.item_type === 'email'}>Email</option>
+				<option value="tweet" selected={item.item_type === 'tweet'}
+					>{$t('library_filter_value_tweet')}</option
+				>
+				<option value="email" selected={item.item_type === 'email'}
+					>{$t('library_filter_value_email')}</option
+				>
 			</select>
 		</div>
 
@@ -199,19 +218,19 @@
 
 		<!-- Summary -->
 		<div class="edit-section">
-			<div class="section-heading">Summary</div>
+			<div class="section-heading">{$t('library_edit_summary')}</div>
 			<textarea
 				class="summary-input"
 				bind:value={excerpt}
 				rows={4}
-				placeholder="Add a summary..."
-				aria-label="Summary"
+				placeholder={$t('library_edit_add_summary')}
+				aria-label={$t('library_edit_summary')}
 			></textarea>
 		</div>
 
 		<!-- Tags -->
 		<div class="edit-section">
-			<div class="section-heading">Tags</div>
+			<div class="section-heading">{$t('common_tags')}</div>
 			{#if tagsLoaded}
 				<TagInput bind:tags />
 			{/if}
@@ -219,29 +238,29 @@
 
 		<!-- Metadata -->
 		<div class="edit-section">
-			<div class="section-heading">Metadata</div>
+			<div class="section-heading">{$t('common_metadata')}</div>
 			<div class="metadata-table">
 				<div class="metadata-row">
-					<span class="metadata-label">Published</span>
+					<span class="metadata-label">{$t('common_published')}</span>
 					<div class="metadata-value">
 						<input
 							class="meta-input"
 							type="date"
 							bind:value={publishedAt}
-							aria-label="Published date"
+							aria-label={$t('library_filter_field_published_date')}
 						/>
 					</div>
 				</div>
 				<div class="metadata-row">
-					<span class="metadata-label">Length</span>
+					<span class="metadata-label">{$t('library_metadata_length')}</span>
 					<span class="metadata-static">{lengthLabel()}</span>
 				</div>
 				<div class="metadata-row">
-					<span class="metadata-label">Progress</span>
+					<span class="metadata-label">{$t('library_metadata_progress')}</span>
 					<span class="metadata-static">{progressLabel}</span>
 				</div>
 				<div class="metadata-row">
-					<span class="metadata-label">Saved</span>
+					<span class="metadata-label">{$t('library_metadata_saved')}</span>
 					<span class="metadata-static">{savedLabel}</span>
 				</div>
 			</div>
@@ -252,14 +271,15 @@
 		{/if}
 
 		<div class="form-actions">
-			<button type="button" class="btn-secondary" onclick={onClose} disabled={saving}>Cancel</button
+			<button type="button" class="btn-secondary" onclick={onClose} disabled={saving}
+				>{$t('common_cancel')}</button
 			>
 			<button type="submit" class="btn-primary" disabled={saving} aria-busy={saving}>
 				{#if saving}
 					<span class="spinner" aria-hidden="true"></span>
-					Saving...
+					{$t('common_saving')}
 				{:else}
-					Save
+					{$t('common_save')}
 				{/if}
 			</button>
 		</div>

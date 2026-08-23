@@ -5,14 +5,15 @@ import type {
 	TestMilaConfigBodyWritable,
 	UpsertMilaConfigBodyWritable
 } from '$lib/api';
+import type { MessageKey } from '$lib/i18n';
 
 export type ActionKey = 'summary' | 'tags' | 'entities' | 'chat' | 'custom';
 export type TestState = 'idle' | 'testing' | 'success' | 'error';
 
 export interface ActionMeta {
 	key: ActionKey;
-	name: string;
-	desc: string;
+	nameKey: MessageKey;
+	descKey: MessageKey;
 }
 
 export interface MilaConfigDraft {
@@ -49,24 +50,24 @@ export interface PresetEditorState {
 export const ACTIONS: ActionMeta[] = [
 	{
 		key: 'summary',
-		name: 'Summary',
-		desc: 'Generated when an item is captured or you tap Summarise.'
+		nameKey: 'prefs_ai_action_summary',
+		descKey: 'prefs_ai_action_summary_hint'
 	},
-	{ key: 'tags', name: 'Tags', desc: 'Suggested topical tags for newly saved items.' },
+	{ key: 'tags', nameKey: 'prefs_ai_action_tags', descKey: 'prefs_ai_action_tags_hint' },
 	{
 		key: 'entities',
-		name: 'Entities',
-		desc: 'Extracted people, orgs, and concepts mentioned in an item.'
+		nameKey: 'prefs_ai_action_entities',
+		descKey: 'prefs_ai_action_entities_hint'
 	},
 	{
 		key: 'chat',
-		name: 'Chat',
-		desc: 'How Mila answers questions about an item or your whole library.'
+		nameKey: 'prefs_ai_action_chat',
+		descKey: 'prefs_ai_action_chat_hint'
 	},
 	{
 		key: 'custom',
-		name: 'Custom',
-		desc: 'Your own one-off prompts for highlights, notes, and anything else.'
+		nameKey: 'prefs_ai_action_custom',
+		descKey: 'prefs_ai_action_custom_hint'
 	}
 ];
 

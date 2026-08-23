@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import type { TagResponse } from '$lib/api/generated/types.gen';
 	import { sanitizeColor } from '$lib/utils/color';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		tag: TagResponse;
@@ -23,7 +24,9 @@
 			type="button"
 			class="select-check"
 			class:checked={selected}
-			aria-label={selected ? `Deselect ${tag.name}` : `Select ${tag.name}`}
+			aria-label={$t(selected ? 'tag_deselect_named' : 'tag_select_named', {
+				values: { name: tag.name }
+			})}
 			onclick={(e) => {
 				e.stopPropagation();
 				onSelect?.(tag.id);
@@ -60,7 +63,7 @@
 				<button
 					type="button"
 					class="action-btn"
-					aria-label="Edit {tag.name}"
+					aria-label={$t('tag_edit_named', { values: { name: tag.name } })}
 					onclick={(e) => {
 						e.stopPropagation();
 						onEdit?.(tag);
@@ -83,7 +86,7 @@
 				<button
 					type="button"
 					class="action-btn action-btn-danger"
-					aria-label="Delete {tag.name}"
+					aria-label={$t('tag_delete_named', { values: { name: tag.name } })}
 					onclick={(e) => {
 						e.stopPropagation();
 						onDelete?.(tag);

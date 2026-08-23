@@ -1,15 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { t } from '$lib/i18n';
 
 	const is404 = $derived(page.status === 404);
 
-	const title = $derived(is404 ? 'Page not found' : 'Something went wrong');
-	const body = $derived(
-		is404
-			? "The page you're looking for doesn't exist or has been moved."
-			: 'An unexpected error occurred. If this keeps happening, please get in touch.'
-	);
+	const title = $derived(is404 ? $t('error_page_not_found_title') : $t('error_generic_title'));
+	const body = $derived(is404 ? $t('error_page_not_found_body') : $t('error_generic_body'));
 </script>
 
 <div class="error-page">
@@ -66,7 +63,7 @@
 			>
 				<path d="M19 12H5M12 19l-7-7 7-7" />
 			</svg>
-			Go to library
+			{$t('error_go_to_library')}
 		</a>
 	</div>
 </div>

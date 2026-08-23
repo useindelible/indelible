@@ -2,6 +2,7 @@
 	import type { AliasDestinationDto, EmailAliasResponse } from '$lib/api';
 	import EmailAliasComposer from './EmailAliasComposer.svelte';
 	import EmailEnvelopeCard from './EmailEnvelopeCard.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		feedAddress: string;
@@ -60,21 +61,20 @@
 <section class="page-section" aria-labelledby="inboxes-heading">
 	<div class="section-head">
 		<div class="section-head-left">
-			<div class="section-eyebrow">Section i · Addresses</div>
-			<h2 class="section-title" id="inboxes-heading">Your two <em>inboxes</em></h2>
-			<p class="section-desc">
-				Hand these out to newsletters and forwarders. The Feed address turns mail into reading flow;
-				the Library address tucks it away for keeps.
-			</p>
+			<div class="section-eyebrow">{$t('email_inboxes_eyebrow')}</div>
+			<h2 class="section-title" id="inboxes-heading">
+				{$t('email_inboxes_title')} <em>{$t('email_inboxes_title_emphasis')}</em>
+			</h2>
+			<p class="section-desc">{$t('email_inboxes_description')}</p>
 		</div>
-		<div class="section-meta">Tokenised · per-account</div>
+		<div class="section-meta">{$t('email_inboxes_meta')}</div>
 	</div>
 
 	<div class="inbox-grid">
 		<EmailEnvelopeCard
 			dest="feed"
-			label="Feed inbox · Triage"
-			headline="For newsletters that should join the reading queue."
+			label={$t('email_feed_inbox')}
+			headline={$t('email_feed_inbox_hint')}
 			address={feedAddress}
 			primary={feedPrimary}
 			copied={copied === 'primary-feed'}
@@ -83,8 +83,8 @@
 		/>
 		<EmailEnvelopeCard
 			dest="library"
-			label="Library inbox · Keep"
-			headline="For pieces you want filed straight away."
+			label={$t('email_library_inbox')}
+			headline={$t('email_library_inbox_hint')}
 			address={libraryAddress}
 			primary={libraryPrimary}
 			copied={copied === 'primary-library'}

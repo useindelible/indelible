@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { NotionSettingsDto, UpdateNotionSettingsRequest } from '$lib/api';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	interface Props {
 		settings?: NotionSettingsDto | null;
@@ -10,28 +11,28 @@
 	let { settings = null, savingSetting = null, onSettingChange }: Props = $props();
 
 	const rows: Array<{
-		label: string;
-		hint: string;
+		labelKey: MessageKey;
+		hintKey: MessageKey;
 		key: keyof UpdateNotionSettingsRequest;
 	}> = [
 		{
-			label: 'Export automatically',
-			hint: 'New documents and highlights export as you save them, with a daily catch-up sweep.',
+			labelKey: 'integrations_notion_export_automatically',
+			hintKey: 'integrations_notion_export_automatically_hint',
 			key: 'export_automatically'
 		},
 		{
-			label: 'Include highlight locations',
-			hint: 'Page numbers or position markers when Indelible has source locator data — keeps every highlight findable.',
+			labelKey: 'integrations_notion_include_locations',
+			hintKey: 'integrations_notion_include_locations_hint',
 			key: 'include_highlight_locations'
 		},
 		{
-			label: 'Compact layout',
-			hint: 'Inline locations and skip dividers between highlights. Tighter pages, faster to skim.',
+			labelKey: 'integrations_notion_compact_layout',
+			hintKey: 'integrations_notion_compact_layout_hint',
 			key: 'compact_layout'
 		},
 		{
-			label: 'Select items to export',
-			hint: 'When on, only the documents you check below will export. Off means everything in your library.',
+			labelKey: 'integrations_notion_select_items',
+			hintKey: 'integrations_notion_select_items_hint',
 			key: 'selection_enabled'
 		}
 	];
@@ -42,17 +43,17 @@
 </script>
 
 <section class="group">
-	<div class="group-label">Export settings</div>
+	<div class="group-label">{$t('integrations_notion_export_settings')}</div>
 	<div class="group-desc">
-		Defaults match Readwise-style export behavior. Changes apply on the next sync.
+		{$t('integrations_notion_export_settings_description')}
 	</div>
 
 	<div class="group-card">
 		{#each rows as row (row.key)}
 			<div class="row">
 				<div class="label-block">
-					<div class="label">{row.label}</div>
-					<div class="hint">{row.hint}</div>
+					<div class="label">{$t(row.labelKey)}</div>
+					<div class="hint">{$t(row.hintKey)}</div>
 				</div>
 				<button
 					type="button"
@@ -61,7 +62,7 @@
 					class:locked={savingSetting === row.key}
 					role="switch"
 					aria-checked={settingValue(row.key)}
-					aria-label={row.label}
+					aria-label={$t(row.labelKey)}
 					disabled={savingSetting === row.key}
 					onclick={() => onSettingChange(row.key, !settingValue(row.key))}
 				></button>

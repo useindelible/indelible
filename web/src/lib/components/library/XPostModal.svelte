@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as apiSdk from '$lib/api';
 	import type { FeedSourceResponse } from '$lib/api';
+	import { t } from '$lib/i18n';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 
 	const modal = getModalStore();
@@ -28,11 +29,11 @@
 
 	function validate(value: string): string {
 		const trimmed = value.trim();
-		if (!trimmed) return 'Enter a username';
+		if (!trimmed) return $t('library_x_username_required');
 		const handle = cleanHandle(trimmed);
-		if (!handle) return 'Only x.com or twitter.com URLs are accepted';
-		if (/\s/.test(handle)) return 'Username cannot contain spaces';
-		if (!/^[A-Za-z0-9_]{1,50}$/.test(handle)) return 'Invalid username format';
+		if (!handle) return $t('library_x_only_urls');
+		if (/\s/.test(handle)) return $t('library_x_username_no_spaces');
+		if (!/^[A-Za-z0-9_]{1,50}$/.test(handle)) return $t('library_x_invalid_username');
 		return '';
 	}
 
@@ -104,13 +105,14 @@
 			});
 			if (error) {
 				const problem = error as { detail?: string; errors?: Array<{ message: string }> } | null;
-				submitError = problem?.detail ?? problem?.errors?.[0]?.message ?? 'Failed to follow';
+				submitError =
+					problem?.detail ?? problem?.errors?.[0]?.message ?? $t('library_x_error_follow');
 			} else {
 				modal.notifySubscribed();
 				close();
 			}
 		} catch (err) {
-			submitError = err instanceof Error ? err.message : 'An unexpected error occurred.';
+			submitError = err instanceof Error ? err.message : $t('library_error_unexpected');
 		} finally {
 			submitting = false;
 		}
@@ -120,7 +122,7 @@
 <dialog
 	bind:this={dialogEl}
 	class="modal-backdrop"
-	aria-label="Follow on X"
+	aria-label={$t('library_x_follow_on')}
 	onclick={handleBackdropClick}
 	onclose={close}
 >
@@ -139,7 +141,7 @@
 					bind:value={username}
 					class="cmd-input"
 					type="text"
-					placeholder="@username or search..."
+					placeholder={$t('library_x_username')}
 					autocomplete="off"
 					onkeydown={(e) => {
 						if (suggestionsVisible) {
@@ -201,9 +203,9 @@
 			<button type="button" class="cmd-action" disabled={!canFollow} onclick={handleFollow}>
 				{#if submitting}
 					<span class="spinner" aria-hidden="true"></span>
-					<span class="sr-only">Following...</span>
+					<span class="sr-only">{$t('library_x_following')}</span>
 				{:else}
-					Follow
+					{$t('library_x_follow')}
 				{/if}
 			</button>
 		</div>

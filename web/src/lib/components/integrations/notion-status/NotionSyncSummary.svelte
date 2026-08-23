@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { IntegrationConnectionDto } from '$lib/api';
 	import type { NotionStatusSummary } from './notion-status-model';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		connection: IntegrationConnectionDto;
@@ -22,28 +23,27 @@
 </script>
 
 <section class="group">
-	<div class="group-label">Sync</div>
+	<div class="group-label">{$t('integrations_notion_sync')}</div>
 	<div class="group-desc">
-		Indelible appends new documents and highlights on a schedule. You can also push manually
-		whenever you like.
+		{$t('integrations_notion_sync_description')}
 	</div>
 
 	<div class="group-card">
 		<div class="sync-strip">
 			<div class="sync-strip-meta">
 				<div class="sync-stat">
-					<span class="l">Status</span>
+					<span class="l">{$t('integrations_notion_status')}</span>
 					<span class="v">
 						<span class="pulse-dot" data-tone={summary.statusTone}></span>
 						{summary.statusLabel}
 					</span>
 				</div>
 				<div class="sync-stat">
-					<span class="l">Last sync</span>
+					<span class="l">{$t('integrations_notion_last_sync')}</span>
 					<span class="v muted">{summary.formattedLastSync}</span>
 				</div>
 				<div class="sync-stat">
-					<span class="l">Pending jobs</span>
+					<span class="l">{$t('integrations_notion_pending_jobs')}</span>
 					<span class="v muted" data-testid="notion-pending-pill">{summary.pendingJobs}</span>
 				</div>
 			</div>
@@ -57,10 +57,10 @@
 				>
 					{#if syncing}
 						<span class="spinner"></span>
-						Exporting…
+						{$t('integrations_notion_exporting')}
 					{:else}
 						<svg viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M13 5l7 7-7 7" /></svg>
-						Start export
+						{$t('integrations_notion_start_export')}
 					{/if}
 				</button>
 			</div>
@@ -69,7 +69,7 @@
 		{#if syncError}
 			<div class="callout error" role="alert">
 				<div class="callout-body">
-					<div class="callout-title">Export failed</div>
+					<div class="callout-title">{$t('integrations_notion_export_failed')}</div>
 					<div class="callout-detail">{syncError}</div>
 				</div>
 			</div>
@@ -78,36 +78,37 @@
 		{#if summary.isAuthFailure}
 			<div class="callout error" role="alert" data-testid="notion-auth-failure">
 				<div class="callout-body">
-					<div class="callout-title">Authorization needs attention</div>
+					<div class="callout-title">{$t('integrations_notion_authorization_attention')}</div>
 					<div class="callout-detail">
-						Re-authorize to grant access to the managed database again.
+						{$t('integrations_notion_authorization_attention_hint')}
 					</div>
 					<div class="callout-actions">
-						<button class="btn primary" type="button" onclick={onReauthorize}>Re-authorize</button>
+						<button class="btn primary" type="button" onclick={onReauthorize}
+							>{$t('integrations_notion_reauthorize')}</button
+						>
 					</div>
 				</div>
 			</div>
 		{:else if summary.isSchemaError}
 			<div class="callout error" role="alert" data-testid="notion-schema-error">
 				<div class="callout-body">
-					<div class="callout-title">Database schema changed</div>
+					<div class="callout-title">{$t('integrations_notion_schema_changed')}</div>
 					<div class="callout-detail">
-						Rename properties freely. Deleted required properties or changed property types must be
-						restored in Notion before export can continue.
+						{$t('integrations_notion_schema_changed_hint')}
 					</div>
 				</div>
 			</div>
 		{:else if summary.isRateLimited}
 			<div class="callout warning" role="status" data-testid="notion-rate-limit">
 				<div class="callout-body">
-					<div class="callout-title">Notion rate limit reached</div>
-					<div class="callout-detail">Exports will resume from Notion's Retry-After window.</div>
+					<div class="callout-title">{$t('integrations_notion_rate_limit_reached')}</div>
+					<div class="callout-detail">{$t('integrations_notion_rate_limit_hint')}</div>
 				</div>
 			</div>
 		{:else if connection.last_error}
 			<div class="callout error" role="alert">
 				<div class="callout-body">
-					<div class="callout-title">Last sync hit an error</div>
+					<div class="callout-title">{$t('integrations_notion_last_sync_error')}</div>
 					<div class="callout-detail">{connection.last_error}</div>
 				</div>
 			</div>

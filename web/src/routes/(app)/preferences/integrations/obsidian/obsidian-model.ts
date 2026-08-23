@@ -5,6 +5,8 @@ import type {
 	UpdateObsidianSettingsRequest
 } from '$lib/api';
 import type { ConnectionState } from '$lib/integrations/status';
+import type { MessageKey, Translate } from '$lib/i18n';
+import { relativeTime } from '$lib/utils/relative-time';
 
 export type PreviewView = 'note' | 'full';
 export type ObsidianHeroState = 'connected' | 'syncing' | 'error' | 'disconnected';
@@ -73,30 +75,24 @@ export function obsidianHeroState(
 	}
 }
 
-export function obsidianHeroStatusLabel(state: ObsidianHeroState): string {
+export function obsidianHeroStatusLabel(state: ObsidianHeroState): MessageKey {
 	switch (state) {
 		case 'syncing':
-			return 'Syncing…';
+			return 'integrations_obsidian_status_syncing';
 		case 'error':
-			return 'Last sync failed';
+			return 'integrations_obsidian_last_sync_failed';
 		case 'disconnected':
-			return 'No plugin connected';
+			return 'integrations_obsidian_no_plugin_connected';
 		default:
-			return 'Connected';
+			return 'integrations_hub_status_connected';
 	}
 }
 
-export function formatObsidianLastSync(connection: IntegrationConnectionDto | undefined): string {
-	if (!connection?.last_sync_at) return 'Never';
-	const parsed = new Date(connection.last_sync_at);
-	if (Number.isNaN(parsed.getTime())) return 'Never';
-	const diffMs = Date.now() - parsed.getTime();
-	const diffMin = Math.round(diffMs / 60000);
-	if (diffMin < 1) return 'Just now';
-	if (diffMin < 60) return `${diffMin}m ago`;
-	const diffHour = Math.round(diffMin / 60);
-	if (diffHour < 24) return `${diffHour}h ago`;
-	return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+export function formatObsidianLastSync(
+	connection: IntegrationConnectionDto | undefined,
+	translate: Translate
+): string {
+	return relativeTime(connection?.last_sync_at) ?? translate('integrations_obsidian_never');
 }
 
 export function previewFilePath(

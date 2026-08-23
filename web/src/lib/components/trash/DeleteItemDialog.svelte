@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		item: { id: string; title: string } | null;
 		onConfirm: (id: string) => void;
@@ -14,7 +16,7 @@
 		class="cmd-backdrop"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Delete permanently"
+		aria-label={$t('trash_delete_permanently')}
 		tabindex="-1"
 		onclick={onClose}
 		onkeydown={(e) => {
@@ -26,21 +28,20 @@
 	>
 		<div class="cmd-card" role="none" onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 			<div class="cmd-body">
-				<h2 class="dialog-title">Delete permanently?</h2>
+				<h2 class="dialog-title">{$t('trash_delete_permanently_question')}</h2>
 				<p class="dialog-text">
-					Permanently delete &ldquo;{item.title}&rdquo;? This will remove the item and all its
-					highlights, notes, and collection links.
+					{$t('trash_delete_item_body', { values: { title: item.title } })}
 				</p>
 			</div>
 			<div class="cmd-controls">
-				<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+				<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 				<button
 					type="button"
 					class="cmd-action cmd-action-danger"
 					disabled={deleting}
 					onclick={() => onConfirm(item.id)}
 				>
-					{deleting ? 'Deleting...' : 'Delete'}
+					{deleting ? $t('trash_deleting') : $t('common_delete')}
 				</button>
 			</div>
 		</div>

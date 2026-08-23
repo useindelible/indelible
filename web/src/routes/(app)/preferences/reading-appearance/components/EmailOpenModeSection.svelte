@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsGroup from '$lib/components/settings/SettingsGroup.svelte';
+	import { t } from '$lib/i18n';
 	import type { ReaderOpenModeDto } from '$lib/api';
 
 	interface Props {
@@ -11,29 +12,23 @@
 </script>
 
 <SettingsGroup
-	title="Content type defaults"
-	meta="How each content type opens by default. Articles always open in the reader."
+	title={$t('prefs_reading_content_defaults')}
+	meta={$t('prefs_reading_content_defaults_meta')}
 >
 	<div class="group-card">
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Article</div>
-				<div class="hint">
-					Articles you save are always rendered in the reader. To view the original page, use Open
-					Original from the reader toolbar.
-				</div>
+				<div class="label">{$t('library_filter_value_article')}</div>
+				<div class="hint">{$t('prefs_reading_article_open_hint')}</div>
 			</div>
-			<div class="content-type-static">Reader</div>
+			<div class="content-type-static">{$t('prefs_reading_reader')}</div>
 		</div>
 		<div class="row">
 			<div class="label-block">
-				<div class="label">Email</div>
-				<div class="hint">
-					Open newsletters in our reader for a clean read, or use the original HTML to keep the
-					sender's layout.
-				</div>
+				<div class="label">{$t('common_email')}</div>
+				<div class="hint">{$t('prefs_reading_email_open_hint')}</div>
 			</div>
-			<div class="segmented" role="radiogroup" aria-label="Email open mode">
+			<div class="segmented" role="radiogroup" aria-label={$t('prefs_reading_email_open_mode')}>
 				<button
 					type="button"
 					class="seg"
@@ -42,7 +37,7 @@
 					aria-checked={emailOpenMode === 'reader'}
 					onclick={() => onEmailOpenModeChange('reader')}
 				>
-					Reader
+					{$t('prefs_reading_reader')}
 				</button>
 				<button
 					type="button"
@@ -52,7 +47,7 @@
 					aria-checked={emailOpenMode === 'original'}
 					onclick={() => onEmailOpenModeChange('original')}
 				>
-					Original
+					{$t('reader_view_original')}
 				</button>
 			</div>
 		</div>

@@ -2,6 +2,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { BookSource, TocEntry } from './book-source';
 	import { estimatePageNumber } from './book-source';
+	import { t } from '$lib/i18n';
 
 	interface SearchResult {
 		chapterIndex: number;
@@ -87,7 +88,9 @@
 
 				found.push({
 					chapterIndex: chapterIdx,
-					chapterTitle: tocEntry?.title ?? `Chapter ${chapterIdx + 1}`,
+					chapterTitle:
+						tocEntry?.title ??
+						$t('reader_chapter_fallback', { values: { number: chapterIdx + 1 } }),
 					tocEntry,
 					charOffset: matchIdx,
 					context,
@@ -117,7 +120,7 @@
 		const chapterNum = navigable.indexOf(result.tocEntry) + 1;
 		const chapterTotalChars = chapterTexts.get(result.chapterIndex)?.length ?? 1;
 		const page = estimatePageNumber(result.tocEntry, result.charOffset, chapterTotalChars);
-		return `Ch. ${chapterNum} \u00B7 Page ${page}`;
+		return $t('reader_chapter_page', { values: { chapter: chapterNum, page } });
 	}
 
 	function highlightMatch(context: string, start: number, end: number): string {
@@ -149,15 +152,15 @@
 			type="text"
 			bind:value={query}
 			oninput={handleInput}
-			placeholder="Search in book..."
+			placeholder={$t('reader_search_in_book')}
 		/>
 	</div>
 
 	{#if searching}
-		<div class="search-status">Searching...</div>
+		<div class="search-status">{$t('reader_searching')}</div>
 	{:else if hasSearched}
 		<div class="search-results-count">
-			{results.length} result{results.length !== 1 ? 's' : ''} for "{query}"
+			{$t('search_result_count', { values: { count: results.length, query } })}
 		</div>
 	{/if}
 

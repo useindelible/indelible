@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as apiSdk from '$lib/api';
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 	import { fetchAllPages } from '$lib/api/pagination';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 	import DuplicateUrlPreview from './DuplicateUrlPreview.svelte';
@@ -147,14 +148,14 @@
 				if (conflictDuplicate) {
 					duplicate = conflictDuplicate;
 				} else {
-					submitError = 'This URL is already in your library.';
+					submitError = $t('library_url_already_in_library');
 				}
 				return;
 			}
 
 			submitError = messageForSaveUrlProblem(apiError);
 		} catch {
-			submitError = 'An unexpected error occurred.';
+			submitError = $t('library_error_unexpected');
 		} finally {
 			submitting = false;
 		}
@@ -197,7 +198,7 @@
 <dialog
 	bind:this={dialogEl}
 	class="modal-backdrop"
-	aria-label="Save URL"
+	aria-label={$t('library_save_url')}
 	onclick={handleBackdropClick}
 	onclose={close}
 >

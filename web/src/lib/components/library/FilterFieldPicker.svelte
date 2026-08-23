@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { LibraryFilterFieldDef } from '$lib/utils/library-filter-fields';
 
 	interface Props {
@@ -13,7 +14,7 @@
 </script>
 
 <div class="field-picker">
-	<div class="field-picker-section">Content</div>
+	<div class="field-picker-section">{$t('library_filter_content')}</div>
 	{#each contentFields as field (field.key)}
 		<button
 			type="button"
@@ -21,11 +22,11 @@
 			class:highlighted={currentField === field.key}
 			onclick={() => onFieldChange(field.key)}
 		>
-			{field.label}
+			{$t(field.labelKey)}
 		</button>
 	{/each}
 	<div class="field-picker-divider"></div>
-	<div class="field-picker-section">Attributes</div>
+	<div class="field-picker-section">{$t('library_filter_attributes')}</div>
 	{#each attributeFields as field (field.key)}
 		<button
 			type="button"
@@ -33,11 +34,11 @@
 			class:highlighted={currentField === field.key}
 			onclick={() => onFieldChange(field.key)}
 		>
-			{field.label}
+			{$t(field.labelKey)}
 		</button>
 	{/each}
 	<div class="field-picker-divider"></div>
-	<div class="field-picker-section">Dates</div>
+	<div class="field-picker-section">{$t('library_filter_dates')}</div>
 	{#each dateFields as field (field.key)}
 		<button
 			type="button"
@@ -45,7 +46,7 @@
 			class:highlighted={currentField === field.key}
 			onclick={() => onFieldChange(field.key)}
 		>
-			{field.label}
+			{$t(field.labelKey)}
 		</button>
 	{/each}
 </div>

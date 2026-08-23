@@ -187,6 +187,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm test
+      - run: pnpm i18n:check
 
   extension:
     name: Extension

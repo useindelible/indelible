@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount, type Snippet } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
 	import { getLibrary } from '$lib/stores/library.svelte';
@@ -59,8 +60,8 @@
 				type="button"
 				class="sidebar-reveal-btn"
 				onclick={() => lib.toggleSidebarVisibility(sidebarVisible)}
-				aria-label="Show sidebar"
-				title="Show sidebar"
+				aria-label={$t('library_show_sidebar')}
+				title={$t('library_show_sidebar')}
 			>
 				<svg
 					viewBox="0 0 20 20"

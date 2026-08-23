@@ -5,6 +5,7 @@
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
 	import SettingsNav from '$lib/components/settings/SettingsNav.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 
 	let { children } = $props();
 
@@ -19,24 +20,24 @@
 		if (!vp.isMobile) showNav = false;
 	});
 
-	const PAGE_TITLES: Record<string, string> = {
-		account: 'Account',
-		'reading-appearance': 'Reading & Appearance',
-		integrations: 'Integrations',
-		'feed-management': 'Feed Management',
-		email: 'Email',
-		archival: 'Archival',
-		ai: 'Mila & AI',
-		developer: 'Developer',
-		'add-to-feed': 'Add to Feed',
-		'add-to-library': 'Add to Library',
-		'import-export': 'Import & Export',
-		notion: 'Notion',
-		obsidian: 'Obsidian'
+	const PAGE_TITLE_KEYS: Record<string, MessageKey> = {
+		account: 'settings_account',
+		'reading-appearance': 'settings_reading_appearance',
+		integrations: 'settings_integrations',
+		'feed-management': 'settings_feed_management',
+		email: 'settings_email',
+		archival: 'settings_archival',
+		ai: 'settings_ai',
+		developer: 'settings_developer',
+		'add-to-feed': 'settings_add_to_feed',
+		'add-to-library': 'settings_add_to_library',
+		'import-export': 'settings_import_export',
+		notion: 'settings_notion',
+		obsidian: 'settings_obsidian'
 	};
 
 	const pageSlug = $derived(page.url.pathname.split('/').filter(Boolean).pop() ?? '');
-	const pageTitle = $derived(PAGE_TITLES[pageSlug] ?? 'Preferences');
+	const pageTitle = $derived($t(PAGE_TITLE_KEYS[pageSlug] ?? 'settings_preferences'));
 
 	// Nested integration pages back out to Integrations, not the root list.
 	const isIntegrationChild = $derived(
@@ -57,7 +58,7 @@
 						type="button"
 						class="menu-btn"
 						onclick={() => vp.openMobileNav()}
-						aria-label="Open navigation"
+						aria-label={$t('common_open_navigation')}
 					>
 						<svg
 							viewBox="0 0 24 24"
@@ -73,7 +74,7 @@
 							<line x1="3" y1="18" x2="21" y2="18" />
 						</svg>
 					</button>
-					<span class="m-title">Preferences</span>
+					<span class="m-title">{$t('settings_preferences')}</span>
 				</div>
 			{/if}
 			<div
@@ -106,7 +107,7 @@
 							>
 								<polyline points="15 18 9 12 15 6" />
 							</svg>
-							Integrations
+							{$t('settings_integrations')}
 						</a>
 					{:else}
 						<button type="button" class="m-back" onclick={() => (showNav = true)}>
@@ -121,7 +122,7 @@
 							>
 								<polyline points="15 18 9 12 15 6" />
 							</svg>
-							Preferences
+							{$t('settings_preferences')}
 						</button>
 					{/if}
 					<span class="m-dtitle">{pageTitle}</span>

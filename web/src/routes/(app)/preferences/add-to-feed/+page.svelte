@@ -3,6 +3,7 @@
 	import type { FeedSubscriptionResponse, OpmlImportResponse } from '$lib/api';
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import { uploadOpml } from '$lib/api/feeds';
+	import { t } from '$lib/i18n';
 	import { resolve } from '$app/paths';
 
 	const auth = getAuth();
@@ -38,7 +39,7 @@
 		const url = feedUrl.trim();
 		if (!url) return;
 		if (!isValidUrl(url)) {
-			subscribeError = 'Please enter a valid URL starting with http:// or https://';
+			subscribeError = $t('prefs_add_feed_error_invalid_url');
 			return;
 		}
 
@@ -55,10 +56,14 @@
 				};
 				feedUrl = '';
 			} else {
-				subscribeError = extractErrorMessage(apiError, response, 'Failed to subscribe to feed');
+				subscribeError = extractErrorMessage(
+					apiError,
+					response,
+					$t('prefs_add_feed_error_subscribe')
+				);
 			}
 		} catch {
-			subscribeError = 'An unexpected error occurred';
+			subscribeError = $t('library_error_unexpected');
 		} finally {
 			subscribing = false;
 		}
@@ -71,7 +76,9 @@
 	): string {
 		if (response?.status === 422) {
 			const err = apiError as Record<string, unknown> | undefined;
-			return (err?.detail as string) ?? (err?.message as string) ?? 'Invalid feed URL';
+			return (
+				(err?.detail as string) ?? (err?.message as string) ?? $t('prefs_add_feed_invalid_url')
+			);
 		}
 		if (apiError && typeof apiError === 'object') {
 			const err = apiError as Record<string, unknown>;
@@ -94,7 +101,7 @@
 				opmlError = result.error;
 			}
 		} catch {
-			opmlError = 'An unexpected error occurred during upload';
+			opmlError = $t('prefs_add_feed_error_upload');
 		} finally {
 			opmlUploading = false;
 		}
@@ -137,11 +144,11 @@
 </script>
 
 <div class="settings-content">
-	<h1 class="settings-title">Add to Feed</h1>
+	<h1 class="settings-title">{$t('prefs_add_feed_title')}</h1>
 
 	<div class="settings-section">
-		<h2 class="section-heading">Subscribe to Feed</h2>
-		<p class="section-desc">Enter an RSS, Atom, or YouTube channel URL to subscribe.</p>
+		<h2 class="section-heading">{$t('prefs_add_feed_subscribe_title')}</h2>
+		<p class="section-desc">{$t('prefs_add_feed_subscribe_description')}</p>
 
 		<form
 			class="subscribe-form"
@@ -158,7 +165,7 @@
 				disabled={subscribing}
 			/>
 			<button type="submit" class="btn-primary" disabled={subscribing || !feedUrl.trim()}>
-				{subscribing ? 'Subscribing...' : 'Subscribe'}
+				{subscribing ? $t('prefs_add_feed_subscribing') : $t('prefs_add_feed_subscribe_action')}
 			</button>
 		</form>
 
@@ -185,13 +192,15 @@
 						</div>
 					</div>
 					<p class="result-message">
-						Subscribed. <a href={resolve('/preferences/feed-management')}>Go to Feed Management</a>
+						{$t('prefs_add_feed_subscribed')}
+						<a href={resolve('/preferences/feed-management')}
+							>{$t('prefs_add_feed_go_to_management')}</a
+						>
 					</p>
 				{:else}
 					<p class="result-message">
-						Already subscribed. <a href={resolve('/preferences/feed-management')}
-							>Manage in Feed Management</a
-						>
+						{$t('prefs_add_feed_already_subscribed')}
+						<a href={resolve('/preferences/feed-management')}>{$t('prefs_add_feed_manage')}</a>
 					</p>
 				{/if}
 			</div>
@@ -201,15 +210,15 @@
 	<div class="section-divider"></div>
 
 	<div class="settings-section">
-		<h2 class="section-heading">Import OPML</h2>
-		<p class="section-desc">Upload an OPML file to import feeds from another service.</p>
+		<h2 class="section-heading">{$t('prefs_add_feed_import_title')}</h2>
+		<p class="section-desc">{$t('prefs_add_feed_import_description')}</p>
 
 		<div
 			class="drop-zone"
 			class:drag-over={isDragOver}
 			role="button"
 			tabindex="0"
-			aria-label="Drop OPML file to import feeds"
+			aria-label={$t('prefs_add_feed_opml_drop_label')}
 			ondrop={handleOpmlDrop}
 			ondragover={(e) => {
 				e.preventDefault();
@@ -236,15 +245,17 @@
 				onchange={handleOpmlFileSelect}
 			/>
 			{#if opmlUploading}
-				<span class="dz-text">Uploading {opmlFile?.name}...</span>
+				<span class="dz-text"
+					>{$t('prefs_add_feed_opml_uploading', { values: { name: opmlFile?.name ?? '' } })}</span
+				>
 			{:else}
 				<svg viewBox="0 0 24 24" aria-hidden="true">
 					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 					<polyline points="17 8 12 3 7 8" />
 					<line x1="12" y1="3" x2="12" y2="15" />
 				</svg>
-				<span class="dz-text">Drop OPML file here or click to browse</span>
-				<span class="dz-formats">Supported: .opml, .xml</span>
+				<span class="dz-text">{$t('prefs_add_feed_opml_drop')}</span>
+				<span class="dz-formats">{$t('prefs_add_feed_opml_formats')}</span>
 			{/if}
 		</div>
 
@@ -255,12 +266,16 @@
 		{#if opmlResult}
 			<div class="opml-result">
 				<p class="opml-summary">
-					Imported {opmlResult.created} feed{opmlResult.created === 1 ? '' : 's'}, skipped {opmlResult.skipped}
+					{$t('prefs_add_feed_import_summary', {
+						values: { created: opmlResult.created, skipped: opmlResult.skipped }
+					})}
 				</p>
 				{#if opmlResult.errors.length > 0}
 					<details class="opml-errors">
 						<summary
-							>{opmlResult.errors.length} error{opmlResult.errors.length === 1 ? '' : 's'}</summary
+							>{$t('prefs_add_feed_import_error_count', {
+								values: { count: opmlResult.errors.length }
+							})}</summary
 						>
 						<ul>
 							{#each opmlResult.errors as err, i (i)}
@@ -276,10 +291,8 @@
 	<div class="section-divider"></div>
 
 	<div class="settings-section">
-		<h2 class="section-heading">Newsletter Email</h2>
-		<p class="section-desc">
-			Subscribe to newsletters with this email address. Incoming emails will appear in your Feed.
-		</p>
+		<h2 class="section-heading">{$t('prefs_add_feed_newsletter_title')}</h2>
+		<p class="section-desc">{$t('prefs_add_feed_newsletter_description')}</p>
 
 		<div class="email-display-row">
 			<code class="email-address">{newsletterEmail ?? '...'}</code>
@@ -288,19 +301,19 @@
 				class="copy-btn"
 				disabled={!newsletterEmail}
 				onclick={copyEmail}
-				aria-label="Copy email address"
+				aria-label={$t('prefs_add_feed_copy_email')}
 			>
 				{#if copied}
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<polyline points="20 6 9 17 4 12" />
 					</svg>
-					Copied
+					{$t('common_copied')}
 				{:else}
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
 						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 					</svg>
-					Copy
+					{$t('common_copy')}
 				{/if}
 			</button>
 		</div>

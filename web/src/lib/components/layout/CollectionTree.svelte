@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { sanitizeColor } from '$lib/utils/color';
 	import type { CollectionNode } from '$lib/api/pagination';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		nodes: CollectionNode[];
@@ -33,7 +34,11 @@
 					class="tree-chevron"
 					class:has-children={hasChildren}
 					class:expanded={node.expanded}
-					aria-label={hasChildren ? (node.expanded ? 'Collapse' : 'Expand') : undefined}
+					aria-label={hasChildren
+						? node.expanded
+							? $t('common_collapse')
+							: $t('common_expand')
+						: undefined}
 					onclick={(e) => {
 						e.stopPropagation();
 						if (hasChildren) onToggle(node.collection.id);

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
+	import { t, type MessageKey } from '$lib/i18n';
 	import {
 		ARCHIVE_FORMATS,
 		getArchiveFormatStatus,
@@ -13,12 +14,12 @@
 
 	let { formats }: Props = $props();
 
-	function shortFormatName(id: FormatId): string {
-		if (id === 'readable') return 'Readable';
-		if (id === 'monolith') return 'Monolith';
-		if (id === 'pdf') return 'PDF';
-		if (id === 'screenshot') return 'Screenshot';
-		return 'WARC';
+	function shortFormatName(id: FormatId): MessageKey {
+		if (id === 'readable') return 'archival_format_readable_short';
+		if (id === 'monolith') return 'archival_format_monolith_short';
+		if (id === 'pdf') return 'archival_format_pdf_short';
+		if (id === 'screenshot') return 'archival_format_screenshot_short';
+		return 'archival_format_warc_short';
 	}
 </script>
 
@@ -26,14 +27,12 @@
 	<div class="hero-text">
 		<div class="hero-eyebrow">
 			<span class="dot"></span>
-			<span>Archival · Five formats, one save</span>
+			<span>{$t('archival_hero_eyebrow')}</span>
 		</div>
-		<h1 class="hero-title">Captured five<br />different ways.</h1>
-		<p class="hero-sub">
-			Every save is preserved in the formats that suit it — readable text for skimming,
-			Monolith&nbsp;HTML for fidelity, PDF for handoff, screenshot for proof. Pick the formats you
-			actually want.
-		</p>
+		<h1 class="hero-title">
+			{$t('archival_hero_title_line_one')}<br />{$t('archival_hero_title_line_two')}
+		</h1>
+		<p class="hero-sub">{$t('archival_hero_subtitle')}</p>
 	</div>
 
 	<div class="format-strip" aria-hidden="true">
@@ -43,7 +42,7 @@
 				class="format-card status-{status} fmt-{fmt.id}"
 				class:coming={status === 'coming'}
 				class:off={status === 'off'}
-				title={fmt.label}
+				title={$t(fmt.labelKey)}
 			>
 				<div class="fmt-status-dot"></div>
 				<div class="fmt-icon">
@@ -86,7 +85,7 @@
 						<div class="line med"></div>
 					{/if}
 				</div>
-				<div class="fmt-name">{shortFormatName(fmt.id)}</div>
+				<div class="fmt-name">{$t(shortFormatName(fmt.id))}</div>
 			</div>
 		{/each}
 	</div>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		downloadUrl: string;
 	}
@@ -7,11 +9,16 @@
 </script>
 
 <div class="pdf-container">
-	<embed src={downloadUrl} type="application/pdf" class="pdf-embed" title="PDF document" />
+	<embed
+		src={downloadUrl}
+		type="application/pdf"
+		class="pdf-embed"
+		title={$t('reader_pdf_document')}
+	/>
 	<p class="pdf-fallback">
-		If the PDF does not load, you can
+		{$t('reader_pdf_fallback')}
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external presigned S3 URL, not an app route -->
-		<a href={downloadUrl} target="_blank" rel="noopener">download it directly</a>.
+		<a href={downloadUrl} target="_blank" rel="noopener">{$t('reader_pdf_download_directly')}</a>.
 	</p>
 </div>
 

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 	import SavePill from '$lib/components/settings/SavePill.svelte';
+	import { t } from '$lib/i18n';
 	import { listSubscriptions, retrySubscription, unsubscribe, updateSubscription } from '$lib/api';
 	import type { OpmlImportResponse } from '$lib/api';
 	import { uploadOpml } from '$lib/api/feeds';
@@ -63,10 +64,10 @@
 				feeds = (data.data ?? []).map((subscription) => mapSubscription(subscription));
 				savedSnapshot = snapshotFeeds(feeds);
 			} else {
-				loadError = 'Failed to load subscriptions';
+				loadError = $t('feed_management_error_load');
 			}
 		} catch {
-			loadError = 'An unexpected error occurred';
+			loadError = $t('auth_error_unexpected');
 		} finally {
 			loading = false;
 		}
@@ -141,7 +142,7 @@
 				})
 			);
 			if (results.some((result) => result.error)) {
-				loadError = 'Failed to save some changes';
+				loadError = $t('feed_management_error_save_some');
 			} else {
 				savedSnapshot = snapshotFeeds(feeds);
 				showSaved = true;
@@ -150,7 +151,7 @@
 				}, 2000);
 			}
 		} catch {
-			loadError = 'Failed to save changes';
+			loadError = $t('feed_management_error_save');
 		} finally {
 			saving = false;
 		}
@@ -256,14 +257,14 @@
 				}
 			});
 			if (error) {
-				editError = 'Failed to save changes';
+				editError = $t('feed_management_error_save');
 			} else if (data) {
 				Object.assign(feed, mapSubscription(data));
 				savedSnapshot = snapshotFeeds(feeds);
 				editComposer = null;
 			}
 		} catch {
-			editError = 'Failed to save changes';
+			editError = $t('feed_management_error_save');
 		} finally {
 			editSaving = false;
 		}
@@ -303,7 +304,7 @@
 				opmlError = result.error;
 			}
 		} catch {
-			opmlError = 'An unexpected error occurred during upload';
+			opmlError = $t('prefs_add_feed_error_upload');
 		} finally {
 			opmlUploading = false;
 		}
@@ -330,7 +331,7 @@
 		{#if loadError}
 			<div class="load-error">
 				<p class="error-text">{loadError}</p>
-				<button type="button" class="retry-btn" onclick={loadFeeds}>Retry</button>
+				<button type="button" class="retry-btn" onclick={loadFeeds}>{$t('common_retry')}</button>
 			</div>
 		{/if}
 

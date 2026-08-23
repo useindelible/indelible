@@ -24,8 +24,8 @@ export function validateSaveUrl(value: string): SaveUrlValidation {
 }
 
 export function messageForUrlValidation(error: SaveUrlValidation): string {
-	if (error === 'empty') return 'Please paste a URL.';
-	if (error === 'invalid') return 'That does not look like a valid URL.';
+	if (error === 'empty') return get(t)('library_save_url_required');
+	if (error === 'invalid') return get(t)('library_save_url_invalid');
 	return '';
 }
 
@@ -48,7 +48,8 @@ export function duplicateFromConflictError(error: unknown): DuplicateUrlInfo | n
 	if (!body || typeof body['id'] !== 'string') return null;
 	return {
 		id: body['id'],
-		title: typeof body['title'] === 'string' ? body['title'] : 'Already saved',
+		title:
+			typeof body['title'] === 'string' ? body['title'] : get(t)('library_duplicate_already_saved'),
 		domain: typeof body['domain'] === 'string' ? body['domain'] : null,
 		savedDate: typeof body['created_at'] === 'string' ? body['created_at'] : null
 	};
@@ -59,20 +60,20 @@ export function messageForSaveUrlProblem(error: unknown): string {
 	return (
 		(typeof problem?.['detail'] === 'string' ? problem['detail'] : undefined) ??
 		(typeof problem?.['message'] === 'string' ? problem['message'] : undefined) ??
-		'Failed to save. Please try again.'
+		get(t)('library_error_save')
 	);
 }
 
 export function formatDuplicateSavedDate(iso: string | null): string {
 	if (!iso) return '';
 	try {
-		const date = new Date(iso);
-		if (!Number.isFinite(date.getTime())) return '';
-		return new Intl.DateTimeFormat('en-US', {
+		const parsed = new Date(iso);
+		if (!Number.isFinite(parsed.getTime())) return '';
+		return get(date)(parsed, {
 			day: 'numeric',
 			month: 'short',
 			year: 'numeric'
-		}).format(date);
+		});
 	} catch {
 		return '';
 	}
@@ -82,6 +83,11 @@ export function getSelectedCollectionName(
 	collectionId: string | null,
 	collections: CollectionSummary[]
 ): string {
-	if (!collectionId) return 'Inbox';
-	return collections.find((collection) => collection.id === collectionId)?.name ?? 'Collection';
+	if (!collectionId) return get(t)('library_triage_inbox');
+	return (
+		collections.find((collection) => collection.id === collectionId)?.name ??
+		get(t)('library_filter_field_collection')
+	);
 }
+import { date, t } from '$lib/i18n';
+import { get } from 'svelte/store';

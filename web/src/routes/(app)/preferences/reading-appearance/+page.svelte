@@ -6,6 +6,7 @@
 	import { getAuth } from '$lib/stores/auth.svelte';
 	import { getLibrary } from '$lib/stores/library.svelte';
 	import { getAppPreferences } from '$lib/stores/app-preferences.svelte';
+	import { applyProfileLocale, t } from '$lib/i18n';
 	import type {
 		AccentColorDto,
 		DefaultViewDto,
@@ -33,9 +34,10 @@
 		buildPreferencesSaveBody,
 		draftFromPreferences,
 		FONT_SIZE_LABEL,
-		LOCALES,
+		localeOptions,
 		readerPreviewStyles,
-		readingAppearanceSnapshot,
+		readingPreferencesSnapshot,
+		selectedLocaleValue,
 		type ReadingAppearanceDraft
 	} from './reading-appearance-model';
 
@@ -59,31 +61,26 @@
 	let lineHeight = $state<ReaderLineHeightDto>('relaxed');
 	let emailOpenMode = $state<ReaderOpenModeDto>('reader');
 
-	let locale = $state(auth.user?.locale ?? 'en-GB');
-	let serverLocale = $state<string>(auth.user?.locale ?? 'en-GB');
+	let locale = $state(selectedLocaleValue(auth.user?.locale));
+	let serverLocale = $state(selectedLocaleValue(auth.user?.locale));
 	let serverData = $state<PreferencesSettingsResponse | null>(null);
 	let loading = $state(true);
 	let loadError = $state('');
 	let saving = $state(false);
 	let showSaved = $state(false);
 	let saveError = $state('');
-	let savedSnapshot = $state('');
+	let savedPreferencesSnapshot = $state('');
 
 	const preview = $derived(readerPreviewStyles(fontFamily, fontSize, lineHeight));
-	const isDirty = $derived(savedSnapshot !== '' && snapshot() !== savedSnapshot);
+	const locales = $derived(localeOptions($t));
+	const preferencesDirty = $derived(
+		savedPreferencesSnapshot !== '' && preferencesSnapshot() !== savedPreferencesSnapshot
+	);
+	const localeDirty = $derived(locale !== serverLocale);
+	const isDirty = $derived(preferencesDirty || localeDirty);
 
 	$effect(() => {
-		if (savedSnapshot !== '') applyTheme(theme);
-	});
-
-	$effect(() => {
-		if (auth.user?.locale && serverLocale === '') {
-			locale = auth.user.locale;
-			serverLocale = auth.user.locale;
-			untrack(() => {
-				savedSnapshot = snapshot();
-			});
-		}
+		if (savedPreferencesSnapshot !== '') applyTheme(theme);
 	});
 
 	function currentDraft(): ReadingAppearanceDraft {
@@ -118,8 +115,8 @@
 		};
 	}
 
-	function snapshot() {
-		return readingAppearanceSnapshot(currentDraft());
+	function preferencesSnapshot() {
+		return readingPreferencesSnapshot(currentDraft());
 	}
 
 	function setDraft(draft: ReadingAppearanceDraft) {
@@ -136,21 +133,33 @@
 		lineHeight = draft.lineHeight;
 		emailOpenMode = draft.emailOpenMode;
 		locale = draft.locale;
-		serverLocale = draft.locale;
 	}
 
-	function applySettings(data: PreferencesSettingsResponse) {
+	function applySettings(data: PreferencesSettingsResponse, nextLocale: string) {
 		serverData = data;
-		setDraft(draftFromPreferences(data, auth.user?.locale ?? locale));
+		setDraft(draftFromPreferences(data, nextLocale));
+		serverLocale = nextLocale;
 		untrack(() => {
-			savedSnapshot = snapshot();
+			savedPreferencesSnapshot = preferencesSnapshot();
 		});
+	}
+
+	function applyPersistedPreferences(data: PreferencesSettingsResponse) {
+		serverData = data;
+		setDraft(draftFromPreferences(data, locale));
+		untrack(() => {
+			savedPreferencesSnapshot = preferencesSnapshot();
+		});
+		saveTheme(data.theme);
+		lib.applyPreferences(data);
+		appPrefs.setDefaultView(data.layout.default_view);
 	}
 
 	onMount(async () => {
 		const result = await loadPreferencesSettings();
 		if (result.success) {
-			applySettings(result.data);
+			const initialLocale = selectedLocaleValue(auth.user?.locale) || locale;
+			applySettings(result.data, initialLocale);
 		} else {
 			loadError = result.error;
 		}
@@ -158,36 +167,38 @@
 	});
 
 	function discard() {
-		if (serverData) applySettings(serverData);
+		if (serverData) applySettings(serverData, serverLocale);
 		saveError = '';
 	}
 
 	async function save() {
 		saving = true;
 		saveError = '';
-		const result = await savePreferencesSettings(
-			buildPreferencesSaveBody(currentDraft(), serverData)
-		);
-		if (!result.success) {
-			saveError = result.error;
-			saving = false;
-			return;
-		}
 
-		if (locale !== serverLocale) {
-			const profileResult = await auth.updateProfile({ locale });
-			if (!profileResult.success) {
-				saveError = profileResult.error ?? 'Locale update failed';
+		if (preferencesDirty) {
+			const result = await savePreferencesSettings(
+				buildPreferencesSaveBody(currentDraft(), serverData)
+			);
+			if (!result.success) {
+				saveError = result.error;
 				saving = false;
 				return;
 			}
+			applyPersistedPreferences(result.data);
+		}
+
+		if (localeDirty) {
+			const profileLocale = locale || null;
+			const profileResult = await auth.updateProfile({ locale: profileLocale });
+			if (!profileResult.success) {
+				saveError = profileResult.error ?? $t('prefs_reading_locale_update_failed');
+				saving = false;
+				return;
+			}
+			await applyProfileLocale(profileLocale);
 			serverLocale = locale;
 		}
 
-		applySettings(result.data);
-		saveTheme(result.data.theme);
-		lib.applyPreferences(result.data);
-		appPrefs.setDefaultView(result.data.layout.default_view);
 		showSaved = true;
 		setTimeout(() => {
 			showSaved = false;
@@ -197,7 +208,7 @@
 </script>
 
 {#if loading}
-	<div class="loading-state">Loading preferences…</div>
+	<div class="loading-state">{$t('prefs_reading_loading')}</div>
 {:else if loadError}
 	<p class="load-error">{loadError}</p>
 {:else}
@@ -245,7 +256,7 @@
 			onEmailOpenModeChange={(value) => (emailOpenMode = value)}
 		/>
 
-		<LocaleSection {locale} locales={LOCALES} onLocaleChange={(value) => (locale = value)} />
+		<LocaleSection {locale} {locales} onLocaleChange={(value) => (locale = value)} />
 
 		<KeyboardShortcutsSection />
 

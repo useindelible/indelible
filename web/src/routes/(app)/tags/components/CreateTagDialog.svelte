@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import TagColorPicker from '$lib/components/tags/TagColorPicker.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		color: string | null;
@@ -44,7 +45,7 @@
 	class="cmd-backdrop"
 	role="dialog"
 	aria-modal="true"
-	aria-label="New tag"
+	aria-label={$t('tag_new')}
 	tabindex="-1"
 	onclick={onClose}
 	onkeydown={(event) => {
@@ -76,7 +77,7 @@
 					class="cmd-input"
 					type="text"
 					value={name}
-					placeholder={parentId ? 'Child tag name…' : 'Tag name…'}
+					placeholder={$t(parentId ? 'tag_child_name_placeholder' : 'tag_name_placeholder')}
 					aria-invalid={error ? 'true' : undefined}
 					aria-describedby={error ? 'create-tag-error' : undefined}
 					oninput={(event) => onNameChange(event.currentTarget.value)}
@@ -92,20 +93,20 @@
 					<span>{error}</span>
 					{#if existingTag}
 						<button type="button" class="cmd-existing" onclick={onOpenExisting}>
-							Open {existingTag.name}
+							{$t('tag_open_existing', { values: { name: existingTag.name } })}
 						</button>
 					{/if}
 				</div>
 			{/if}
 			<div class="cmd-color-row">
-				<span class="cmd-color-label">Color</span>
+				<span class="cmd-color-label">{$t('tag_color')}</span>
 				<TagColorPicker value={color} onChange={onColorChange} />
 			</div>
 		</div>
 		<div class="cmd-controls">
-			<button type="button" class="cmd-secondary" onclick={onClose}>Cancel</button>
+			<button type="button" class="cmd-secondary" onclick={onClose}>{$t('common_cancel')}</button>
 			<button type="button" class="cmd-action" disabled={!name.trim()} onclick={onSubmit}>
-				Create tag
+				{$t('tag_create')}
 			</button>
 		</div>
 	</div>

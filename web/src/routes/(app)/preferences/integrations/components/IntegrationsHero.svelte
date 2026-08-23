@@ -2,6 +2,7 @@
 	import SettingsHero from '$lib/components/settings/SettingsHero.svelte';
 	import type { RingCounts, RingDash, SevenDayDelta } from '../integrations-hub-model';
 	import QuickstartGrid from './QuickstartGrid.svelte';
+	import { number, t } from '$lib/i18n';
 
 	interface Props {
 		heroState: 'populated' | 'empty';
@@ -26,19 +27,13 @@
 
 <SettingsHero variant="integrations">
 	<div class="hero-text">
-		<div class="hero-eyebrow">Connections &amp; imports</div>
+		<div class="hero-eyebrow">{$t('integrations_hub_eyebrow')}</div>
 		{#if heroState === 'populated'}
-			<h1 class="hero-headline">Bring everything into Indelible.</h1>
-			<p class="hero-sub">
-				Link the tools you already use for capture and sync. Or move your Readwise library across in
-				one go and review each import when it finishes.
-			</p>
+			<h1 class="hero-headline">{$t('integrations_hub_populated_title')}</h1>
+			<p class="hero-sub">{$t('integrations_hub_populated_subtitle')}</p>
 		{:else}
-			<h1 class="hero-headline">Connect your first source.</h1>
-			<p class="hero-sub">
-				Email, browser, Notion, Obsidian, Readwise — bring your reading and highlights into one
-				place. Start when you're ready.
-			</p>
+			<h1 class="hero-headline">{$t('integrations_hub_empty_title')}</h1>
+			<p class="hero-sub">{$t('integrations_hub_empty_subtitle')}</p>
 		{/if}
 	</div>
 
@@ -74,22 +69,38 @@
 				</svg>
 				<div class="connection-ring-center">
 					<div class="ring-num">{ringCounts.total}</div>
-					<div class="ring-lbl">Sources</div>
+					<div class="ring-lbl">{$t('integrations_hub_sources')}</div>
 				</div>
 			</div>
 			<div class="ring-legend">
-				<div><span class="dot connected"></span>{ringCounts.connected} connected</div>
-				<div><span class="dot syncing"></span>{ringCounts.syncing} syncing</div>
-				<div><span class="dot attention"></span>{ringCounts.attention} needs attention</div>
+				<div>
+					<span class="dot connected"></span>{$t('integrations_hub_connected_count', {
+						values: { count: ringCounts.connected }
+					})}
+				</div>
+				<div>
+					<span class="dot syncing"></span>{$t('integrations_hub_syncing_count', {
+						values: { count: ringCounts.syncing }
+					})}
+				</div>
+				<div>
+					<span class="dot attention"></span>{$t('integrations_hub_attention_count', {
+						values: { count: ringCounts.attention }
+					})}
+				</div>
 			</div>
 		</div>
 
 		<div class="spark-card">
-			<div class="spark-label">7-day sync activity</div>
+			<div class="spark-label">{$t('integrations_hub_seven_day_activity')}</div>
 			<div class="spark-num">
-				{sevenDayItems.toLocaleString()}
+				{$number(sevenDayItems)}
 				{#if sevenDayDelta}
-					<span class="delta" data-sign={sevenDayDelta.sign}>{sevenDayDelta.label}</span>
+					<span class="delta" data-sign={sevenDayDelta.sign}
+						>{sevenDayDelta.label === 'new'
+							? $t('integrations_hub_new')
+							: sevenDayDelta.label}</span
+					>
 				{/if}
 			</div>
 		</div>

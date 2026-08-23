@@ -10,6 +10,7 @@
 	import PermissionChip from './PermissionChip.svelte';
 	import TokenIssueDialog from './TokenIssueDialog.svelte';
 	import TokenRevealCard from './TokenRevealCard.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		tokens: ApiTokenResponse[];
@@ -77,11 +78,8 @@
 <section class="zone">
 	<div class="zone-head">
 		<div>
-			<div class="zone-title">API Tokens</div>
-			<div class="zone-desc">
-				Personal access tokens carrying the API permissions you select. Keep them secret. Anyone
-				holding one can act on your library within the permissions you grant it.
-			</div>
+			<div class="zone-title">{$t('prefs_developer_api_tokens')}</div>
+			<div class="zone-desc">{$t('prefs_developer_api_tokens_hint')}</div>
 		</div>
 		<div class="zone-actions">
 			<button
@@ -90,34 +88,36 @@
 				onclick={(event) => {
 					issueOpener = event.currentTarget;
 					onOpenIssue();
-				}}>Issue token</button
+				}}>{$t('prefs_developer_issue_token')}</button
 			>
 		</div>
 	</div>
 
 	<div class="group">
 		<div class="group-label">
-			<span>Tokens</span>
-			<span class="meta">{tokenCount} total</span>
+			<span>{$t('prefs_developer_tokens')}</span>
+			<span class="meta"
+				>{$t('prefs_developer_total_count', { values: { count: tokenCount } })}</span
+			>
 		</div>
 
 		<div class="group-card">
 			{#if loading}
-				<div class="empty">Loading tokens…</div>
+				<div class="empty">{$t('prefs_developer_loading_tokens')}</div>
 			{:else if error}
 				<div class="empty error" role="alert">{error}</div>
 			{:else if tokens.length === 0}
 				<div class="empty">
-					No tokens yet. Issue one to call the Indelible API from your scripts or another app.
+					{$t('prefs_developer_no_tokens')}
 				</div>
 			{:else}
 				<table class="table">
 					<thead>
 						<tr>
-							<th>Name</th>
-							<th>Permissions</th>
-							<th>Last used</th>
-							<th>Created / Expires</th>
+							<th>{$t('prefs_developer_name')}</th>
+							<th>{$t('prefs_developer_permissions')}</th>
+							<th>{$t('prefs_developer_last_used')}</th>
+							<th>{$t('prefs_developer_created_expires')}</th>
 							<th class="col-actions"></th>
 						</tr>
 					</thead>
@@ -147,13 +147,19 @@
 									</span>
 								</td>
 								<td>
-									<span class="relative-time">{formatRelative(token.last_used_at)}</span>
+									<span class="relative-time"
+										>{formatRelative(token.last_used_at) ?? $t('prefs_developer_never')}</span
+									>
 								</td>
 								<td>
 									<span class="relative-time">
 										{formatDate(token.created_at)}
 										<span class="small">
-											{token.expires_at ? `Expires ${formatDate(token.expires_at)}` : 'No expiry'}
+											{token.expires_at
+												? $t('prefs_developer_expires_on', {
+														values: { date: formatDate(token.expires_at) }
+													})
+												: $t('prefs_developer_no_expiry')}
 										</span>
 									</span>
 								</td>
@@ -163,7 +169,7 @@
 										class="btn danger compact"
 										onclick={() => onRevokeToken(token.id)}
 									>
-										Revoke
+										{$t('prefs_developer_revoke')}
 									</button>
 								</td>
 							</tr>

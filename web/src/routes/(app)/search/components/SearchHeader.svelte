@@ -3,6 +3,7 @@
 	import type { SearchSuggestionResponse } from '$lib/api/generated/types.gen';
 	import SearchAutocomplete from '$lib/components/search/SearchAutocomplete.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
+	import { t } from '$lib/i18n';
 	import type { ActiveEntityFilter } from '../search-page-model';
 	import SearchTipsPanel from './SearchTipsPanel.svelte';
 
@@ -66,7 +67,7 @@
 			type="button"
 			class="menu-btn"
 			onclick={() => vp.openMobileNav()}
-			aria-label="Open navigation"
+			aria-label={$t('common_open_navigation')}
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -93,27 +94,37 @@
 				type="text"
 				class="search-input"
 				placeholder={activeEntityFilter
-					? `Search within ${activeEntityFilter.name}...`
-					: 'Search your Library...'}
+					? $t('search_placeholder_within', { values: { name: activeEntityFilter.name } })
+					: $t('search_placeholder_library')}
 				value={query}
 				oninput={onInput}
 				onfocus={onFocus}
 				onkeydown={onKeydown}
 				onblur={onBlur}
-				aria-label="Search your library"
+				aria-label={$t('search_library_aria')}
 				aria-autocomplete="list"
 				autocomplete="off"
 				spellcheck="false"
 			/>
 			{#if query || activeEntityFilter}
-				<button type="button" class="search-clear" onclick={onClear} aria-label="Clear search">
+				<button
+					type="button"
+					class="search-clear"
+					onclick={onClear}
+					aria-label={$t('common_clear')}
+				>
 					<svg viewBox="0 0 24 24"
 						><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg
 					>
 				</button>
 			{/if}
 
-			<button type="submit" class="search-submit" aria-label="Search" title="Search">
+			<button
+				type="submit"
+				class="search-submit"
+				aria-label={$t('common_search')}
+				title={$t('common_search')}
+			>
 				<svg
 					viewBox="0 0 24 24"
 					fill="none"
@@ -143,8 +154,8 @@
 				class="panel-toggle"
 				class:active={detailOpen}
 				onclick={onToggleDetail}
-				aria-label={detailOpen ? 'Hide detail panel' : 'Show detail panel'}
-				title={detailOpen ? 'Hide detail panel' : 'Show detail panel'}
+				aria-label={$t(detailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel')}
+				title={$t(detailOpen ? 'common_hide_detail_panel' : 'common_show_detail_panel')}
 			>
 				<svg
 					viewBox="0 0 20 20"
@@ -166,7 +177,7 @@
 
 	{#if activeEntityFilter}
 		<div class="filter-chips">
-			<span class="filter-chip-label">Filtered by</span>
+			<span class="filter-chip-label">{$t('search_filter_applied')}</span>
 			<div class="filter-chip {activeEntityFilter.entityType.toLowerCase()}">
 				<svg
 					viewBox="0 0 24 24"
@@ -184,7 +195,7 @@
 				<button
 					type="button"
 					class="filter-chip-remove"
-					aria-label="Remove entity filter"
+					aria-label={$t('search_filter_remove_entity')}
 					onclick={onClear}
 				>
 					<svg

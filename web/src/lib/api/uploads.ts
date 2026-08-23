@@ -1,6 +1,8 @@
 import { getAccessToken } from '$lib/auth-tokens';
 import { getApiBaseUrl } from '$lib/api/client';
 import type { LibraryEntryResponse } from '$lib/api/generated/types.gen';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
 
 type ApiProblem = {
 	detail?: string;
@@ -66,7 +68,7 @@ export function uploadLibraryFile(
 		};
 
 		xhr.onerror = () => {
-			resolve({ success: false, error: 'Network error during upload' });
+			resolve({ success: false, error: get(t)('library_upload_network_error') });
 		};
 
 		xhr.send(formData);

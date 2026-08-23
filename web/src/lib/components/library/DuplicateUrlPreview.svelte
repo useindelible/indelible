@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import {
 		formatDuplicateSavedDate,
 		type DuplicateUrlInfo
@@ -31,10 +32,12 @@
 				<span class="dup-meta">
 					{duplicate.domain ?? ''}
 					{#if duplicate.savedDate}
-						&middot; Saved {formatDuplicateSavedDate(duplicate.savedDate)}
+						&middot; {$t('library_duplicate_saved_at', {
+							values: { date: formatDuplicateSavedDate(duplicate.savedDate) }
+						})}
 					{/if}
 				</span>
-				<span class="dup-status">Inbox</span>
+				<span class="dup-status">{$t('library_triage_inbox')}</span>
 			</div>
 		</div>
 		<div class="warning-banner">
@@ -45,11 +48,13 @@
 				<line x1="12" y1="9" x2="12" y2="13" />
 				<line x1="12" y1="17" x2="12.01" y2="17" />
 			</svg>
-			<span class="wb-text">Already in your library</span>
+			<span class="wb-text">{$t('library_duplicate_already_in_library')}</span>
 			<div class="wb-actions">
-				<button type="button" class="wb-btn ghost" onclick={onRefresh}>Refresh</button>
+				<button type="button" class="wb-btn ghost" onclick={onRefresh}
+					>{$t('library_duplicate_refresh')}</button
+				>
 				<button type="button" class="wb-btn fill" onclick={onSaveAsNew} disabled={submitting}>
-					Save as New
+					{$t('library_duplicate_save_as_new')}
 				</button>
 			</div>
 		</div>

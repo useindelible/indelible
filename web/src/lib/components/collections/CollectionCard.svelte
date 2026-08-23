@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { CollectionResponse } from '$lib/api/generated/types.gen';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		collection: CollectionResponse;
@@ -27,7 +28,7 @@
 					<button
 						type="button"
 						class="action-btn"
-						aria-label="Edit {collection.name}"
+						aria-label={$t('collection_edit_named', { values: { name: collection.name } })}
 						onclick={(e) => {
 							e.stopPropagation();
 							e.preventDefault();
@@ -51,7 +52,7 @@
 					<button
 						type="button"
 						class="action-btn action-btn-danger"
-						aria-label="Delete {collection.name}"
+						aria-label={$t('collection_delete_named', { values: { name: collection.name } })}
 						onclick={(e) => {
 							e.stopPropagation();
 							e.preventDefault();
@@ -83,11 +84,15 @@
 	</div>
 	<div class="card-footer">
 		<span class="card-count"
-			>{collection.item_count} item{collection.item_count !== 1 ? 's' : ''}</span
+			>{$t('collection_item_count', {
+				values: { count: collection.item_count }
+			})}</span
 		>
 		{#if subCount > 0}
 			<span class="card-sep">·</span>
-			<span class="card-sub">{subCount} sub-collection{subCount !== 1 ? 's' : ''}</span>
+			<span class="card-sub"
+				>{$t('collection_subcollection_count', { values: { count: subCount } })}</span
+			>
 		{/if}
 		<span
 			class="card-dot"

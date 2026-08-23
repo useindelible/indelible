@@ -1,7 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import SearchResultList from '$lib/components/search/SearchResultList.svelte';
 import type { SearchResultResponse } from '$lib/api/generated/types.gen';
+import { locale, setupI18nSync } from '$lib/i18n';
+import fr from '$lib/i18n/locales/fr.json';
+
+afterEach(() => {
+	void locale.set('en');
+});
 
 function durableResult(): SearchResultResponse {
 	return {
@@ -70,5 +76,27 @@ describe('SearchResultList onOpen wiring', () => {
 		const arg = onOpen.mock.calls[0][0] as SearchResultResponse;
 		expect(arg.document_id).toBeNull();
 		expect(arg.delivery_id).toBe('dlv_preview');
+	});
+});
+
+describe('SearchResultList localization', () => {
+	it('renders the empty state in the active locale', () => {
+		setupI18nSync({ fr }, 'fr');
+		render(SearchResultList, {
+			props: {
+				results: [],
+				loading: false,
+				loadingMore: false,
+				hasMore: false,
+				isEmpty: true,
+				selectedId: null,
+				query: '',
+				onLoadMore: () => {},
+				onSelect: () => {},
+				onOpen: () => {}
+			}
+		});
+
+		expect(screen.getByText('Aucun résultat trouvé')).toBeTruthy();
 	});
 });
