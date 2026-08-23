@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToolbar } from '../lib/full-archive-toolbar'
 
 const sendMessage = vi.fn()
+const getMessage = vi.fn()
 
 vi.stubGlobal('browser', {
   runtime: { sendMessage },
+  i18n: { getMessage },
 })
 
 function savedState(note = 'Stored note') {
@@ -38,9 +40,24 @@ function serverUrlInput(): HTMLInputElement {
 describe('full archive toolbar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getMessage.mockReturnValue('')
     vi.useRealTimers()
     document.getElementById('indelible-toolbar-host')?.remove()
     document.body.innerHTML = '<p id="article">Alpha beta</p>'
+  })
+
+  it('treats translated labels as text at the toolbar HTML boundary', () => {
+    getMessage.mockImplementation((key: string) =>
+      key === 'triage_inbox' ? '<img src=x onerror=alert(1)>Inbox' : '',
+    )
+
+    renderToolbar({
+      ...savedState(),
+      entry: { ...savedState().entry, triage_state: 'inbox' },
+    })
+
+    expect(toolbarRoot().querySelector('.triage-label img')).toBeNull()
+    expect(toolbarRoot().querySelector('.triage-label')?.textContent).toContain('<img')
   })
 
   it('preserves an open unsaved note across saved-state rerenders', () => {

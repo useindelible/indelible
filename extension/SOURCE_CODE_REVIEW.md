@@ -4,10 +4,12 @@ This extension is built with WXT and ships Manifest V3 artifacts for Chrome, Edg
 
 ## Build Commands
 
-Install dependencies from the repository root:
+The source archive preserves the repository paths required by the extension. Run these commands from the extracted archive root with Node.js 22.x and npm 10.x.
+
+Install the locked dependencies:
 
 ```bash
-npm --prefix extension install
+npm --prefix extension ci
 ```
 
 Build unpacked store artifacts:
@@ -25,6 +27,8 @@ npm --prefix extension run zip
 npm --prefix extension run zip:edge
 npm --prefix extension run zip:firefox
 ```
+
+The Firefox build imports `shared/highlight-source.ts`; keep the `extension/` and `shared/` directories together when reviewing or rebuilding the archive.
 
 Run the full store verification:
 

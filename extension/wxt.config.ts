@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt'
+import { fileURLToPath } from 'node:url'
 
 const CHROME_STORE_PUBLIC_KEY =
   'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnz12VolmGtYuSdW14kP2' +
@@ -11,6 +12,19 @@ const CHROME_STORE_PUBLIC_KEY =
 
 export default defineConfig({
   srcDir: '.',
+  zip: {
+    sourcesRoot: fileURLToPath(new URL('..', import.meta.url)),
+    includeSources: [
+      'extension/*',
+      'extension/entrypoints/**',
+      'extension/lib/**',
+      'extension/public/**',
+      'extension/scripts/**',
+      'extension/tests/**',
+      'shared/highlight-source.ts',
+    ],
+    excludeSources: ['**/*'],
+  },
   dev: {
     server: { port: 3457 },
   },
@@ -22,12 +36,13 @@ export default defineConfig({
     },
   },
   manifest: ({ browser }) => ({
-    name: 'Indelible',
-    description: 'Save, archive, and organize web content with Indelible',
+    default_locale: 'en',
+    name: '__MSG_ext_name__',
+    description: '__MSG_ext_description__',
     version: '0.1.0',
     key: browser === 'chrome' ? CHROME_STORE_PUBLIC_KEY : undefined,
     action: {
-      default_title: 'Indelible',
+      default_title: '__MSG_action_title__',
     },
     permissions: ['activeTab', 'contextMenus', 'identity', 'scripting', 'storage', 'tabs'],
     commands: {
@@ -36,7 +51,7 @@ export default defineConfig({
           default: 'Alt+Shift+S',
           mac: 'Alt+Shift+S',
         },
-        description: 'Save current page to Indelible',
+        description: '__MSG_command_save_page__',
       },
     },
     browser_specific_settings:

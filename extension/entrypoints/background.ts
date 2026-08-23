@@ -25,6 +25,7 @@ import {
   type SelectionPayload,
 } from '@/lib/capture'
 import { canExtensionSaveUrl } from '@/lib/content-type'
+import { savingStepLabel, t, type SavingStep } from '@/lib/i18n'
 
 const SAVE_PAGE_MENU_ID = 'indelible-save-page'
 const SAVE_SELECTION_MENU_ID = 'indelible-save-selection'
@@ -132,12 +133,12 @@ function installContextMenus(): void {
     .then(() => {
       browser.contextMenus.create({
         id: SAVE_PAGE_MENU_ID,
-        title: 'Save to Indelible',
+        title: t('menu_save_page'),
         contexts: ['page'],
       })
       browser.contextMenus.create({
         id: SAVE_SELECTION_MENU_ID,
-        title: 'Save highlight to Indelible',
+        title: t('menu_save_highlight'),
         contexts: ['selection'],
       })
     })
@@ -857,13 +858,13 @@ function normalizeWithMap(input: string): { text: string; map: number[] } {
 async function setActionIdle(tabId: number): Promise<void> {
   stopActionTimers(tabId)
   await browser.action.setBadgeText({ tabId, text: '' })
-  await browser.action.setTitle({ tabId, title: 'Indelible' })
+  await browser.action.setTitle({ tabId, title: t('action_title') })
 }
 
-function setActionSaving(tabId: number, step: string): void {
+function setActionSaving(tabId: number, step: SavingStep): void {
   stopActionTimers(tabId)
   void browser.action.setBadgeBackgroundColor({ tabId, color: '#d97706' })
-  void browser.action.setTitle({ tabId, title: `Indelible is saving: ${step}` })
+  void browser.action.setTitle({ tabId, title: t('notify_saving', savingStepLabel(step)) })
   void browser.action.setBadgeText({ tabId, text: ' ' })
 }
 
@@ -871,7 +872,7 @@ async function setActionSaved(tabId: number): Promise<void> {
   stopActionTimers(tabId)
   await browser.action.setBadgeBackgroundColor({ tabId, color: '#16a34a' })
   await browser.action.setBadgeText({ tabId, text: ' ' })
-  await browser.action.setTitle({ tabId, title: 'Saved to Indelible' })
+  await browser.action.setTitle({ tabId, title: t('notify_saved') })
   savedTimers.set(
     tabId,
     setTimeout(() => {
@@ -884,7 +885,7 @@ async function setActionError(tabId: number, message: string): Promise<void> {
   stopActionTimers(tabId)
   await browser.action.setBadgeBackgroundColor({ tabId, color: '#dc2626' })
   await browser.action.setBadgeText({ tabId, text: '!' })
-  await browser.action.setTitle({ tabId, title: `Indelible save failed: ${message}` })
+  await browser.action.setTitle({ tabId, title: t('notify_failed', message) })
 }
 
 function stopActionTimers(tabId: number): void {
