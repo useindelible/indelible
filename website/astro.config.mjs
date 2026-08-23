@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 import starlight from '@astrojs/starlight';
 import svelte from '@astrojs/svelte';
 
@@ -8,6 +9,9 @@ export default defineConfig({
 		'/docs': '/docs/getting-started/introduction/',
 	},
 	integrations: [
+		sitemap({
+			filter: (page) => page !== 'https://useindelible.com/screens/',
+		}),
 		starlight({
 			title: 'Indelible',
 			description: 'Open-source, self-hosted read-it-later and knowledge archiver.',
