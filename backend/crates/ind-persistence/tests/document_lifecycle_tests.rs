@@ -3,14 +3,14 @@
 use chrono::Utc;
 use ind_application::handlers::feed_identity::feed_entry_identity;
 use ind_application::repos::document_lifecycle::{
-    DocumentLifecycle, DocumentStateInput, MaterializeIdentity, MaterializeRequest,
-    MaterializeSideEffects, SaveToLibraryRequest,
+    DocumentLifecycle, DocumentStateInput, MaterializeIdentity, MaterializeOrigin,
+    MaterializeRequest, MaterializeSideEffects, SaveToLibraryRequest,
 };
 use ind_application::repos::feed::FeedRepository;
 use ind_application::repos::lifecycle_outbox::OutboxEntry;
 use ind_domain::{
-    ContentSource, DocumentId, DocumentType, FeedSourceEntry, FeedSourceEntryId, NewUrlDocument,
-    build_domain_event,
+    ContentSource, DocumentId, DocumentOriginType, DocumentType, FeedSourceEntry,
+    FeedSourceEntryId, NewOriginDocument, NewUrlDocument, build_domain_event,
 };
 use ind_persistence::repos::{PgDocumentLifecycle, PgFeedRepository};
 use ind_test_support::{
@@ -236,4 +236,51 @@ async fn origin_backed_feed_entries_adopt_deliveries_during_materialize_and_save
         (1, 1)
     );
     assert_eq!(saved.entry.document_id, saved.document.id);
+}
+
+/// Mirrors what an undecoded UTF-16BE PDF title used to produce: a NUL-bearing title reaching
+/// the content-hash INSERT variant (the upload path) made Postgres reject the whole transaction
+/// with `invalid byte sequence for encoding "UTF8": 0x00`.
+#[tokio::test]
+async fn materialize_strips_nul_from_title_instead_of_failing() {
+    let db = TestDb::new().await;
+    let pool = db.pool().clone();
+    let user = UserFactory::default().insert(&pool).await;
+
+    let materialized = PgDocumentLifecycle::new(pool.clone())
+        .materialize_document(MaterializeRequest {
+            identity: MaterializeIdentity::Origin {
+                document: NewOriginDocument {
+                    id: DocumentId::new(),
+                    user_id: user.id,
+                    document_type: DocumentType::Pdf,
+                    content_hash: Some(uuid::Uuid::now_v7().simple().to_string()),
+                    original_url: None,
+                    title: "Insider\u{0}s Guide".into(),
+                    author: Some("Alex\u{0} Xu".into()),
+                    excerpt: Some("Chapter\u{0} one".into()),
+                    published_at: None,
+                    language: None,
+                    domain: None,
+                    lead_image_url: None,
+                    thumbnail_url: None,
+                    sender_id: None,
+                },
+                origin: MaterializeOrigin {
+                    origin_type: DocumentOriginType::ManualUpload,
+                    origin_id: uuid::Uuid::now_v7(),
+                },
+            },
+            document_state: None,
+            side_effects: None,
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(materialized.document.title, "Insiders Guide");
+    assert_eq!(materialized.document.author.as_deref(), Some("Alex Xu"));
+    assert_eq!(
+        materialized.document.excerpt.as_deref(),
+        Some("Chapter one")
+    );
 }
