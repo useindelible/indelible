@@ -1,5 +1,6 @@
 package app.indelible.library.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.ItemDetail
 
 sealed class ItemDetailUiState {
@@ -10,7 +11,7 @@ sealed class ItemDetailUiState {
     ) : ItemDetailUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : ItemDetailUiState()
 }
 
@@ -18,6 +19,6 @@ sealed class ItemDetailEffect {
     data object NavigateBack : ItemDetailEffect()
 
     data class ShowSnackbar(
-        val message: String,
+        val message: UiMessage,
     ) : ItemDetailEffect()
 }

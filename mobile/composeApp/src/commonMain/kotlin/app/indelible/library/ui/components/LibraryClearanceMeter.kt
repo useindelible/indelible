@@ -27,11 +27,20 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_clearance_cd
+import indelible.composeapp.generated.resources.library_clearance_nothing
+import indelible.composeapp.generated.resources.library_done_count
+import indelible.composeapp.generated.resources.library_reading_count
+import indelible.composeapp.generated.resources.library_unread_count
+import org.jetbrains.compose.resources.PluralStringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 private const val READING_SEGMENT_ALPHA = 0.42f
 
 private data class MeterSegment(
-    val label: String,
+    val labelRes: PluralStringResource,
     val count: Int,
     val color: Color,
 )
@@ -49,22 +58,17 @@ fun LibraryClearanceMeter(
 ) {
     val segments =
         listOf(
-            MeterSegment("unread", counts.unread, MaterialTheme.colorScheme.primary),
+            MeterSegment(Res.plurals.library_unread_count, counts.unread, MaterialTheme.colorScheme.primary),
             MeterSegment(
-                "reading",
+                Res.plurals.library_reading_count,
                 counts.reading,
                 MaterialTheme.colorScheme.primary.copy(alpha = READING_SEGMENT_ALPHA),
             ),
-            MeterSegment("done", counts.done, MaterialTheme.colorScheme.outlineVariant),
+            MeterSegment(Res.plurals.library_done_count, counts.done, MaterialTheme.colorScheme.outlineVariant),
         ).filter { it.count > 0 }
 
     val isEmpty = segments.isEmpty()
-    val description =
-        if (isEmpty) {
-            "0 unread, 0 reading, nothing to clear"
-        } else {
-            segments.joinToString(", ") { "${it.count} ${it.label}" }
-        }
+    val description = stringResource(Res.string.library_clearance_cd)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -107,9 +111,9 @@ fun LibraryClearanceMeter(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (isEmpty) {
-                EmptyMeterLegendEntry("0 unread")
-                EmptyMeterLegendEntry("0 reading")
-                EmptyMeterLegendEntry("Nothing to clear")
+                EmptyMeterLegendEntry(pluralStringResource(Res.plurals.library_unread_count, 0, 0))
+                EmptyMeterLegendEntry(pluralStringResource(Res.plurals.library_reading_count, 0, 0))
+                EmptyMeterLegendEntry(stringResource(Res.string.library_clearance_nothing))
             } else {
                 segments.forEach { segment ->
                     MeterLegendEntry(segment)
@@ -159,7 +163,7 @@ private fun MeterLegendEntry(segment: MeterSegment) {
                     .background(segment.color),
         )
         Text(
-            text = "${segment.count} ${segment.label}",
+            text = pluralStringResource(segment.labelRes, segment.count, segment.count),
             style =
                 MaterialTheme.typography.labelSmall.copy(
                     fontFamily = geistMonoFontFamily(),

@@ -24,6 +24,12 @@ import app.indelible.ui.components.dashedZeroBorder
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_jump_back_empty
+import indelible.composeapp.generated.resources.home_nothing_in_progress
+import indelible.composeapp.generated.resources.home_resumes_exactly
+import indelible.composeapp.generated.resources.home_waiting_for_you
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun EmptyContinueReadingHero(modifier: Modifier = Modifier) {
@@ -38,7 +44,7 @@ internal fun EmptyContinueReadingHero(modifier: Modifier = Modifier) {
                 .padding(IndelibleSpacing.step20),
     ) {
         Text(
-            text = "Nothing in progress",
+            text = stringResource(Res.string.home_nothing_in_progress),
             style = homeEyebrowStyle(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -60,7 +66,7 @@ internal fun EmptyContinueReadingHero(modifier: Modifier = Modifier) {
                 )
             }
             Text(
-                text = "Whatever you start reading waits for you here",
+                text = stringResource(Res.string.home_waiting_for_you),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
@@ -73,7 +79,7 @@ internal fun EmptyContinueReadingHero(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Resumes at the exact paragraph",
+                text = stringResource(Res.string.home_resumes_exactly),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
@@ -116,7 +122,7 @@ private fun EmptyContinueReadingHeroPreviewLight() {
             Column(modifier = Modifier.padding(IndelibleSpacing.step16)) {
                 EmptyContinueReadingHero()
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
-                HomeZeroedSection(message = "Nothing started yet. Half-read items show up here.")
+                HomeZeroedSection(message = stringResource(Res.string.home_jump_back_empty))
             }
         }
     }
@@ -130,7 +136,7 @@ private fun EmptyContinueReadingHeroPreviewDark() {
             Column(modifier = Modifier.padding(IndelibleSpacing.step16)) {
                 EmptyContinueReadingHero()
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
-                HomeZeroedSection(message = "Nothing started yet. Half-read items show up here.")
+                HomeZeroedSection(message = stringResource(Res.string.home_jump_back_empty))
             }
         }
     }

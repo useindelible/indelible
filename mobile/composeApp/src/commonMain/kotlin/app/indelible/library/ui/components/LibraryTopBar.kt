@@ -43,7 +43,11 @@ import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.library_item_count
+import indelible.composeapp.generated.resources.library_open_navigation_cd
+import indelible.composeapp.generated.resources.library_sort_filter_cd
+import indelible.composeapp.generated.resources.library_your_library
 import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import app.indelible.ui.theme.geistMonoFontFamily
 
 /**
@@ -87,7 +91,7 @@ fun LibraryTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Menu,
-                    contentDescription = "Open navigation",
+                    contentDescription = stringResource(Res.string.library_open_navigation_cd),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -98,7 +102,7 @@ fun LibraryTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Filled.FilterList,
-                    contentDescription = "Sort and filter",
+                    contentDescription = stringResource(Res.string.library_sort_filter_cd),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -130,7 +134,7 @@ fun LibraryTopBar(
                 ),
         ) {
             Text(
-                text = "Your library".uppercase(),
+                text = stringResource(Res.string.library_your_library),
                 style =
                     MaterialTheme.typography.labelSmall.copy(
                         fontFamily = geistMonoFontFamily(),

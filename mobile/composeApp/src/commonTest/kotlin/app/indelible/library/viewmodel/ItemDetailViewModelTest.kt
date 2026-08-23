@@ -1,6 +1,9 @@
 package app.indelible.library.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.fakeItemDetail
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_error_load_item
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -54,7 +57,7 @@ class ItemDetailViewModelTest {
             advanceUntilIdle()
 
             val state = assertIs<ItemDetailUiState.Error>(viewModel.uiState.value)
-            assertEquals("Not found", state.message)
+            assertEquals(UiMessage(Res.string.library_error_load_item), state.message)
         }
 
     @Test

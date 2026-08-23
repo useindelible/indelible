@@ -2,7 +2,15 @@ package app.indelible.library.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.library.repository.LibraryRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_error_delete
+import indelible.composeapp.generated.resources.library_error_favorite
+import indelible.composeapp.generated.resources.library_error_load_item
+import indelible.composeapp.generated.resources.library_error_rearchive
+import indelible.composeapp.generated.resources.library_error_shortlist
+import indelible.composeapp.generated.resources.library_error_triage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -30,8 +38,8 @@ class ItemDetailViewModel(
             repository
                 .triageItem(itemId, state)
                 .onSuccess { updated -> _uiState.value = ItemDetailUiState.Success(updated) }
-                .onFailure { error ->
-                    _effects.emit(ItemDetailEffect.ShowSnackbar(error.message ?: "Failed to triage item"))
+                .onFailure {
+                    _effects.emit(ItemDetailEffect.ShowSnackbar(UiMessage(Res.string.library_error_triage)))
                 }
         }
     }
@@ -47,9 +55,9 @@ class ItemDetailViewModel(
             repository
                 .toggleFavorite(itemId)
                 .onSuccess { updated -> _uiState.value = ItemDetailUiState.Success(updated) }
-                .onFailure { error ->
+                .onFailure {
                     _uiState.value = ItemDetailUiState.Success(current)
-                    _effects.emit(ItemDetailEffect.ShowSnackbar(error.message ?: "Failed to update favorite"))
+                    _effects.emit(ItemDetailEffect.ShowSnackbar(UiMessage(Res.string.library_error_favorite)))
                 }
         }
     }
@@ -64,9 +72,9 @@ class ItemDetailViewModel(
             repository
                 .toggleShortlist(itemId)
                 .onSuccess { updated -> _uiState.value = ItemDetailUiState.Success(updated) }
-                .onFailure { error ->
+                .onFailure {
                     _uiState.value = ItemDetailUiState.Success(current)
-                    _effects.emit(ItemDetailEffect.ShowSnackbar(error.message ?: "Failed to update shortlist"))
+                    _effects.emit(ItemDetailEffect.ShowSnackbar(UiMessage(Res.string.library_error_shortlist)))
                 }
         }
     }
@@ -76,8 +84,8 @@ class ItemDetailViewModel(
             repository
                 .rearchiveItem(itemId)
                 .onSuccess { updated -> _uiState.value = ItemDetailUiState.Success(updated) }
-                .onFailure { error ->
-                    _effects.emit(ItemDetailEffect.ShowSnackbar(error.message ?: "Failed to rearchive item"))
+                .onFailure {
+                    _effects.emit(ItemDetailEffect.ShowSnackbar(UiMessage(Res.string.library_error_rearchive)))
                 }
         }
     }
@@ -87,8 +95,8 @@ class ItemDetailViewModel(
             repository
                 .deleteItem(itemId)
                 .onSuccess { _effects.emit(ItemDetailEffect.NavigateBack) }
-                .onFailure { error ->
-                    _effects.emit(ItemDetailEffect.ShowSnackbar(error.message ?: "Failed to delete item"))
+                .onFailure {
+                    _effects.emit(ItemDetailEffect.ShowSnackbar(UiMessage(Res.string.library_error_delete)))
                 }
         }
     }
@@ -99,8 +107,8 @@ class ItemDetailViewModel(
             repository
                 .getItem(itemId)
                 .onSuccess { item -> _uiState.value = ItemDetailUiState.Success(item) }
-                .onFailure { error ->
-                    _uiState.value = ItemDetailUiState.Error(error.message ?: "Failed to load item")
+                .onFailure {
+                    _uiState.value = ItemDetailUiState.Error(UiMessage(Res.string.library_error_load_item))
                 }
         }
     }

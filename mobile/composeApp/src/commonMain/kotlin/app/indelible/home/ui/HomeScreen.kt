@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import app.indelible.core.i18n.resolve
 import app.indelible.home.ui.components.ContinueReadingHero
 import app.indelible.home.ui.components.EmptyContinueReadingHero
 import app.indelible.home.ui.components.GreetingHeader
@@ -34,6 +35,16 @@ import app.indelible.home.viewmodel.StatIcon
 import app.indelible.home.viewmodel.StatTile
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_retry
+import indelible.composeapp.generated.resources.home_jump_back
+import indelible.composeapp.generated.resources.home_jump_back_empty
+import indelible.composeapp.generated.resources.home_recent_empty
+import indelible.composeapp.generated.resources.home_recently_saved
+import indelible.composeapp.generated.resources.home_stat_finished
+import indelible.composeapp.generated.resources.home_stat_read
+import indelible.composeapp.generated.resources.home_stat_streak
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * The home dashboard: greeting, the continue-reading hero, reading stats, a
@@ -90,13 +101,13 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = state.message,
+                        text = state.message.resolve(),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(IndelibleSpacing.step16))
-                    IndelibleButton(text = "Retry", onClick = viewModel::load)
+                    IndelibleButton(text = stringResource(Res.string.common_retry), onClick = viewModel::load)
                 }
 
             is HomeUiState.Ready ->
@@ -173,7 +184,7 @@ private fun HomeContent(
         if (state.jumpBack.isEmpty()) {
             item {
                 HomeSectionHeader(
-                    title = "Jump back in",
+                    title = stringResource(Res.string.home_jump_back),
                     modifier =
                         Modifier.padding(
                             start = IndelibleSpacing.step20,
@@ -185,14 +196,14 @@ private fun HomeContent(
             }
             item {
                 HomeZeroedSection(
-                    message = "Nothing started yet. Anything you leave half-read shows up in this row.",
+                    message = stringResource(Res.string.home_jump_back_empty),
                     modifier = Modifier.padding(horizontal = IndelibleSpacing.step20),
                 )
             }
         } else {
             item {
                 HomeSectionHeader(
-                    title = "Jump back in",
+                    title = stringResource(Res.string.home_jump_back),
                     modifier =
                         Modifier.padding(
                             start = IndelibleSpacing.step20,
@@ -209,7 +220,7 @@ private fun HomeContent(
 
         item {
             HomeSectionHeader(
-                title = "Recently saved",
+                title = stringResource(Res.string.home_recently_saved),
                 modifier =
                     Modifier.padding(
                         start = IndelibleSpacing.step20,
@@ -227,7 +238,7 @@ private fun HomeContent(
         if (state.recentlySaved.isEmpty()) {
             item {
                 HomeZeroedSection(
-                    message = "Your six most recent saves sit here, newest first.",
+                    message = stringResource(Res.string.home_recent_empty),
                     modifier = Modifier.padding(horizontal = IndelibleSpacing.step20),
                 )
             }
@@ -258,7 +269,7 @@ private fun HomeSectionHeader(
 
 private val zeroStats =
     listOf(
-        StatTile(label = "Read", value = "0", icon = StatIcon.READING_TIME),
-        StatTile(label = "Finished", value = "0", icon = StatIcon.ITEMS_COMPLETED),
-        StatTile(label = "Day streak", value = "0", icon = StatIcon.STREAK),
+        StatTile(labelRes = Res.string.home_stat_read, value = 0, icon = StatIcon.READING_TIME),
+        StatTile(labelRes = Res.string.home_stat_finished, value = 0, icon = StatIcon.ITEMS_COMPLETED),
+        StatTile(labelRes = Res.string.home_stat_streak, value = 0, icon = StatIcon.STREAK),
     )

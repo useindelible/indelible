@@ -29,12 +29,27 @@ import app.indelible.ui.components.dashedZeroBorder
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_empty_archive_body
+import indelible.composeapp.generated.resources.library_empty_archive_caption
+import indelible.composeapp.generated.resources.library_empty_archive_kicker
+import indelible.composeapp.generated.resources.library_empty_archive_title
+import indelible.composeapp.generated.resources.library_empty_inbox_body
+import indelible.composeapp.generated.resources.library_empty_inbox_caption
+import indelible.composeapp.generated.resources.library_empty_inbox_kicker
+import indelible.composeapp.generated.resources.library_empty_inbox_title
+import indelible.composeapp.generated.resources.library_empty_later_body
+import indelible.composeapp.generated.resources.library_empty_later_caption
+import indelible.composeapp.generated.resources.library_empty_later_kicker
+import indelible.composeapp.generated.resources.library_empty_later_title
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 private data class EmptyLibraryCopy(
-    val kicker: String,
-    val title: String,
-    val body: String,
-    val caption: String,
+    val kicker: StringResource,
+    val title: StringResource,
+    val body: StringResource,
+    val caption: StringResource,
 )
 
 @Composable
@@ -46,24 +61,24 @@ fun LibraryEmptyState(
         when (triageFilter) {
             TriageFilter.INBOX ->
                 EmptyLibraryCopy(
-                    kicker = "First save",
-                    title = "Save a link and it appears right here",
-                    body = "Use the share sheet, browser extension, or any connected app to add your first item.",
-                    caption = "Saved items land in this list",
+                    kicker = Res.string.library_empty_inbox_kicker,
+                    title = Res.string.library_empty_inbox_title,
+                    body = Res.string.library_empty_inbox_body,
+                    caption = Res.string.library_empty_inbox_caption,
                 )
             TriageFilter.LATER ->
                 EmptyLibraryCopy(
-                    kicker = "Nothing queued",
-                    title = "Items saved for later appear right here",
-                    body = "Move something from your inbox when you want it waiting for another day.",
-                    caption = "Your later queue fills this list",
+                    kicker = Res.string.library_empty_later_kicker,
+                    title = Res.string.library_empty_later_title,
+                    body = Res.string.library_empty_later_body,
+                    caption = Res.string.library_empty_later_caption,
                 )
             TriageFilter.ARCHIVE ->
                 EmptyLibraryCopy(
-                    kicker = "Nothing archived",
-                    title = "Finished items stay available right here",
-                    body = "Archive something after reading it and it remains easy to find.",
-                    caption = "Archived items fill this list",
+                    kicker = Res.string.library_empty_archive_kicker,
+                    title = Res.string.library_empty_archive_title,
+                    body = Res.string.library_empty_archive_body,
+                    caption = Res.string.library_empty_archive_caption,
                 )
         }
 
@@ -101,19 +116,19 @@ fun LibraryEmptyState(
             Spacer(modifier = Modifier.width(IndelibleSpacing.step14))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = copy.kicker,
+                    text = stringResource(copy.kicker),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step4))
                 Text(
-                    text = copy.title,
+                    text = stringResource(copy.title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step6))
                 Text(
-                    text = copy.body,
+                    text = stringResource(copy.body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -126,7 +141,7 @@ fun LibraryEmptyState(
         )
         Spacer(modifier = Modifier.height(IndelibleSpacing.step12))
         Text(
-            text = copy.caption,
+            text = stringResource(copy.caption),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

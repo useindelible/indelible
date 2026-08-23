@@ -22,8 +22,23 @@ import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_content_articles
+import indelible.composeapp.generated.resources.library_content_books
+import indelible.composeapp.generated.resources.library_content_emails
+import indelible.composeapp.generated.resources.library_content_pdfs
+import indelible.composeapp.generated.resources.library_content_tweets
+import indelible.composeapp.generated.resources.library_content_videos
+import indelible.composeapp.generated.resources.sidebar_all_items
+import indelible.composeapp.generated.resources.sidebar_collections
+import indelible.composeapp.generated.resources.sidebar_library
+import indelible.composeapp.generated.resources.sidebar_new_collection
+import indelible.composeapp.generated.resources.sidebar_new_smart_list
+import indelible.composeapp.generated.resources.sidebar_smart_lists
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * The navigation drawer (prototype `mobile-sidebar-reimagined.html`): a fixed
@@ -72,25 +87,28 @@ fun LibrarySidebarSheet(
                         vertical = IndelibleSpacing.step8,
                     ),
         ) {
-            SidebarGroupLabel("Library")
+            SidebarGroupLabel(stringResource(Res.string.sidebar_library))
             SidebarNavItem(
-                label = "All items",
+                label = stringResource(Res.string.sidebar_all_items),
                 active = currentContentType == null && currentRoute == "library",
                 onClick = { onNavigateToContentType(null) },
                 icon = IndelibleIcons.Grid,
             )
-            ContentTypeEntries.forEach { (label, apiValue, icon) ->
+            ContentTypeEntries.forEach { entry ->
                 SidebarNavItem(
-                    label = label,
-                    active = currentContentType == apiValue,
-                    onClick = { onNavigateToContentType(apiValue) },
-                    icon = icon,
+                    label = stringResource(entry.labelRes),
+                    active = currentContentType == entry.apiValue,
+                    onClick = { onNavigateToContentType(entry.apiValue) },
+                    icon = entry.icon,
                 )
             }
 
-            SidebarGroupLabel("Collections")
+            SidebarGroupLabel(stringResource(Res.string.sidebar_collections))
             if (collections.isEmpty()) {
-                SidebarAddPlaceholder(label = "New collection", onClick = onNewCollection)
+                SidebarAddPlaceholder(
+                    label = stringResource(Res.string.sidebar_new_collection),
+                    onClick = onNewCollection,
+                )
             } else {
                 collections.forEach { collection ->
                     SidebarNavItem(
@@ -103,9 +121,12 @@ fun LibrarySidebarSheet(
                 }
             }
 
-            SidebarGroupLabel("Smart Lists")
+            SidebarGroupLabel(stringResource(Res.string.sidebar_smart_lists))
             if (smartLists.isEmpty()) {
-                SidebarAddPlaceholder(label = "New smart list", onClick = onNewSmartList)
+                SidebarAddPlaceholder(
+                    label = stringResource(Res.string.sidebar_new_smart_list),
+                    onClick = onNewSmartList,
+                )
             } else {
                 smartLists.forEach { smartList ->
                     SidebarNavItem(
@@ -123,15 +144,20 @@ fun LibrarySidebarSheet(
     }
 }
 
-// (label, content-type API value, leading icon) for the Library group rows.
+private data class ContentTypeEntry(
+    val labelRes: StringResource,
+    val apiValue: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+)
+
 private val ContentTypeEntries =
     listOf(
-        Triple("Articles", "article", IndelibleIcons.Article),
-        Triple("Books", "book", IndelibleIcons.Book),
-        Triple("Emails", "email", IndelibleIcons.Email),
-        Triple("PDFs", "pdf", IndelibleIcons.Pdf),
-        Triple("Tweets", "tweet", IndelibleIcons.Tweet),
-        Triple("Videos", "video", IndelibleIcons.Video),
+        ContentTypeEntry(Res.string.library_content_articles, "article", IndelibleIcons.Article),
+        ContentTypeEntry(Res.string.library_content_books, "book", IndelibleIcons.Book),
+        ContentTypeEntry(Res.string.library_content_emails, "email", IndelibleIcons.Email),
+        ContentTypeEntry(Res.string.library_content_pdfs, "pdf", IndelibleIcons.Pdf),
+        ContentTypeEntry(Res.string.library_content_tweets, "tweet", IndelibleIcons.Tweet),
+        ContentTypeEntry(Res.string.library_content_videos, "video", IndelibleIcons.Video),
     )
 
 private fun sampleCollections() =

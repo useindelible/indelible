@@ -56,6 +56,14 @@ import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.geistMonoFontFamily
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_scope_archive
+import indelible.composeapp.generated.resources.library_scope_inbox
+import indelible.composeapp.generated.resources.library_scope_later
+import indelible.composeapp.generated.resources.library_views
+import indelible.composeapp.generated.resources.sidebar_collections
+import indelible.composeapp.generated.resources.sidebar_smart_lists
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Scope-switcher popover (prototype `.scope-pop`): a left-anchored sheet that drops
@@ -158,29 +166,29 @@ private fun ScopePopoverCard(
                     .verticalScroll(rememberScrollState())
                     .padding(IndelibleSpacing.step10),
         ) {
-            ScopePopLabel("Views")
+            ScopePopLabel(stringResource(Res.string.library_views))
             ScopePopItem(
                 icon = IndelibleIcons.Inbox,
-                name = "Inbox",
+                name = stringResource(Res.string.library_scope_inbox),
                 active = currentScope is LibraryScope.Triage && currentTriage == TriageFilter.INBOX,
                 onClick = { onSelectTriage(TriageFilter.INBOX) },
             )
             ScopePopItem(
                 icon = IndelibleIcons.Clock,
-                name = "Later",
+                name = stringResource(Res.string.library_scope_later),
                 active = currentScope is LibraryScope.Triage && currentTriage == TriageFilter.LATER,
                 onClick = { onSelectTriage(TriageFilter.LATER) },
             )
             ScopePopItem(
                 icon = IndelibleIcons.Archive,
-                name = "Archive",
+                name = stringResource(Res.string.library_scope_archive),
                 active = currentScope is LibraryScope.Triage && currentTriage == TriageFilter.ARCHIVE,
                 onClick = { onSelectTriage(TriageFilter.ARCHIVE) },
             )
 
             if (collections.isNotEmpty()) {
                 ScopePopSeparator()
-                ScopePopLabel("Collections")
+                ScopePopLabel(stringResource(Res.string.sidebar_collections))
                 collections.forEachIndexed { index, collection ->
                     ScopePopItem(
                         icon = IndelibleIcons.Folder,
@@ -195,7 +203,7 @@ private fun ScopePopoverCard(
 
             if (smartLists.isNotEmpty()) {
                 ScopePopSeparator()
-                ScopePopLabel("Smart Lists")
+                ScopePopLabel(stringResource(Res.string.sidebar_smart_lists))
                 smartLists.forEach { smartList ->
                     ScopePopItem(
                         icon = IndelibleIcons.SmartList,
@@ -212,7 +220,7 @@ private fun ScopePopoverCard(
 @Composable
 private fun ScopePopLabel(text: String) {
     Text(
-        text = text.uppercase(),
+        text = text,
         style =
             MaterialTheme.typography.labelSmall.copy(
                 fontFamily = geistMonoFontFamily(),

@@ -27,7 +27,10 @@ import app.indelible.home.model.progressFraction
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_reading_minutes
 import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.pluralStringResource
 
 /**
  * A "Recently saved" list row: large cover, an unread dot when the item has never
@@ -121,11 +124,14 @@ fun RecentlySavedRow(
     }
 }
 
+@Composable
 private fun recentlySavedEyebrow(item: HomeItem): String =
     buildString {
         item.domain?.takeIf { it.isNotBlank() }?.let { append(it.uppercase()) }
         if (!item.domain.isNullOrBlank() && item.readingTimeMinutes != null) append(" · ")
-        item.readingTimeMinutes?.let { append("$it MIN") }
+        item.readingTimeMinutes?.let {
+            append(pluralStringResource(Res.plurals.home_reading_minutes, it, it))
+        }
     }
 
 @Composable

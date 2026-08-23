@@ -3,6 +3,7 @@ package app.indelible.navigation
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -12,6 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -164,7 +167,18 @@ fun MainNavigation(
                                         contentDescription = label,
                                     )
                                 },
-                                label = { Text(label) },
+                                label = {
+                                    Text(
+                                        text = label,
+                                        style =
+                                            MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 10.sp,
+                                                letterSpacing = 0.sp,
+                                            ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
                             )
                         }
                     }

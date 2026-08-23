@@ -30,10 +30,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.home.viewmodel.StatIcon
 import app.indelible.home.viewmodel.StatTile
+import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_stat_finished
+import indelible.composeapp.generated.resources.home_stat_read
+import indelible.composeapp.generated.resources.home_stat_streak
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * The three-up reading-stats grid below the hero: each tile pairs a tinted glyph
@@ -82,7 +88,7 @@ private fun RowScope.StatTileCard(
             }
             Spacer(Modifier.height(IndelibleSpacing.step10))
             Text(
-                text = tile.value,
+                text = LocaleFormatters.number(tile.value),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color =
                     if (zeroed) {
@@ -94,7 +100,7 @@ private fun RowScope.StatTileCard(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = tile.label.uppercase(),
+                text = stringResource(tile.labelRes),
                 style = homeEyebrowStyle(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -121,9 +127,9 @@ private fun statIconVector(icon: StatIcon): ImageVector =
 
 private val previewStats =
     listOf(
-        StatTile(label = "Read", value = "4h 12m", icon = StatIcon.READING_TIME),
-        StatTile(label = "Finished", value = "9", icon = StatIcon.ITEMS_COMPLETED),
-        StatTile(label = "Day streak", value = "12", icon = StatIcon.STREAK),
+        StatTile(labelRes = Res.string.home_stat_read, value = 4, icon = StatIcon.READING_TIME),
+        StatTile(labelRes = Res.string.home_stat_finished, value = 9, icon = StatIcon.ITEMS_COMPLETED),
+        StatTile(labelRes = Res.string.home_stat_streak, value = 12, icon = StatIcon.STREAK),
     )
 
 @Preview

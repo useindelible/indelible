@@ -1,6 +1,10 @@
 package app.indelible.profile.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.profile.repository.AddLibraryRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_add_url_error_invalid
+import indelible.composeapp.generated.resources.library_add_url_error_submit
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +60,10 @@ class AddLibraryViewModelTest {
 
                 assertEquals(0, repository.calls, "Expected rejection for: $invalidUrl")
                 assertFalse(viewModel.uiState.value.isSubmitting)
-                assertEquals("Enter a valid http or https URL", viewModel.uiState.value.errorMessage)
+                assertEquals(
+                    UiMessage(Res.string.library_add_url_error_invalid),
+                    viewModel.uiState.value.errorMessage,
+                )
             }
         }
 
@@ -124,7 +131,10 @@ class AddLibraryViewModelTest {
             advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.isSubmitting)
-            assertEquals("Server unavailable", viewModel.uiState.value.errorMessage)
+            assertEquals(
+                UiMessage(Res.string.library_add_url_error_submit),
+                viewModel.uiState.value.errorMessage,
+            )
         }
 
     private class FakeAddLibraryRepository : AddLibraryRepository {

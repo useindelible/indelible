@@ -2,9 +2,15 @@ package app.indelible.library.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryCounts
 import app.indelible.core.model.LibraryItem
 import app.indelible.library.repository.LibraryRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.library_error_delete
+import indelible.composeapp.generated.resources.library_error_load
+import indelible.composeapp.generated.resources.library_error_load_more
+import indelible.composeapp.generated.resources.library_error_triage
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -95,7 +101,7 @@ class LibraryViewModel(
         viewModelScope.launch {
             repository
                 .triageItem(item.id, state)
-                .onFailure { error ->
+                .onFailure {
                     val restored =
                         (_uiState.value as? LibraryUiState.Success)?.items?.toMutableList()
                             ?: mutableListOf()
@@ -103,7 +109,7 @@ class LibraryViewModel(
                     _uiState.value = (_uiState.value as? LibraryUiState.Success)
                         ?.copy(items = restored)
                         ?: LibraryUiState.Success(items = restored, hasMore = false)
-                    _effects.emit(LibraryEffect.ShowSnackbar(error.message ?: "Failed to triage item"))
+                    _effects.emit(LibraryEffect.ShowSnackbar(UiMessage(Res.string.library_error_triage)))
                 }
         }
     }
@@ -120,7 +126,7 @@ class LibraryViewModel(
         viewModelScope.launch {
             repository
                 .deleteItem(item.id)
-                .onFailure { error ->
+                .onFailure {
                     val restored =
                         (_uiState.value as? LibraryUiState.Success)?.items?.toMutableList()
                             ?: mutableListOf()
@@ -128,7 +134,7 @@ class LibraryViewModel(
                     _uiState.value = (_uiState.value as? LibraryUiState.Success)
                         ?.copy(items = restored)
                         ?: LibraryUiState.Success(items = restored, hasMore = false)
-                    _effects.emit(LibraryEffect.ShowSnackbar(error.message ?: "Failed to delete item"))
+                    _effects.emit(LibraryEffect.ShowSnackbar(UiMessage(Res.string.library_error_delete)))
                 }
         }
     }
@@ -194,15 +200,15 @@ class LibraryViewModel(
                             isLoadingMore = false,
                             isRefreshing = false,
                         )
-                }.onFailure { error ->
+                }.onFailure {
                     if (append) {
                         val current = _uiState.value as? LibraryUiState.Success
                         if (current != null) {
                             _uiState.value = current.copy(isLoadingMore = false)
                         }
-                        _effects.emit(LibraryEffect.ShowSnackbar(error.message ?: "Failed to load more items"))
+                        _effects.emit(LibraryEffect.ShowSnackbar(UiMessage(Res.string.library_error_load_more)))
                     } else {
-                        _uiState.value = LibraryUiState.Error(error.message ?: "Failed to load library")
+                        _uiState.value = LibraryUiState.Error(UiMessage(Res.string.library_error_load))
                     }
                 }
         }

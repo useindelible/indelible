@@ -34,12 +34,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.resolve
 import app.indelible.profile.viewmodel.AddLibraryUiState
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleTextField
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_close
+import indelible.composeapp.generated.resources.library_add_url_body
+import indelible.composeapp.generated.resources.library_add_url_hint
+import indelible.composeapp.generated.resources.library_add_url_label
+import indelible.composeapp.generated.resources.library_add_url_submit
+import indelible.composeapp.generated.resources.library_add_url_title
+import indelible.composeapp.generated.resources.library_add_url_waiting
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,12 +131,12 @@ private fun AddUrlSheetContent(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Add from URL",
+                    text = stringResource(Res.string.library_add_url_title),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Spacer(modifier = Modifier.height(IndelibleSpacing.step4))
                 Text(
-                    text = "Submit a public article or page to your library.",
+                    text = stringResource(Res.string.library_add_url_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -139,7 +149,7 @@ private fun AddUrlSheetContent(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(Res.string.common_close),
                 )
             }
         }
@@ -149,8 +159,8 @@ private fun AddUrlSheetContent(
         IndelibleTextField(
             value = url,
             onValueChange = onUrlChange,
-            label = "Article or page URL",
-            error = uiState.errorMessage,
+            label = stringResource(Res.string.library_add_url_label),
+            error = uiState.errorMessage?.resolve(),
             enabled = !uiState.isSubmitting,
             keyboardType = KeyboardType.Uri,
             imeAction = ImeAction.Done,
@@ -164,9 +174,9 @@ private fun AddUrlSheetContent(
         Text(
             text =
                 if (uiState.isSubmitting) {
-                    "Waiting for Indelible to accept the URL…"
+                    stringResource(Res.string.library_add_url_waiting)
                 } else {
-                    "Use the canonical URL for the article or page."
+                    stringResource(Res.string.library_add_url_hint)
                 },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -175,7 +185,7 @@ private fun AddUrlSheetContent(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step20))
 
         IndelibleButton(
-            text = "Submit URL",
+            text = stringResource(Res.string.library_add_url_submit),
             onClick = onSubmit,
             isLoading = uiState.isSubmitting,
             enabled = url.isNotBlank(),

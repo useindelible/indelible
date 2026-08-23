@@ -31,6 +31,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.core.i18n.resolve
+import app.indelible.core.i18n.resolveString
 import app.indelible.core.model.LibraryCounts
 import app.indelible.library.ui.components.AddUrlBottomSheet
 import app.indelible.library.ui.components.ContentTypeFilterRow
@@ -92,7 +94,7 @@ fun LibraryScreen(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is LibraryEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                is LibraryEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message.resolveString())
             }
         }
     }
@@ -170,7 +172,7 @@ fun LibraryScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = state.message,
+                                text = state.message.resolve(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.error,
                             )

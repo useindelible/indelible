@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import app.indelible.core.i18n.resolve
 import app.indelible.profile.ui.components.SettingsSection
 import app.indelible.profile.viewmodel.AddLibraryEffect
 import app.indelible.profile.viewmodel.AddLibraryViewModel
@@ -103,7 +104,7 @@ fun AddLibraryScreen(
                         viewModel.clearError()
                     },
                     label = "URL",
-                    error = uiState.errorMessage,
+                    error = uiState.errorMessage?.resolve(),
                     enabled = !uiState.isSubmitting,
                     modifier = Modifier.fillMaxWidth(),
                 )

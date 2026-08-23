@@ -1,14 +1,16 @@
 package app.indelible.home.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.home.model.HomeItem
+import org.jetbrains.compose.resources.StringResource
 
 enum class Greeting { MORNING, AFTERNOON, EVENING }
 
 enum class StatIcon { READING_TIME, ITEMS_COMPLETED, STREAK }
 
 data class StatTile(
-    val label: String,
-    val value: String,
+    val labelRes: StringResource,
+    val value: Long,
     val icon: StatIcon,
 )
 
@@ -24,6 +26,6 @@ sealed class HomeUiState {
     ) : HomeUiState()
 
     data class Error(
-        val message: String,
+        val message: UiMessage,
     ) : HomeUiState()
 }

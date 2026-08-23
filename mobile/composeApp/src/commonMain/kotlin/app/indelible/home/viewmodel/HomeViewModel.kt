@@ -2,8 +2,14 @@ package app.indelible.home.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.indelible.core.i18n.UiMessage
 import app.indelible.home.model.ReadingStatsWidget
 import app.indelible.home.repository.HomeRepository
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_error_load
+import indelible.composeapp.generated.resources.home_stat_finished
+import indelible.composeapp.generated.resources.home_stat_read
+import indelible.composeapp.generated.resources.home_stat_streak
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,8 +37,8 @@ class HomeViewModel(
                             jumpBack = continueItems.drop(1),
                             recentlySaved = dashboard.recentlyAdded?.items ?: emptyList(),
                         )
-                }.onFailure { error ->
-                    _uiState.value = HomeUiState.Error(error.message ?: "Failed to load home")
+                }.onFailure {
+                    _uiState.value = HomeUiState.Error(UiMessage(Res.string.home_error_load))
                 }
         }
     }
@@ -48,18 +54,18 @@ class HomeViewModel(
         if (stats == null) return emptyList()
         return listOf(
             StatTile(
-                label = "Read",
-                value = stats.documentsRead.toString(),
+                labelRes = Res.string.home_stat_read,
+                value = stats.documentsRead,
                 icon = StatIcon.READING_TIME,
             ),
             StatTile(
-                label = "Finished",
-                value = stats.itemsCompleted.toString(),
+                labelRes = Res.string.home_stat_finished,
+                value = stats.itemsCompleted,
                 icon = StatIcon.ITEMS_COMPLETED,
             ),
             StatTile(
-                label = "Day streak",
-                value = stats.streakDays.toString(),
+                labelRes = Res.string.home_stat_streak,
+                value = stats.streakDays.toLong(),
                 icon = StatIcon.STREAK,
             ),
         )
