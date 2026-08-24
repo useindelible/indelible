@@ -82,10 +82,17 @@ class FakeFeedRepository : FeedRepository {
     var importOpmlResult: Result<OpmlImportResult> =
         Result.success(OpmlImportResult(created = 0, errors = emptyList(), skipped = 0))
 
+    var importOpmlCallCount = 0
+    var lastImportOpmlFileName: String? = null
+
     override suspend fun importOpml(
         fileBytes: ByteArray,
         fileName: String,
-    ): Result<OpmlImportResult> = importOpmlResult
+    ): Result<OpmlImportResult> {
+        importOpmlCallCount++
+        lastImportOpmlFileName = fileName
+        return importOpmlResult
+    }
 
     companion object {
         fun emptyPaginatedFeedItems() =

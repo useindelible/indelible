@@ -151,6 +151,7 @@
     <string name="feed_empty_unseen_kicker">You’re up to date</string>
     <string name="feed_empty_unseen_title">No unseen posts</string>
     <string name="feed_error_delete">Couldn’t delete the subscription. Please try again.</string>
+    <string name="feed_error_file_too_large">“%1$s” is too large to import. Choose a smaller OPML file.</string>
     <string name="feed_error_import_opml">Couldn’t import the OPML file. Please try again.</string>
     <string name="feed_error_load">Couldn’t load the feed. Please try again.</string>
     <string name="feed_error_load_more">Couldn’t load more feed items. Please try again.</string>

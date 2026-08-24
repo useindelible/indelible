@@ -178,6 +178,8 @@ fun AddFeedScreen(
                 val opmlPicker =
                     rememberFilePicker(
                         mimeTypes = listOf("text/xml", "application/xml", "*/*"),
+                        maxBytes = AddFeedViewModel.MAX_OPML_BYTES,
+                        onFileTooLarge = viewModel::onFileTooLarge,
                     ) { bytes, name -> viewModel.importOpml(bytes, name) }
                 OpmlDropZone(
                     isLoading = uiState is AddFeedUiState.OpmlLoading,

@@ -151,6 +151,7 @@
     <string name="feed_empty_unseen_kicker">Vous êtes à jour</string>
     <string name="feed_empty_unseen_title">Aucun article non vu</string>
     <string name="feed_error_delete">Impossible de supprimer l’abonnement. Veuillez réessayer.</string>
+    <string name="feed_error_file_too_large">« %1$s » est trop volumineux pour être importé. Choisissez un fichier OPML plus petit.</string>
     <string name="feed_error_import_opml">Impossible d’importer le fichier OPML. Veuillez réessayer.</string>
     <string name="feed_error_load">Impossible de charger les flux. Veuillez réessayer.</string>
     <string name="feed_error_load_more">Impossible de charger plus de contenus. Veuillez réessayer.</string>
