@@ -1,5 +1,5 @@
 use ind_application::repos::document::{DocumentRenderedMetadata, DocumentYoutubeEnrichment};
-use ind_application::{AppError, normalize_language_tag};
+use ind_application::{AppError, normalize_language_tag, text::strip_nul};
 use ind_domain::{
     Document, DocumentId, DocumentOriginType, DomainError, NewOriginDocument, NewUrlDocument,
     UserId,
@@ -41,6 +41,9 @@ impl PgDocumentRepository {
         document_id: DocumentId,
         metadata: DocumentRenderedMetadata,
     ) -> Result<(), AppError> {
+        let title = metadata.title.as_deref().map(strip_nul);
+        let author = metadata.author.as_deref().map(strip_nul);
+        let excerpt = metadata.excerpt.as_deref().map(strip_nul);
         sqlx::query!(
             r#"UPDATE documents
                SET title = CASE
@@ -55,9 +58,9 @@ impl PgDocumentRepository {
                WHERE id = $1 AND user_id = $2"#,
             document_id.into_uuid(),
             user_id.into_uuid(),
-            metadata.title,
-            metadata.author,
-            metadata.excerpt,
+            title,
+            author,
+            excerpt,
         )
         .execute(&self.pool)
         .await
@@ -174,6 +177,8 @@ impl PgDocumentRepository {
         document_id: DocumentId,
         enrichment: DocumentYoutubeEnrichment,
     ) -> Result<(), AppError> {
+        let title = enrichment.title.as_deref().map(strip_nul);
+        let excerpt = enrichment.excerpt.as_deref().map(strip_nul);
         let mut tx = self.pool.begin().await.map_err(map_document_error)?;
 
         let result = sqlx::query!(
@@ -186,8 +191,8 @@ impl PgDocumentRepository {
                WHERE id = $1 AND user_id = $2"#,
             document_id.into_uuid(),
             user_id.into_uuid(),
-            enrichment.title,
-            enrichment.excerpt,
+            title,
+            excerpt,
             enrichment.lead_image_url,
         )
         .execute(&mut *tx)

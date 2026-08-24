@@ -7,7 +7,7 @@
 //! are thin wrappers over these. See docs/document-feed-library-architecture.md
 //! (Materialization and adoption must be atomic).
 
-use ind_application::{AppError, normalize_language_tag};
+use ind_application::{AppError, normalize_language_tag, text::strip_nul};
 use ind_domain::{
     DocumentId, DocumentOriginType, DomainError, EmailSenderId, NewOriginDocument, NewUrlDocument,
     UserId,
@@ -27,6 +27,9 @@ pub(crate) async fn materialize_url_backed_tx(
     doc: &NewUrlDocument,
 ) -> Result<(DocumentRow, bool), AppError> {
     let language = normalize_language_tag(doc.language.as_deref());
+    let title = strip_nul(&doc.title);
+    let author = doc.author.as_deref().map(strip_nul);
+    let excerpt = doc.excerpt.as_deref().map(strip_nul);
     let inserted = sqlx::query_as!(
         DocumentRow,
         "INSERT INTO documents \
@@ -44,9 +47,9 @@ pub(crate) async fn materialize_url_backed_tx(
         doc.canonical_url,
         doc.original_url,
         doc.content_hash,
-        doc.title,
-        doc.author,
-        doc.excerpt,
+        title,
+        author,
+        excerpt,
         doc.published_at,
         language,
         doc.domain,
@@ -95,6 +98,9 @@ pub(crate) async fn materialize_origin_backed_tx(
     }
 
     let language = normalize_language_tag(doc.language.as_deref());
+    let title = strip_nul(&doc.title);
+    let author = doc.author.as_deref().map(strip_nul);
+    let excerpt = doc.excerpt.as_deref().map(strip_nul);
     let mut sp = tx.begin().await.map_err(map_document_error)?;
     // `document_created` tracks whether THIS call inserted the document, distinct from
     // whether it claimed the origin: a content-hash hit reuses an existing document and
@@ -116,9 +122,9 @@ pub(crate) async fn materialize_origin_backed_tx(
             doc.document_type.as_str(),
             doc.content_hash,
             doc.original_url,
-            doc.title,
-            doc.author,
-            doc.excerpt,
+            title,
+            author,
+            excerpt,
             doc.published_at,
             language,
             doc.domain,
@@ -164,9 +170,9 @@ pub(crate) async fn materialize_origin_backed_tx(
             doc.document_type.as_str(),
             doc.content_hash,
             doc.original_url,
-            doc.title,
-            doc.author,
-            doc.excerpt,
+            title,
+            author,
+            excerpt,
             doc.published_at,
             language,
             doc.domain,

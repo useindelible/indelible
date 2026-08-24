@@ -130,6 +130,11 @@ pub fn normalize_text(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Postgres `text` rejects NUL (`0x00`); everything else it stores as-is.
+pub fn strip_nul(value: &str) -> String {
+    value.replace('\0', "")
+}
+
 fn split_sentences(text: &str) -> Vec<String> {
     let mut sentences = Vec::new();
     let mut sentence_start = 0_usize;
@@ -161,5 +166,19 @@ fn split_sentences(text: &str) -> Vec<String> {
         vec![text.trim().to_string()]
     } else {
         sentences
+    }
+}
+
+#[cfg(test)]
+mod strip_nul_tests {
+    use super::strip_nul;
+
+    #[test]
+    fn removes_nul_and_nothing_else() {
+        assert_eq!(strip_nul("Insider\u{0}s Guide"), "Insiders Guide");
+        assert_eq!(
+            strip_nul("a\tb\nc \u{2019} \u{e9}"),
+            "a\tb\nc \u{2019} \u{e9}"
+        );
     }
 }
