@@ -1088,6 +1088,7 @@
 	"library_upload_from_computer": "ou choisir sur votre ordinateur",
 	"library_upload_network_error": "Erreur réseau pendant l’import",
 	"library_upload_supported_formats": "PDF, EPUB, HTML",
+	"library_upload_too_large": "Le fichier est trop volumineux. La taille maximale est de {size} Mo.",
 	"library_upload_unsupported_type": "Type non pris en charge. Types autorisés : {types}",
 	"library_upload_upload": "Importer",
 	"library_upload_uploading": "Importation",

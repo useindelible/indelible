@@ -582,6 +582,9 @@ import type {
 	UploadImportData,
 	UploadImportErrors,
 	UploadImportResponses,
+	UploadLimitsData,
+	UploadLimitsErrors,
+	UploadLimitsResponses,
 	UpsertConfigData,
 	UpsertConfigErrors,
 	UpsertConfigResponses,
@@ -2603,6 +2606,18 @@ export const uploadFile = <ThrowOnError extends boolean = false>(
 			'Content-Type': null,
 			...options.headers
 		}
+	});
+
+export const uploadLimits = <ThrowOnError extends boolean = false>(
+	options?: Options<UploadLimitsData, ThrowOnError>
+) =>
+	(options?.client ?? client).get<UploadLimitsResponses, UploadLimitsErrors, ThrowOnError>({
+		security: [
+			{ scheme: 'bearer', type: 'http' },
+			{ scheme: 'bearer', type: 'http' }
+		],
+		url: '/api/v1/library/uploads/limits',
+		...options
 	});
 
 export const deleteLibraryEntry = <ThrowOnError extends boolean = false>(

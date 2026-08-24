@@ -1,5 +1,6 @@
 import type { IntegrationConnectionDto, ImportJobStatusResponse } from '$lib/api';
 import { deriveConnectionState } from '$lib/integrations/status';
+import { formatMegabytes } from '$lib/format/megabytes';
 import { normalizeImportStatus } from '$lib/integrations/status';
 import type { MessageKey, Translate } from '$lib/i18n';
 
@@ -44,9 +45,7 @@ export interface SevenDayDelta {
 
 export function formatUploadLimit(bytes: number | undefined, translate: Translate): string {
 	if (!bytes) return translate('integrations_hub_max_file_server');
-	const megabytes = bytes / (1024 * 1024);
-	const label = Number.isInteger(megabytes) ? megabytes.toString() : megabytes.toFixed(1);
-	return translate('integrations_hub_max_file_each', { values: { size: label } });
+	return translate('integrations_hub_max_file_each', { values: { size: formatMegabytes(bytes) } });
 }
 
 export function sourceFileLabel(job: ImportJobStatusResponse, translate: Translate): string {
