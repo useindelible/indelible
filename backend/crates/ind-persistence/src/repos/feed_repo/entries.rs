@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use ind_application::{AppError, normalize_language_tag};
+use ind_application::{AppError, normalize_language_tag, text::strip_nul};
 use ind_domain::*;
 use uuid::Uuid;
 
@@ -42,6 +42,45 @@ impl From<SourceEntryRow> for FeedSourceEntry {
     }
 }
 
+/// Postgres `text` rejects NUL (`0x00`), and remote feeds occasionally carry one (a
+/// mis-decoded UTF-16 title being the usual source). Sanitizing the whole entry up front
+/// puts the write and the dedup comparisons on the same value, which matters twice over:
+/// a raw bind on either side fails the statement outright with
+/// `invalid byte sequence for encoding "UTF8": 0x00`, and sanitizing only one side would
+/// leave a stored entry unable to match the next poll's copy of it, duplicating it forever.
+fn strip_nul_from_entry_text(entry: &mut FeedSourceEntry) {
+    // Destructured field by field on purpose: a new column breaks this function until
+    // someone decides whether it needs sanitizing.
+    let FeedSourceEntry {
+        guid,
+        title,
+        url,
+        canonical_url,
+        author,
+        excerpt,
+        content_html,
+        language,
+        lead_image_url,
+        // Server-generated: identifiers and timestamps never carry remote bytes.
+        id: _,
+        source_id: _,
+        published_at: _,
+        discovered_at: _,
+    } = entry;
+
+    // Stripping is lossy: two remote guids differing only by a NUL collapse into one. That is
+    // acceptable because a stored guid can never contain a NUL for them to collide with.
+    *guid = strip_nul(guid);
+    *title = strip_nul(title);
+    *url = url.as_deref().map(strip_nul);
+    *canonical_url = canonical_url.as_deref().map(strip_nul);
+    *author = author.as_deref().map(strip_nul);
+    *excerpt = excerpt.as_deref().map(strip_nul);
+    *content_html = content_html.as_deref().map(strip_nul);
+    *language = language.as_deref().map(strip_nul);
+    *lead_image_url = lead_image_url.as_deref().map(strip_nul);
+}
+
 impl PgFeedRepository {
     pub(super) async fn set_source_entry_language_if_missing_impl(
         &self,
@@ -51,6 +90,8 @@ impl PgFeedRepository {
         let Some(language) = normalize_language_tag(Some(language)) else {
             return Ok(false);
         };
+        // Normalization lowercases and reshapes the tag but keeps any NUL the detector saw.
+        let language = strip_nul(&language);
         let result = sqlx::query!(
             "UPDATE feed_source_entries \
              SET language = $2 \
@@ -70,6 +111,9 @@ impl PgFeedRepository {
         source_id: FeedSourceId,
         guid: &str,
     ) -> Result<Option<FeedSourceEntry>, AppError> {
+        // The write strips NUL, so a stored guid is always NUL-free; the lookup has to strip
+        // the same way or a caller's raw guid would never match the row it stored.
+        let guid = strip_nul(guid);
         let row = sqlx::query_as!(
             SourceEntryRow,
             "SELECT id, source_id, guid, title, url, canonical_url, author, excerpt, content_html, language, \
@@ -110,6 +154,7 @@ impl PgFeedRepository {
         mut entry: FeedSourceEntry,
     ) -> Result<FeedSourceEntry, AppError> {
         entry.language = normalize_language_tag(entry.language.as_deref());
+        strip_nul_from_entry_text(&mut entry);
         let row = sqlx::query_as!(
             SourceEntryRow,
             "INSERT INTO feed_source_entries \
@@ -143,6 +188,7 @@ impl PgFeedRepository {
         mut entry: FeedSourceEntry,
     ) -> Result<FeedSourceEntry, AppError> {
         entry.language = normalize_language_tag(entry.language.as_deref());
+        strip_nul_from_entry_text(&mut entry);
         let mut tx = self.pool.begin().await.map_err(map_entry_error)?;
         let source_lock = entry.source_id.to_string();
         sqlx::query!(
@@ -262,6 +308,7 @@ impl PgFeedRepository {
         entry_id: FeedSourceEntryId,
         canonical_url: &str,
     ) -> Result<(), AppError> {
+        let canonical_url = strip_nul(canonical_url);
         sqlx::query!(
             "UPDATE feed_source_entries SET canonical_url = $1 WHERE id = $2",
             canonical_url,
