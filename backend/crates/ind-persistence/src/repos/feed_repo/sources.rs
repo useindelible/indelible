@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use ind_application::AppError;
+use ind_application::{AppError, text::strip_nul};
 use ind_domain::*;
 use uuid::Uuid;
 
@@ -70,6 +70,104 @@ impl TryFrom<SourceRow> for FeedSource {
     }
 }
 
+/// A feed source is a mirror of a remote document: its title, description, URLs and the
+/// HTTP validators all arrive verbatim from the network, and Postgres `text` rejects the NUL
+/// (`0x00`) a mis-decoded feed can carry. `canonical_key` is also the lookup key, so
+/// `find_source_by_canonical_key_impl` strips it the same way.
+fn strip_nul_from_source_text(source: &mut FeedSource) {
+    // Destructured field by field on purpose: a new column breaks this function until
+    // someone decides whether it needs sanitizing.
+    let FeedSource {
+        canonical_key,
+        source_url,
+        poll_url,
+        title,
+        description,
+        site_url,
+        image_url,
+        domain,
+        last_etag,
+        last_modified,
+        last_error,
+        // Server-controlled: identifiers, enums, counters, timestamps, the worker lease, and
+        // the provider slug we assign ourselves.
+        id: _,
+        feed_type: _,
+        visibility: _,
+        provider: _,
+        is_resolvable: _,
+        popularity: _,
+        last_entry_added_at: _,
+        last_polled_at: _,
+        next_poll_at: _,
+        consecutive_failures: _,
+        lease_owner: _,
+        lease_expires_at: _,
+        created_at: _,
+        updated_at: _,
+    } = source;
+
+    *canonical_key = strip_nul(canonical_key);
+    *source_url = strip_nul(source_url);
+    *poll_url = strip_nul(poll_url);
+    *title = strip_nul(title);
+    *description = description.as_deref().map(strip_nul);
+    *site_url = site_url.as_deref().map(strip_nul);
+    *image_url = image_url.as_deref().map(strip_nul);
+    *domain = domain.as_deref().map(strip_nul);
+    *last_etag = last_etag.as_deref().map(strip_nul);
+    *last_modified = last_modified.as_deref().map(strip_nul);
+    *last_error = last_error.as_deref().map(strip_nul);
+}
+
+/// The poll writers update the HTTP validators and the error text on their own, so they carry
+/// remote bytes into the same columns [`strip_nul_from_source_text`] guards at create time.
+fn strip_nul_from_poll_outcome(state: &mut PollOutcome) {
+    // Destructured field by field on purpose: a new column breaks this function until
+    // someone decides whether it needs sanitizing.
+    let PollOutcome {
+        last_etag,
+        last_modified,
+        last_error,
+        // Server-controlled: the source identifier, a counter, and timestamps.
+        source_id: _,
+        last_polled_at: _,
+        next_poll_at: _,
+        consecutive_failures: _,
+    } = state;
+
+    *last_etag = last_etag.as_deref().map(strip_nul);
+    *last_modified = last_modified.as_deref().map(strip_nul);
+    *last_error = last_error.as_deref().map(strip_nul);
+}
+
+/// Same remote metadata as [`strip_nul_from_source_text`], re-read on every refresh, so NUL
+/// can reappear long after the source was first created.
+fn strip_nul_from_source_details(details: &mut SourceDetailsUpdate) {
+    // Destructured field by field on purpose: a new column breaks this function until
+    // someone decides whether it needs sanitizing.
+    let SourceDetailsUpdate {
+        poll_url,
+        title,
+        description,
+        site_url,
+        image_url,
+        domain,
+        // Server-controlled: enums, the provider slug, and a bool.
+        feed_type: _,
+        visibility: _,
+        provider: _,
+        is_resolvable: _,
+    } = details;
+
+    *poll_url = strip_nul(poll_url);
+    *title = strip_nul(title);
+    *description = description.as_deref().map(strip_nul);
+    *site_url = site_url.as_deref().map(strip_nul);
+    *image_url = image_url.as_deref().map(strip_nul);
+    *domain = domain.as_deref().map(strip_nul);
+}
+
 impl PgFeedRepository {
     pub(super) async fn find_source_by_id_impl(
         &self,
@@ -96,6 +194,9 @@ impl PgFeedRepository {
         &self,
         canonical_key: &str,
     ) -> Result<Option<FeedSource>, AppError> {
+        // The write strips NUL, so a stored key is always NUL-free; the lookup has to strip
+        // the same way or a caller's raw key would never match the row it stored.
+        let canonical_key = strip_nul(canonical_key);
         let row = sqlx::query_as!(
             SourceRow,
             "SELECT id, canonical_key, source_url, poll_url, title, description, site_url, \
@@ -115,8 +216,9 @@ impl PgFeedRepository {
 
     pub(super) async fn create_source_impl(
         &self,
-        source: FeedSource,
+        mut source: FeedSource,
     ) -> Result<FeedSource, AppError> {
+        strip_nul_from_source_text(&mut source);
         let row = sqlx::query_as!(
             SourceRow,
             "INSERT INTO feed_sources \
@@ -168,8 +270,9 @@ impl PgFeedRepository {
     pub(super) async fn update_source_details_impl(
         &self,
         id: FeedSourceId,
-        details: ind_domain::SourceDetailsUpdate,
+        mut details: ind_domain::SourceDetailsUpdate,
     ) -> Result<FeedSource, AppError> {
+        strip_nul_from_source_details(&mut details);
         let row = sqlx::query_as!(
             SourceRow,
             "UPDATE feed_sources \
@@ -273,9 +376,10 @@ impl PgFeedRepository {
     pub(super) async fn mark_source_poll_success_impl(
         &self,
         id: FeedSourceId,
-        state: PollOutcome,
+        mut state: PollOutcome,
         last_entry_added_at: Option<DateTime<Utc>>,
     ) -> Result<FeedSource, AppError> {
+        strip_nul_from_poll_outcome(&mut state);
         let row = sqlx::query_as!(
             SourceRow,
             "UPDATE feed_sources \
@@ -315,6 +419,9 @@ impl PgFeedRepository {
         error: String,
         consecutive_failures: i32,
     ) -> Result<FeedSource, AppError> {
+        // Poll failures quote what the remote sent — a URL, a parser message, a response
+        // fragment — so a NUL from the network can reach this column.
+        let error = strip_nul(&error);
         let row = sqlx::query_as!(
             SourceRow,
             "UPDATE feed_sources \
