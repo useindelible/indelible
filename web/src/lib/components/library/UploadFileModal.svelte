@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { getMaxUploadBytes } from '$lib/api/upload-limits';
 	import { uploadLibraryFile } from '$lib/api/uploads';
+	import { formatMegabytes } from '$lib/format/megabytes';
 	import { t } from '$lib/i18n';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 
@@ -14,6 +16,8 @@
 	let submitting = $state(false);
 	let uploadProgress = $state(0);
 	let isDragOver = $state(false);
+	/** null until the server answers, and if it never does the server enforces alone. */
+	let maxUploadBytes = $state<number | null>(null);
 
 	let isOpen = $derived(modal.active === 'upload');
 	let canUpload = $derived(!!file && !submitting);
@@ -28,6 +32,11 @@
 			uploadProgress = 0;
 			isDragOver = false;
 			dialogEl.showModal();
+			getMaxUploadBytes().then((limit) => {
+				maxUploadBytes = limit;
+				// A file picked before the limit arrived has not been size-checked yet.
+				if (file) selectFile(file);
+			});
 		} else {
 			dialogEl.close();
 		}
@@ -51,6 +60,11 @@
 		if (!ALLOWED_EXTENSIONS.includes(ext as (typeof ALLOWED_EXTENSIONS)[number])) {
 			return $t('library_upload_unsupported_type', {
 				values: { types: ALLOWED_EXTENSIONS.join(', ') }
+			});
+		}
+		if (maxUploadBytes !== null && candidate.size > maxUploadBytes) {
+			return $t('library_upload_too_large', {
+				values: { size: formatMegabytes(maxUploadBytes) }
 			});
 		}
 		return '';
@@ -128,6 +142,7 @@
 					bind:this={fileInputEl}
 					type="file"
 					class="file-input-hidden"
+					data-testid="file-input"
 					accept={ALLOWED_EXTENSIONS.join(',')}
 					aria-hidden="true"
 					tabindex="-1"

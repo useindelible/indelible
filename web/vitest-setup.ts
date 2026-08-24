@@ -21,6 +21,20 @@ if (typeof window !== 'undefined' && !window.localStorage) {
 	});
 }
 
+// jsdom ships <dialog> without the modal methods components call on open.
+if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
+	HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+		this.open = true;
+	};
+}
+
+if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.close) {
+	HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+		this.open = false;
+		this.dispatchEvent(new Event('close'));
+	};
+}
+
 if (typeof window !== 'undefined' && !window.matchMedia) {
 	Object.defineProperty(window, 'matchMedia', {
 		writable: true,
