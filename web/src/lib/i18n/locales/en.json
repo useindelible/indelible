@@ -1089,6 +1089,7 @@
 	"library_upload_network_error": "Network error during upload",
 	"library_upload_supported_formats": "PDF, EPUB, HTML",
 	"library_upload_too_large": "File is too large. Maximum size is {size} MB.",
+	"library_upload_too_large_generic": "File is too large for this server.",
 	"library_upload_unsupported_type": "Unsupported type. Allowed: {types}",
 	"library_upload_upload": "Upload",
 	"library_upload_uploading": "Uploading",
