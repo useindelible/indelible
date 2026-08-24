@@ -506,9 +506,12 @@ fn extract_pdf_metadata(data: &[u8]) -> ExtractedMetadata {
     meta
 }
 
+/// PDF text strings are UTF-16 with a BOM or PDFDocEncoding (ISO 32000-2
+/// §7.9.2); `pdf_oxide` hands them back undecoded. Reading them as UTF-8
+/// turns a UTF-16BE title into a string interleaved with NULs.
 fn pdf_object_to_string(obj: &pdf_oxide::object::Object) -> Option<String> {
     obj.as_string()
-        .map(String::from_utf8_lossy)
+        .map(pdf_oxide::optional_content::decode_pdf_text_string)
         .map(|value| value.trim().to_string())
         .and_then(non_empty_string)
 }
