@@ -23,7 +23,7 @@ and `ind-worker` unless noted.
 | `WEB_ROOT` | no | Directory holding the built web app, served on the API's own origin (default `./web`; the published image sets `/app/web`). Ignored when the directory is absent |
 | `S3_ENABLED` | no | Turns on object storage. Defaults to `false`, but is enabled automatically when `S3_ENDPOINT` is set. Archived content and uploads require object storage |
 | `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` / `S3_REGION` / `S3_FORCE_PATH_STYLE` | yes | S3-compatible object storage for archived content. Set on `ind-api`, `ind-worker`, and `ind-renderer` |
-| `UPLOAD_MAX_BYTES` | no | Maximum upload size for files saved to the library |
+| `UPLOAD_MAX_BYTES` | no | Maximum upload size for files saved to the library (default 50 MiB) |
 | `IMPORT_UPLOAD_MAX_BYTES` | no | Maximum total size of a Readwise import bundle, including optional OPML (default 200 MiB) |
 
 ## Object storage

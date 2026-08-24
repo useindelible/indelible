@@ -2207,6 +2207,14 @@ export type UpdateWebhookEndpointRequest = {
   url?: string | null
 }
 
+export type UploadLimitsResponse = {
+  /**
+   * Largest accepted upload in bytes. The server aborts mid-stream once the
+   * running total crosses it, so clients should check before sending.
+   */
+  max_upload_bytes: number
+}
+
 export type UpsertMilaConfigBody = {
   byo_enabled?: boolean
   chat_api_base: string
@@ -6536,6 +6544,29 @@ export type UploadFileResponses = {
 }
 
 export type UploadFileResponse = UploadFileResponses[keyof UploadFileResponses]
+
+export type UploadLimitsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/library/uploads/limits'
+}
+
+export type UploadLimitsErrors = {
+  /**
+   * Authentication required
+   */
+  401: unknown
+}
+
+export type UploadLimitsResponses = {
+  /**
+   * Upload size limits
+   */
+  200: UploadLimitsResponse
+}
+
+export type UploadLimitsResponse2 = UploadLimitsResponses[keyof UploadLimitsResponses]
 
 export type DeleteLibraryEntryData = {
   body?: never

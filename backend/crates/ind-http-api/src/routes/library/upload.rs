@@ -1,5 +1,6 @@
 use axum::extract::Multipart;
 use ind_application::ports::UploadFileRequest;
+use serde::Serialize;
 
 use crate::extract::read_multipart_field_bytes;
 
@@ -90,4 +91,31 @@ pub async fn upload_file(
     Ok(ApiResponse::new(
         library_entry_response_from_parts(&state, outcome.entry, outcome.document).await?,
     ))
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct UploadLimitsResponse {
+    /// Largest accepted upload in bytes. The server aborts mid-stream once the
+    /// running total crosses it, so clients should check before sending.
+    pub max_upload_bytes: u64,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/library/uploads/limits",
+    responses(
+        (status = 200, description = "Upload size limits", body = UploadLimitsResponse),
+        (status = 401, description = "Authentication required"),
+    ),
+    security(("bearer" = []), ("api_token" = [])),
+    extensions(("x-indelible-permissions" = json!(["library:write"]))),
+    tag = "Library",
+)]
+pub async fn upload_limits(
+    _auth: RequireLibraryWrite,
+    State(state): State<AppState>,
+) -> ApiResponse<UploadLimitsResponse> {
+    ApiResponse::new(UploadLimitsResponse {
+        max_upload_bytes: state.config.max_upload_bytes as u64,
+    })
 }

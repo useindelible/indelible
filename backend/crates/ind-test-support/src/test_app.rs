@@ -25,6 +25,9 @@ pub struct TestAppOptions {
     /// When false the app boots without `AUTH_CREDENTIAL_KEY`, so no
     /// credential cipher exists to seal integration tokens.
     pub credential_key_configured: bool,
+    /// `storage.max_upload_bytes`; lower it so a test can cross the cap without
+    /// streaming 50 MiB.
+    pub max_upload_bytes: usize,
 }
 
 impl Default for TestAppOptions {
@@ -38,6 +41,7 @@ impl Default for TestAppOptions {
             email_ingest_domains: None,
             notion_oauth_configured: false,
             credential_key_configured: true,
+            max_upload_bytes: ind_ingest::MAX_UPLOAD_BYTES,
         }
     }
 }
@@ -81,7 +85,7 @@ fn test_config(base_url: &str, options: &TestAppOptions) -> ind_api::config::Ser
         "egress": {"allow_private_targets": true},
         "storage": {
             "s3_enabled": false,
-            "max_upload_bytes": ind_ingest::MAX_UPLOAD_BYTES,
+            "max_upload_bytes": options.max_upload_bytes,
             "max_import_upload_bytes": 200 * 1024 * 1024,
             "asset_serving_mode": options.asset_serving_mode,
             "asset_cookie_secret": TEST_ASSET_COOKIE_SECRET_HEX

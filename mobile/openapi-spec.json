@@ -8057,6 +8057,20 @@
         },
         "type": "object"
       },
+      "UploadLimitsResponse": {
+        "properties": {
+          "max_upload_bytes": {
+            "description": "Largest accepted upload in bytes. The server aborts mid-stream once the\nrunning total crosses it, so clients should check before sending.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_upload_bytes"
+        ],
+        "type": "object"
+      },
       "UpsertMilaConfigBody": {
         "properties": {
           "byo_enabled": {
@@ -15102,6 +15116,40 @@
           },
           "503": {
             "description": "Storage not configured"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "api_token": []
+          }
+        ],
+        "tags": [
+          "Library"
+        ],
+        "x-indelible-permissions": [
+          "library:write"
+        ]
+      }
+    },
+    "/api/v1/library/uploads/limits": {
+      "get": {
+        "operationId": "upload_limits",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadLimitsResponse"
+                }
+              }
+            },
+            "description": "Upload size limits"
+          },
+          "401": {
+            "description": "Authentication required"
           }
         },
         "security": [
