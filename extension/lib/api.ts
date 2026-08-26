@@ -132,7 +132,16 @@ export async function authenticatedFetch(path: string, init?: RequestInit): Prom
   return response
 }
 
-export async function refreshAccessToken(): Promise<boolean> {
+let refreshInFlight: Promise<boolean> | null = null
+
+export function refreshAccessToken(): Promise<boolean> {
+  refreshInFlight ??= refreshAccessTokenOnce().finally(() => {
+    refreshInFlight = null
+  })
+  return refreshInFlight
+}
+
+async function refreshAccessTokenOnce(): Promise<boolean> {
   const refreshToken = await getRefreshToken()
   if (!refreshToken) return false
 
