@@ -129,6 +129,18 @@ fn validate_source_locator(locator: &HighlightSourceLocator) -> Result<(), AppEr
             }
             Ok(())
         }
+        HighlightSourceLocator::TextQuote { prefix, suffix } => {
+            let has_context = [prefix, suffix]
+                .iter()
+                .any(|value| value.as_deref().is_some_and(|s| !s.trim().is_empty()));
+            if !has_context {
+                return Err(AppError::Domain(DomainError::Validation {
+                    field: "source_locator.prefix".into(),
+                    message: "text_quote needs a non-empty prefix or suffix".into(),
+                }));
+            }
+            Ok(())
+        }
     }
 }
 

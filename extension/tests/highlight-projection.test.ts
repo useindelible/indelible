@@ -61,7 +61,7 @@ describe('highlight projection', () => {
   })
 
   it('uses source offset to choose between repeated text matches', () => {
-    document.body.innerHTML = '<p>Alpha target.</p><p>Beta target.</p>'
+    document.body.innerHTML = `<p>Alpha target.</p><p>${'filler text. '.repeat(10)}</p><p>Beta target.</p>`
     const secondTargetOffset = document.body.textContent?.lastIndexOf('target') ?? 0
 
     const highlight: ProjectedHighlight = {
@@ -80,7 +80,7 @@ describe('highlight projection', () => {
 
     const paragraphs = Array.from(document.querySelectorAll('p'))
     expect(paragraphs[0]?.querySelector('mark')).toBeNull()
-    expect(paragraphs[1]?.querySelector('mark')?.textContent).toBe('target')
+    expect(paragraphs[2]?.querySelector('mark')?.textContent).toBe('target')
   })
 
   it('falls back from a stale source locator and matches normalized repeated text context', () => {

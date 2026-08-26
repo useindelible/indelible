@@ -2,13 +2,13 @@ import { defineConfig } from 'wxt'
 import { fileURLToPath } from 'node:url'
 
 const CHROME_STORE_PUBLIC_KEY =
-  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnz12VolmGtYuSdW14kP2' +
-  'RwMwgoc0GB+s4T7ViEN6vsNsKse4aISPKvAqPmHXZB/ouYhxgErLvylM+pWdR+RQ' +
-  'RXCzyIETfTlSvU4B14EJkYpftbEkcC25iIAxj96XpzvU0yCiPE6v+N5lvxkecgUB' +
-  'Sm+qx+draOpF4SkEF8/49eo/qeeHDIxOPOk/VvlYmmVAY+o1HA87BK4kr3sHfuW/' +
-  'VSqfmBWevw9ozbsjGK1rgW6sUbE5Q9suYsZ9c7St2CR3+rtciQrW4ka0iMJNGEPx' +
-  '3jEvOG0KBEl8Q4a8mFBsZ67cjf8Yh41vcPr+y/hc4zC/vzun/J6Z82GyhHjuESJE' +
-  'xQIDAQAB'
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1TQE0zDHwZ6vDBU5FHlL' +
+  'tCleak+O1WiNLvUVPesaxdCkX6K7qk4fL+tGMOS8rEvr/UWrYumhj1aTT8hD+i48' +
+  'RBK97OkLxu9pMIFvWO1RHi7gLprB3aEexDyxLgjYANIPUoKzoTi2BnOgGdnmUffx' +
+  'bO5jQdrPkmBZ3Mn1mXsZcaz6kH4j8lbc9BQZupUeUyPeFvbfzTM45ZcDHl3M6hCG' +
+  '0ebID3iJw8v1Dwj5aCBpur/tHIw0AR3C8tQRsayLYUjpRS4Mlxo/v0rx5c1CzkYB' +
+  'NyqRXcR3WJoBOi+3ztq+gQy0cTvLwr0lmXJOyXkLdcN+iIt31bF0GCEPlHOBRi4w' +
+  'FwIDAQAB'
 
 export default defineConfig({
   srcDir: '.',
