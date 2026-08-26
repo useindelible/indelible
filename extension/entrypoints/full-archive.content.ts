@@ -11,7 +11,7 @@ import {
 import { classifyExtensionUrl } from '@/lib/content-type'
 import { extractReadableContent } from '@/lib/readable-extraction'
 import { beginCaptureDomCleanup } from '@/lib/dom-preprocessor'
-import { nodePath } from '@/lib/dom-range'
+import { captureSelection } from '@/lib/selection-capture'
 import { extractCoverUrl } from '@/lib/cover-image'
 import { renderToolbar } from '@/lib/full-archive-toolbar'
 import { escapeAttr, escapeHtml } from '@/lib/html'
@@ -57,7 +57,7 @@ export default defineContentScript({
             return true
           case 'selection:capture':
             try {
-              sendResponse(captureSelection())
+              sendResponse(captureSelection(document))
             } catch (err) {
               sendResponse(captureError(err))
             }
@@ -241,61 +241,6 @@ function extractCanonicalPageUrl(): string | undefined {
   if (canonical) return canonical
   const ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"][content]')?.content
   return ogUrl || undefined
-}
-
-function captureSelection(): CaptureMessage {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0 || selection.toString().trim().length === 0) {
-    return { action: 'capture:error', message: 'No selected text found' }
-  }
-
-  const range = selection.getRangeAt(0)
-  const text = selection.toString().trim()
-  const offset = flattenedTextOffset(range.startContainer, range.startOffset)
-  const location = `${nodePath(range.startContainer)}:${range.startOffset},${nodePath(
-    range.endContainer,
-  )}:${range.endOffset}`
-  const context = selectionContext(text, offset)
-
-  return {
-    action: 'selection:result',
-    payload: {
-      text,
-      sourceLocator: {
-        type: 'web_page_dom_range',
-        url: document.location.href,
-        location,
-        offset,
-        text_content: text,
-        prefix: context.prefix,
-        suffix: context.suffix,
-      },
-    },
-  }
-}
-
-function flattenedTextOffset(startNode: Node, startOffset: number): number {
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
-  let offset = 0
-  let node: Node | null = walker.nextNode()
-  while (node) {
-    if (node === startNode) return offset + startOffset
-    offset += node.textContent?.length ?? 0
-    node = walker.nextNode()
-  }
-  return offset
-}
-
-function selectionContext(text: string, offset: number): { prefix?: string; suffix?: string } {
-  const allText = document.body?.textContent ?? ''
-  const start = Math.max(0, offset - 80)
-  const end = Math.min(allText.length, offset + text.length + 80)
-  const prefix = allText.slice(start, offset).trim()
-  const suffix = allText.slice(offset + text.length, end).trim()
-  return {
-    prefix: prefix || undefined,
-    suffix: suffix || undefined,
-  }
 }
 
 function extractTweetContent(): {
