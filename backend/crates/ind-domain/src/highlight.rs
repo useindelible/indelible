@@ -73,6 +73,12 @@ pub enum HighlightSourceLocator {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         suffix: Option<String>,
     },
+    TextQuote {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        prefix: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        suffix: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -66,7 +66,7 @@ function chromeExtensionId(publicKey) {
 function assertStoreIdentities(chromeManifest, edgeManifest, firefoxManifest) {
   assert(typeof chromeManifest.key === 'string', 'Chrome store public key is missing')
   assert(
-    chromeExtensionId(chromeManifest.key) === 'lblngpkieoichinegfhgacmcjbahjbek',
+    chromeExtensionId(chromeManifest.key) === 'jidilhjojlgndbpeooeeceohmkedooef',
     'Chrome public key must derive the reserved Web Store item ID',
   )
   assert(edgeManifest.key === undefined, 'Edge must not inherit the Chrome store identity')

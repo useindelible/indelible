@@ -90,7 +90,7 @@ services:
       IND_PORT: '8080'
       IND_BASE_URL: http://localhost:38473
       FRONTEND_URL: http://localhost:38473
-      EXTENSION_REDIRECT_URIS: ${EXTENSION_REDIRECT_URIS:-https://lblngpkieoichinegfhgacmcjbahjbek.chromiumapp.org/indelible,https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible}
+      EXTENSION_REDIRECT_URIS: ${EXTENSION_REDIRECT_URIS:-https://jidilhjojlgndbpeooeeceohmkedooef.chromiumapp.org/indelible,https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible}
       CORS_ORIGINS: http://localhost:38473
       JWT_SECRET: ${JWT_SECRET}
       CSRF_SECRET: ${CSRF_SECRET}
