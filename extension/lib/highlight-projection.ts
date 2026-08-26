@@ -40,7 +40,8 @@ export function projectHighlights(
 
   ensureProjectionStyle(doc)
 
-  const index = buildTextIndex(doc.body ?? doc.documentElement, isPageTextNode)
+  const root = doc.body ?? doc.documentElement
+  const index = buildTextIndex(root, isPageTextNode)
   const resolved = projectable.map((highlight, i) => ({
     highlight,
     i,
@@ -48,14 +49,10 @@ export function projectHighlights(
   }))
   result.unplaced += resolved.filter((entry) => !entry.span).length
 
-  // Wrapping splits text nodes after the split point, so later spans are wrapped first.
-  const placeable = resolved
-    .filter(
-      (entry): entry is typeof entry & { span: { start: number; end: number } } => !!entry.span,
-    )
-    .sort((a, b) => b.span.start - a.span.start)
-  for (const { highlight, i, span } of placeable) {
-    const range = spanToRange(index, span, doc)
+  for (const { highlight, i, span } of resolved) {
+    if (!span) continue
+    // Wrapping splits text nodes, so each span is mapped on a fresh index; offsets are unaffected.
+    const range = spanToRange(buildTextIndex(root, isPageTextNode), span, doc)
     if (range && !range.collapsed && wrapTextRange(range, highlight, i, doc) > 0) {
       result.placed += 1
     } else {
@@ -118,19 +115,34 @@ function hintFromLocation(
   const endNode = resolveNodePath(parsed.endPath, doc)
   if (!startNode || !endNode) return undefined
 
+  const start = resolveBoundary(startNode, parsed.startOffset, false)
+  const end = resolveBoundary(endNode, parsed.endOffset, true)
+  if (!start || !end) return undefined
+
   try {
     const range = doc.createRange()
-    range.setStart(startNode, clampOffset(startNode, parsed.startOffset))
-    range.setEnd(endNode, clampOffset(endNode, parsed.endOffset))
+    range.setStart(start.node, start.offset)
+    range.setEnd(end.node, end.offset)
     return rangeToOffsets(index, range)
   } catch {
     return undefined
   }
 }
 
-function clampOffset(node: Node, offset: number): number {
-  const max = node.nodeType === Node.TEXT_NODE ? (node as Text).length : node.childNodes.length
-  return Math.min(Math.max(0, offset), max)
+/** Element containers carry a character offset into the element's text, not a child index. */
+function resolveBoundary(
+  node: Node,
+  offset: number,
+  preferEnd: boolean,
+): { node: Text; offset: number } | undefined {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node as Text
+    return { node: text, offset: Math.min(Math.max(0, offset), text.length) }
+  }
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
+  if (!element) return undefined
+  const local = buildTextIndex(element, isPageTextNode)
+  return boundaryAt(local.runs, Math.min(Math.max(0, offset), local.text.length), preferEnd)
 }
 
 function resolveNodePath(path: string, doc: Document): Node | undefined {
@@ -166,10 +178,6 @@ function spanToRange(
   }
 }
 
-function shouldWrapTextNode(node: Text): boolean {
-  return isPageTextNode(node) && node.parentElement?.closest(`[${MARK_ATTR}]`) === null
-}
-
 function wrapTextRange(
   range: Range,
   highlight: ProjectedHighlight,
@@ -200,7 +208,7 @@ function collectTextNodesInRange(root: Node, range: Range, doc: Document): Text[
   const nodes: Text[] = []
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      if (!shouldWrapTextNode(node as Text)) return NodeFilter.FILTER_REJECT
+      if (!isPageTextNode(node as Text)) return NodeFilter.FILTER_REJECT
       return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
     },
   })

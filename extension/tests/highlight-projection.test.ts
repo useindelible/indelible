@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearProjectedHighlights,
@@ -14,6 +14,7 @@ describe('highlight projection', () => {
   })
 
   it('projects a highlight from a parent-element DOM location', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
     document.body.innerHTML = '<p>Hello brave world.</p>'
 
     const highlight: ProjectedHighlight = {
@@ -34,6 +35,29 @@ describe('highlight projection', () => {
     const mark = document.querySelector('mark.indelible-projected-highlight')
     expect(mark?.textContent).toBe('brave')
     expect(document.body.textContent).toBe('Hello brave world.')
+    expect(debug).not.toHaveBeenCalled()
+    debug.mockRestore()
+  })
+
+  it('covers overlapping highlights fully by nesting marks', () => {
+    document.body.innerHTML = '<p>abcdefghij</p>'
+
+    const result = projectHighlights(
+      [
+        { id: 'a', text_content: 'cdefgh' },
+        { id: 'b', text_content: 'fghi' },
+      ],
+      document,
+    )
+
+    expect(result).toEqual({ placed: 2, unplaced: 0 })
+    const byId = (id: string) =>
+      Array.from(document.querySelectorAll(`mark[data-indelible-highlight-id="${id}"]`))
+        .map((mark) => mark.textContent)
+        .join('')
+    expect(byId('a')).toBe('cdefgh')
+    expect(byId('b')).toBe('fghi')
+    expect(document.body.textContent).toBe('abcdefghij')
   })
 
   it('uses source offset to choose between repeated text matches', () => {
