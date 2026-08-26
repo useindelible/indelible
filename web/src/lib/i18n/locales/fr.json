@@ -1654,6 +1654,7 @@
 	"reader_hide_sidebar": "Masquer la barre latérale",
 	"reader_highlight_color": "Surligner en {color}",
 	"reader_highlights": "Passages surlignés",
+	"reader_highlights_unplaced": "{count, plural, one {# surlignage n'a pas pu être placé dans ce texte} other {# surlignages n'ont pas pu être placés dans ce texte}}",
 	"reader_hours_estimated": "{hours, plural, one {~# h estimée} other {~# h estimées}}",
 	"reader_isbn": "ISBN",
 	"reader_item_not_found": "Élément introuvable.",

@@ -3,7 +3,8 @@
 	import type { HighlightWithNoteResponse } from '$lib/api/generated/types.gen';
 	import * as apiSdk from '$lib/api';
 	import { fetchAllPages } from '$lib/api/pagination';
-	import { getSelectionOffsets, applyHighlights } from './highlight-utils';
+	import { getSelectionOffsets, applyHighlights, resolveHighlightRanges } from './highlight-utils';
+	import { t } from '$lib/i18n';
 	import HighlightFloatingToolbar from './HighlightFloatingToolbar.svelte';
 	import HighlightContextMenu from './HighlightContextMenu.svelte';
 	import HighlightTagPicker from './HighlightTagPicker.svelte';
@@ -11,7 +12,7 @@
 		filterTagSuggestions,
 		getPdfHighlightData,
 		getTagPickerPlacement,
-		getVisibleHighlightRanges,
+		getVisibleHighlightAnchors,
 		HIGHLIGHT_COLORS,
 		normalizeTagName
 	} from './highlight-toolbar-model';
@@ -43,29 +44,26 @@
 		}>;
 	};
 
+	interface HighlightCreateData {
+		text_content: string;
+		color: string;
+		start_offset: number;
+		end_offset: number;
+		chapter_id?: string;
+		source_locator?: { type: 'text_quote'; prefix?: string; suffix?: string };
+	}
+
 	interface Props {
 		highlights: HighlightWithNoteResponse[];
 		htmlContent?: string;
 		targetHighlightId?: string | null;
 		articleBodyEl?: HTMLElement | null;
-		onHighlightCreate?: (data: {
-			text_content: string;
-			color: string;
-			start_offset: number;
-			end_offset: number;
-			chapter_id?: string;
-		}) => void;
+		onHighlightCreate?: (data: HighlightCreateData) => void;
 		onPdfHighlightCreate?: (data: PdfHighlightCreateData) => void;
 		onHighlightDelete: (highlightId: string) => void;
 		onHighlightColorChange: (highlightId: string, color: string) => void;
 		onHighlightTagsChange?: (highlightId: string, tags: string[]) => void;
-		onHighlightCreateForTag?: (data: {
-			text_content: string;
-			color: string;
-			start_offset: number;
-			end_offset: number;
-			chapter_id?: string;
-		}) => Promise<string | null>;
+		onHighlightCreateForTag?: (data: HighlightCreateData) => Promise<string | null>;
 		epubChapterId?: string;
 		pdfPage?: number;
 		pdfScrollMode?: boolean;
@@ -90,6 +88,7 @@
 	}: Props = $props();
 
 	let showToolbar = $state(false);
+	let unplacedCount = $state(0);
 	let toolbarX = $state(0);
 	let toolbarY = $state(0);
 	let toolbarEl = $state<HTMLDivElement | undefined>(undefined);
@@ -118,6 +117,14 @@
 	let toolbarClientX = $state(0);
 	let toolbarClientY = $state(0);
 
+	function textQuote(offsets: {
+		prefix?: string;
+		suffix?: string;
+	}): HighlightCreateData['source_locator'] {
+		if (!offsets.prefix && !offsets.suffix) return undefined;
+		return { type: 'text_quote', prefix: offsets.prefix, suffix: offsets.suffix };
+	}
+
 	function getArticleBody(): HTMLElement | null {
 		return articleBodyEl ?? null;
 	}
@@ -145,7 +152,12 @@
 
 		if (!htmlContent) return;
 
-		applyHighlights(container, getVisibleHighlightRanges(highlights, locatorType, epubChapterId));
+		const resolved = resolveHighlightRanges(
+			container,
+			getVisibleHighlightAnchors(highlights, locatorType, epubChapterId)
+		);
+		unplacedCount = resolved.unplaced;
+		applyHighlights(container, resolved.ranges);
 		applyHighlightTagIndicators(container, highlights, HIGHLIGHT_COLORS);
 	}
 
@@ -239,13 +251,7 @@
 		const container = getArticleBody();
 		if (!container || !onHighlightCreateForTag) return;
 
-		let data: {
-			text_content: string;
-			color: string;
-			start_offset: number;
-			end_offset: number;
-			chapter_id?: string;
-		} | null = null;
+		let data: HighlightCreateData | null = null;
 
 		if (epubScrollMode) {
 			const chapterCtx = findEpubChapterFromSelection();
@@ -266,7 +272,8 @@
 				text_content: offsets.text,
 				color: HIGHLIGHT_COLORS[0]!.name,
 				start_offset: offsets.startOffset,
-				end_offset: offsets.endOffset
+				end_offset: offsets.endOffset,
+				source_locator: textQuote(offsets)
 			};
 		}
 
@@ -427,7 +434,8 @@
 				text_content: offsets.text,
 				color,
 				start_offset: offsets.startOffset,
-				end_offset: offsets.endOffset
+				end_offset: offsets.endOffset,
+				source_locator: textQuote(offsets)
 			});
 		}
 
@@ -539,6 +547,12 @@
 </script>
 
 <svelte:window onpointerup={handlePointerUp} onpointerdown={handlePointerDown} />
+
+{#if unplacedCount > 0}
+	<p class="highlight-unplaced-notice" role="status">
+		{$t('reader_highlights_unplaced', { values: { count: unplacedCount } })}
+	</p>
+{/if}
 
 {#if showToolbar}
 	<HighlightFloatingToolbar

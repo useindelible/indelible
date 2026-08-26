@@ -1654,6 +1654,7 @@
 	"reader_hide_sidebar": "Hide sidebar",
 	"reader_highlight_color": "Highlight {color}",
 	"reader_highlights": "Highlights",
+	"reader_highlights_unplaced": "{count, plural, one {# highlight couldn't be placed in this text} other {# highlights couldn't be placed in this text}}",
 	"reader_hours_estimated": "{hours, plural, one {~# h estimated} other {~# h estimated}}",
 	"reader_isbn": "ISBN",
 	"reader_item_not_found": "Item not found.",

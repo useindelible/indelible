@@ -1,9 +1,32 @@
-import { boundaryAt, buildTextIndex, type TextRun } from '../../../../../shared/highlight-source';
+import {
+	boundaryAt,
+	buildTextIndex,
+	resolveTextAnchor,
+	type AnchorContext,
+	type TextRun
+} from '../../../../../shared/highlight-source';
+
+const CONTEXT_CHARS = 80;
 
 export interface SelectionOffsets {
 	text: string;
 	startOffset: number;
 	endOffset: number;
+	prefix?: string;
+	suffix?: string;
+}
+
+export interface HighlightAnchor {
+	id: string;
+	color: string;
+	text_content: string;
+	locator?: { start_offset: number; end_offset: number } | null;
+	context?: AnchorContext;
+}
+
+export interface ResolvedHighlightRanges {
+	ranges: HighlightRange[];
+	unplaced: number;
 }
 
 /**
@@ -28,7 +51,48 @@ export function getSelectionOffsets(containerEl: HTMLElement): SelectionOffsets 
 
 	if (startOffset === -1 || endOffset === -1) return null;
 
-	return { text, startOffset, endOffset };
+	const pageText = buildTextIndex(containerEl, shouldIndexReaderTextNode).text;
+	const prefix = pageText.slice(Math.max(0, startOffset - CONTEXT_CHARS), startOffset).trim();
+	const suffix = pageText.slice(endOffset, endOffset + CONTEXT_CHARS).trim();
+	return {
+		text,
+		startOffset,
+		endOffset,
+		prefix: prefix || undefined,
+		suffix: suffix || undefined
+	};
+}
+
+export function resolveHighlightRanges(
+	containerEl: HTMLElement,
+	anchors: HighlightAnchor[]
+): ResolvedHighlightRanges {
+	const index = buildTextIndex(containerEl, shouldIndexReaderTextNode);
+	const ranges: HighlightRange[] = [];
+	let unplaced = 0;
+	for (const anchor of anchors) {
+		const locator = anchor.locator;
+		const resolution = resolveTextAnchor(index.text, {
+			text: anchor.text_content,
+			hint: locator ? { start: locator.start_offset, end: locator.end_offset } : undefined,
+			context: anchor.context
+		});
+		if (resolution.kind === 'placed') {
+			ranges.push({
+				id: anchor.id,
+				color: anchor.color,
+				startOffset: resolution.start,
+				endOffset: resolution.end
+			});
+			if (resolution.via === 'search') {
+				console.debug('[reader] highlight placed by search', { id: anchor.id });
+			}
+		} else {
+			unplaced += 1;
+			console.debug('[reader] highlight not placed', { id: anchor.id, stage: resolution.kind });
+		}
+	}
+	return { ranges, unplaced };
 }
 
 function shouldIndexReaderTextNode(node: Text): boolean {

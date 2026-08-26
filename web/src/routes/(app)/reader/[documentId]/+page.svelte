@@ -427,6 +427,7 @@
 		color: string;
 		start_offset: number;
 		end_offset: number;
+		source_locator?: { type: 'text_quote'; prefix?: string; suffix?: string };
 	}) {
 		try {
 			const { data: created } = await apiSdk.createHighlight({
@@ -438,7 +439,8 @@
 						type: 'html' as const,
 						start_offset: data.start_offset,
 						end_offset: data.end_offset
-					}
+					},
+					source_locator: data.source_locator
 				}
 			});
 			if (created) {
@@ -491,6 +493,7 @@
 		start_offset: number;
 		end_offset: number;
 		chapter_id?: string;
+		source_locator?: { type: 'text_quote'; prefix?: string; suffix?: string };
 	}): Promise<string | null> {
 		try {
 			const { data: created } = await apiSdk.createHighlight({
@@ -502,7 +505,8 @@
 						type: 'html' as const,
 						start_offset: data.start_offset,
 						end_offset: data.end_offset
-					}
+					},
+					source_locator: data.source_locator
 				}
 			});
 			if (created) {

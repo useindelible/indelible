@@ -1,5 +1,6 @@
 import type { HighlightWithNoteResponse, TagResponse } from '$lib/api/generated/types.gen';
-import type { HighlightRange } from './highlight-utils';
+import type { HighlightAnchor } from './highlight-utils';
+import type { AnchorContext } from '../../../../../shared/highlight-source';
 import type { PdfHighlightData, PdfLocator } from './book/pdf/pdf-highlight-overlay';
 import type { MessageKey } from '$lib/i18n';
 
@@ -58,30 +59,41 @@ export function getPdfHighlightData(highlights: HighlightWithNoteResponse[]): Pd
 		}));
 }
 
-export function getVisibleHighlightRanges(
+export function getVisibleHighlightAnchors(
 	highlights: HighlightWithNoteResponse[],
 	locatorType: 'html' | 'epub',
 	epubChapterId?: string
-): HighlightRange[] {
+): HighlightAnchor[] {
 	return highlights
 		.filter((highlight) => highlight.color !== 'bookmark')
 		.filter((highlight) => {
-			if (!highlight.locator) return false;
 			if (locatorType === 'epub') {
-				return highlight.locator.type === 'epub' && highlight.locator.chapter === epubChapterId;
+				return highlight.locator?.type === 'epub' && highlight.locator.chapter === epubChapterId;
 			}
-			return highlight.locator.type === 'html';
+			return !highlight.locator || highlight.locator.type === 'html';
 		})
 		.map((highlight) => ({
 			id: highlight.id,
 			color: highlight.color,
-			startOffset:
+			text_content: highlight.text_content,
+			locator:
 				highlight.locator && 'start_offset' in highlight.locator
-					? (highlight.locator.start_offset ?? 0)
-					: 0,
-			endOffset:
-				highlight.locator && 'end_offset' in highlight.locator
-					? (highlight.locator.end_offset ?? 0)
-					: 0
+					? {
+							start_offset: highlight.locator.start_offset ?? 0,
+							end_offset: highlight.locator.end_offset ?? 0
+						}
+					: null,
+			context: anchorContext(highlight.source_locator)
 		}));
+}
+
+function anchorContext(
+	source: HighlightWithNoteResponse['source_locator']
+): AnchorContext | undefined {
+	if (!source) return undefined;
+	return {
+		offset: source.offset ?? undefined,
+		prefix: source.prefix ?? undefined,
+		suffix: source.suffix ?? undefined
+	};
 }
