@@ -90,6 +90,7 @@ export function toolbarMarkup(state: ToolbarState): string {
           ${BRAND_MARK}
           <a class="btn-text" href="${readerUrl}" target="_blank" rel="noopener noreferrer">Open reader${IC_ARROW_RIGHT}</a>
           ${highlightCount > 0 ? `<span class="count-pill">${escapeHtml(tPlural('toolbar_highlights', highlightCount))}</span>` : ''}
+          <span class="count-pill js-unplaced" hidden></span>
         </div>
         <div class="item">
           <span class="t">${escapeHtml(entry?.title ?? 'Saved page')}</span>

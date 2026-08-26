@@ -1,11 +1,14 @@
 import {
   boundaryAt,
   buildTextIndex,
-  findBestTextMatch,
-  normalizeWhitespace,
   parseDomRangeLocation,
+  resolveTextAnchor,
+  type AnchorContext,
+  type AnchorResolution,
   type SourceLocatorPayload,
+  type TextIndex,
 } from '../../shared/highlight-source'
+import { isPageTextNode, rangeToOffsets } from './page-text'
 
 export type { SourceLocatorPayload } from '../../shared/highlight-source'
 
@@ -14,6 +17,12 @@ export interface ProjectedHighlight {
   color?: string
   text_content: string
   source_locator?: SourceLocatorPayload
+  context?: AnchorContext
+}
+
+export interface ProjectionResult {
+  placed: number
+  unplaced: number
 }
 
 const MARK_ATTR = 'data-indelible-highlight-id'
@@ -22,24 +31,36 @@ const STYLE_ID = 'indelible-highlight-projection-style'
 export function projectHighlights(
   highlights: ProjectedHighlight[],
   doc: Document = document,
-): number {
+): ProjectionResult {
   clearProjectedHighlights(doc)
 
   const projectable = highlights.filter((highlight) => highlight.text_content.trim().length > 0)
-  if (projectable.length === 0) return 0
+  const result: ProjectionResult = { placed: 0, unplaced: 0 }
+  if (projectable.length === 0) return result
 
   ensureProjectionStyle(doc)
 
-  let projectedCount = 0
-  for (const [index, highlight] of projectable.entries()) {
-    const range = resolveHighlightRange(highlight, doc)
-    if (!range || range.collapsed) continue
+  const root = doc.body ?? doc.documentElement
+  const index = buildTextIndex(root, isPageTextNode)
+  const resolved = projectable.map((highlight, i) => ({
+    highlight,
+    i,
+    span: resolveHighlightSpan(highlight, index, doc),
+  }))
+  result.unplaced += resolved.filter((entry) => !entry.span).length
 
-    const wrapped = wrapTextRange(range, highlight, index, doc)
-    if (wrapped > 0) projectedCount += 1
+  for (const { highlight, i, span } of resolved) {
+    if (!span) continue
+    // Wrapping splits text nodes, so each span is mapped on a fresh index; offsets are unaffected.
+    const range = spanToRange(buildTextIndex(root, isPageTextNode), span, doc)
+    if (range && !range.collapsed && wrapTextRange(range, highlight, i, doc) > 0) {
+      result.placed += 1
+    } else {
+      result.unplaced += 1
+    }
   }
 
-  return projectedCount
+  return result
 }
 
 export function clearProjectedHighlights(doc: Document = document): void {
@@ -55,19 +76,38 @@ export function clearProjectedHighlights(doc: Document = document): void {
   }
 }
 
-function resolveHighlightRange(highlight: ProjectedHighlight, doc: Document): Range | undefined {
-  const locator = highlight.source_locator
-  if (locator?.location) {
-    const located = resolveRangeFromLocation(locator, doc)
-    if (located && rangeMatchesHighlight(located, highlight.text_content)) {
-      return located
-    }
-  }
-
-  return resolveRangeFromText(highlight, doc)
+function resolveHighlightSpan(
+  highlight: ProjectedHighlight,
+  index: TextIndex,
+  doc: Document,
+): { start: number; end: number } | undefined {
+  const hint = hintFromLocation(highlight.source_locator, index, doc)
+  const context = highlight.context ?? highlight.source_locator
+  const resolution = resolveTextAnchor(index.text, {
+    text: highlight.text_content,
+    hint,
+    context: context
+      ? { offset: context.offset, prefix: context.prefix, suffix: context.suffix }
+      : undefined,
+  })
+  report(highlight.id, resolution)
+  return resolution.kind === 'placed' ? { start: resolution.start, end: resolution.end } : undefined
 }
 
-function resolveRangeFromLocation(locator: SourceLocatorPayload, doc: Document): Range | undefined {
+function report(id: string | undefined, resolution: AnchorResolution): void {
+  if (resolution.kind === 'placed' && resolution.via === 'hint') return
+  console.debug('[Indelible] highlight anchor', {
+    id,
+    stage: resolution.kind === 'placed' ? 'search' : resolution.kind,
+  })
+}
+
+function hintFromLocation(
+  locator: SourceLocatorPayload | undefined,
+  index: TextIndex,
+  doc: Document,
+): { start: number; end: number } | undefined {
+  if (!locator?.location) return undefined
   const parsed = parseDomRangeLocation(locator.location)
   if (!parsed) return undefined
 
@@ -83,10 +123,26 @@ function resolveRangeFromLocation(locator: SourceLocatorPayload, doc: Document):
     const range = doc.createRange()
     range.setStart(start.node, start.offset)
     range.setEnd(end.node, end.offset)
-    return range
+    return rangeToOffsets(index, range)
   } catch {
     return undefined
   }
+}
+
+/** Element containers carry a character offset into the element's text, not a child index. */
+function resolveBoundary(
+  node: Node,
+  offset: number,
+  preferEnd: boolean,
+): { node: Text; offset: number } | undefined {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node as Text
+    return { node: text, offset: Math.min(Math.max(0, offset), text.length) }
+  }
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
+  if (!element) return undefined
+  const local = buildTextIndex(element, isPageTextNode)
+  return boundaryAt(local.runs, Math.min(Math.max(0, offset), local.text.length), preferEnd)
 }
 
 function resolveNodePath(path: string, doc: Document): Node | undefined {
@@ -103,34 +159,13 @@ function resolveNodePath(path: string, doc: Document): Node | undefined {
   return current
 }
 
-function resolveBoundary(
-  node: Node,
-  offset: number,
-  preferEnd: boolean,
-): { node: Text; offset: number } | undefined {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const text = node as Text
-    return { node: text, offset: clamp(offset, 0, text.length) }
-  }
-
-  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
-  if (!element) return undefined
-
-  const index = buildTextIndex(element, shouldIndexTextNode)
-  return boundaryAt(index.runs, clamp(offset, 0, index.text.length), preferEnd)
-}
-
-function resolveRangeFromText(highlight: ProjectedHighlight, doc: Document): Range | undefined {
-  const needle = highlight.text_content.trim()
-  if (!needle) return undefined
-
-  const root = doc.body ?? doc.documentElement
-  const index = buildTextIndex(root, shouldIndexTextNode)
-  const match = findBestTextMatch(index.text, needle, highlight.source_locator)
-  if (!match) return undefined
-
-  const start = boundaryAt(index.runs, match.start, false)
-  const end = boundaryAt(index.runs, match.end, true)
+function spanToRange(
+  index: TextIndex,
+  span: { start: number; end: number },
+  doc: Document,
+): Range | undefined {
+  const start = boundaryAt(index.runs, span.start, false)
+  const end = boundaryAt(index.runs, span.end, true)
   if (!start || !end) return undefined
 
   try {
@@ -141,22 +176,6 @@ function resolveRangeFromText(highlight: ProjectedHighlight, doc: Document): Ran
   } catch {
     return undefined
   }
-}
-
-function rangeMatchesHighlight(range: Range, textContent: string): boolean {
-  const rangeText = normalizeWhitespace(range.toString())
-  const highlightText = normalizeWhitespace(textContent)
-  return rangeText === highlightText || rangeText.includes(highlightText)
-}
-
-function shouldIndexTextNode(node: Text): boolean {
-  const parent = node.parentElement
-  if (!parent) return false
-  return (
-    parent.closest(
-      `script, style, noscript, textarea, input, select, option, [contenteditable="true"], [${MARK_ATTR}]`,
-    ) === null
-  )
 }
 
 function wrapTextRange(
@@ -189,7 +208,7 @@ function collectTextNodesInRange(root: Node, range: Range, doc: Document): Text[
   const nodes: Text[] = []
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      if (!shouldIndexTextNode(node as Text)) return NodeFilter.FILTER_REJECT
+      if (!isPageTextNode(node as Text)) return NodeFilter.FILTER_REJECT
       return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
     },
   })
@@ -239,8 +258,4 @@ function ensureProjectionStyle(doc: Document): void {
     }
   `
   ;(doc.head ?? doc.documentElement).appendChild(style)
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
 }

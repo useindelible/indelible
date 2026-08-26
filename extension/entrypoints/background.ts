@@ -747,7 +747,7 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
     return
   }
 
-  const locator = await buildReaderLocator(libraryEntryId, selection)
+  const locator = await buildReaderLocator(activeTab.id, libraryEntryId, selection)
   serverUrl = await getServerUrl()
   if (!canExtensionSaveUrl(selection.sourceLocator.url, serverUrl)) {
     await setActionIdle(activeTab.id)
@@ -769,20 +769,26 @@ async function findSavedEntryForUrl(url: string): Promise<string | undefined> {
 }
 
 async function buildReaderLocator(
+  tabId: number,
   libraryEntryId: string,
   selection: SelectionPayload,
 ): Promise<LocatorPayload | undefined> {
-  const html = await fetchReadableHtml(libraryEntryId)
-  if (html === undefined) return undefined
-
-  const text = htmlToText(html)
-  const match = findUniqueNormalizedMatch(text, selection.text)
-  if (!match) return undefined
-
-  return {
-    type: 'html',
-    start_offset: match.start,
-    end_offset: match.end,
+  try {
+    const readableHtml = await fetchReadableHtml(libraryEntryId)
+    if (readableHtml === undefined) return undefined
+    const result = (await browser.tabs.sendMessage(tabId, {
+      action: 'locator:resolve',
+      payload: {
+        readableHtml,
+        text: selection.text,
+        prefix: selection.sourceLocator.prefix,
+        suffix: selection.sourceLocator.suffix,
+      },
+    } satisfies CaptureMessage)) as CaptureMessage
+    return result.action === 'locator:result' ? result.locator : undefined
+  } catch (error) {
+    reportBestEffortFailure('reader locator', error)
+    return undefined
   }
 }
 
@@ -797,62 +803,6 @@ async function fetchReadableHtml(libraryEntryId: string): Promise<string | undef
   } catch {}
 
   return undefined
-}
-
-function htmlToText(html: string): string {
-  return html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-}
-
-function findUniqueNormalizedMatch(
-  source: string,
-  needle: string,
-): { start: number; end: number } | undefined {
-  const sourceNorm = normalizeWithMap(source)
-  const needleNorm = normalizeWithMap(needle).text.trim()
-  if (!needleNorm) return undefined
-
-  const first = sourceNorm.text.indexOf(needleNorm)
-  if (first === -1) return undefined
-  if (sourceNorm.text.indexOf(needleNorm, first + needleNorm.length) !== -1) return undefined
-
-  const lastNormIndex = first + needleNorm.length - 1
-  return {
-    start: sourceNorm.map[first] ?? 0,
-    end: (sourceNorm.map[lastNormIndex] ?? source.length - 1) + 1,
-  }
-}
-
-function normalizeWithMap(input: string): { text: string; map: number[] } {
-  let text = ''
-  const map: number[] = []
-  let pendingSpace = false
-
-  for (let i = 0; i < input.length; i += 1) {
-    const char = input[i]
-    if (char === undefined) continue
-    if (/\s/.test(char)) {
-      pendingSpace = text.length > 0
-      continue
-    }
-    if (pendingSpace) {
-      text += ' '
-      map.push(i)
-      pendingSpace = false
-    }
-    text += char
-    map.push(i)
-  }
-
-  return { text, map }
 }
 
 async function setActionIdle(tabId: number): Promise<void> {

@@ -15,6 +15,11 @@ import { nodePath } from '@/lib/dom-range'
 import { extractCoverUrl } from '@/lib/cover-image'
 import { renderToolbar } from '@/lib/full-archive-toolbar'
 import { escapeAttr, escapeHtml } from '@/lib/html'
+import { resolveReaderLocator, type ReaderLocatorInput } from '@/lib/reader-locator'
+
+function captureError(err: unknown): CaptureMessage {
+  return { action: 'capture:error', message: err instanceof Error ? err.message : String(err) }
+}
 
 export default defineContentScript({
   registration: 'runtime',
@@ -33,54 +38,38 @@ export default defineContentScript({
         _sender,
         sendResponse: (response: unknown) => void,
       ): boolean | undefined => {
-        if (
-          typeof message === 'object' &&
-          message !== null &&
-          (message as Record<string, unknown>)['action'] === 'indelible:ping'
-        ) {
-          sendResponse({ success: true })
-          return true
-        }
-        if (
-          typeof message === 'object' &&
-          message !== null &&
-          (message as Record<string, unknown>)['action'] === 'toolbar:render'
-        ) {
-          renderToolbar((message as { state?: unknown }).state)
-          sendResponse({ success: true })
-          return true
-        }
-        if (
-          typeof message === 'object' &&
-          message !== null &&
-          (message as Record<string, unknown>)['action'] === 'capture:run'
-        ) {
-          runCapture()
-            .then(sendResponse)
-            .catch((err: unknown) => {
-              const msg: CaptureMessage = {
-                action: 'capture:error',
-                message: err instanceof Error ? err.message : String(err),
-              }
-              sendResponse(msg)
-            })
-          return true
-        }
-        if (
-          typeof message === 'object' &&
-          message !== null &&
-          (message as Record<string, unknown>)['action'] === 'selection:capture'
-        ) {
-          try {
-            sendResponse(captureSelection())
-          } catch (err) {
-            const msg: CaptureMessage = {
-              action: 'capture:error',
-              message: err instanceof Error ? err.message : String(err),
+        const record =
+          typeof message === 'object' && message !== null
+            ? (message as Record<string, unknown>)
+            : undefined
+        switch (record?.action) {
+          case 'indelible:ping':
+            sendResponse({ success: true })
+            return true
+          case 'toolbar:render':
+            renderToolbar(record.state)
+            sendResponse({ success: true })
+            return true
+          case 'capture:run':
+            runCapture()
+              .then(sendResponse)
+              .catch((err: unknown) => sendResponse(captureError(err)))
+            return true
+          case 'selection:capture':
+            try {
+              sendResponse(captureSelection())
+            } catch (err) {
+              sendResponse(captureError(err))
             }
-            sendResponse(msg)
-          }
-          return true
+            return true
+          case 'locator:resolve':
+            sendResponse({
+              action: 'locator:result',
+              locator: resolveReaderLocator(record.payload as ReaderLocatorInput, new DOMParser()),
+            } satisfies CaptureMessage)
+            return true
+          default:
+            return undefined
         }
       },
     )

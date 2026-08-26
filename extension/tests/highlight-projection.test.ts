@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearProjectedHighlights,
@@ -14,6 +14,7 @@ describe('highlight projection', () => {
   })
 
   it('projects a highlight from a parent-element DOM location', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
     document.body.innerHTML = '<p>Hello brave world.</p>'
 
     const highlight: ProjectedHighlight = {
@@ -29,11 +30,34 @@ describe('highlight projection', () => {
       },
     }
 
-    expect(projectHighlights([highlight], document)).toBe(1)
+    expect(projectHighlights([highlight], document)).toEqual({ placed: 1, unplaced: 0 })
 
     const mark = document.querySelector('mark.indelible-projected-highlight')
     expect(mark?.textContent).toBe('brave')
     expect(document.body.textContent).toBe('Hello brave world.')
+    expect(debug).not.toHaveBeenCalled()
+    debug.mockRestore()
+  })
+
+  it('covers overlapping highlights fully by nesting marks', () => {
+    document.body.innerHTML = '<p>abcdefghij</p>'
+
+    const result = projectHighlights(
+      [
+        { id: 'a', text_content: 'cdefgh' },
+        { id: 'b', text_content: 'fghi' },
+      ],
+      document,
+    )
+
+    expect(result).toEqual({ placed: 2, unplaced: 0 })
+    const byId = (id: string) =>
+      Array.from(document.querySelectorAll(`mark[data-indelible-highlight-id="${id}"]`))
+        .map((mark) => mark.textContent)
+        .join('')
+    expect(byId('a')).toBe('cdefgh')
+    expect(byId('b')).toBe('fghi')
+    expect(document.body.textContent).toBe('abcdefghij')
   })
 
   it('uses source offset to choose between repeated text matches', () => {
@@ -52,7 +76,7 @@ describe('highlight projection', () => {
       },
     }
 
-    expect(projectHighlights([highlight], document)).toBe(1)
+    expect(projectHighlights([highlight], document)).toEqual({ placed: 1, unplaced: 0 })
 
     const paragraphs = Array.from(document.querySelectorAll('p'))
     expect(paragraphs[0]?.querySelector('mark')).toBeNull()
@@ -76,7 +100,7 @@ describe('highlight projection', () => {
       },
     }
 
-    expect(projectHighlights([highlight], document)).toBe(1)
+    expect(projectHighlights([highlight], document)).toEqual({ placed: 1, unplaced: 0 })
 
     const paragraphs = Array.from(document.querySelectorAll('p'))
     expect(paragraphs[0]?.querySelector('mark')).toBeNull()
@@ -91,5 +115,49 @@ describe('highlight projection', () => {
 
     expect(document.querySelector('mark.indelible-projected-highlight')).toBeNull()
     expect(document.body.innerHTML).toBe('<p>Hello brave world.</p>')
+  })
+
+  it('projects a reader-created highlight whose citation numbering differs from the page', () => {
+    document.body.innerHTML =
+      '<p>Paxson filed notes daily.<sup>[34]</sup> The notes were ordered.</p>'
+
+    const result = projectHighlights(
+      [{ id: 'h_5', text_content: 'Paxson filed notes daily.39 The notes were ordered.' }],
+      document,
+    )
+
+    expect(result).toEqual({ placed: 1, unplaced: 0 })
+    expect(document.querySelector('mark')?.textContent).toContain('Paxson filed notes daily.')
+  })
+
+  it('counts an unhinted repeated phrase as unplaced instead of guessing', () => {
+    document.body.innerHTML = '<p>Alpha target.</p><p>Beta target.</p>'
+
+    expect(projectHighlights([{ id: 'h_6', text_content: 'target' }], document)).toEqual({
+      placed: 0,
+      unplaced: 1,
+    })
+    expect(document.querySelector('mark')).toBeNull()
+  })
+
+  it('keeps earlier highlights intact when several share one text node', () => {
+    document.body.innerHTML = '<p>one two three four five</p>'
+
+    const result = projectHighlights(
+      [
+        { id: 'a', text_content: 'one' },
+        { id: 'b', text_content: 'three' },
+        { id: 'c', text_content: 'five' },
+      ],
+      document,
+    )
+
+    expect(result).toEqual({ placed: 3, unplaced: 0 })
+    expect(Array.from(document.querySelectorAll('mark')).map((mark) => mark.textContent)).toEqual([
+      'one',
+      'three',
+      'five',
+    ])
+    expect(document.body.textContent).toBe('one two three four five')
   })
 })

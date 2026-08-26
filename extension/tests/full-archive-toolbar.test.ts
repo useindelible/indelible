@@ -216,4 +216,19 @@ describe('full archive toolbar', () => {
 
     await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledWith({ action: 'toolbar:save' }))
   })
+
+  it('reports highlights that could not be placed on the page', () => {
+    renderToolbar({
+      ...savedState(),
+      highlights: [
+        { id: 'h_1', text_content: 'Alpha' },
+        { id: 'h_2', text_content: 'absent phrase' },
+      ],
+    })
+
+    const pill = toolbarRoot().querySelector<HTMLElement>('.js-unplaced')
+    expect(pill?.hidden).toBe(false)
+    expect(pill?.textContent).toBe("1 highlight couldn't be placed on this page")
+    expect(document.querySelectorAll('mark.indelible-projected-highlight')).toHaveLength(1)
+  })
 })
