@@ -3126,6 +3126,7 @@ dependencies = [
  "ind-search",
  "ind-test-support",
  "ind-worker",
+ "mimalloc",
  "reqwest 0.13.2",
  "secrecy",
  "serde",
@@ -3345,6 +3346,7 @@ dependencies = [
 name = "ind-observability"
 version = "0.1.0"
 dependencies = [
+ "rustix",
  "tracing",
  "tracing-subscriber",
 ]
@@ -3499,6 +3501,7 @@ dependencies = [
  "ind-persistence",
  "ind-search",
  "ind-test-support",
+ "mimalloc",
  "reqwest 0.13.2",
  "secrecy",
  "serde",

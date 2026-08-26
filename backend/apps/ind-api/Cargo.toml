@@ -10,6 +10,7 @@ name = "ind-api"
 path = "src/main.rs"
 
 [dependencies]
+mimalloc = { workspace = true }
 ind-http-api = { workspace = true }
 ind-config = { workspace = true }
 ind-persistence = { workspace = true }
