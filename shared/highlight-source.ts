@@ -144,7 +144,8 @@ const FOLD: Record<string, string> = {
 };
 const CITATION_LEAD = new Set(['.', ',', ';', ':', '!', '?', ')', '"', "'"]);
 const NO_SPACE_BEFORE = new Set(["'", ',', '.', ';', ':', '!', '?', ')']);
-const BRACKET_CITATION = /^\[(\d{1,3}|[a-z]{2,3})\]/;
+const BRACKET_CITATION = /^\[(\d{1,3}|[a-z]{2,3})(?:\]|$)/;
+const CUT_LEADING_CITATION = /^(\d{1,3})\]/;
 const BARE_CITATION = /^\d{1,3}(?=$|\s|[.,;:!?)\]])/;
 const CHAINED_CITATION = /^\s*(\d{1,3})(?=$|\s|[.,;:!?)\]])/;
 const ENDS_MIN_LENGTH = 120;
@@ -165,6 +166,10 @@ export function normalizeForMatch(input: string): NormalizedText {
 		else if (leadingDropAt === -1) leadingDropAt = from;
 	};
 	let i = 0;
+	const cutLeading = CUT_LEADING_CITATION.exec(input);
+	if (cutLeading) {
+		i = swallowCitationRun(input, 0, cutLeading[0].length, cutLeading[1]!, true, drop);
+	}
 	while (i < input.length) {
 		const raw = input[i]!;
 		const ch = FOLD[raw] ?? raw;

@@ -51,6 +51,14 @@ describe('normalizeForMatch', () => {
     )
   })
 
+  it('treats a citation cut by the selection edge as a citation', () => {
+    expect(normalizeForMatch('invention of wikis.[5').text).toBe('invention of wikis.')
+    expect(normalizeForMatch('5] In the 1990s').text).toBe('In the 1990s')
+    expect(
+      findBestTextMatch('the invention of wikis.5 Use in', 'invention of wikis.[5'),
+    ).toBeDefined()
+  })
+
   it('removes a space before an apostrophe and folds quotes and dashes', () => {
     expect(normalizeForMatch("Sertillanges ' book").text).toBe("Sertillanges' book")
     expect(normalizeForMatch('“Card file” – it’s').text).toBe(`"Card file" - it's`)
