@@ -136,3 +136,28 @@ fn pdf_rectangles_and_source_ranges_reject_each_invalid_dimension() {
         );
     }
 }
+
+#[test]
+fn text_quote_source_locator_needs_prefix_or_suffix() {
+    let empty = HighlightSourceLocator::TextQuote {
+        prefix: Some(" ".into()),
+        suffix: None,
+    };
+    assert_eq!(
+        field(validate_highlight_locators_for_document(
+            DocumentType::Article,
+            None,
+            Some(&empty),
+        )),
+        "source_locator.prefix"
+    );
+
+    let with_suffix = HighlightSourceLocator::TextQuote {
+        prefix: None,
+        suffix: Some(".".into()),
+    };
+    assert!(
+        validate_highlight_locators_for_document(DocumentType::Article, None, Some(&with_suffix))
+            .is_ok()
+    );
+}

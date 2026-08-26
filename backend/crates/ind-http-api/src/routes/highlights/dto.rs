@@ -38,7 +38,7 @@ pub struct LocatorSchemaFlat {
 
 #[derive(Serialize, ToSchema)]
 pub struct SourceLocatorSchemaFlat {
-    /// Discriminator: "web_page_dom_range"
+    /// Discriminator: "web_page_dom_range" or "text_quote"
     #[serde(rename = "type")]
     pub locator_type: String,
     pub url: Option<String>,
@@ -192,6 +192,12 @@ pub enum SourceLocatorSchema {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         suffix: Option<String>,
     },
+    TextQuote {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        prefix: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        suffix: Option<String>,
+    },
 }
 
 impl From<SourceLocatorSchema> for ind_domain::HighlightSourceLocator {
@@ -212,6 +218,7 @@ impl From<SourceLocatorSchema> for ind_domain::HighlightSourceLocator {
                 prefix,
                 suffix,
             },
+            SourceLocatorSchema::TextQuote { prefix, suffix } => Self::TextQuote { prefix, suffix },
         }
     }
 }
@@ -234,6 +241,9 @@ impl From<ind_domain::HighlightSourceLocator> for SourceLocatorSchema {
                 prefix,
                 suffix,
             },
+            ind_domain::HighlightSourceLocator::TextQuote { prefix, suffix } => {
+                Self::TextQuote { prefix, suffix }
+            }
         }
     }
 }
