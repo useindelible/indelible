@@ -49,3 +49,13 @@
 	flex-shrink: 0;
 	background: var(--border-secondary);
 }
+
+.highlight-unplaced-notice {
+	margin: 0 0 16px;
+	padding: 8px 12px;
+	border: 1px solid var(--border-secondary);
+	border-radius: 8px;
+	background: var(--bg-secondary);
+	color: var(--text-secondary);
+	font-size: 13px;
+}

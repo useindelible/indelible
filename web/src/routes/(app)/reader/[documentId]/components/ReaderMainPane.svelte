@@ -25,6 +25,7 @@
 		color: string;
 		start_offset: number;
 		end_offset: number;
+		source_locator?: { type: 'text_quote'; prefix?: string; suffix?: string };
 	};
 
 	interface Props {
