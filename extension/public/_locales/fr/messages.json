@@ -2,8 +2,107 @@
   "action_title": {
     "message": "Indelible"
   },
+  "add": {
+    "message": "Ajouter"
+  },
+  "already_saved_detail": {
+    "message": "Cette page a déjà été enregistrée — actualisez pour la mettre à jour ou créer une nouvelle entrée"
+  },
+  "already_saved_title": {
+    "message": "Déjà dans votre bibliothèque"
+  },
+  "auth_error_detail": {
+    "message": "L'autorisation n'a pas pu démarrer. Veuillez réessayer."
+  },
+  "auth_error_title": {
+    "message": "Connexion impossible"
+  },
+  "auto_highlight": {
+    "message": "Surlignage automatique"
+  },
+  "cancel": {
+    "message": "Annuler"
+  },
+  "checking_detail": {
+    "message": "Recherche d'un élément déjà enregistré"
+  },
+  "checking_status": {
+    "message": "Vérification"
+  },
+  "checking_title": {
+    "message": "Vérification de cette page"
+  },
+  "close": {
+    "message": "Fermer"
+  },
   "command_save_page": {
     "message": "Enregistrer la page actuelle dans Indelible"
+  },
+  "connect": {
+    "message": "Connecter"
+  },
+  "connect_detail": {
+    "message": "Authentifiez votre espace avant d'enregistrer cette page"
+  },
+  "connect_title": {
+    "message": "Connecter Indelible"
+  },
+  "connecting_detail": {
+    "message": "Ouverture de l'autorisation sécurisée du navigateur"
+  },
+  "connecting_status": {
+    "message": "Connexion"
+  },
+  "connecting_title": {
+    "message": "Connexion à Indelible"
+  },
+  "controls_label": {
+    "message": "Commandes Indelible"
+  },
+  "dismiss": {
+    "message": "Masquer"
+  },
+  "error_cannot_save": {
+    "message": "Cette page ne peut pas être enregistrée"
+  },
+  "error_content_script": {
+    "message": "Le script de contenu a échoué"
+  },
+  "error_detail": {
+    "message": "Une erreur est survenue lors de l'enregistrement"
+  },
+  "error_entry_not_found": {
+    "message": "Élément enregistré introuvable"
+  },
+  "error_highlight": {
+    "message": "Le surlignage a échoué"
+  },
+  "error_no_active_tab": {
+    "message": "Aucun onglet actif"
+  },
+  "error_no_selection": {
+    "message": "Aucun texte sélectionné"
+  },
+  "error_reader_save": {
+    "message": "L'enregistrement en mode lecture a échoué"
+  },
+  "error_save_before_highlight": {
+    "message": "Enregistrez la page avant de créer un surlignage"
+  },
+  "error_server_url_invalid": {
+    "message": "L'adresse du serveur est invalide"
+  },
+  "error_server_url_required": {
+    "message": "L'adresse du serveur est requise"
+  },
+  "error_title": {
+    "message": "Une erreur est survenue"
+  },
+  "error_unexpected_response": {
+    "message": "Réponse inattendue du script de contenu"
+  },
+  "error_upload": {
+    "message": "L'envoi a échoué"
   },
   "ext_description": {
     "message": "Enregistrez, archivez et organisez du contenu web avec Indelible"
@@ -16,6 +115,15 @@
   },
   "menu_save_page": {
     "message": "Enregistrer dans Indelible"
+  },
+  "minimize": {
+    "message": "Réduire"
+  },
+  "note_placeholder": {
+    "message": "Ajouter une note sur cet article…"
+  },
+  "note_title": {
+    "message": "Note"
   },
   "notify_failed": {
     "message": "Échec de l’enregistrement dans Indelible : $MESSAGE$",
@@ -50,6 +158,68 @@
   },
   "notify_title": {
     "message": "Indelible"
+  },
+  "open_reader": {
+    "message": "Ouvrir le lecteur"
+  },
+  "refresh": {
+    "message": "Actualiser"
+  },
+  "reprocess_failed": {
+    "message": "Échec de la relance"
+  },
+  "reprocess_queued": {
+    "message": "En file d'attente"
+  },
+  "reprocess_queuing": {
+    "message": "Mise en file"
+  },
+  "reprocess_retry_in": {
+    "message": "Réessayez dans $SECONDS$ s",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "reprocess_running": {
+    "message": "En cours"
+  },
+  "retry": {
+    "message": "Réessayer"
+  },
+  "retry_processing": {
+    "message": "Relancer le traitement"
+  },
+  "save_note": {
+    "message": "Enregistrer la note"
+  },
+  "saved_page": {
+    "message": "Page enregistrée"
+  },
+  "saving_detail": {
+    "message": "Extraction du contenu lisible et création de l'archive"
+  },
+  "saving_status": {
+    "message": "Enregistrement"
+  },
+  "saving_title": {
+    "message": "Enregistrement de cette page"
+  },
+  "sign_out": {
+    "message": "Se déconnecter"
+  },
+  "star": {
+    "message": "Favori"
+  },
+  "tag_placeholder": {
+    "message": "Ajouter une étiquette…"
+  },
+  "tag_remove": {
+    "message": "Retirer"
+  },
+  "tags_title": {
+    "message": "Étiquettes"
   },
   "toolbar_highlights_one": {
     "message": "$COUNT$ surlignage",
@@ -99,5 +269,20 @@
   },
   "triage_later": {
     "message": "Plus tard"
+  },
+  "try_again": {
+    "message": "Réessayer"
+  },
+  "unreachable_detail": {
+    "message": "Votre session est conservée · mettez à jour l'adresse si votre serveur a changé"
+  },
+  "unreachable_title": {
+    "message": "Indelible est injoignable"
+  },
+  "unsupported_detail": {
+    "message": "Ce type de page ne peut pas être archivé"
+  },
+  "unsupported_title": {
+    "message": "Impossible d'enregistrer cette page"
   }
 }

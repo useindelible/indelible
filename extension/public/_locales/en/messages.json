@@ -2,8 +2,107 @@
   "action_title": {
     "message": "Indelible"
   },
+  "add": {
+    "message": "Add"
+  },
+  "already_saved_detail": {
+    "message": "This page was saved before — refresh to update or create a new entry"
+  },
+  "already_saved_title": {
+    "message": "Already in your library"
+  },
+  "auth_error_detail": {
+    "message": "Authorization could not be started. Please try again."
+  },
+  "auth_error_title": {
+    "message": "Couldn’t connect"
+  },
+  "auto_highlight": {
+    "message": "Auto-highlight"
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
+  "checking_detail": {
+    "message": "Looking for an existing saved item after your click"
+  },
+  "checking_status": {
+    "message": "Checking"
+  },
+  "checking_title": {
+    "message": "Checking this page"
+  },
+  "close": {
+    "message": "Close"
+  },
   "command_save_page": {
     "message": "Save current page to Indelible"
+  },
+  "connect": {
+    "message": "Connect"
+  },
+  "connect_detail": {
+    "message": "Authenticate your workspace before saving this page"
+  },
+  "connect_title": {
+    "message": "Connect Indelible"
+  },
+  "connecting_detail": {
+    "message": "Opening secure browser authorization"
+  },
+  "connecting_status": {
+    "message": "Connecting"
+  },
+  "connecting_title": {
+    "message": "Connecting Indelible"
+  },
+  "controls_label": {
+    "message": "Indelible controls"
+  },
+  "dismiss": {
+    "message": "Dismiss"
+  },
+  "error_cannot_save": {
+    "message": "This page cannot be saved"
+  },
+  "error_content_script": {
+    "message": "Content script failed"
+  },
+  "error_detail": {
+    "message": "An error occurred while saving"
+  },
+  "error_entry_not_found": {
+    "message": "Saved entry was not found"
+  },
+  "error_highlight": {
+    "message": "Highlight failed"
+  },
+  "error_no_active_tab": {
+    "message": "No active tab found"
+  },
+  "error_no_selection": {
+    "message": "No selected text found"
+  },
+  "error_reader_save": {
+    "message": "Reader save failed"
+  },
+  "error_save_before_highlight": {
+    "message": "Save the page before creating a highlight"
+  },
+  "error_server_url_invalid": {
+    "message": "Server URL is invalid"
+  },
+  "error_server_url_required": {
+    "message": "Server URL is required"
+  },
+  "error_title": {
+    "message": "Something went wrong"
+  },
+  "error_unexpected_response": {
+    "message": "Unexpected response from content script"
+  },
+  "error_upload": {
+    "message": "Upload failed"
   },
   "ext_description": {
     "message": "Save, archive, and organize web content with Indelible"
@@ -16,6 +115,15 @@
   },
   "menu_save_page": {
     "message": "Save to Indelible"
+  },
+  "minimize": {
+    "message": "Minimize"
+  },
+  "note_placeholder": {
+    "message": "Add a note about this article…"
+  },
+  "note_title": {
+    "message": "Note"
   },
   "notify_failed": {
     "message": "Indelible save failed: $MESSAGE$",
@@ -50,6 +158,68 @@
   },
   "notify_title": {
     "message": "Indelible"
+  },
+  "open_reader": {
+    "message": "Open reader"
+  },
+  "refresh": {
+    "message": "Refresh"
+  },
+  "reprocess_failed": {
+    "message": "Retry failed"
+  },
+  "reprocess_queued": {
+    "message": "Queued"
+  },
+  "reprocess_queuing": {
+    "message": "Queuing"
+  },
+  "reprocess_retry_in": {
+    "message": "Retry in $SECONDS$s",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "reprocess_running": {
+    "message": "Running"
+  },
+  "retry": {
+    "message": "Retry"
+  },
+  "retry_processing": {
+    "message": "Retry processing"
+  },
+  "save_note": {
+    "message": "Save note"
+  },
+  "saved_page": {
+    "message": "Saved page"
+  },
+  "saving_detail": {
+    "message": "Extracting readable content and creating the archive"
+  },
+  "saving_status": {
+    "message": "Saving"
+  },
+  "saving_title": {
+    "message": "Saving this page"
+  },
+  "sign_out": {
+    "message": "Sign out"
+  },
+  "star": {
+    "message": "Star"
+  },
+  "tag_placeholder": {
+    "message": "Add tag…"
+  },
+  "tag_remove": {
+    "message": "Remove"
+  },
+  "tags_title": {
+    "message": "Tags"
   },
   "toolbar_highlights_one": {
     "message": "$COUNT$ highlight",
@@ -99,5 +269,20 @@
   },
   "triage_later": {
     "message": "Later"
+  },
+  "try_again": {
+    "message": "Try again"
+  },
+  "unreachable_detail": {
+    "message": "Your session is retained · update the address if your server moved"
+  },
+  "unreachable_title": {
+    "message": "Indelible is unreachable"
+  },
+  "unsupported_detail": {
+    "message": "This type of page cannot be archived"
+  },
+  "unsupported_title": {
+    "message": "Can't save this page"
   }
 }

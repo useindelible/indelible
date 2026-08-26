@@ -1,6 +1,7 @@
 import { boundaryAt, buildTextIndex } from '../../shared/highlight-source'
 import type { CaptureMessage } from './capture'
 import { nodePath } from './dom-range'
+import { t } from './i18n'
 import { clearProjectedHighlights } from './highlight-projection'
 import { isPageTextNode, rangeToOffsets } from './page-text'
 
@@ -10,7 +11,7 @@ const CONTEXT_CHARS = 80
 export function captureSelection(doc: Document): CaptureMessage {
   const selection = doc.getSelection()
   if (!selection || selection.rangeCount === 0 || selection.toString().trim().length === 0) {
-    return { action: 'capture:error', message: 'No selected text found' }
+    return { action: 'capture:error', message: t('error_no_selection') }
   }
 
   const range = selection.getRangeAt(0)
@@ -19,7 +20,7 @@ export function captureSelection(doc: Document): CaptureMessage {
   const live = buildTextIndex(doc.body, isPageTextNode)
   const rawOffsets = rangeToOffsets(live, range)
   if (!rawOffsets) {
-    return { action: 'capture:error', message: 'No selected text found' }
+    return { action: 'capture:error', message: t('error_no_selection') }
   }
   const start = rawOffsets.start + (raw.length - raw.trimStart().length)
   const end = rawOffsets.end - (raw.length - raw.trimEnd().length)
@@ -29,7 +30,7 @@ export function captureSelection(doc: Document): CaptureMessage {
   const startBoundary = boundaryAt(pristine.runs, start, false)
   const endBoundary = boundaryAt(pristine.runs, end, true)
   if (!startBoundary || !endBoundary) {
-    return { action: 'capture:error', message: 'No selected text found' }
+    return { action: 'capture:error', message: t('error_no_selection') }
   }
 
   const location = `${nodePath(startBoundary.node)}:${startBoundary.offset},${nodePath(

@@ -245,7 +245,7 @@ async function handleAuthStart(
   try {
     const serverUrl = typeof message.serverUrl === 'string' ? message.serverUrl : ''
     if (!serverUrl) {
-      return { success: false, error: 'Server URL is required' }
+      return { success: false, error: t('error_server_url_required') }
     }
     const result = await connect(serverUrl, returnTabId)
     if (result.returnTabId) {
@@ -299,14 +299,17 @@ async function handleSetServerUrl(
 ): Promise<{ success: boolean; error?: string }> {
   const serverUrl = typeof message.serverUrl === 'string' ? message.serverUrl : ''
   if (!serverUrl) {
-    return { success: false, error: 'Server URL is required' }
+    return { success: false, error: t('error_server_url_required') }
   }
 
   try {
     await setServerUrl(serverUrl)
     return { success: true }
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Server URL is invalid' }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : t('error_server_url_invalid'),
+    }
   }
 }
 
@@ -362,7 +365,7 @@ async function handleActionClick(tab: Browser.tabs.Tab): Promise<void> {
       view: 'saving',
       serverUrl: auth.serverUrl,
       url: tab.url,
-      step: 'Saving…',
+      step: 'extracting',
     })
     return
   }
@@ -385,7 +388,7 @@ async function handleActionClick(tab: Browser.tabs.Tab): Promise<void> {
 
 async function handleToolbarSave(): Promise<{ success: boolean; error?: string }> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
-  if (!tab?.id) return { success: false, error: 'No active tab found' }
+  if (!tab?.id) return { success: false, error: t('error_no_active_tab') }
   const result = await handleCaptureStart(tab)
   if (result.success && result.data?.libraryEntryId) {
     await loadToolbarPanel(tab.id, await getServerUrl(), result.data.libraryEntryId)
@@ -399,12 +402,12 @@ async function handleToolbarHighlightSelection(
   const [tab] = sourceTab?.id
     ? [sourceTab]
     : await browser.tabs.query({ active: true, currentWindow: true })
-  if (!tab?.id) return { success: false, error: 'No active tab found' }
+  if (!tab?.id) return { success: false, error: t('error_no_active_tab') }
   try {
     await handleSelectionHighlight(tab)
     return { success: true }
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Highlight failed'
+    const message = err instanceof Error ? err.message : t('error_highlight')
     await setActionError(tab.id, message)
     return { success: false, error: message }
   }
@@ -464,7 +467,7 @@ async function loadToolbarPanel(
     await renderToolbar(tabId, {
       view: 'error',
       serverUrl,
-      message: 'Saved entry was not found',
+      message: t('error_entry_not_found'),
     })
     return
   }
@@ -526,12 +529,12 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
     : await browser.tabs.query({ active: true, currentWindow: true })
   const tab = activeTab
   if (!tab?.id || !tab.url || !tab.title) {
-    return { success: false, error: 'No active tab found' }
+    return { success: false, error: t('error_no_active_tab') }
   }
   const serverUrl = await getServerUrl()
   if (!canExtensionSaveUrl(tab.url, serverUrl)) {
     await setActionIdle(tab.id)
-    return { success: false, error: 'This page cannot be saved' }
+    return { success: false, error: t('error_cannot_save') }
   }
 
   const tabId = tab.id
@@ -551,7 +554,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
       action: 'capture:run',
     } satisfies CaptureMessage)) as CaptureMessage
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Content script failed'
+    const message = err instanceof Error ? err.message : t('error_content_script')
     await setActionError(tabId, message)
     await renderToolbar(tabId, { view: 'error', serverUrl, message })
     return { success: false, error: message }
@@ -571,7 +574,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
           serverUrl: fallbackServerUrl,
           url: captureResult.payload.url,
         })
-        return { success: false, error: 'This page cannot be saved' }
+        return { success: false, error: t('error_cannot_save') }
       }
       try {
         const body = buildReaderSaveFallbackBody(
@@ -596,7 +599,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
           },
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Reader save failed'
+        const message = err instanceof Error ? err.message : t('error_reader_save')
         await setActionError(tabId, message)
         await renderToolbar(tabId, { view: 'error', serverUrl, message })
         return { success: false, error: message }
@@ -608,13 +611,13 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
   }
 
   if (captureResult.action !== 'capture:result') {
-    await setActionError(tabId, 'Unexpected response from content script')
+    await setActionError(tabId, t('error_unexpected_response'))
     await renderToolbar(tabId, {
       view: 'error',
       serverUrl,
-      message: 'Unexpected response from content script',
+      message: t('error_unexpected_response'),
     })
-    return { success: false, error: 'Unexpected response from content script' }
+    return { success: false, error: t('error_unexpected_response') }
   }
 
   const payload: CapturePayload = captureResult.payload
@@ -626,7 +629,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
       serverUrl: uploadServerUrl,
       url: payload.url,
     })
-    return { success: false, error: 'This page cannot be saved' }
+    return { success: false, error: t('error_cannot_save') }
   }
 
   setActionSaving(tabId, 'uploading')
@@ -671,7 +674,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
         serverUrl: fallbackServerUrl,
         url: payload.url,
       })
-      return { success: false, error: 'This page cannot be saved' }
+      return { success: false, error: t('error_cannot_save') }
     }
     try {
       const fallback = buildReaderSaveFallbackBody(
@@ -696,7 +699,7 @@ async function handleCaptureStart(sourceTab?: Browser.tabs.Tab): Promise<{
         },
       }
     } catch {
-      const message = err instanceof Error ? err.message : 'Upload failed'
+      const message = err instanceof Error ? err.message : t('error_upload')
       await setActionError(tabId, message)
       await renderToolbar(tabId, { view: 'error', serverUrl, message })
       return { success: false, error: message }
@@ -724,9 +727,7 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
 
   if (selectionResult.action !== 'selection:result') {
     const message =
-      selectionResult.action === 'capture:error'
-        ? selectionResult.message
-        : 'No selected text found'
+      selectionResult.action === 'capture:error' ? selectionResult.message : t('error_no_selection')
     await setActionError(activeTab.id, message)
     return
   }
@@ -743,7 +744,7 @@ async function handleSelectionHighlight(tab?: Browser.tabs.Tab): Promise<void> {
     libraryEntryId = saved.data?.libraryEntryId
   }
   if (!libraryEntryId) {
-    await setActionError(activeTab.id, 'Save the page before creating a highlight')
+    await setActionError(activeTab.id, t('error_save_before_highlight'))
     return
   }
 

@@ -1,5 +1,5 @@
 import { escapeHtml } from '@/lib/html'
-import { tPlural } from '@/lib/i18n'
+import { t, tPlural } from '@/lib/i18n'
 import { nodePath } from '@/lib/dom-range'
 import {
   clearProjectedHighlights,
@@ -285,7 +285,7 @@ function bindToolbarEvents(root: ShadowRoot, state: ToolbarState): void {
       const status = root.querySelector<HTMLElement>('.js-reprocess-status')
       if (!documentId || !button || !status || button.disabled) return
       button.disabled = true
-      status.textContent = 'Queuing'
+      status.textContent = t('reprocess_queuing')
       try {
         const response = (await browser.runtime.sendMessage({
           action: 'toolbar:reprocess-document',
@@ -294,16 +294,16 @@ function bindToolbarEvents(root: ShadowRoot, state: ToolbarState): void {
         const record = isRecord(response) ? response : undefined
         const data = record && isRecord(record.data) ? record.data : undefined
         if (!record || record.success !== true || !data) {
-          throw new Error(typeof record?.error === 'string' ? record.error : 'Retry failed')
+          throw new Error(typeof record?.error === 'string' ? record.error : t('reprocess_failed'))
         }
         const queued = data.queued === true
         const retryAfter =
           typeof data.retry_after_seconds === 'number' ? data.retry_after_seconds : 0
         status.textContent = queued
-          ? 'Queued'
+          ? t('reprocess_queued')
           : retryAfter > 0
-            ? `Retry in ${retryAfter}s`
-            : 'Running'
+            ? t('reprocess_retry_in', String(retryAfter))
+            : t('reprocess_running')
         window.setTimeout(
           () => {
             button.disabled = false
@@ -313,7 +313,7 @@ function bindToolbarEvents(root: ShadowRoot, state: ToolbarState): void {
         )
       } catch (error) {
         button.disabled = false
-        status.textContent = error instanceof Error ? error.message : 'Retry failed'
+        status.textContent = error instanceof Error ? error.message : t('reprocess_failed')
       }
     })
 
