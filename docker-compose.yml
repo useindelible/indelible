@@ -98,7 +98,7 @@ services:
       IND_HOST: 0.0.0.0
       IND_PORT: 8080
       IND_BASE_URL: http://localhost:38473
-      EXTENSION_REDIRECT_URIS: ${EXTENSION_REDIRECT_URIS:-https://lblngpkieoichinegfhgacmcjbahjbek.chromiumapp.org/indelible,https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible}
+      EXTENSION_REDIRECT_URIS: ${EXTENSION_REDIRECT_URIS:-https://jidilhjojlgndbpeooeeceohmkedooef.chromiumapp.org/indelible,https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible}
       IND_ENV: development
       # On-host AI (e.g. Ollama) is reached through the host gateway; the
       # egress guard only permits that with the private-targets opt-in.
