@@ -792,17 +792,22 @@ async function buildReaderLocator(
   }
 }
 
-async function fetchReadableHtml(libraryEntryId: string): Promise<string | undefined> {
-  try {
-    const asset = await getEntryAsset(libraryEntryId, 'readable_html')
-    if (asset?.download_url) {
-      // download_url targets the API asset proxy, which requires auth.
-      const download = await authenticatedFetch(new URL(asset.download_url).pathname)
-      if (download.ok) return await download.text()
-    }
-  } catch {}
+// Saves return 202 and the worker produces the readable asset afterwards.
+const READABLE_ASSET_POLL = { attempts: 6, intervalMs: 1500 }
 
+async function fetchReadableHtml(libraryEntryId: string): Promise<string | undefined> {
+  for (let attempt = 0; attempt < READABLE_ASSET_POLL.attempts; attempt += 1) {
+    if (attempt > 0) await delay(READABLE_ASSET_POLL.intervalMs)
+    const asset = await getEntryAsset(libraryEntryId, 'readable_html')
+    if (asset?.status !== 'completed' || !asset.download_url) continue
+    const download = await authenticatedFetch(new URL(asset.download_url).pathname)
+    return download.ok ? await download.text() : undefined
+  }
   return undefined
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function setActionIdle(tabId: number): Promise<void> {

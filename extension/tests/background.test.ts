@@ -667,13 +667,21 @@ describe('background message handler', () => {
         return new Response('unexpected request', { status: 500 })
       })
 
-      await sendMessage({ action: 'toolbar:highlight-selection' }, { id: EXTENSION_ID })
+      vi.useFakeTimers()
+      try {
+        const pending = sendMessage({ action: 'toolbar:highlight-selection' }, { id: EXTENSION_ID })
+        await vi.advanceTimersByTimeAsync(1500 * 6)
+        await pending
+      } finally {
+        vi.useRealTimers()
+      }
 
       expect(checkedUrl).toBe('https://new-indelible.example.com/library')
       expect(highlightWriteAttempted).toBe(false)
     })
 
-    async function highlightThroughReaderLocator(locatorFails: boolean) {
+    async function highlightThroughReaderLocator(locatorFails: boolean, pendingAssetPolls = 0) {
+      let assetPolls = 0
       const libraryEntryId = 'lib_018f2f1a-1111-7222-8333-111111111111'
       const tab = {
         id: 42,
@@ -736,8 +744,16 @@ describe('background message handler', () => {
         }
 
         if (href.endsWith(`/api/v1/extension/entries/${libraryEntryId}/assets/readable_html`)) {
+          assetPolls += 1
+          if (assetPolls <= pendingAssetPolls) {
+            return new Response(JSON.stringify({ status: 'processing' }), {
+              status: 200,
+              headers: jsonHeaders,
+            })
+          }
           return new Response(
             JSON.stringify({
+              status: 'completed',
               download_url:
                 'https://test.useindelible.com/api/v1/assets/documents/doc_018f2f1a-1111-7222-8333-222222222222/readable_html',
             }),
@@ -797,12 +813,31 @@ describe('background message handler', () => {
         return new Response('unexpected request', { status: 500 })
       })
 
-      const response = await sendMessage(
-        { action: 'toolbar:highlight-selection' },
-        { id: EXTENSION_ID },
-      )
-      return { response, highlightBody, locatorRequest, libraryEntryId }
+      const pending = sendMessage({ action: 'toolbar:highlight-selection' }, { id: EXTENSION_ID })
+      for (let i = 0; i < pendingAssetPolls; i += 1) {
+        await vi.advanceTimersByTimeAsync(1500)
+      }
+      const response = await pending
+      return { response, highlightBody, locatorRequest, libraryEntryId, assetPolls }
     }
+
+    it('waits for the readable asset to complete after a fresh save', async () => {
+      vi.useFakeTimers()
+      try {
+        const { response, highlightBody, assetPolls } = await highlightThroughReaderLocator(
+          false,
+          2,
+        )
+
+        expect(response.success).toBe(true)
+        expect(assetPolls).toBe(3)
+        expect(highlightBody).toMatchObject({
+          locator: { type: 'html', start_offset: 7, end_offset: 22 },
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
 
     it('asks the content script for a reader locator built from the readable asset', async () => {
       const { response, highlightBody, locatorRequest, libraryEntryId } =
