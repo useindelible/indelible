@@ -2004,7 +2004,7 @@ export type SourceLocatorSchemaFlat = {
 	suffix?: string | null;
 	text_content?: string | null;
 	/**
-	 * Discriminator: "web_page_dom_range"
+	 * Discriminator: "web_page_dom_range" or "text_quote"
 	 */
 	type: string;
 	url?: string | null;
