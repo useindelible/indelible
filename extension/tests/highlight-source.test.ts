@@ -94,6 +94,45 @@ describe('findBestTextMatch / resolveTextAnchor', () => {
     ).toBeUndefined()
   })
 
+  it('does not equate real numbers that only look like citations', () => {
+    expect(findBestTextMatch('Temperature:43 degrees', 'Temperature:42 degrees')).toBeUndefined()
+    expect(findBestTextMatch('See Fig.3 Details', 'See Fig.2 Details')).toBeUndefined()
+    expect(
+      resolveTextAnchor('Temperature:43 degrees', {
+        text: 'Temperature:42 degrees',
+        hint: { start: 0, end: 22 },
+      }),
+    ).toEqual({ kind: 'missing' })
+    expect(findBestTextMatch('final form.[35] French', 'final form.40 French')).toBeDefined()
+    expect(findBestTextMatch('(IMEC).[43][44] Louis', '(IMEC).43 44 Louis')).toBeDefined()
+  })
+
+  it('covers a leading citation in the matched span', () => {
+    const m = findBestTextMatch('x [35] Intro y', '[40] Intro')!
+    expect('x [35] Intro y'.slice(m.start, m.end)).toBe('[35] Intro')
+  })
+
+  it('uses offset and suffix hints to pick the right long passage by its ends', () => {
+    const filler = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor '
+    const passage = filler + 'a caption (image) sits here ' + filler + 'the end of it.'
+    const page = 'A. ' + passage + ' First tail. B. ' + passage + ' Second tail.'
+    const second = page.lastIndexOf(passage)
+    const quote = filler + 'a caption sits here ' + filler + 'the end of it.'
+    const r = resolveTextAnchor(page, {
+      text: quote,
+      context: { offset: second, suffix: 'Second tail.' },
+    })
+    expect(r).toMatchObject({ kind: 'placed', via: 'ends', start: second })
+    expect(resolveTextAnchor(page, { text: quote })).toEqual({ kind: 'ambiguous' })
+  })
+
+  it('maps a leading dropped citation into the first character span', () => {
+    const r = normalizeForMatch('[40] Intro')
+    expect(r.text).toBe('Intro')
+    expect(r.starts[0]).toBe(0)
+    expect(r.dropped).toMatchObject([{ at: 0, from: 0, to: 4, value: '40', bracketed: true }])
+  })
+
   it('refuses to guess between unhinted repeats', () => {
     expect(findBestTextMatch('Alpha target. Beta target.', 'target')).toBeUndefined()
     expect(resolveTextAnchor('Alpha target. Beta target.', { text: 'target' })).toEqual({
