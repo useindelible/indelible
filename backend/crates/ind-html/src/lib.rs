@@ -1,4 +1,5 @@
 mod prepare;
+mod reader_allowlist;
 mod toc;
 
 pub use prepare::{ANCHOR_ID_PREFIX, PrepareError, prepare_reader_html};
@@ -58,14 +59,18 @@ fn html_body_fragment(html: &str) -> String {
         .unwrap_or_else(|| html.to_string())
 }
 
-/// Sanitize untrusted HTML for safe rendering in the reader. Uses ammonia's
-/// vetted default allowlist, which strips `<script>`/`<style>`/`<iframe>`,
-/// inline event handlers, and dangerous URL schemes while preserving article
-/// formatting. Content write paths call `prepare_reader_html` (which sanitizes
-/// AND makes anchors durable); this remains the documented fallback when
-/// preparation fails, so a rewriter error can never fail ingest.
+/// Keeps `class`, `span[data-t]`, and YouTube-embed iframes; drops every other iframe.
+/// Infallible: fallback for `prepare_reader_html` on the content write paths.
 pub fn sanitize_reader_html(html: &str) -> String {
-    ammonia::clean(html)
+    match reader_allowlist::drop_foreign_iframes(html) {
+        Ok(filtered) => reader_allowlist::reader_sanitizer()
+            .clean(&filtered)
+            .to_string(),
+        Err(_) => reader_allowlist::reader_sanitizer()
+            .rm_tags(&["iframe"])
+            .clean(html)
+            .to_string(),
+    }
 }
 
 fn is_non_content_html_element(element: &ElementRef<'_>) -> bool {

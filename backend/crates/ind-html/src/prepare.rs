@@ -1,17 +1,5 @@
-//! Reader-HTML preparation: sanitize untrusted article HTML and make its anchors
-//! durable, so a stored document supports table-of-contents navigation and working
-//! in-document links on every client.
-//!
-//! Every retained `id` gets the `ind-` prefix and every local fragment href is
-//! rewritten to match, because a fragment link is only as good as its target.
-//! Headings without ids get slugified `ind-toc-*` ids; footnote list items and
-//! citation anchors get ids inferred from the `#fn:`/`#fnref:` link graph that
-//! readability extractors emit (legacy stored content lost the original targets
-//! to sanitization, leaving every footnote link dead).
-//!
-//! The output is byte-for-byte idempotent: anything already prefixed is never
-//! touched again, which is what lets re-preparation double as a cheap
-//! "is this content already prepared" check.
+//! Sanitizes reader HTML and gives headings, footnotes, and citations durable `ind-` ids.
+//! Output is byte-for-byte idempotent.
 
 use std::cell::Cell;
 use std::collections::HashSet;
@@ -31,44 +19,31 @@ pub enum PrepareError {
     Rewrite(String),
 }
 
-/// Sanitize untrusted article HTML and inject durable anchors. Replaces
-/// `sanitize_reader_html` at content write paths; callers fall back to plain
-/// sanitization on error rather than failing ingest.
+/// On error callers fall back to `sanitize_reader_html`; ingest never fails on this.
 pub fn prepare_reader_html(html: &str) -> Result<String, PrepareError> {
-    let sanitized = sanitize_keeping_ids(html);
+    let filtered = crate::reader_allowlist::drop_foreign_iframes(html)
+        .map_err(|err| PrepareError::Rewrite(err.to_string()))?;
+    let sanitized = sanitize_keeping_ids(&filtered);
     let plan = build_rewrite_plan(&sanitized);
     let rewritten = apply(&plan, &sanitized)?;
-    // Ammonia serializes attributes in canonical order while lol_html appends
-    // injected ones at the tag end; a final sanitize pass canonicalizes the
-    // output so preparation is byte-for-byte idempotent.
+    // The final pass canonicalizes attribute order so the output is byte-for-byte idempotent.
     Ok(sanitize_keeping_ids(&rewritten))
 }
 
-/// Ammonia's vetted default allowlist, plus `id` — the defaults strip it, which is
-/// exactly what orphaned every fragment link in previously stored content. Ids are
-/// safe to retain because the apply pass namespaces every one of them with
-/// [`ANCHOR_ID_PREFIX`], which also prevents DOM clobbering of host-page globals.
+/// Retained ids are safe only because `apply` prefixes every one with [`ANCHOR_ID_PREFIX`].
 fn sanitize_keeping_ids(html: &str) -> String {
-    ammonia::Builder::default()
+    crate::reader_allowlist::reader_sanitizer()
         .add_generic_attributes(&["id"])
         .clean(html)
         .to_string()
 }
 
-/// Ids to inject, addressed by element ordinal so the streaming apply pass can
-/// assign them without re-parsing. Ordinals count, per element type, exactly the
-/// elements the apply pass's selectors visit.
+/// Indexed by element ordinal per selector (`h1..h6`, `li`, `a[href]`) in document order.
 struct RewritePlan {
-    /// By `h1..h6` ordinal; `Some` only for headings that need an injected id.
     heading_ids: Vec<Option<String>>,
-    /// By `li` ordinal; `Some` for footnote items identified via their backlinks.
     li_ids: Vec<Option<String>>,
-    /// By `a[href]` ordinal; `Some` for citation anchors that footnote backlinks
-    /// point back at.
     anchor_ids: Vec<Option<String>>,
-    /// By `a[href]` ordinal; `true` when the link's local fragment has no target
-    /// anywhere in the final document (extraction removed it). The href is
-    /// stripped so the link degrades to inert text instead of a broken jump.
+    /// `true` strips the href: its local fragment has no target in the final document.
     dead_anchors: Vec<bool>,
 }
 
@@ -80,8 +55,7 @@ fn build_rewrite_plan(sanitized: &str) -> RewritePlan {
         .filter_map(ElementRef::wrap)
         .collect();
 
-    // The collision namespace is the FINAL id set: existing ids as they will look
-    // after prefixing, plus everything assigned below.
+    // Collision namespace is the final id set: prefixed existing ids plus everything assigned below.
     let mut used: HashSet<String> = elements
         .iter()
         .filter_map(|el| el.value().attr("id"))
@@ -123,8 +97,6 @@ fn build_rewrite_plan(sanitized: &str) -> RewritePlan {
         heading_ids.push(Some(claim_unique(base, &mut used)));
     }
 
-    // `used` now holds the complete final id namespace; any local fragment
-    // without a member there can never resolve.
     let dead_anchors = anchors
         .iter()
         .map(|a| {
@@ -145,9 +117,7 @@ fn build_rewrite_plan(sanitized: &str) -> RewritePlan {
     }
 }
 
-/// A footnote item is recognized by the backlink(s) it contains: readability
-/// output puts `<a href="#fnref:N">` (or `#fnref:N-k` for repeat citations)
-/// inside `<li>` N of the footnote list, so the base name identifies the item.
+/// Footnote `<li>` N is identified by its `#fnref:N` (or `#fnref:N-k`) backlink.
 fn footnote_li_id(li: &ElementRef<'_>, used: &mut HashSet<String>) -> Option<String> {
     if li.value().attr("id").is_some() {
         return None;
@@ -166,10 +136,7 @@ fn footnote_li_id(li: &ElementRef<'_>, used: &mut HashSet<String>) -> Option<Str
     Some(id)
 }
 
-/// Citation anchors (`<a href="#fn:N">`) receive the ids the footnote backlinks
-/// already reference: the first citation of footnote N is `fnref:N`, the k-th is
-/// `fnref:N-k` — the convention readability extractors use when generating the
-/// backlinks, so the two sides meet.
+/// The k-th citation of footnote N gets `fnref:N-k` (`fnref:N` for k = 1), matching its backlink.
 fn citation_anchor_id(
     a: &ElementRef<'_>,
     citation_counts: &mut Vec<(String, usize)>,
@@ -207,8 +174,6 @@ fn apply(plan: &RewritePlan, html: &str) -> Result<String, PrepareError> {
     let anchor_i = Cell::new(0usize);
 
     let settings = RewriteStrSettings::new()
-        // Prefix every retained id, whatever the element: fragment hrefs are
-        // rewritten globally below, so their targets must move with them.
         .append_element_content_handler(element!("[id]", |el: &mut Element| {
             if let Some(id) = el.get_attribute("id")
                 && !id.starts_with(ANCHOR_ID_PREFIX)
@@ -270,9 +235,7 @@ fn is_heading(name: &str) -> bool {
     matches!(name, "h1" | "h2" | "h3" | "h4" | "h5" | "h6")
 }
 
-/// `#fnref:1-2` names occurrence 2 of footnote 1; the base identifies the footnote.
-/// The suffix is stripped only when purely numeric so footnotes whose own names
-/// contain dashes are left intact.
+/// `fnref:1-2` → `fnref:1`; a non-numeric suffix is part of the footnote name and kept.
 fn occurrence_base(name: &str) -> &str {
     match name.rfind('-') {
         Some(pos)
@@ -286,8 +249,7 @@ fn occurrence_base(name: &str) -> &str {
     }
 }
 
-/// The name of a `#`-fragment href after `marker`, accepting both raw and
-/// already-prefixed forms so re-preparation sees the same graph.
+/// Accepts both raw and `ind-`-prefixed fragments so re-preparation sees the same graph.
 fn fragment_name(href: &str, marker: &str) -> Option<String> {
     let fragment = href.strip_prefix('#')?;
     let fragment = fragment.strip_prefix(ANCHOR_ID_PREFIX).unwrap_or(fragment);
