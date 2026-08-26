@@ -43,6 +43,14 @@ describe('normalizeForMatch', () => {
     expect(normalizeForMatch('Call 911. Then').text).toBe('Call 911. Then')
   })
 
+  it('drops chained citations and interlanguage markers', () => {
+    expect(normalizeForMatch('(IMEC).43 44 Louis-Jean').text).toBe('(IMEC). Louis-Jean')
+    expect(normalizeForMatch('(IMEC).[43][44] Louis-Jean').text).toBe('(IMEC). Louis-Jean')
+    expect(normalizeForMatch('Paul Chavigny [fr]. Sertillanges').text).toBe(
+      'Paul Chavigny. Sertillanges',
+    )
+  })
+
   it('removes a space before an apostrophe and folds quotes and dashes', () => {
     expect(normalizeForMatch("Sertillanges ' book").text).toBe("Sertillanges' book")
     expect(normalizeForMatch('“Card file” – it’s').text).toBe(`"Card file" - it's`)
@@ -91,6 +99,22 @@ describe('findBestTextMatch / resolveTextAnchor', () => {
     expect(resolveTextAnchor('Alpha target. Beta target.', { text: 'target' })).toEqual({
       kind: 'ambiguous',
     })
+  })
+
+  it('anchors a long quote by its ends when the middle drifted', () => {
+    const filler = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor '
+    const page =
+      'Intro. ' +
+      filler.repeat(3) +
+      'middle with [fr] marker and a caption ' +
+      filler.repeat(3) +
+      'the end of it. Outro.'
+    const quote = filler.repeat(3) + 'middle with marker ' + filler.repeat(3) + 'the end of it.'
+    const r = resolveTextAnchor(page, { text: quote })
+    expect(r).toMatchObject({ kind: 'placed', via: 'ends' })
+    if (r.kind !== 'placed') return
+    expect(page.slice(r.start, r.end).startsWith('lorem ipsum')).toBe(true)
+    expect(page.slice(r.start, r.end).endsWith('the end of it.')).toBe(true)
   })
 
   it('accepts a hint whose text still matches, falls back when it does not', () => {

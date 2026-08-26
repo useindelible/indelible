@@ -112,7 +112,7 @@ export interface TextAnchor {
 }
 
 export type AnchorResolution =
-	| { kind: 'placed'; start: number; end: number; via: 'hint' | 'search' }
+	| { kind: 'placed'; start: number; end: number; via: 'hint' | 'search' | 'ends' }
 	| { kind: 'ambiguous' }
 	| { kind: 'missing' };
 
@@ -134,8 +134,11 @@ const FOLD: Record<string, string> = {
 };
 const CITATION_LEAD = new Set(['.', ',', ';', ':', '!', '?', ')', '"', "'"]);
 const NO_SPACE_BEFORE = new Set(["'", ',', '.', ';', ':', '!', '?', ')']);
-const BRACKET_CITATION = /^\[\d{1,3}\]/;
+const BRACKET_CITATION = /^\[(?:\d{1,3}|[a-z]{2,3})\]/;
 const BARE_CITATION = /^\d{1,3}(?=$|\s|[.,;:!?)\]])/;
+const CHAINED_CITATION = /^\s*\d{1,3}(?=$|\s|[.,;:!?)\]])/;
+const ENDS_MIN_LENGTH = 120;
+const ENDS_ANCHOR = 48;
 const MAX_HINT_DRIFT = 400;
 const MIN_SEPARATION = 64;
 
@@ -158,8 +161,7 @@ export function normalizeForMatch(input: string): NormalizedText {
 		}
 		const bracket = BRACKET_CITATION.exec(input.slice(i, i + 5));
 		if (bracket) {
-			extendLast(i + bracket[0].length);
-			i += bracket[0].length;
+			i = swallowCitationRun(input, i + bracket[0].length, extendLast);
 			continue;
 		}
 		const last = text.at(-1);
@@ -173,8 +175,7 @@ export function normalizeForMatch(input: string): NormalizedText {
 		) {
 			const bare = BARE_CITATION.exec(input.slice(i, i + 16));
 			if (bare) {
-				extendLast(i + bare[0].length);
-				i += bare[0].length;
+				i = swallowCitationRun(input, i + bare[0].length, extendLast);
 				continue;
 			}
 		}
@@ -194,6 +195,17 @@ export function normalizeForMatch(input: string): NormalizedText {
 		i += 1;
 	}
 	return { text: text.join(''), starts, ends };
+}
+
+function swallowCitationRun(input: string, from: number, extendLast: (to: number) => void): number {
+	let at = from;
+	for (;;) {
+		const more = CHAINED_CITATION.exec(input.slice(at, at + 16));
+		if (!more || /^\s*$/.test(more[0])) break;
+		at += more[0].length;
+	}
+	extendLast(at);
+	return at;
 }
 
 /** `undefined` for no occurrence and for repeats that no hint separates. */
@@ -259,9 +271,61 @@ export function resolveTextAnchor(sourceText: string, anchor: TextAnchor): Ancho
 	};
 	const match = findBestTextMatch(sourceText, anchor.text, context);
 	if (match) return { kind: 'placed', ...match, via: 'search' };
-	return normalizeForMatch(sourceText).text.includes(expected)
-		? { kind: 'ambiguous' }
-		: { kind: 'missing' };
+	const src = normalizeForMatch(sourceText);
+	if (src.text.includes(expected)) return { kind: 'ambiguous' };
+	const ends = matchByEnds(src, expected, context);
+	if (ends === 'ambiguous') return { kind: 'ambiguous' };
+	if (ends) return { kind: 'placed', ...ends, via: 'ends' };
+	return { kind: 'missing' };
+}
+
+/** Long quotes drift in the middle (dropped markers, reflowed captions); anchor the two ends instead. */
+function matchByEnds(
+	src: NormalizedText,
+	needle: string,
+	context: AnchorContext
+): { start: number; end: number } | 'ambiguous' | undefined {
+	if (needle.length < ENDS_MIN_LENGTH) return undefined;
+	const head = needle.slice(0, ENDS_ANCHOR);
+	const tail = needle.slice(-ENDS_ANCHOR);
+	const heads = occurrences(src.text, head);
+	const tails = occurrences(src.text, tail);
+	if (heads.length === 0 || tails.length === 0) return undefined;
+
+	const prefix = normalizeForMatch(context.prefix ?? '').text.slice(-40);
+	const pairs = heads
+		.map((h) => {
+			const t = tails.find((candidate) => candidate > h);
+			if (t === undefined) return undefined;
+			const length = t + tail.length - h;
+			const ratio = length / needle.length;
+			if (ratio < 0.6 || ratio > 1.5) return undefined;
+			const before = src.text.slice(Math.max(0, h - prefix.length - 1), h).trimEnd();
+			return {
+				h,
+				end: t + tail.length,
+				drift: Math.abs(length - needle.length),
+				context: prefix && before.endsWith(prefix) ? 1 : 0
+			};
+		})
+		.filter((pair): pair is NonNullable<typeof pair> => pair !== undefined)
+		.sort((a, b) => b.context - a.context || a.drift - b.drift);
+	const best = pairs[0];
+	if (!best) return undefined;
+	const second = pairs[1];
+	const margin = needle.length * 0.05;
+	if (second && second.context === best.context && second.drift - best.drift < margin) {
+		return 'ambiguous';
+	}
+	return { start: src.starts[best.h]!, end: src.ends[best.end - 1]! };
+}
+
+function occurrences(haystack: string, needle: string): number[] {
+	const found: number[] = [];
+	for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, at + 1)) {
+		found.push(at);
+	}
+	return found;
 }
 
 export function normalizeWhitespace(value: string): string {
