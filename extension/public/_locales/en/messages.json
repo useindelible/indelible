@@ -67,6 +67,22 @@
       }
     }
   },
+  "toolbar_highlights_unplaced_one": {
+    "message": "$COUNT$ highlight couldn't be placed on this page",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "toolbar_highlights_unplaced_other": {
+    "message": "$COUNT$ highlights couldn't be placed on this page",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "toolbar_saved_ago": {
     "message": "saved $WHEN$",
     "placeholders": {

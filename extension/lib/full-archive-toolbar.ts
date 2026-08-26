@@ -1,4 +1,5 @@
 import { escapeHtml } from '@/lib/html'
+import { tPlural } from '@/lib/i18n'
 import { nodePath } from '@/lib/dom-range'
 import {
   clearProjectedHighlights,
@@ -116,21 +117,31 @@ function parseProjectedHighlight(value: unknown): ProjectedHighlight | undefined
   const textContent = record.text_content
   if (typeof textContent !== 'string') return undefined
 
-  const sourceLocator = parseSourceLocator(record.source_locator, textContent)
+  const locatorRecord = isRecord(record.source_locator) ? record.source_locator : undefined
+  if (locatorRecord?.type === 'text_quote') {
+    return {
+      id: typeof record.id === 'string' ? record.id : undefined,
+      color: typeof record.color === 'string' ? record.color : undefined,
+      text_content: textContent,
+      context: {
+        prefix: stringField(locatorRecord, 'prefix'),
+        suffix: stringField(locatorRecord, 'suffix'),
+      },
+    }
+  }
   return {
     id: typeof record.id === 'string' ? record.id : undefined,
     color: typeof record.color === 'string' ? record.color : undefined,
     text_content: textContent,
-    source_locator: sourceLocator,
+    source_locator: parseSourceLocator(locatorRecord, textContent),
   }
 }
 
 function parseSourceLocator(
-  value: unknown,
+  record: Record<string, unknown> | undefined,
   textContent: string,
 ): ProjectedHighlight['source_locator'] {
-  if (typeof value !== 'object' || value === null) return undefined
-  const record = value as Record<string, unknown>
+  if (!record) return undefined
   return {
     type: 'web_page_dom_range',
     url: stringField(record, 'url') ?? '',
@@ -478,9 +489,15 @@ function syncHighlightProjection(root: ShadowRoot, state: ToolbarState): void {
     return
   }
 
-  const projectedCount = projectHighlights(highlights)
-  if (projectedCount === 0) {
+  const result = projectHighlights(highlights)
+  if (result.placed === 0) {
     clearProjectedHighlights()
+  }
+  const unplaced = root.querySelector<HTMLElement>('.js-unplaced')
+  if (unplaced) {
+    unplaced.hidden = result.unplaced === 0
+    unplaced.textContent =
+      result.unplaced > 0 ? tPlural('toolbar_highlights_unplaced', result.unplaced) : ''
   }
   syncAutoHighlightToggle(root)
 }

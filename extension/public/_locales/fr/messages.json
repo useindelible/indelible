@@ -67,6 +67,22 @@
       }
     }
   },
+  "toolbar_highlights_unplaced_one": {
+    "message": "$COUNT$ surlignage n'a pas pu être placé sur cette page",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "toolbar_highlights_unplaced_other": {
+    "message": "$COUNT$ surlignages n'ont pas pu être placés sur cette page",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "toolbar_saved_ago": {
     "message": "enregistré $WHEN$",
     "placeholders": {
