@@ -43,34 +43,34 @@ export function toolbarMarkup(state: ToolbarState): string {
 
   const tagChipsHtml = (state.tags ?? [])
     .map(
-      (t) =>
-        `<span class="tag-chip" data-tag="${escapeAttr(t)}">${escapeHtml(t)}<button class="tag-remove" title="Remove">×</button></span>`,
+      (tag) =>
+        `<span class="tag-chip" data-tag="${escapeAttr(tag)}">${escapeHtml(tag)}<button class="tag-remove" title="${escapeAttr(t('tag_remove'))}">×</button></span>`,
     )
     .join('')
 
   const tagPanel = `
     <div class="trs-panel tag-panel" style="display:none">
       <div class="panel-header">
-        <span class="panel-title">Tags</span>
-        <button class="ic-btn js-panel-close" title="Close">${IC_CLOSE}</button>
+        <span class="panel-title">${escapeHtml(t('tags_title'))}</span>
+        <button class="ic-btn js-panel-close" title="${escapeAttr(t('close'))}">${IC_CLOSE}</button>
       </div>
       <div class="tag-chips">${tagChipsHtml}</div>
       <div class="tag-input-wrap">
-        <input type="text" class="tag-input" placeholder="Add tag…">
-        <button class="btn-primary js-add-tag">Add</button>
+        <input type="text" class="tag-input" placeholder="${escapeAttr(t('tag_placeholder'))}">
+        <button class="btn-primary js-add-tag">${escapeHtml(t('add'))}</button>
       </div>
     </div>`
 
   const notePanel = `
     <div class="trs-panel note-panel" style="display:none">
       <div class="panel-header">
-        <span class="panel-title">Note</span>
-        <button class="ic-btn js-panel-close" title="Close">${IC_CLOSE}</button>
+        <span class="panel-title">${escapeHtml(t('note_title'))}</span>
+        <button class="ic-btn js-panel-close" title="${escapeAttr(t('close'))}">${IC_CLOSE}</button>
       </div>
-      <textarea class="note-textarea" placeholder="Add a note about this article…">${escapeHtml(state.note ?? '')}</textarea>
+      <textarea class="note-textarea" placeholder="${escapeAttr(t('note_placeholder'))}">${escapeHtml(state.note ?? '')}</textarea>
       <div class="note-actions">
-        <button class="btn-ghost js-cancel-note">Cancel</button>
-        <button class="btn-primary js-save-note">Save note</button>
+        <button class="btn-ghost js-cancel-note">${escapeHtml(t('cancel'))}</button>
+        <button class="btn-primary js-save-note">${escapeHtml(t('save_note'))}</button>
       </div>
     </div>`
 
@@ -88,46 +88,46 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <a class="btn-text" href="${readerUrl}" target="_blank" rel="noopener noreferrer">Open reader${IC_ARROW_RIGHT}</a>
+          <a class="btn-text" href="${readerUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(t('open_reader'))}${IC_ARROW_RIGHT}</a>
           ${highlightCount > 0 ? `<span class="count-pill">${escapeHtml(tPlural('toolbar_highlights', highlightCount))}</span>` : ''}
           <span class="count-pill js-unplaced" hidden></span>
         </div>
         <div class="item">
-          <span class="t">${escapeHtml(entry?.title ?? 'Saved page')}</span>
+          <span class="t">${escapeHtml(entry?.title ?? t('saved_page'))}</span>
           ${domainMeta ? `<span class="dot">·</span><span class="s">${escapeHtml(domainMeta)}</span>` : ''}
         </div>
         <div class="group">
           <div class="toggle-group">
             <span class="switch js-toggle off"><span class="knob"></span></span>
-            <span>Auto-highlight</span>
+            <span>${escapeHtml(t('auto_highlight'))}</span>
           </div>
           <span class="vr"></span>
-          <button class="ic-btn js-tag-btn" title="Tags">${IC_TAG}</button>
-          <button class="ic-btn js-note-btn" title="Note">${IC_NOTE}</button>
-          <button class="ic-btn js-star-btn${entry?.is_favorite ? ' starred' : ''}" title="Star">${IC_STAR}</button>
-          ${entry?.document_id ? `<button class="ic-btn js-reprocess-btn" title="Retry processing" aria-label="Retry processing">${IC_REFRESH}</button><span class="status js-reprocess-status" aria-live="polite"></span>` : ''}
+          <button class="ic-btn js-tag-btn" title="${escapeAttr(t('tags_title'))}">${IC_TAG}</button>
+          <button class="ic-btn js-note-btn" title="${escapeAttr(t('note_title'))}">${IC_NOTE}</button>
+          <button class="ic-btn js-star-btn${entry?.is_favorite ? ' starred' : ''}" title="${escapeAttr(t('star'))}">${IC_STAR}</button>
+          ${entry?.document_id ? `<button class="ic-btn js-reprocess-btn" title="${escapeAttr(t('retry_processing'))}" aria-label="${escapeAttr(t('retry_processing'))}">${IC_REFRESH}</button><span class="status js-reprocess-status" aria-live="polite"></span>` : ''}
           <span class="vr"></span>
           <button class="dropdown js-triage">
             <span class="triage-ic">${triageIcon(triage)}</span>
             <span class="triage-label">${escapeHtml(triageLabel(triage))}</span>
             ${IC_CHEVRON_DOWN}
           </button>
-          <button class="ic-btn js-minimize" title="Minimize">${IC_CHEVRON_UP}</button>
+          <button class="ic-btn js-minimize" title="${escapeAttr(t('minimize'))}">${IC_CHEVRON_UP}</button>
         </div>`
-      return `<div class="bar" role="region" aria-label="Indelible controls">${barContent}</div>${tagPanel}${notePanel}${triageMenu}`
+      return `<div class="bar" role="region" aria-label="${escapeAttr(t('controls_label'))}">${barContent}</div>${tagPanel}${notePanel}${triageMenu}`
 
     case 'saving':
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Saving this page</span>
+          <span class="item-name">${escapeHtml(t('saving_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">Extracting readable content and creating the archive</span>
+          <span class="s">${escapeHtml(t('saving_detail'))}</span>
         </div>
         <div class="group">
-          <span class="status saving"><span class="spinner"></span>Saving</span>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <span class="status saving"><span class="spinner"></span>${escapeHtml(t('saving_status'))}</span>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -135,14 +135,14 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Checking this page</span>
+          <span class="item-name">${escapeHtml(t('checking_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">Looking for an existing saved item after your click</span>
+          <span class="s">${escapeHtml(t('checking_detail'))}</span>
         </div>
         <div class="group">
-          <span class="status checking"><span class="spinner"></span>Checking</span>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <span class="status checking"><span class="spinner"></span>${escapeHtml(t('checking_status'))}</span>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -150,15 +150,15 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Connect Indelible</span>
+          <span class="item-name">${escapeHtml(t('connect_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">Authenticate your workspace before saving this page</span>
+          <span class="s">${escapeHtml(t('connect_detail'))}</span>
         </div>
         <div class="group">
           <input class="url-input" data-role="server-url" type="text" value="${escapeAttr(state.serverUrl ?? 'https://useindelible.com')}" placeholder="https://useindelible.com" spellcheck="false" autocomplete="off">
-          <button class="btn-primary" data-action="connect">Connect</button>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <button class="btn-primary" data-action="connect">${escapeHtml(t('connect'))}</button>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -166,16 +166,16 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Indelible is unreachable</span>
+          <span class="item-name">${escapeHtml(t('unreachable_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">${escapeHtml(state.message ?? 'Your session is retained · update the address if your server moved')}</span>
+          <span class="s">${escapeHtml(state.message ?? t('unreachable_detail'))}</span>
         </div>
         <div class="group">
           <input class="url-input" data-role="server-url" type="text" value="${escapeAttr(state.serverUrl ?? 'https://useindelible.com')}" placeholder="https://useindelible.com" spellcheck="false" autocomplete="off">
-          <button class="btn-primary" data-action="retry">Retry</button>
-          <button class="btn-ghost" data-action="sign-out">Sign out</button>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <button class="btn-primary" data-action="retry">${escapeHtml(t('retry'))}</button>
+          <button class="btn-ghost" data-action="sign-out">${escapeHtml(t('sign_out'))}</button>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -183,14 +183,14 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Connecting Indelible</span>
+          <span class="item-name">${escapeHtml(t('connecting_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">Opening secure browser authorization</span>
+          <span class="s">${escapeHtml(t('connecting_detail'))}</span>
         </div>
         <div class="group">
-          <span class="status checking"><span class="spinner"></span>Connecting</span>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <span class="status checking"><span class="spinner"></span>${escapeHtml(t('connecting_status'))}</span>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -198,14 +198,14 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Couldn’t connect</span>
+          <span class="item-name">${escapeHtml(t('auth_error_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">${escapeHtml(state.message ?? 'Authorization could not be started. Please try again.')}</span>
+          <span class="s">${escapeHtml(state.message ?? t('auth_error_detail'))}</span>
         </div>
         <div class="group">
-          <button class="btn-primary" data-action="connect">Try again</button>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <button class="btn-primary" data-action="connect">${escapeHtml(t('try_again'))}</button>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -213,14 +213,14 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Already in your library</span>
+          <span class="item-name">${escapeHtml(t('already_saved_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">This page was saved before — refresh to update or create a new entry</span>
+          <span class="s">${escapeHtml(t('already_saved_detail'))}</span>
         </div>
         <div class="group">
-          <button class="btn-ghost" data-action="refresh">Refresh</button>
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <button class="btn-ghost" data-action="refresh">${escapeHtml(t('refresh'))}</button>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -228,13 +228,13 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Can't save this page</span>
+          <span class="item-name">${escapeHtml(t('unsupported_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">This type of page cannot be archived</span>
+          <span class="s">${escapeHtml(t('unsupported_detail'))}</span>
         </div>
         <div class="group">
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
 
@@ -242,18 +242,18 @@ export function toolbarMarkup(state: ToolbarState): string {
       barContent = `
         <div class="left-lockup">
           ${BRAND_MARK}
-          <span class="item-name">Something went wrong</span>
+          <span class="item-name">${escapeHtml(t('error_title'))}</span>
         </div>
         <div class="item">
-          <span class="s">${escapeHtml(state.message ?? 'An error occurred while saving')}</span>
+          <span class="s">${escapeHtml(state.message ?? t('error_detail'))}</span>
         </div>
         <div class="group">
-          <button class="ic-btn js-dismiss" title="Dismiss">${IC_CLOSE}</button>
+          <button class="ic-btn js-dismiss" title="${escapeAttr(t('dismiss'))}">${IC_CLOSE}</button>
         </div>`
       break
   }
 
-  return `<div class="bar" role="region" aria-label="Indelible controls">${barContent}</div>`
+  return `<div class="bar" role="region" aria-label="${escapeAttr(t('controls_label'))}">${barContent}</div>`
 }
 
 function domainFromUrl(url: string | undefined): string | undefined {
