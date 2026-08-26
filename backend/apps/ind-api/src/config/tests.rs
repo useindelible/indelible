@@ -100,7 +100,7 @@ fn extension_redirect_uris_default_to_the_fixed_store_identity_callbacks() {
     assert_eq!(
         config.extension.redirect_uris,
         [
-            "https://lblngpkieoichinegfhgacmcjbahjbek.chromiumapp.org/indelible",
+            "https://jidilhjojlgndbpeooeeceohmkedooef.chromiumapp.org/indelible",
             "https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible",
         ]
     );

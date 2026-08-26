@@ -49,7 +49,7 @@ impl Default for ExtensionSettings {
 
 pub(super) fn default_extension_redirect_uris() -> Vec<String> {
     vec![
-        "https://lblngpkieoichinegfhgacmcjbahjbek.chromiumapp.org/indelible".to_string(),
+        "https://jidilhjojlgndbpeooeeceohmkedooef.chromiumapp.org/indelible".to_string(),
         "https://38bd18db5de5caccb6ab6c1271fec03ec1662d5c.extensions.allizom.org/indelible"
             .to_string(),
     ]

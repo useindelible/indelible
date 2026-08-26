@@ -20,12 +20,12 @@ request host permissions.
 
 ## Stable store identities
 
-The Chrome Web Store item ID is `lblngpkieoichinegfhgacmcjbahjbek`. Chrome
+The Chrome Web Store item ID is `jidilhjojlgndbpeooeeceohmkedooef`. Chrome
 builds carry that item's public `key` in `manifest.json`, so store and unpacked
 builds share this callback:
 
 ```text
-https://lblngpkieoichinegfhgacmcjbahjbek.chromiumapp.org/indelible
+https://jidilhjojlgndbpeooeeceohmkedooef.chromiumapp.org/indelible
 ```
 
 The public key is safe to distribute; the store signing key remains private.
