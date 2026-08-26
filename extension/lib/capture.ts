@@ -2,6 +2,8 @@
 // Using a discriminated union eliminates the need for runtime casts elsewhere.
 
 import type { SourceLocatorPayload } from '../../shared/highlight-source'
+import type { LocatorPayload } from './api'
+import type { ReaderLocatorInput } from './reader-locator'
 
 export type CaptureMessage =
   | { action: 'capture:run' }
@@ -10,6 +12,8 @@ export type CaptureMessage =
   | { action: 'capture:progress'; step: CaptureStep }
   | { action: 'capture:result'; payload: CapturePayload }
   | { action: 'capture:error'; message: string; payload?: CapturePayload }
+  | { action: 'locator:resolve'; payload: ReaderLocatorInput }
+  | { action: 'locator:result'; locator?: LocatorPayload }
 
 export type CaptureStep = 'thumbnail' | 'extracting' | 'singlefile' | 'uploading'
 
@@ -44,7 +48,8 @@ export function isCaptureMessage(value: unknown): value is CaptureMessage {
     value !== null &&
     'action' in value &&
     typeof (value as Record<string, unknown>)['action'] === 'string' &&
-    (String((value as Record<string, unknown>)['action']).startsWith('capture:') ||
-      String((value as Record<string, unknown>)['action']).startsWith('selection:'))
+    ['capture:', 'selection:', 'locator:'].some((prefix) =>
+      String((value as Record<string, unknown>)['action']).startsWith(prefix),
+    )
   )
 }

@@ -673,7 +673,7 @@ describe('background message handler', () => {
       expect(highlightWriteAttempted).toBe(false)
     })
 
-    it('uses flattened document asset responses to build reader locators', async () => {
+    async function highlightThroughReaderLocator(locatorFails: boolean) {
       const libraryEntryId = 'lib_018f2f1a-1111-7222-8333-111111111111'
       const tab = {
         id: 42,
@@ -681,6 +681,7 @@ describe('background message handler', () => {
         title: 'Reader article',
       }
       let highlightBody: unknown
+      let locatorRequest: unknown
 
       mockStorage['ind_server_url'] = 'https://test.useindelible.com'
       setAccessTokenMemory('jwt_token', FUTURE_EXPIRY)
@@ -699,6 +700,14 @@ describe('background message handler', () => {
                   text_content: 'selected phrase',
                 },
               },
+            }
+          }
+          if (message.action === 'locator:resolve') {
+            locatorRequest = (message as unknown as { payload: unknown }).payload
+            if (locatorFails) throw new Error('content script gone')
+            return {
+              action: 'locator:result',
+              locator: { type: 'html', start_offset: 7, end_offset: 22 },
             }
           }
           return undefined
@@ -792,21 +801,35 @@ describe('background message handler', () => {
         { action: 'toolbar:highlight-selection' },
         { id: EXTENSION_ID },
       )
+      return { response, highlightBody, locatorRequest, libraryEntryId }
+    }
+
+    it('asks the content script for a reader locator built from the readable asset', async () => {
+      const { response, highlightBody, locatorRequest, libraryEntryId } =
+        await highlightThroughReaderLocator(false)
 
       expect(response.success).toBe(true)
+      expect(locatorRequest).toMatchObject({
+        readableHtml: '<article>Before selected phrase after.</article>',
+        text: 'selected phrase',
+      })
       expect(highlightBody).toMatchObject({
         color: 'yellow',
         text_content: 'selected phrase',
-        locator: {
-          type: 'html',
-          start_offset: 7,
-          end_offset: 22,
-        },
+        locator: { type: 'html', start_offset: 7, end_offset: 22 },
       })
       expect(fetchMock).not.toHaveBeenCalledWith(
         expect.stringContaining(`/api/v1/assets/${libraryEntryId}/readable_html`),
         expect.anything(),
       )
+    })
+
+    it('still writes the highlight when the reader locator cannot be resolved', async () => {
+      const { response, highlightBody } = await highlightThroughReaderLocator(true)
+
+      expect(response.success).toBe(true)
+      expect(highlightBody).toMatchObject({ color: 'yellow', text_content: 'selected phrase' })
+      expect((highlightBody as { locator?: unknown }).locator).toBeUndefined()
     })
   })
 })
