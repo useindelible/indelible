@@ -1,3 +1,6 @@
+#[global_allocator]
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 mod auto_heal;
 mod bootstrap;
 mod concurrency;
@@ -14,7 +17,10 @@ mod repositories;
 mod schedulers;
 mod shutdown;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    bootstrap::run().await
+fn main() -> anyhow::Result<()> {
+    ind_observability::process::disable_transparent_huge_pages();
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(bootstrap::run())
 }
