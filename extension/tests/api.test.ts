@@ -527,3 +527,34 @@ describe('api', () => {
     })
   })
 })
+
+describe('refreshAccessToken', () => {
+  beforeEach(() => {
+    clearMockStorage()
+    clearAccessTokenMemory()
+    fetchMock.mockReset()
+  })
+
+  it('shares one refresh request between concurrent callers', async () => {
+    mockStorage['ind_refresh_token'] = 'refresh_1'
+    mockStorage['ind_server_url'] = 'https://test.useindelible.com'
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            access_token: 'jwt_2',
+            refresh_token: 'refresh_2',
+            expires_at: FUTURE_EXPIRY,
+            token_type: 'Bearer',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+    )
+
+    const results = await Promise.all([refreshAccessToken(), refreshAccessToken()])
+
+    expect(results).toEqual([true, true])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(mockStorage['ind_refresh_token']).toBe('refresh_2')
+  })
+})
