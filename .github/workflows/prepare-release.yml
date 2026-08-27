@@ -9,6 +9,9 @@ on:
         type: choice
         options: [patch, minor, major]
 
+env:
+  GH_REPO: ${{ github.repository }}
+
 permissions:
   contents: read
   actions: read
