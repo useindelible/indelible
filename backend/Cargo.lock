@@ -3069,7 +3069,7 @@ dependencies = [
 
 [[package]]
 name = "ind-ai"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "axum",
@@ -3099,7 +3099,7 @@ dependencies = [
 
 [[package]]
 name = "ind-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3145,7 +3145,7 @@ dependencies = [
 
 [[package]]
 name = "ind-application"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3169,7 +3169,7 @@ dependencies = [
 
 [[package]]
 name = "ind-auth"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -3205,11 +3205,11 @@ dependencies = [
 
 [[package]]
 name = "ind-config"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "ind-domain"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3222,7 +3222,7 @@ dependencies = [
 
 [[package]]
 name = "ind-egress"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "reqwest 0.13.2",
  "thiserror 2.0.18",
@@ -3234,7 +3234,7 @@ dependencies = [
 
 [[package]]
 name = "ind-html"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ammonia",
  "html2md",
@@ -3246,7 +3246,7 @@ dependencies = [
 
 [[package]]
 name = "ind-http-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "axum",
@@ -3283,7 +3283,7 @@ dependencies = [
 
 [[package]]
 name = "ind-ingest"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3313,7 +3313,7 @@ dependencies = [
 
 [[package]]
 name = "ind-integrations"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ammonia",
  "async-trait",
@@ -3344,7 +3344,7 @@ dependencies = [
 
 [[package]]
 name = "ind-observability"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rustix",
  "tracing",
@@ -3353,7 +3353,7 @@ dependencies = [
 
 [[package]]
 name = "ind-persistence"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "apalis",
  "apalis-postgres",
@@ -3382,7 +3382,7 @@ dependencies = [
 
 [[package]]
 name = "ind-renderer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -3415,7 +3415,7 @@ dependencies = [
 
 [[package]]
 name = "ind-search"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3434,7 +3434,7 @@ dependencies = [
 
 [[package]]
 name = "ind-test-support"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "aws-config",
@@ -3472,7 +3472,7 @@ dependencies = [
 
 [[package]]
 name = "ind-worker"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ammonia",
  "anyhow",
