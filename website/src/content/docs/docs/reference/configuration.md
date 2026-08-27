@@ -43,7 +43,7 @@ and `ind-worker` unless noted.
 | `EXTENSION_REDIRECT_URIS` | for Edge, forks, or private builds | Comma-separated exact callback URLs returned by `identity.getRedirectURL('indelible')`. Indelible includes the official Chrome and Firefox callbacks by default. Setting this variable replaces those defaults, so include every browser you distribute. HTTPS is required; wildcards, credentials, query strings, fragments, malformed URLs, and duplicates make the API refuse to start |
 | `CORS_ORIGINS` | yes (production) | Comma-separated allowed browser origins. List every hostname you reach the instance by (a LAN name and a tailnet name, say); session refresh accepts any of them. Must not be the development default in production |
 | `COOKIE_DOMAIN` | no | Cookie domain when the API and web app share a parent domain |
-| `AUTH_ALLOW_SIGNUPS` | no | Set `false` to close signups; the first account on an empty instance can always be created |
+| `AUTH_ALLOW_SIGNUPS` | no | Defaults to `false`. The first account on an empty instance can always be created; set `true` temporarily to allow additional registrations |
 | `AUTH_CREDENTIAL_KEY` | conditional | 32-byte base64 key encrypting stored integration OAuth tokens. Required in production whenever an integration is configured. Generate: `openssl rand -base64 32` |
 
 ## Single sign-on

@@ -23,10 +23,10 @@ log_level   = "info"
 [auth]
 csrf_secret = "dev-csrf-secret-change-in-production"
 jwt_secret  = "dev-jwt-secret-change-in-production-min32"
-# Allow new user registration. Set false to lock signups after initial setup;
-# the first account can always be created on an empty instance (first-run setup).
+# Registration is closed after first-run setup by default; the first account can
+# always be created on an empty instance.
 # Env override: AUTH_ALLOW_SIGNUPS.
-allow_signups = true
+allow_signups = false
 
 # ---------------------------------------------------------------------------
 # ind-api: CORS / Frontend
