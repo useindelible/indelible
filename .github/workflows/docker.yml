@@ -28,6 +28,8 @@ jobs:
     name: Resolve build source
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       mode: ${{ steps.source.outputs.mode }}
       ref: ${{ steps.source.outputs.ref }}
