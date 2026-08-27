@@ -21,26 +21,14 @@ you put it behind a real hostname anyway. When you like it, jump to the
 production path.
 
 ```bash
-mkdir indelible && cd indelible
-curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml
-curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env
-
-# Fill in the generated secrets
-{
-  echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
-  echo "MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)"
-  echo "JWT_SECRET=$(openssl rand -hex 32)"
-  echo "CSRF_SECRET=$(openssl rand -hex 32)"
-  echo "ASSET_COOKIE_SECRET=$(openssl rand -hex 32)"
-  echo "AUTH_CREDENTIAL_KEY=$(openssl rand -base64 32)"
-} >> .env
-
-docker compose up -d
+mkdir indelible && cd indelible && curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/install.sh && sh install.sh
 ```
 
-Those two files come from the latest stable GitHub release. Its `.env` pins all
-three Indelible containers to that release, and Compose pulls the images from
-GHCR instead of building them on your machine.
+The installer downloads the files from the latest stable GitHub release, checks
+them against the release checksums, generates the required secrets, and starts
+the stack. Its `.env` pins all three Indelible containers to that release, and
+Compose pulls the images from GHCR instead of building them on your machine. It
+refuses to replace an existing `.env`.
 
 Open <http://localhost:38473> and create your account. That account is yours
 alone: signups close automatically once it exists, so there is nothing to switch

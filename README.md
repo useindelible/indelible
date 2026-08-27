@@ -24,26 +24,14 @@ library, permanently. Links rot; your library does not.
 You need Docker and a machine with a few GB of RAM.
 
 ```bash
-mkdir indelible && cd indelible
-curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml
-curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env
-
-{
-  echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
-  echo "MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)"
-  echo "JWT_SECRET=$(openssl rand -hex 32)"
-  echo "CSRF_SECRET=$(openssl rand -hex 32)"
-  echo "ASSET_COOKIE_SECRET=$(openssl rand -hex 32)"
-  echo "AUTH_CREDENTIAL_KEY=$(openssl rand -base64 32)"
-} >> .env
-
-docker compose up -d
+mkdir indelible && cd indelible && curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/install.sh && sh install.sh
 ```
 
-That brings up PostgreSQL, Silo, the renderer, the worker, and the API, which
-serves the web interface on the same port. Open http://localhost:38473 and
-create the first account. Compose pulls the release images from GHCR; it does
-not build Indelible on your machine.
+The installer checks the downloads against the release checksums, generates
+the required secrets, and brings up PostgreSQL, Silo, the renderer, the worker,
+and the API, which serves the web interface on the same port. Open
+http://localhost:38473 and create the first account. Compose pulls the release
+images from GHCR; it does not build Indelible on your machine.
 
 This quickstart runs on localhost without TLS. For a deployment reachable by
 other people, follow the

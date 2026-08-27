@@ -43,7 +43,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@e43eeffd51aefeea929f4ea14e09fd077153e788 # 1.94.1
 
       - name: Test release version management
-        run: node --test scripts/release-version.test.mjs
+        run: node --test scripts/release-version.test.mjs scripts/self-hosting-installer.test.mjs
 
       - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         id: state-token
@@ -478,6 +478,7 @@ jobs:
         working-directory: ${{ runner.temp }}/release
         run: |
           set -euo pipefail
+          sha256sum -c self-hosting-checksums-sha256.txt
           grep -qx "INDELIBLE_VERSION=$VERSION" example.env
           cp example.env verify.env
           {
@@ -499,7 +500,7 @@ jobs:
         working-directory: ${{ runner.temp }}/release
         run: |
           gh release upload "$TAG" \
-            docker-compose.yml example.env self-hosting-checksums-sha256.txt \
+            install.sh docker-compose.yml example.env self-hosting-checksums-sha256.txt \
             ./*.zip extension-checksums-sha256.txt \
             ./*.apk ./*.apk.sha256 ./*.aab ./*.aab.sha256 \
             release-images.json \

@@ -37,13 +37,9 @@ export const DOCS_LINK: NavLink = {
 	href: '/docs/getting-started/introduction/',
 };
 
-/** The stable release files needed before following the self-hosting guide. */
+/** Complete local installation through the latest stable release. */
 export const INSTALL_COMMANDS: readonly string[] = [
-	'mkdir indelible && cd indelible',
-	'REPO=https://github.com/useindelible/indelible',
-	'RELEASE=$REPO/releases/latest/download',
-	'curl -fsSLO "$RELEASE/docker-compose.yml"',
-	'curl -fsSL "$RELEASE/example.env" -o .env',
+	'mkdir indelible && cd indelible && curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/install.sh && sh install.sh',
 ];
 
 /** Every way in and out, as shown in the hero strip. */

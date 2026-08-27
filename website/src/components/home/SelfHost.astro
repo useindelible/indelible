@@ -20,14 +20,14 @@ import { SITE, INSTALL_COMMANDS } from '../../data/site';
 		<SectionLead
 			eyebrow={`Open source, ${SITE.licence}`}
 			title="Run it yourself, and keep running it."
-			lede="Download the stable release files, add your secrets, and Compose pulls the pinned images from GHCR."
+			lede="One installer downloads the stable release, checks its checksums, generates your secrets, and starts the pinned images from GHCR."
 		/>
 
 		<div class="host" {...reveal('scale')}>
 			<div class="panel">
 				<h3>Self-hosted</h3>
 				<p>Your hardware, your data, free forever.</p>
-				<Terminal lines={INSTALL_COMMANDS} label="Download the Indelible release files" />
+				<Terminal lines={INSTALL_COMMANDS} label="Install Indelible locally" />
 				<div class="cta">
 					<Button href="/docs/self-hosting/install/" arrow>Read the install guide</Button>
 				</div>

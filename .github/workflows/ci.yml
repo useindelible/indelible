@@ -204,7 +204,7 @@ jobs:
           cache-dependency-path: extension/package-lock.json
       - name: Test release version management
         working-directory: .
-        run: node --test scripts/release-version.test.mjs
+        run: node --test scripts/release-version.test.mjs scripts/self-hosting-installer.test.mjs
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
