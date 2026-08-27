@@ -44,7 +44,7 @@ ships a production compose file, and the
 | Client | Where |
 | --- | --- |
 | Web | Served by `ind-api`, no separate deployment |
-| Browser extension | `extension/` (Chrome, Edge, Firefox) |
+| Browser extension | [Chrome and Edge](https://chromewebstore.google.com/detail/indelible/jidilhjojlgndbpeooeeceohmkedooef), [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/indelible/), or [source](extension/) |
 | Mobile | `mobile/` (Android and iOS, Kotlin Multiplatform) |
 | Obsidian plugin | `obsidian/` |
 
