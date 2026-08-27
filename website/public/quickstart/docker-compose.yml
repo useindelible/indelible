@@ -2,9 +2,8 @@
 # Not for exposing to a network. See https://useindelible.com/docs/self-hosting/install/
 # for the production compose with TLS.
 #
-#   curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml
-#   curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env
-#   docker compose up -d
+#   mkdir indelible && cd indelible
+#   curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/install.sh | sh
 #
 # Then open http://localhost:38473 and create your account.
 
