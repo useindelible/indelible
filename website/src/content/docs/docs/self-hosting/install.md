@@ -22,8 +22,8 @@ production path.
 
 ```bash
 mkdir indelible && cd indelible
-curl -fsSL https://useindelible.com/quickstart/docker-compose.yml -o docker-compose.yml
-curl -fsSL https://useindelible.com/quickstart/env.example -o .env
+curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml
+curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env
 
 # Fill in the generated secrets
 {
@@ -37,6 +37,10 @@ curl -fsSL https://useindelible.com/quickstart/env.example -o .env
 
 docker compose up -d
 ```
+
+Those two files come from the latest stable GitHub release. Its `.env` pins all
+three Indelible containers to that release, and Compose pulls the images from
+GHCR instead of building them on your machine.
 
 Open <http://localhost:38473> and create your account. That account is yours
 alone: signups close automatically once it exists, so there is nothing to switch
@@ -195,6 +199,29 @@ volumes:
 `docker compose up -d`, then add TLS in front of port `38473` using one of the
 options below. Migrations run automatically at startup, so there is no separate
 database step.
+
+## Upgrading
+
+Release downloads pin `INDELIBLE_VERSION` in `.env`, so upgrades are explicit
+and all three Indelible services move together. Take a database dump, download
+the Compose file from the new release, then change only that version line in
+your existing `.env`:
+
+```bash
+curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml \
+  -o docker-compose.yml
+
+# Edit the existing line to the version shown by the new GitHub release:
+# INDELIBLE_VERSION=0.2.0
+
+docker compose pull
+docker compose up -d
+```
+
+Do not replace your existing `.env` with `example.env`: it contains your
+database password, object-store password, and authentication secrets. Database
+migrations run automatically and are forward-only, so keep the pre-upgrade dump
+until you have verified the new release.
 
 If you reach the same instance through more than one hostname, a LAN name and a
 tailnet name for example, list them all in `CORS_ORIGINS`. Session refresh

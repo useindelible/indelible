@@ -1,0 +1,507 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Stable version increment
+        required: true
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Version, verify CI, tag, and create draft
+    runs-on: ubuntu-latest
+    environment: release
+    timeout-minutes: 150
+    outputs:
+      source-sha: ${{ steps.commit.outputs.source_sha }}
+      tag: ${{ steps.state.outputs.tag }}
+      version: ${{ steps.state.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@e43eeffd51aefeea929f4ea14e09fd077153e788 # 1.94.1
+
+      - name: Test release version management
+        run: node --test scripts/release-version.test.mjs
+
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        id: state-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Resolve new or interrupted release
+        id: state
+        env:
+          APP_SLUG: ${{ steps.state-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.state-token.outputs.token }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+        run: |
+          set -euo pipefail
+          git fetch --force origin '+refs/tags/*:refs/tags/*'
+
+          releases_json="$(
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100"
+          )"
+          latest_tag="$(jq -r '
+              flatten
+              | map(select(
+                  (.draft | not)
+                  and (.prerelease | not)
+                  and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))
+                ))
+              | sort_by(.published_at)
+              | last
+              | .tag_name // empty
+            ' <<< "$releases_json")"
+          if [[ -z "$latest_tag" ]]; then
+            echo "::error::No published stable release establishes the current version"
+            exit 1
+          fi
+          published_version="${latest_tag#v}"
+
+          next_version() {
+            node --input-type=module -e \
+              'import { incrementVersion } from "./scripts/release-version.mjs"; console.log(incrementVersion(process.argv[1], process.argv[2]));' \
+              "$published_version" "$1"
+          }
+          requested_version="$(next_version "$RELEASE_TYPE")"
+          patch_version="$(next_version patch)"
+          minor_version="$(next_version minor)"
+          major_version="$(next_version major)"
+          allowed_version() {
+            [[ "$1" == "$patch_version" || "$1" == "$minor_version" || "$1" == "$major_version" ]]
+          }
+          greater_than_published() {
+            [[ "$1" != "$published_version" \
+              && "$(printf '%s\n%s\n' "$published_version" "$1" | sort -V | tail -1)" == "$1" ]]
+          }
+          verify_release_commit() {
+            local sha="$1"
+            local version="$2"
+            local login subject
+            login="$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq '.author.login // .committer.login // ""')"
+            subject="$(git show -s --format=%s "$sha")"
+            if [[ "$login" != "${APP_SLUG}[bot]" ]]; then
+              echo "::error::Release commit $sha was authored by $login, not ${APP_SLUG}[bot]"
+              exit 1
+            fi
+            if [[ "$subject" != "chore(release): v$version" ]]; then
+              echo "::error::Release commit $sha has unexpected subject: $subject"
+              exit 1
+            fi
+          }
+
+          mapfile -t pending_tags < <(
+            {
+              git tag --list
+              jq -r 'flatten | map(select(.draft)) | .[].tag_name' <<< "$releases_json"
+            } \
+              | sort -u \
+              | while read -r tag; do
+                  [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+                  version="${tag#v}"
+                  greater_than_published "$version" && printf '%s\n' "$tag"
+                done
+          )
+          if (( ${#pending_tags[@]} > 1 )); then
+            echo "::error::Multiple pending stable release tags exist: ${pending_tags[*]}"
+            exit 1
+          fi
+
+          if (( ${#pending_tags[@]} == 1 )); then
+            tag="${pending_tags[0]}"
+            version="${tag#v}"
+            if ! allowed_version "$version"; then
+              echo "::error::Pending version $version is not a valid next stable version after $published_version"
+              exit 1
+            fi
+            if ! git rev-parse --verify "refs/tags/$tag" > /dev/null 2>&1; then
+              echo "::error::Draft $tag exists without its protected Git tag"
+              exit 1
+            fi
+            if [[ "$(git cat-file -t "refs/tags/$tag")" != "tag" ]]; then
+              echo "::error::$tag must be an annotated tag"
+              exit 1
+            fi
+            source_sha="$(git rev-list -n 1 "$tag")"
+            verify_release_commit "$source_sha" "$version"
+            git checkout --detach "$source_sha"
+            tagged_version="$(node scripts/release-version.mjs inspect | jq -r '.version')"
+            if [[ "$tagged_version" != "$version" ]]; then
+              echo "::error::$tag contains version $tagged_version, expected $version"
+              exit 1
+            fi
+            echo "Resuming $tag at $source_sha; release_type is intentionally ignored"
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          else
+            source_version="$(node scripts/release-version.mjs inspect | jq -r '.version')"
+            if [[ "$source_version" == "$published_version" ]]; then
+              next_json="$(node scripts/release-version.mjs bump "$RELEASE_TYPE")"
+              version="$(jq -r '.version' <<< "$next_json")"
+              tag="v$version"
+              echo "bumped=true" >> "$GITHUB_OUTPUT"
+            elif greater_than_published "$source_version"; then
+              version="$source_version"
+              tag="v$version"
+              if ! allowed_version "$version"; then
+                echo "::error::Source version $version is not a valid next stable version after $published_version"
+                exit 1
+              fi
+              mapfile -t release_commits < <(
+                git log origin/main --format='%H%x09%s' \
+                  | awk -F '\t' -v subject="chore(release): $tag" '$2 == subject {print $1}'
+              )
+              if (( ${#release_commits[@]} != 1 )); then
+                echo "::error::Expected one release commit for $tag, found ${#release_commits[@]}"
+                exit 1
+              fi
+              source_sha="${release_commits[0]}"
+              verify_release_commit "$source_sha" "$version"
+              git checkout --detach "$source_sha"
+              recovered_version="$(node scripts/release-version.mjs inspect | jq -r '.version')"
+              if [[ "$recovered_version" != "$version" ]]; then
+                echo "::error::Release commit $source_sha contains version $recovered_version, expected $version"
+                exit 1
+              fi
+              echo "Resuming pending version $version at $source_sha; release_type is intentionally ignored"
+              echo "bumped=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error::Source version $source_version is older than published release $published_version"
+              exit 1
+            fi
+          fi
+
+          if [[ "$version" == "$requested_version" ]]; then
+            echo "Resolved requested $RELEASE_TYPE release $version"
+          elif [[ "${pending_tags[*]:-}" == "" && "${source_version:-}" == "$published_version" ]]; then
+            echo "::error::Resolved $version instead of requested $requested_version"
+            exit 1
+          fi
+
+          if [[ -n "${source_sha:-}" ]]; then
+            echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Refresh and validate generated version files
+        if: ${{ steps.state.outputs.bumped == 'true' }}
+        run: |
+          set -euo pipefail
+          cargo update --workspace --manifest-path backend/Cargo.toml
+          cargo metadata --locked --no-deps --manifest-path backend/Cargo.toml > /dev/null
+          npm ci --ignore-scripts --prefix extension
+          node scripts/release-version.mjs inspect
+          git diff --check
+
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        if: ${{ steps.state.outputs.bumped == 'true' }}
+        id: commit-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Commit and push release version
+        id: commit
+        env:
+          APP_SLUG: ${{ steps.commit-token.outputs.app-slug }}
+          APP_TOKEN: ${{ steps.commit-token.outputs.token }}
+          BUMPED: ${{ steps.state.outputs.bumped }}
+          TAG: ${{ steps.state.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ "$BUMPED" == "true" ]]; then
+            bot_id="$(GH_TOKEN="$APP_TOKEN" gh api "/users/${APP_SLUG}[bot]" --jq '.id')"
+            git config user.name "${APP_SLUG}[bot]"
+            git config user.email "$bot_id+${APP_SLUG}[bot]@users.noreply.github.com"
+            git add \
+              backend/Cargo.toml backend/Cargo.lock \
+              extension/package.json extension/package-lock.json \
+              mobile/composeApp/build.gradle.kts
+            git commit -m "chore(release): $TAG"
+            git remote set-url origin "https://x-access-token:$APP_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+            git push origin HEAD:main
+          fi
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for CI on the release commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_SHA: ${{ steps.commit.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            run="$(
+              gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SOURCE_SHA&event=push&per_page=10" \
+                --jq '.workflow_runs | sort_by(.created_at) | last // {}'
+            )"
+            status="$(jq -r '.status // "missing"' <<< "$run")"
+            conclusion="$(jq -r '.conclusion // ""' <<< "$run")"
+            url="$(jq -r '.html_url // ""' <<< "$run")"
+
+            if [[ "$status" == "completed" && "$conclusion" == "success" ]]; then
+              echo "CI succeeded for $SOURCE_SHA: $url"
+              exit 0
+            fi
+            if [[ "$status" == "completed" ]]; then
+              echo "::error::CI completed with $conclusion for $SOURCE_SHA: $url"
+              exit 1
+            fi
+            echo "Waiting for CI on $SOURCE_SHA ($attempt/120; status=$status)"
+            sleep 60
+          done
+          echo "::error::CI did not succeed within 120 minutes for $SOURCE_SHA"
+          exit 1
+
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        id: release-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Create or verify tag and draft
+        env:
+          APP_TOKEN: ${{ steps.release-token.outputs.token }}
+          SOURCE_SHA: ${{ steps.commit.outputs.source_sha }}
+          TAG: ${{ steps.state.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git remote set-url origin "https://x-access-token:$APP_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null 2>&1; then
+            git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+            if [[ "$(git cat-file -t "refs/tags/$TAG")" != "tag" ]]; then
+              echo "::error::$TAG must be an annotated tag"
+              exit 1
+            fi
+            tag_sha="$(git rev-list -n 1 "$TAG")"
+            if [[ "$tag_sha" != "$SOURCE_SHA" ]]; then
+              echo "::error::$TAG points to $tag_sha, expected $SOURCE_SHA"
+              exit 1
+            fi
+          else
+            app_slug="${{ steps.release-token.outputs.app-slug }}"
+            bot_id="$(GH_TOKEN="$APP_TOKEN" gh api "/users/${app_slug}[bot]" --jq '.id')"
+            git config user.name "${app_slug}[bot]"
+            git config user.email "$bot_id+${app_slug}[bot]@users.noreply.github.com"
+            git tag -a "$TAG" "$SOURCE_SHA" -m "Indelible $TAG"
+            git push origin "refs/tags/$TAG"
+          fi
+
+          if release="$(GH_TOKEN="$APP_TOKEN" gh release view "$TAG" --json isDraft,url 2>/dev/null)"; then
+            if [[ "$(jq -r '.isDraft' <<< "$release")" != "true" ]]; then
+              echo "::error::$TAG is already published and cannot be prepared again"
+              exit 1
+            fi
+            echo "Reusing draft $(jq -r '.url' <<< "$release")"
+          else
+            GH_TOKEN="$APP_TOKEN" gh release create "$TAG" \
+              --draft \
+              --generate-notes \
+              --title "PREPARING: Indelible $TAG" \
+              --verify-tag
+          fi
+
+  self-hosting:
+    name: Package self-hosting files
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+      - run: bash scripts/package-self-hosting-release.sh "${{ needs.prepare.outputs.tag }}" "$RUNNER_TEMP/release"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-self-hosting
+          path: ${{ runner.temp }}/release/*
+          if-no-files-found: error
+
+  extension:
+    name: Build extension archives
+    needs: prepare
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+      - run: npm ci
+      - run: npm run zip:all
+      - run: npm run verify:stores
+      - name: Collect archives and checksums
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          cp .output/*.zip "$RUNNER_TEMP/release/"
+          cd "$RUNNER_TEMP/release"
+          sha256sum ./*.zip > extension-checksums-sha256.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-extension
+          path: ${{ runner.temp }}/release/*
+          if-no-files-found: error
+
+  android:
+    name: Build signed Android artifacts
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: release
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Decode signing keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Build signed APK and AAB
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :composeApp:assembleRelease :composeApp:bundleRelease
+      - name: Collect artifacts and checksums
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          cp composeApp/build/outputs/apk/release/composeApp-release.apk "$RUNNER_TEMP/release/indelible-$TAG.apk"
+          cp composeApp/build/outputs/bundle/release/composeApp-release.aab "$RUNNER_TEMP/release/indelible-$TAG.aab"
+          cd "$RUNNER_TEMP/release"
+          sha256sum "indelible-$TAG.apk" > "indelible-$TAG.apk.sha256"
+          sha256sum "indelible-$TAG.aab" > "indelible-$TAG.aab.sha256"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-android
+          path: ${{ runner.temp }}/release/*
+          if-no-files-found: error
+
+  docker:
+    name: Build exact release images
+    needs: prepare
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.tag }}
+
+  ready:
+    name: Verify and populate draft
+    needs: [prepare, self-hosting, extension, android, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/release
+
+      - name: Build and verify release image manifest
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.source-sha }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        working-directory: ${{ runner.temp }}/release
+        run: |
+          set -euo pipefail
+          fragments=(release-image-*.json)
+          if (( ${#fragments[@]} != 3 )); then
+            echo "::error::Expected three release image records, found ${#fragments[@]}"
+            exit 1
+          fi
+          jq -s -e --arg version "$VERSION" --arg source "$SOURCE_SHA" \
+            'all(.[]; .version == $version and .source == $source)' \
+            "${fragments[@]}" > /dev/null
+          jq -s --arg version "$VERSION" --arg tag "$TAG" --arg source "$SOURCE_SHA" '
+            {
+              version: $version,
+              tag: $tag,
+              source: $source,
+              images: (map({key: .name, value: {reference: .reference, digest: .digest}}) | from_entries)
+            }
+          ' "${fragments[@]}" > release-images.json
+          test "$(jq '.images | length' release-images.json)" -eq 3
+
+      - name: Render and pull the exact release stack
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        working-directory: ${{ runner.temp }}/release
+        run: |
+          set -euo pipefail
+          grep -qx "INDELIBLE_VERSION=$VERSION" example.env
+          cp example.env verify.env
+          {
+            echo 'POSTGRES_PASSWORD=release-verification'
+            echo 'MINIO_ROOT_PASSWORD=release-verification'
+            echo 'JWT_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            echo 'CSRF_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            echo 'ASSET_COOKIE_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+            echo 'AUTH_CREDENTIAL_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY='
+          } >> verify.env
+          docker compose --env-file verify.env -f docker-compose.yml config > /dev/null
+          docker compose --env-file verify.env -f docker-compose.yml pull api worker renderer
+          rm verify.env
+
+      - name: Attach verified release artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        working-directory: ${{ runner.temp }}/release
+        run: |
+          gh release upload "$TAG" \
+            docker-compose.yml example.env self-hosting-checksums-sha256.txt \
+            ./*.zip extension-checksums-sha256.txt \
+            ./*.apk ./*.apk.sha256 ./*.aab ./*.aab.sha256 \
+            release-images.json \
+            --clobber
+          gh release edit "$TAG" --title "Indelible $TAG"

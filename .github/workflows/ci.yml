@@ -202,6 +202,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: extension/package-lock.json
+      - name: Test release version management
+        working-directory: .
+        run: node --test scripts/release-version.test.mjs
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check

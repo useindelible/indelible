@@ -24,20 +24,42 @@ library, permanently. Links rot; your library does not.
 You need Docker and a machine with a few GB of RAM.
 
 ```bash
-git clone https://github.com/useindelible/indelible.git
-cd indelible
+mkdir indelible && cd indelible
+curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml
+curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env
+
+{
+  echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
+  echo "MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)"
+  echo "JWT_SECRET=$(openssl rand -hex 32)"
+  echo "CSRF_SECRET=$(openssl rand -hex 32)"
+  echo "ASSET_COOKIE_SECRET=$(openssl rand -hex 32)"
+  echo "AUTH_CREDENTIAL_KEY=$(openssl rand -base64 32)"
+} >> .env
+
 docker compose up -d
 ```
 
 That brings up PostgreSQL, Silo, the renderer, the worker, and the API, which
 serves the web interface on the same port. Open http://localhost:38473 and
-create the first account.
+create the first account. Compose pulls the release images from GHCR; it does
+not build Indelible on your machine.
 
-The compose file at the root is for **local development only**: it runs with
-throwaway credentials and without TLS. For a real deployment, follow the
-[installation guide](https://useindelible.com/docs/self-hosting/install/), which
-ships a production compose file, and the
+This quickstart runs on localhost without TLS. For a deployment reachable by
+other people, follow the
+[installation guide](https://useindelible.com/docs/self-hosting/install/) and
 [security checklist](https://useindelible.com/docs/self-hosting/security/).
+
+## Development
+
+Contributors build the images from the checked-out source using the root
+Compose file:
+
+```bash
+git clone https://github.com/useindelible/indelible.git
+cd indelible
+docker compose up -d --build
+```
 
 ## Clients
 

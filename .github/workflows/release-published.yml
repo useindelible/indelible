@@ -1,0 +1,100 @@
+name: Promote Published Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: promote-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote verified image digests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate release tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Only stable vX.Y.Z releases can advance stable image channels"
+            exit 1
+          fi
+
+      - name: Download release image manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release download "$TAG" --pattern release-images.json --dir "$RUNNER_TEMP"
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify all exact release images
+        env:
+          OWNER: ${{ github.repository_owner }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          manifest="$RUNNER_TEMP/release-images.json"
+          version="${TAG#v}"
+          test "$(jq -r '.tag' "$manifest")" = "$TAG"
+          test "$(jq -r '.version' "$manifest")" = "$version"
+          expected_source="$(jq -r '.source' "$manifest")"
+          actual_source="$(git rev-parse HEAD)"
+          if [[ ! "$expected_source" =~ ^[0-9a-f]{40}$ || "$actual_source" != "$expected_source" ]]; then
+            echo "::error::$TAG resolves to $actual_source, but release-images.json records $expected_source"
+            exit 1
+          fi
+
+          for image in ind-api ind-worker ind-renderer; do
+            repository="ghcr.io/$OWNER/$image"
+            reference="$(jq -r --arg image "$image" '.images[$image].reference // empty' "$manifest")"
+            expected_digest="$(jq -r --arg image "$image" '.images[$image].digest // empty' "$manifest")"
+            test "$reference" = "$repository:$version"
+            [[ "$expected_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            actual_digest="$(docker buildx imagetools inspect "$reference" --format '{{json .Manifest.Digest}}' | jq -r .)"
+            if [[ "$actual_digest" != "$expected_digest" ]]; then
+              echo "::error::$reference resolves to $actual_digest, expected $expected_digest"
+              exit 1
+            fi
+          done
+
+      - name: Advance stable image channels
+        env:
+          OWNER: ${{ github.repository_owner }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          manifest="$RUNNER_TEMP/release-images.json"
+          version="${TAG#v}"
+          family="${version%.*}"
+
+          for image in ind-api ind-worker ind-renderer; do
+            repository="ghcr.io/$OWNER/$image"
+            digest="$(jq -r --arg image "$image" '.images[$image].digest' "$manifest")"
+            docker buildx imagetools create \
+              -t "$repository:$family" \
+              -t "$repository:latest" \
+              "$repository@$digest"
+            for alias in "$family" latest; do
+              actual="$(docker buildx imagetools inspect "$repository:$alias" --format '{{json .Manifest.Digest}}' | jq -r .)"
+              test "$actual" = "$digest"
+            done
+          done

@@ -2,8 +2,8 @@
 # Not for exposing to a network. See https://useindelible.com/docs/self-hosting/install/
 # for the production compose with TLS.
 #
-#   curl -fsSL https://useindelible.com/quickstart/docker-compose.yml -o docker-compose.yml
-#   curl -fsSL https://useindelible.com/quickstart/env.example -o .env
+#   curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml
+#   curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env
 #   docker compose up -d
 #
 # Then open http://localhost:38473 and create your account.
@@ -70,7 +70,7 @@ services:
       "
 
   renderer:
-    image: ghcr.io/useindelible/ind-renderer:latest
+    image: ghcr.io/useindelible/ind-renderer:${INDELIBLE_VERSION:-latest}
     init: true
     restart: unless-stopped
     environment:
@@ -82,7 +82,7 @@ services:
         condition: service_healthy
 
   api:
-    image: ghcr.io/useindelible/ind-api:latest
+    image: ghcr.io/useindelible/ind-api:${INDELIBLE_VERSION:-latest}
     restart: unless-stopped
     environment:
       <<: *app-env
@@ -117,7 +117,7 @@ services:
         condition: service_completed_successfully
 
   worker:
-    image: ghcr.io/useindelible/ind-worker:latest
+    image: ghcr.io/useindelible/ind-worker:${INDELIBLE_VERSION:-latest}
     restart: unless-stopped
     environment:
       <<: *app-env

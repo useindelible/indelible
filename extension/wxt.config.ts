@@ -39,7 +39,6 @@ export default defineConfig({
     default_locale: 'en',
     name: '__MSG_ext_name__',
     description: '__MSG_ext_description__',
-    version: '0.1.0',
     key: browser === 'chrome' ? CHROME_STORE_PUBLIC_KEY : undefined,
     action: {
       default_title: '__MSG_action_title__',
