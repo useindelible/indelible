@@ -426,7 +426,7 @@ jobs:
     name: Build exact release images
     needs: prepare
     permissions:
-      contents: read
+      contents: write
       packages: write
     uses: ./.github/workflows/docker.yml
     with:
