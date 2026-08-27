@@ -10,8 +10,14 @@ Edge.
 
 ## Install
 
-The extension isn't in the web stores yet. For now, build it from source and load it
-unpacked:
+- **Chrome**: [install from the Chrome Web Store](https://chromewebstore.google.com/detail/indelible/jidilhjojlgndbpeooeeceohmkedooef).
+- **Microsoft Edge**: install from the same [Chrome Web Store listing](https://chromewebstore.google.com/detail/indelible/jidilhjojlgndbpeooeeceohmkedooef).
+  Edge may first ask you to allow extensions from other stores.
+- **Firefox**: [install from Firefox Add-ons](https://addons.mozilla.org/en-GB/firefox/addon/indelible/).
+
+## Build from source
+
+To test an unreleased build or contribute to the extension, build it locally:
 
 ```bash
 cd extension

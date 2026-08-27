@@ -20,7 +20,8 @@ Indelible Cloud (managed hosting, zero setup) is coming soon.
 
 ## Saving content
 
-- **Browser extension**: one-click save from Chrome or Firefox.
+- **[Browser extension](/docs/how-to/browser-extension/)**: one-click save from
+  Chrome, Edge, and Firefox.
 - **Email**: every account gets personal email addresses for newsletters and
   one-off forwards. See [Save content by email](/docs/how-to/save-by-email/).
 - **In the app**: paste URLs or upload PDFs, EPUBs, and HTML files.
