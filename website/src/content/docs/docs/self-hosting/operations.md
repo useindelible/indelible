@@ -83,9 +83,15 @@ harmless but wastes space.
 ## Upgrades
 
 Database migrations are embedded in the server binaries and run automatically
-at startup, so an upgrade is a pull and a restart:
+at startup. The release bundle pins all three Indelible images through
+`INDELIBLE_VERSION`, so first download the new release's Compose file and edit
+that one line in your existing `.env`. Do not replace `.env`; it contains the
+secrets for your installation.
 
 ```bash
+curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml \
+  -o docker-compose.yml
+# Edit INDELIBLE_VERSION in .env to the new release version.
 docker compose pull
 docker compose up -d
 ```
@@ -96,10 +102,10 @@ is your way back.
 
 ### Release channels
 
-Every stable release publishes semver tags and moves `latest`. Merges to
-`main` publish `dev` and a short commit SHA and never move `latest`, so
-`latest` always means the newest stable release. Pre-releases such as
-`0.2.0-rc1` publish only their exact tag.
+Every stable release stages its exact semver images before publication. Once
+the release is published, the same verified digests move `latest` and the
+minor-version channel. Merges to `main` publish `dev` and a short commit SHA and
+never move stable channels.
 
 ```yaml
 image: ghcr.io/useindelible/ind-api:0.1.0   # exact release
@@ -107,6 +113,9 @@ image: ghcr.io/useindelible/ind-api:0.1     # latest patch of 0.1
 image: ghcr.io/useindelible/ind-api:latest  # newest stable release
 image: ghcr.io/useindelible/ind-api:dev     # tip of main; unreleased, may break
 ```
+
+The downloadable release Compose uses the exact tag. Floating tags are for
+people who deliberately want channel-style updates.
 
 For production, pin `ind-api`, `ind-worker`, and `ind-renderer` to the same
 semver tag and upgrade them together. The three images are released as a set;

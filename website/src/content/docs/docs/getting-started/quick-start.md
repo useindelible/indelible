@@ -8,7 +8,7 @@ sidebar:
 
 Follow [Install with Docker](/docs/self-hosting/install/) to bring up your own
 instance, then create the first account. On an empty instance the first signup
-always succeeds, after which you can disable signups with `AUTH_ALLOW_SIGNUPS=false`.
+always succeeds; additional signups remain disabled by default.
 
 Then save your first item: paste a URL into the app or install the browser
 extension. Open it in the reader; it's archived permanently from the moment you

@@ -1,5 +1,5 @@
 # One-off backfill: build the signed Android App Bundle and attach it to an
-# existing release that predates AAB support in release.yml.
+# existing release that predates AAB support in the automated release workflow.
 #
 # Safe to re-run. It never creates or moves a tag, and it refuses to upload if
 # the built versionName does not match the target release, so it cannot attach

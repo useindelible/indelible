@@ -28,14 +28,15 @@ openssl rand -base64 32   # AUTH_CREDENTIAL_KEY: encrypts stored integration tok
 
 ## Accounts
 
-After creating your account(s), close registration:
+Registration is closed by default:
 
 ```yaml
 AUTH_ALLOW_SIGNUPS: 'false'
 ```
 
-The first account on an empty instance can always be created, so you can lock
-signups immediately after onboarding yourself.
+The first account on an empty instance can always be created. Set
+`AUTH_ALLOW_SIGNUPS=true` temporarily only when you want additional people to
+create accounts, then return it to `false`.
 
 ## Network exposure
 
@@ -102,7 +103,7 @@ references. Snapshot both on the same schedule.
 - [ ] `AUTH_CREDENTIAL_KEY` set on api + worker if any integration is configured
 - [ ] `IND_BASE_URL`, `FRONTEND_URL`, `CORS_ORIGINS` set to your real HTTPS origins
 - [ ] TLS terminated at the proxy; `TRUSTED_PROXIES` set to the proxy ranges
-- [ ] `AUTH_ALLOW_SIGNUPS=false` after creating your account(s)
+- [ ] `AUTH_ALLOW_SIGNUPS=false` unless intentionally onboarding additional accounts
 - [ ] `EGRESS_ALLOW_PRIVATE_TARGETS` left off (or services network-isolated if on)
 - [ ] Object storage bucket private; S3 credentials scoped to that bucket
 - [ ] `EMAIL_INGEST_WEBHOOK_SECRET` set if inbound email is enabled

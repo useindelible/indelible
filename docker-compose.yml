@@ -1,6 +1,7 @@
 # Local development stack only. It runs the API in development mode with
 # throwaway credentials and a localhost base URL, so auth cookies are not
-# Secure and signups are open. Do not deploy this: the self-hosting guide at
+# Secure. The first account is allowed; later signups are closed by default.
+# Do not deploy this: the self-hosting guide at
 # https://useindelible.com/docs/self-hosting/install/ ships a production compose.
 services:
   postgres:

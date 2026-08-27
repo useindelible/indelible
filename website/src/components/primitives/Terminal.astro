@@ -16,22 +16,79 @@ interface Props {
 const { lines, prompt = '$', label = 'Terminal commands' } = Astro.props;
 ---
 
-<div class="term" role="group" aria-label={label}>
-	{
-		lines.map((line) => (
-			<div class="ln">
-				<span class="p" aria-hidden="true">
-					{prompt}
-				</span>
-				<span class="c">{line}</span>
-			</div>
-		))
-	}
+<div class="term" role="group" aria-label={label} data-terminal>
+	<button class="copy" type="button" aria-label="Copy commands" data-copy>
+		<svg class="copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+			<rect x="8" y="8" width="12" height="12" rx="2"></rect>
+			<path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+		</svg>
+		<svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true">
+			<path d="m5 12 4 4L19 6"></path>
+		</svg>
+		<span class="tip" aria-hidden="true" data-copy-tip>Copy</span>
+	</button>
+	<div class="commands">
+		{
+			lines.map((line) => (
+				<div class="ln">
+					<span class="p" aria-hidden="true">
+						{prompt}
+					</span>
+					<span class="c" data-command>{line}</span>
+				</div>
+			))
+		}
+	</div>
+	<span class="sr" role="status" aria-live="polite" data-copy-status></span>
 </div>
+
+<script>
+	const resetDelay = 1800;
+
+	document.querySelectorAll<HTMLElement>('[data-terminal]').forEach((terminal) => {
+		const button = terminal.querySelector<HTMLButtonElement>('[data-copy]');
+		const tip = terminal.querySelector<HTMLElement>('[data-copy-tip]');
+		const status = terminal.querySelector<HTMLElement>('[data-copy-status]');
+
+		if (!button || !tip || !status || button.dataset.ready === 'true') return;
+		button.dataset.ready = 'true';
+
+		let resetTimer: number | undefined;
+		const reset = () => {
+			button.dataset.state = '';
+			button.ariaLabel = 'Copy commands';
+			tip.textContent = 'Copy';
+			status.textContent = '';
+		};
+
+		button.addEventListener('click', async () => {
+			const commands = Array.from(
+				terminal.querySelectorAll<HTMLElement>('[data-command]'),
+				(line) => line.textContent ?? '',
+			).join('\n');
+
+			window.clearTimeout(resetTimer);
+			try {
+				await navigator.clipboard.writeText(commands);
+				button.dataset.state = 'copied';
+				button.ariaLabel = 'Commands copied';
+				tip.textContent = 'Copied';
+				status.textContent = 'Commands copied';
+			} catch {
+				button.dataset.state = 'error';
+				button.ariaLabel = 'Copy failed';
+				tip.textContent = 'Copy failed';
+				status.textContent = 'Could not copy commands';
+			}
+			resetTimer = window.setTimeout(reset, resetDelay);
+		});
+	});
+</script>
 
 <style>
 	.term {
-		padding: 16px 18px;
+		position: relative;
+		min-width: 0;
 		border: 1px solid var(--line-2);
 		border-radius: 4px;
 		background: var(--term-bg-solid);
@@ -39,17 +96,127 @@ const { lines, prompt = '$', label = 'Terminal commands' } = Astro.props;
 		font-family: var(--f-m);
 		font-size: 13.5px;
 		line-height: 1.75;
+	}
+
+	.commands {
+		display: grid;
+		gap: 2px;
+		padding: 18px;
 		overflow-x: auto;
 	}
 
 	.ln {
 		display: flex;
+		align-items: flex-start;
 		gap: 9px;
+	}
+
+	.c {
 		white-space: pre;
 	}
 
 	.p {
+		flex: none;
 		color: var(--moss);
 		user-select: none;
+	}
+
+	.copy {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		z-index: 1;
+		width: 32px;
+		height: 32px;
+		display: grid;
+		place-items: center;
+		border: 1px solid var(--line-2);
+		border-radius: 5px;
+		background: color-mix(in srgb, var(--term-ink) 7%, var(--term-bg-solid));
+		box-shadow: 0 7px 18px -12px var(--term-ink);
+		color: color-mix(in srgb, var(--term-ink) 72%, transparent);
+		transition:
+			color var(--d-micro) var(--e-out),
+			background var(--d-micro) var(--e-out),
+			border-color var(--d-micro) var(--e-out),
+			transform var(--d-micro) var(--e-spring);
+	}
+
+	.copy:hover,
+	.copy:focus-visible,
+	.copy[data-state='copied'] {
+		background: color-mix(in srgb, var(--term-ink) 13%, var(--term-bg-solid));
+		color: var(--term-ink);
+	}
+
+	.copy:active {
+		transform: scale(0.94);
+	}
+
+	.copy[data-state='error'] {
+		color: var(--crimson);
+	}
+
+	.copy-icon,
+	.check-icon {
+		width: 16px;
+		height: 16px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.check-icon {
+		display: none;
+	}
+
+	.copy[data-state='copied'] .copy-icon {
+		display: none;
+	}
+
+	.copy[data-state='copied'] .check-icon {
+		display: block;
+	}
+
+	.tip {
+		position: absolute;
+		right: calc(100% + 7px);
+		top: 50%;
+		padding: 4px 7px;
+		border: 1px solid var(--line-2);
+		border-radius: 3px;
+		background: var(--term-bg-solid);
+		color: var(--term-ink);
+		font-size: 11px;
+		line-height: 1.2;
+		white-space: nowrap;
+		opacity: 0;
+		pointer-events: none;
+		transform: translate(3px, -50%);
+		transition:
+			opacity var(--d-micro) var(--e-out),
+			transform var(--d-micro) var(--e-out);
+	}
+
+	.copy:hover .tip,
+	.copy:focus-visible .tip,
+	.copy[data-state='copied'] .tip,
+	.copy[data-state='error'] .tip {
+		opacity: 1;
+		transform: translate(0, -50%);
+	}
+
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 </style>

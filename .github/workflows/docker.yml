@@ -1,46 +1,105 @@
 name: Docker
 
-# Two release channels. Merges to main publish `dev` + a short commit SHA once
-# CI succeeds; stable `vX.Y.Z` tags publish semver tags and move `latest`.
-# Pre-release tags (`v0.2.0-rc1`) publish only their exact version, so `latest`
-# always means the newest stable release. A tag is cut from a commit that
-# already passed CI on main, so tag builds do not wait on a second CI run.
-#
-# Images are multi-arch. Each architecture builds on its own native runner and
-# pushes an untagged digest; the merge job then assembles the tagged manifest
-# list. Native arm64 runners avoid QEMU emulation, which turns a Rust build into
-# an hours-long job.
+# CI-success runs publish the development channel. Release preparation calls
+# this workflow with a draft release tag and publishes only immutable X.Y.Z
+# tags; floating stable aliases are advanced after the draft is published.
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Draft release tag whose exact images should be published
+        required: true
+        type: string
   workflow_run:
     workflows: [CI]
     types: [completed]
     branches: [main]
-  push:
-    tags: ['v*']
 
 permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: docker-${{ github.event.workflow_run.head_sha || inputs.release_tag || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_run' }}
+
 jobs:
+  resolve:
+    name: Resolve build source
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.source.outputs.mode }}
+      ref: ${{ steps.source.outputs.ref }}
+      source-sha: ${{ steps.source.outputs.source_sha || steps.release-source.outputs.source_sha }}
+      short-sha: ${{ steps.source.outputs.short_sha }}
+      version: ${{ steps.source.outputs.version }}
+      has-image-manifest: ${{ steps.source.outputs.has_image_manifest }}
+    steps:
+      - name: Resolve ref and release mode
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            sha="${{ github.event.workflow_run.head_sha }}"
+            {
+              echo "mode=development"
+              echo "ref=$sha"
+              echo "source_sha=$sha"
+              echo "short_sha=${sha:0:7}"
+              echo "version="
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_tag must be a stable vX.Y.Z tag"
+            exit 1
+          fi
+          release="$(gh release view "$RELEASE_TAG" --json isDraft,assets)"
+          draft="$(jq -r '.isDraft' <<< "$release")"
+          if [[ "$draft" != "true" ]]; then
+            echo "::error::$RELEASE_TAG must identify an unpublished draft release"
+            exit 1
+          fi
+          if jq -e 'any(.assets[]; .name == "release-images.json")' <<< "$release" > /dev/null; then
+            has_image_manifest=true
+          else
+            has_image_manifest=false
+          fi
+
+          {
+            echo "has_image_manifest=$has_image_manifest"
+            echo "mode=release"
+            echo "ref=$RELEASE_TAG"
+            echo "version=${RELEASE_TAG#v}"
+            echo "short_sha="
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: ${{ steps.source.outputs.mode == 'release' }}
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Record release source
+        id: release-source
+        if: ${{ steps.source.outputs.mode == 'release' }}
+        run: echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build ${{ matrix.image }} (${{ matrix.arch }})
+    needs: resolve
     runs-on: ${{ matrix.runner }}
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       fail-fast: false
       matrix:
-        # Both axes must be declared. An `include` entry whose keys are not
-        # matrix axes is merged into every combination instead of expanding
-        # them, which silently collapses this to one architecture.
-        image:
-          - ind-api
-          - ind-worker
-          - ind-renderer
-        arch:
-          - amd64
-          - arm64
+        image: [ind-api, ind-worker, ind-renderer]
+        arch: [amd64, arm64]
         include:
           - arch: amd64
             runner: ubuntu-latest
@@ -51,15 +110,14 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          # Empty on tag pushes, which fall back to the pushed ref itself.
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+          ref: ${{ needs.resolve.outputs.ref }}
+          persist-credentials: false
 
-      - name: Resolve build inputs
-        id: img
+      - name: Resolve image inputs
+        id: image
         run: |
           case "${{ matrix.image }}" in
             ind-api)
-              # Root context: this image builds the web app alongside the API.
               echo "context=." >> "$GITHUB_OUTPUT"
               echo "dockerfile=backend/apps/ind-api/Dockerfile" >> "$GITHUB_OUTPUT"
               ;;
@@ -77,26 +135,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check for an existing exact release image
+        if: ${{ needs.resolve.outputs.mode == 'release' }}
+        id: existing
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          if output="$(docker buildx imagetools inspect "$IMAGE" 2>&1)"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif grep -Eqi 'not found|manifest unknown|name unknown' <<< "$output"; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Could not determine whether $IMAGE exists"
+            printf '%s\n' "$output" >&2
+            exit 1
+          fi
+
       - id: build
+        if: ${{ needs.resolve.outputs.mode == 'development' || needs.resolve.outputs.has-image-manifest != 'true' }}
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: ${{ steps.img.outputs.context }}
-          file: ${{ steps.img.outputs.dockerfile }}
+          context: ${{ steps.image.outputs.context }}
+          file: ${{ steps.image.outputs.dockerfile }}
           platforms: ${{ matrix.platform }}
-          # GITHUB_TOKEN can only publish packages under the repository owner's
-          # namespace, so derive it instead of hardcoding the org.
           outputs: type=image,name=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }}
 
       - name: Export digest
+        if: ${{ needs.resolve.outputs.mode == 'development' || needs.resolve.outputs.has-image-manifest != 'true' }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           mkdir -p /tmp/digests
-          touch "/tmp/digests/${digest#sha256:}"
-        env:
-          digest: ${{ steps.build.outputs.digest }}
+          touch "/tmp/digests/${DIGEST#sha256:}"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ needs.resolve.outputs.mode == 'development' || needs.resolve.outputs.has-image-manifest != 'true' }}
         with:
           name: digest-${{ matrix.image }}-${{ matrix.arch }}
           path: /tmp/digests/*
@@ -105,18 +181,13 @@ jobs:
 
   merge:
     name: Publish ${{ matrix.image }} manifest
-    needs: build
+    needs: [resolve, build]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         image: [ind-api, ind-worker, ind-renderer]
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: digest-${{ matrix.image }}-*
-          merge-multiple: true
-          path: /tmp/digests
-
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -125,41 +196,130 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # `type=sha` would read github.sha, which on workflow_run is the default
-      # branch head at event time, not necessarily the commit CI tested and the
-      # build job checked out. Derive the tag from the same ref as the checkout.
-      - name: Resolve built commit
-        id: src
+      - name: Check for an existing exact release image
+        if: ${{ needs.resolve.outputs.mode == 'release' }}
+        id: existing
         env:
-          BUILT_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-        run: echo "short=${BUILT_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          if output="$(docker buildx imagetools inspect "$IMAGE" 2>&1)"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif grep -Eqi 'not found|manifest unknown|name unknown' <<< "$output"; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Could not determine whether $IMAGE exists"
+            printf '%s\n' "$output" >&2
+            exit 1
+          fi
 
-      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
-        id: meta
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        if: ${{ needs.resolve.outputs.mode == 'development' || needs.resolve.outputs.has-image-manifest != 'true' }}
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
-          # latest=auto attaches `latest` only to a tag that parses as stable
-          # semver, so a malformed or pre-release tag can never move it. A
-          # hand-rolled ref check cannot express "valid semver".
-          flavor: |
-            latest=auto
-          tags: |
-            type=raw,value=dev,enable=${{ github.event_name == 'workflow_run' }}
-            type=raw,value=${{ steps.src.outputs.short }},priority=100
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+          pattern: digest-${{ matrix.image }}-*
+          merge-multiple: true
+          path: /tmp/digests
 
-      - name: Create manifest list and push
-        working-directory: /tmp/digests
+      - name: Publish manifest with immutable exact-tag guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          MODE: ${{ needs.resolve.outputs.mode }}
+          SHORT_SHA: ${{ needs.resolve.outputs.short-sha }}
+          SOURCE_SHA: ${{ needs.resolve.outputs.source-sha }}
+          VERSION: ${{ needs.resolve.outputs.version }}
         run: |
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}@sha256:%s ' *)
+          set -euo pipefail
+          if [[ "$MODE" == "development" ]]; then
+            sources=()
+            for digest in /tmp/digests/*; do
+              sources+=("$IMAGE@sha256:${digest##*/}")
+            done
+            docker buildx imagetools create \
+              -t "$IMAGE:dev" \
+              -t "$IMAGE:$SHORT_SHA" \
+              "${sources[@]}"
+            docker buildx imagetools inspect "$IMAGE:$SHORT_SHA" > /tmp/inspect.txt
+            exit 0
+          fi
 
-      - name: Verify both architectures are present
-        run: |
-          docker buildx imagetools inspect "ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ steps.meta.outputs.version }}" \
-            | tee /tmp/inspect.txt
+          exact="$IMAGE:$VERSION"
+          if [[ "${{ needs.resolve.outputs.has-image-manifest }}" == "true" ]]; then
+            mkdir -p /tmp/prior-release
+            gh release download "v$VERSION" --pattern release-images.json --dir /tmp/prior-release
+            jq -e \
+              --arg tag "v$VERSION" \
+              --arg version "$VERSION" \
+              --arg source "$SOURCE_SHA" \
+              --arg image "${{ matrix.image }}" \
+              --arg reference "$exact" \
+              '.tag == $tag
+                and .version == $version
+                and .source == $source
+                and .images[$image].reference == $reference' \
+              /tmp/prior-release/release-images.json > /dev/null
+            expected="$(jq -r --arg image "${{ matrix.image }}" '.images[$image].digest // empty' /tmp/prior-release/release-images.json)"
+            if [[ ! "$expected" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::The draft does not record a valid digest for $exact"
+              exit 1
+            fi
+            if [[ "${{ steps.existing.outputs.exists }}" == "true" ]]; then
+              digest="$(docker buildx imagetools inspect "$exact" --format '{{json .Manifest.Digest}}' | jq -r .)"
+            else
+              docker buildx imagetools inspect "$IMAGE@$expected" > /dev/null
+              docker buildx imagetools create -t "$exact" "$IMAGE@$expected"
+              digest="$(docker buildx imagetools inspect "$exact" --format '{{json .Manifest.Digest}}' | jq -r .)"
+            fi
+            if [[ "$expected" != "$digest" ]]; then
+              echo "::error::$exact resolves to $digest, but the draft records ${expected:-no digest}"
+              exit 1
+            fi
+            echo "$exact matches the recorded release digest"
+          else
+            sources=()
+            for digest_file in /tmp/digests/*; do
+              sources+=("$IMAGE@sha256:${digest_file##*/}")
+            done
+            docker buildx imagetools create --dry-run "${sources[@]}" > /tmp/candidate.json
+            candidate_children="$(jq -c '[.manifests[].digest] | sort' /tmp/candidate.json)"
+            if docker buildx imagetools inspect "$exact" --raw \
+              > /tmp/existing.json 2> /tmp/existing.err; then
+              existing_children="$(jq -c '[.manifests[].digest] | sort' /tmp/existing.json)"
+              if [[ "$existing_children" != "$candidate_children" ]]; then
+                echo "::error::$exact already exists with different image manifests"
+                exit 1
+              fi
+            elif ! grep -Eqi 'not found|manifest unknown|name unknown' /tmp/existing.err; then
+              echo "::error::Could not determine whether $exact appeared concurrently"
+              cat /tmp/existing.err >&2
+              exit 1
+            else
+              docker buildx imagetools create -t "$exact" "${sources[@]}"
+            fi
+          fi
+
+          docker buildx imagetools inspect "$exact" | tee /tmp/inspect.txt
           for arch in amd64 arm64; do
-            grep -q "linux/$arch" /tmp/inspect.txt || { echo "missing linux/$arch in the published manifest"; exit 1; }
+            grep -q "linux/$arch" /tmp/inspect.txt || {
+              echo "::error::$exact is missing linux/$arch"
+              exit 1
+            }
           done
+
+          digest="$(docker buildx imagetools inspect "$exact" --format '{{json .Manifest.Digest}}' | jq -r .)"
+          jq -n \
+            --arg name "${{ matrix.image }}" \
+            --arg reference "$exact" \
+            --arg digest "$digest" \
+            --arg version "$VERSION" \
+            --arg source "$SOURCE_SHA" \
+            '{name: $name, reference: $reference, digest: $digest, version: $version, source: $source}' \
+            > "/tmp/release-image-${{ matrix.image }}.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ needs.resolve.outputs.mode == 'release' }}
+        with:
+          name: release-image-${{ matrix.image }}
+          path: /tmp/release-image-${{ matrix.image }}.json
+          retention-days: 7
+          if-no-files-found: error

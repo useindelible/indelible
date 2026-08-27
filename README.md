@@ -24,20 +24,30 @@ library, permanently. Links rot; your library does not.
 You need Docker and a machine with a few GB of RAM.
 
 ```bash
-git clone https://github.com/useindelible/indelible.git
-cd indelible
-docker compose up -d
+mkdir indelible && cd indelible && curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/install.sh && sh install.sh
 ```
 
-That brings up PostgreSQL, Silo, the renderer, the worker, and the API, which
-serves the web interface on the same port. Open http://localhost:38473 and
-create the first account.
+The installer checks the downloads against the release checksums, generates
+the required secrets, and brings up PostgreSQL, Silo, the renderer, the worker,
+and the API, which serves the web interface on the same port. Open
+http://localhost:38473 and create the first account. Compose pulls the release
+images from GHCR; it does not build Indelible on your machine.
 
-The compose file at the root is for **local development only**: it runs with
-throwaway credentials and without TLS. For a real deployment, follow the
-[installation guide](https://useindelible.com/docs/self-hosting/install/), which
-ships a production compose file, and the
+This quickstart runs on localhost without TLS. For a deployment reachable by
+other people, follow the
+[installation guide](https://useindelible.com/docs/self-hosting/install/) and
 [security checklist](https://useindelible.com/docs/self-hosting/security/).
+
+## Development
+
+Contributors build the images from the checked-out source using the root
+Compose file:
+
+```bash
+git clone https://github.com/useindelible/indelible.git
+cd indelible
+docker compose up -d --build
+```
 
 ## Clients
 

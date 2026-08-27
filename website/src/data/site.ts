@@ -37,11 +37,9 @@ export const DOCS_LINK: NavLink = {
 	href: '/docs/getting-started/introduction/',
 };
 
-/** The quick-start, verbatim from the self-hosting docs. */
+/** Complete local installation through the latest stable release. */
 export const INSTALL_COMMANDS: readonly string[] = [
-	'git clone github.com/useindelible/indelible',
-	'cd indelible',
-	'docker compose up -d',
+	'mkdir indelible && cd indelible && curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/install.sh && sh install.sh',
 ];
 
 /** Every way in and out, as shown in the hero strip. */
