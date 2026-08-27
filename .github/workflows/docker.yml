@@ -15,6 +15,9 @@ on:
     types: [completed]
     branches: [main]
 
+env:
+  GH_REPO: ${{ github.repository }}
+
 permissions:
   contents: read
   packages: write
@@ -61,7 +64,7 @@ jobs:
             echo "::error::release_tag must be a stable vX.Y.Z tag"
             exit 1
           fi
-          release="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,assets)"
+          release="$(gh release view "$RELEASE_TAG" --json isDraft,assets)"
           draft="$(jq -r '.isDraft' <<< "$release")"
           if [[ "$draft" != "true" ]]; then
             echo "::error::$RELEASE_TAG must identify an unpublished draft release"

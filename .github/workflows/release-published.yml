@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+env:
+  GH_REPO: ${{ github.repository }}
+
 permissions:
   contents: read
   packages: write
