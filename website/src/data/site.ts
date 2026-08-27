@@ -40,8 +40,10 @@ export const DOCS_LINK: NavLink = {
 /** The stable release files needed before following the self-hosting guide. */
 export const INSTALL_COMMANDS: readonly string[] = [
 	'mkdir indelible && cd indelible',
-	'curl -fsSLO https://github.com/useindelible/indelible/releases/latest/download/docker-compose.yml',
-	'curl -fsSL https://github.com/useindelible/indelible/releases/latest/download/example.env -o .env',
+	'REPO=https://github.com/useindelible/indelible',
+	'RELEASE=$REPO/releases/latest/download',
+	'curl -fsSLO "$RELEASE/docker-compose.yml"',
+	'curl -fsSL "$RELEASE/example.env" -o .env',
 ];
 
 /** Every way in and out, as shown in the hero strip. */
