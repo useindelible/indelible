@@ -8,6 +8,7 @@
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { date, t, type MessageKey } from '$lib/i18n';
+	import { setDocumentTitle } from '$lib/stores/page-title.svelte';
 
 	const THUMB_COLORS = ['blue', 'green', 'purple', 'orange', 'red', 'teal'] as const;
 	type ThumbColor = (typeof THUMB_COLORS)[number];
@@ -38,22 +39,33 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
+	setDocumentTitle(() => (entity && entity.id === entityId ? entity.name : null));
+
+	let loadEpoch = 0;
+
 	$effect(() => {
 		if (!browser || !entityId) return;
+		const requestedEntityId = entityId;
+		const requestedEpoch = ++loadEpoch;
+		// A superseded request must not overwrite the entity the URL now points at.
+		const isCurrentLoad = () => requestedEntityId === entityId && requestedEpoch === loadEpoch;
 		loading = true;
 		error = null;
 		Promise.all([
-			apiSdk.getEntity({ path: { id: entityId } }),
-			apiSdk.listEntityDocuments({ path: { id: entityId } })
+			apiSdk.getEntity({ path: { id: requestedEntityId } }),
+			apiSdk.listEntityDocuments({ path: { id: requestedEntityId } })
 		])
 			.then(([entityRes, docsRes]) => {
+				if (!isCurrentLoad()) return;
 				if (entityRes.data) entity = entityRes.data;
 				items = docsRes.data?.data ?? [];
 			})
 			.catch(() => {
+				if (!isCurrentLoad()) return;
 				error = $t('entity_error_load');
 			})
 			.finally(() => {
+				if (!isCurrentLoad()) return;
 				loading = false;
 			});
 	});

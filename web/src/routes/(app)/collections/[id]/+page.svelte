@@ -14,6 +14,7 @@
 	import DetailPanel from '$lib/components/library/DetailPanel.svelte';
 	import ItemList from '$lib/components/library/ItemList.svelte';
 	import { t } from '$lib/i18n';
+	import { setDocumentTitle } from '$lib/stores/page-title.svelte';
 
 	const store = getCollections();
 	const lib = getLibrary();
@@ -42,6 +43,13 @@
 	);
 
 	const collectionId = $derived(page.params.id ?? '');
+
+	setDocumentTitle(() => {
+		const collection = store.currentCollection;
+		if (!collection || collection.id !== collectionId) return null;
+		return $t('collection_page_title_named', { values: { name: collection.name } });
+	});
+
 	const breadcrumbs = $derived(
 		store.currentCollection
 			? buildBreadcrumbPath(store.currentCollection.id, sidebar.allCollections)

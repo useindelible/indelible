@@ -93,10 +93,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{$t('auth_create_account_title')}</title>
-</svelte:head>
-
 {#if signupsEnabled}
 	<h1 class="auth-title">
 		{$t(setupRequired ? 'auth_setup_indelible' : 'auth_create_your_account')}

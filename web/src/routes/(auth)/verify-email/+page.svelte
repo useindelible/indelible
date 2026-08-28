@@ -74,10 +74,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{$t('auth_verify_email_title')}</title>
-</svelte:head>
-
 {#if hasToken}
 	{#if verifying}
 		<div class="state-icon">

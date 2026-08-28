@@ -9,6 +9,7 @@
 	import TagColorPicker from '$lib/components/tags/TagColorPicker.svelte';
 	import ItemList from '$lib/components/library/ItemList.svelte';
 	import { date, t, type MessageKey } from '$lib/i18n';
+	import { setDocumentTitle } from '$lib/stores/page-title.svelte';
 
 	const store = getTags();
 	const lib = getLibrary();
@@ -22,6 +23,12 @@
 	let formColor = $state<string | null>(null);
 
 	const tagId = $derived(page.params.id ?? '');
+
+	setDocumentTitle(() => {
+		const tag = store.currentTag;
+		if (!tag || tag.id !== tagId) return null;
+		return $t('tag_page_title_named', { values: { name: tag.name } });
+	});
 
 	$effect(() => {
 		const id = tagId;
