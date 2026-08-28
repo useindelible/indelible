@@ -232,10 +232,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Obsidian — Indelible</title>
-</svelte:head>
-
 <div class="obs-page" data-page-state={heroStateAttr}>
 	<ObsidianHero
 		{connection}

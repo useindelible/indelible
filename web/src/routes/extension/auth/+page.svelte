@@ -88,10 +88,6 @@
 	});
 </script>
 
-<svelte:head>
-	<title>{$t('extension_auth_page_title')}</title>
-</svelte:head>
-
 {#if status === 'loading'}
 	<p class="status-text">{$t('extension_auth_checking')}</p>
 {:else if status === 'authenticated'}

@@ -21,6 +21,7 @@
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { applyTheme, getSavedTheme } from '$lib/styles/theme';
 	import { t } from '$lib/i18n';
+	import { setDocumentTitle } from '$lib/stores/page-title.svelte';
 	import AiFailureNotice from './components/AiFailureNotice.svelte';
 	import ReaderErrorState from './components/ReaderErrorState.svelte';
 	import ReaderCompactDetail from './components/ReaderCompactDetail.svelte';
@@ -72,6 +73,10 @@
 	let readerHtmlContent = $state<string>('');
 	let assetUrls = $state<Partial<Record<ViewTab, string>>>({});
 	const readerChrome = new ReaderChromeController();
+
+	// Gate on the route param: state survives reader-to-reader navigation, so the previous
+	// document must not title the new URL.
+	setDocumentTitle(() => (item && item.id === documentId ? item.title : null));
 
 	let tocStore = $state<ReturnType<typeof createTocStore> | null>(null);
 	$effect(() => {

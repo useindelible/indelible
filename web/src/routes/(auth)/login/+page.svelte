@@ -104,10 +104,6 @@
 	const forgotPasswordHref = '/forgot-password';
 </script>
 
-<svelte:head>
-	<title>{$t('auth_sign_in_title')}</title>
-</svelte:head>
-
 <h1 class="auth-title">{$t('auth_welcome_back')}</h1>
 <p class="auth-subtitle">{$t('auth_sign_in_subtitle')}</p>
 

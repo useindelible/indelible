@@ -52,10 +52,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{$t('auth_set_new_password_title')}</title>
-</svelte:head>
-
 {#if !hasToken}
 	<div class="state-icon">
 		<svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true">
