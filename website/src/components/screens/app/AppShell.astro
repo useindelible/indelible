@@ -19,11 +19,22 @@ const { layout = 'full', class: className } = Astro.props;
 <style>
 	.app {
 		display: grid;
+		grid-template-rows: 100%;
 		height: 900px;
 		background: var(--bg1);
 		color: var(--t1);
 		font-size: 13px;
 		font-family: var(--sfont);
+	}
+
+	/* Panes are taller than the shell on purpose — a cut-off row is the cue
+	   that the list continues. A grid item's automatic minimum size is its
+	   content, though, so without this the tallest pane stretches the row past
+	   `height` and the frame crops the difference off every pane at once,
+	   taking the sidebar's user row with it. Slotted children carry their own
+	   component's scope, hence :global. */
+	.app > :global(*) {
+		min-height: 0;
 	}
 
 	/* Detail panel is 300px, sidebar 220px — both measured off the real app. */
