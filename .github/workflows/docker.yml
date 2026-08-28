@@ -188,6 +188,9 @@ jobs:
     name: Publish ${{ matrix.image }} manifest
     needs: [resolve, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     strategy:
       fail-fast: false
       matrix:
