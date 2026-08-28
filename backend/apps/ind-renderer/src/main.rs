@@ -45,8 +45,16 @@ fn build_router(state: Arc<AppState>) -> Router {
         .with_state(state)
 }
 
-#[tokio::main(worker_threads = 2)]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
+    ind_observability::process::disable_transparent_huge_pages();
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()?
+        .block_on(run())
+}
+
+async fn run() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let config = RendererConfig::load()?;
     ind_observability::init_tracing(&config.server.environment, &config.server.log_level);
