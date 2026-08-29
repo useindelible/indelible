@@ -10,9 +10,9 @@ use std::time::Duration;
 
 use chrono::Utc;
 use ind_domain::{
-    ArchiveAssetKind, ArchiveAssetStatus, Document, DocumentAsset, DocumentId, DocumentNote,
-    DocumentType, DomainError, Highlight, HighlightId, HighlightLocator, HighlightSourceLocator,
-    NewHighlight, UserDocumentState, UserId,
+    ArchiveAssetKind, ArchiveAssetStatus, ClientType, Document, DocumentAsset, DocumentId,
+    DocumentNote, DocumentType, DomainError, EventOrigin, Highlight, HighlightId, HighlightLocator,
+    HighlightSourceLocator, NewHighlight, UserDocumentState, UserId,
 };
 
 use futures::future::BoxFuture;
@@ -315,6 +315,7 @@ impl DocumentReaderService {
                 progress_percent,
                 chapter_locator,
                 chapter_offset,
+                EventOrigin::Surface(ClientType::Web),
             )
             .await
     }

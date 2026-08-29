@@ -289,6 +289,8 @@ async fn seed_user_owned_rows(
         "INSERT INTO user_preferences (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
         "INSERT INTO mila_config (user_id, chat_model, embedding_model, embedding_dim, model_context_window, created_at, updated_at) \
          VALUES ($1, 'seed-chat', 'seed-embed', 768, 16000, now(), now())",
+        "INSERT INTO reading_events (id, user_id, document_id, origin, origin_seq, event_kind, progress_basis_points, active_ms, recorded_at, effective_at) \
+         VALUES (gen_random_uuid(), $1, $2, 'surface:web', 0, 'progress', 4200, 1000, now(), now())",
     ] {
         sqlx::query(sql)
             .bind(uid)
@@ -316,6 +318,7 @@ async fn seed_user_owned_rows(
         "smart_lists",
         "user_preferences",
         "mila_config",
+        "reading_events",
     ]
     .into_iter()
     .collect()
