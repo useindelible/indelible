@@ -1,4 +1,5 @@
 use super::*;
+use ind_domain::{ClientType, EventOrigin};
 
 #[utoipa::path(
     patch,
@@ -33,6 +34,7 @@ pub async fn update_document_progress(
         body.progress_percent.round() as i32,
         body.chapter_locator,
         body.chapter_offset,
+        EventOrigin::Surface(ClientType::Web),
     )
     .await
     .map_err(ApiError::from)?;

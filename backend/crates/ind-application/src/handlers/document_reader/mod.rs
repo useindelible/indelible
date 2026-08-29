@@ -1,18 +1,17 @@
 //! Document reader read-model, content serving, and document-keyed authored capabilities
 //! (highlights, the single note, reading progress). Highlights and notes require the document
 //! to have its completed format-specific canonical asset; progress writes
-//! `user_document_state` without requiring a Library entry. See
-//! docs/document-feed-library-architecture.md (Document Reader; User highlights or notes an
-//! unsaved feed delivery; Reading progress).
+//! `user_document_state` without requiring a Library entry.
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::Utc;
 use ind_domain::{
-    ArchiveAssetKind, ArchiveAssetStatus, ClientType, Document, DocumentAsset, DocumentId,
-    DocumentNote, DocumentType, DomainError, EventOrigin, Highlight, HighlightId, HighlightLocator,
-    HighlightSourceLocator, NewHighlight, UserDocumentState, UserId,
+    ArchiveAssetKind, ArchiveAssetStatus, Document, DocumentAsset, DocumentId, DocumentNote,
+    DocumentType, DomainError, EventOrigin, Highlight, HighlightId, HighlightLocator,
+    HighlightSourceLocator, NewHighlight, NewReadingEvent, ReadingPosition, UserDocumentState,
+    UserId,
 };
 
 use futures::future::BoxFuture;
@@ -32,7 +31,7 @@ use crate::repos::event::MutationSideEffects;
 use crate::repos::highlight::HighlightRepository;
 use crate::repos::library::LibraryRepository;
 use crate::repos::lifecycle_outbox::search_reindex_document_outbox;
-use crate::repos::user_document_state::UserDocumentStateRepository;
+use crate::repos::user_document_state::{AppendOutcome, UserDocumentStateRepository};
 
 const REPROCESS_COOLDOWN: Duration = Duration::from_secs(5 * 60);
 
@@ -304,19 +303,24 @@ impl DocumentReaderService {
         user_id: UserId,
         document_id: DocumentId,
         progress_percent: i32,
-        chapter_locator: Option<String>,
-        chapter_offset: Option<i32>,
+        position: Option<ReadingPosition>,
+        origin: EventOrigin,
     ) -> Result<UserDocumentState, AppError> {
         self.require_document(user_id, document_id).await?;
         self.state_repo
-            .record_progress(
-                user_id,
-                document_id,
-                progress_percent,
-                chapter_locator,
-                chapter_offset,
-                EventOrigin::Surface(ClientType::Web),
-            )
+            .record_progress(user_id, document_id, progress_percent, position, origin)
+            .await
+    }
+
+    pub async fn append_reading_events(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        events: Vec<NewReadingEvent>,
+    ) -> Result<AppendOutcome, AppError> {
+        self.require_document(user_id, document_id).await?;
+        self.state_repo
+            .append_reading_events(user_id, document_id, &events)
             .await
     }
 }
@@ -396,15 +400,18 @@ impl DocumentReaderOperations for DocumentReaderService {
         user_id: UserId,
         document_id: DocumentId,
         progress_percent: i32,
-        chapter_locator: Option<String>,
-        chapter_offset: Option<i32>,
+        position: Option<ReadingPosition>,
+        origin: EventOrigin,
     ) -> BoxFuture<'_, Result<UserDocumentState, AppError>> {
-        Box::pin(self.update_progress(
-            user_id,
-            document_id,
-            progress_percent,
-            chapter_locator,
-            chapter_offset,
-        ))
+        Box::pin(self.update_progress(user_id, document_id, progress_percent, position, origin))
+    }
+
+    fn append_reading_events(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        events: Vec<NewReadingEvent>,
+    ) -> BoxFuture<'_, Result<AppendOutcome, AppError>> {
+        Box::pin(self.append_reading_events(user_id, document_id, events))
     }
 }
