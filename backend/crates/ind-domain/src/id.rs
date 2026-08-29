@@ -193,6 +193,8 @@ prefixed_id!(EmailAliasId, "als_");
 prefixed_id!(DocumentId, "doc_");
 prefixed_id!(LibraryEntryId, "lib_");
 prefixed_id!(FeedDeliveryId, "dlv_");
+prefixed_id!(ReadingEventId, "rev_");
+prefixed_id!(ClientId, "cli_");
 
 // -- Internal IDs (no API prefix) --
 
