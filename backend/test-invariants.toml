@@ -861,3 +861,19 @@ owner_layer = "http"
 path = "apps/ind-api/tests/api/reading_events_position_tests.rs"
 test = "every_document_type_records_and_returns_its_own_position"
 rationale = "Reading position is one model for every artifact: articles, books, PDFs, video and podcast must each record and return their own coordinates, and no type may lose a field the others keep."
+
+[[invariants]]
+id = "highlight-create-idempotent"
+risk = "concurrency-idempotency"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/highlight_idempotency_tests.rs"
+test = "concurrent_identical_creates_produce_one_highlight"
+rationale = "Retrying a highlight create from an offline queue must never duplicate the highlight, even when two identical requests race."
+
+[[invariants]]
+id = "highlight-replay-side-effects"
+risk = "event-delivery"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/highlight_idempotency_tests.rs"
+test = "replay_does_not_repeat_highlight_side_effects"
+rationale = "An exact replay must not re-emit document.highlighted or re-queue the search reindex; neither is visible in the HTTP response."

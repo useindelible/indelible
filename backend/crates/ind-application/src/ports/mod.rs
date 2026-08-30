@@ -27,15 +27,15 @@ pub use auth::{
 };
 pub use content::{
     ArticleTocOperations, ArticleTocReadOutput, CollectionOperations, CreateCollectionRequest,
-    CreateSmartListRequest, CreateTagRequest, DocumentReaderOperations, DocumentReaderView,
-    DocumentReprocessOutput, EntityOperations, ExtensionSaveOperations, FeedDeliveryOperations,
-    FeedOperations, FeedOpmlImportResult, FeedPreparationOperations, FeedSubscribeResult,
-    FileUploadProcessor, HighlightOperations, HomeOperations, LibraryOperations,
-    LibraryUploadOperations, LibraryUrlCheckResult, PatchExtensionEntryRequest,
-    PrepareDeliveryOutcome, ProcessedUpload, ProcessedUploadAsset, ReadAheadOutcome,
-    SaveUrlRequest, SearchOperations, SettingsOperations, SmartListOperations, TagOperations,
-    UpdateCollectionRequest, UpdateEntityRequest, UpdateSmartListRequest, UpdateTagRequest,
-    UploadFileProcessRequest, UploadFileRequest,
+    CreateHighlightRequest, CreateSmartListRequest, CreateTagRequest, DocumentReaderOperations,
+    DocumentReaderView, DocumentReprocessOutput, EntityOperations, ExtensionSaveOperations,
+    FeedDeliveryOperations, FeedOperations, FeedOpmlImportResult, FeedPreparationOperations,
+    FeedSubscribeResult, FileUploadProcessor, HighlightCreation, HighlightOperations,
+    HomeOperations, LibraryOperations, LibraryUploadOperations, LibraryUrlCheckResult,
+    PatchExtensionEntryRequest, PrepareDeliveryOutcome, ProcessedUpload, ProcessedUploadAsset,
+    ReadAheadOutcome, SaveUrlRequest, SearchOperations, SettingsOperations, SmartListOperations,
+    TagOperations, UpdateCollectionRequest, UpdateEntityRequest, UpdateSmartListRequest,
+    UpdateTagRequest, UploadFileProcessRequest, UploadFileRequest,
 };
 pub use egress::{OutboundUrlGuard, UrlGuardError};
 pub use feed_parser::{

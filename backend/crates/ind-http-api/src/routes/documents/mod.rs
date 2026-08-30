@@ -21,7 +21,7 @@ pub(crate) mod toc;
 use axum::Router;
 use axum::extract::{Path, State};
 use axum::routing::{get, patch, post};
-use ind_application::ports::DocumentReaderOperations;
+use ind_application::ports::{CreateHighlightRequest, DocumentReaderOperations};
 
 use crate::error::ApiError;
 use crate::extract::ValidatedJson;
