@@ -162,6 +162,18 @@ jobs:
       - name: Install pinned cargo-mutants
         if: steps.changes.outputs.run == 'true' && steps.cache-mutants.outputs.cache-hit != 'true'
         run: cargo install --locked cargo-mutants --version 27.1.0
+      # mutants.toml sets test_tool = "nextest"; without the binary the baseline
+      # build fails before a single mutant runs.
+      - name: Cache pinned cargo-nextest
+        if: steps.changes.outputs.run == 'true'
+        id: cache-nextest
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cargo/bin/cargo-nextest
+          key: cargo-nextest-0.9.143-${{ runner.os }}
+      - name: Install pinned cargo-nextest
+        if: steps.changes.outputs.run == 'true' && steps.cache-nextest.outputs.cache-hit != 'true'
+        run: cargo install --locked cargo-nextest --version 0.9.143
       - name: Verify critical mutation sample
         if: steps.changes.outputs.run == 'true'
         run: ../scripts/verify-critical-mutants.sh
