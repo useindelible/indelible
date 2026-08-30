@@ -15,6 +15,23 @@ pub struct DocumentReaderView {
     pub assets: Vec<DocumentAsset>,
 }
 
+pub struct CreateHighlightRequest {
+    /// Caller-supplied id. `None` lets the server mint one, which is never a replay.
+    pub requested_id: Option<HighlightId>,
+    pub color: String,
+    pub text_content: String,
+    pub locator: Option<HighlightLocator>,
+    pub source_locator: Option<HighlightSourceLocator>,
+}
+
+/// Outcome of a highlight create. `created` is false when a caller-supplied id replayed an
+/// identical highlight, which the HTTP layer answers with 200 instead of 201.
+#[derive(Debug, Clone)]
+pub struct HighlightCreation {
+    pub highlight: Highlight,
+    pub created: bool,
+}
+
 pub struct DocumentReprocessOutput {
     pub queued: bool,
     pub job_type: String,
@@ -51,11 +68,8 @@ pub trait DocumentReaderOperations: Send + Sync {
         &self,
         user_id: UserId,
         document_id: DocumentId,
-        color: String,
-        text_content: String,
-        locator: Option<HighlightLocator>,
-        source_locator: Option<HighlightSourceLocator>,
-    ) -> BoxFuture<'_, Result<Highlight, AppError>>;
+        request: CreateHighlightRequest,
+    ) -> BoxFuture<'_, Result<HighlightCreation, AppError>>;
 
     fn list_highlights(
         &self,

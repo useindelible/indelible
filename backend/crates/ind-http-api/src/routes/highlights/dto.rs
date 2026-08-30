@@ -250,6 +250,11 @@ impl From<ind_domain::HighlightSourceLocator> for SourceLocatorSchema {
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateHighlightBody {
+    /// Client-generated `hlt_` id. Replaying it with identical content returns the stored
+    /// highlight with 200; reusing it with different content is a conflict.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<String>)]
+    pub id: Option<ind_domain::HighlightId>,
     pub color: String,
     pub text_content: String,
     #[schema(value_type = LocatorSchemaFlat)]

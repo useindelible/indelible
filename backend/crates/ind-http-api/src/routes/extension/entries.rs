@@ -190,21 +190,29 @@ pub async fn extension_create_highlight(
             .ok_or(ApiError::ServiceUnavailable {
                 message: "document reader service not configured".into(),
             })?;
-    let highlight = document_reader_ops
+    let creation = document_reader_ops
         .create_highlight(
             auth_user.user_id,
             joined.document.id,
-            body.color,
-            body.text_content,
-            body.locator.map(Into::into),
-            body.source_locator.map(Into::into),
+            CreateHighlightRequest {
+                requested_id: body.id,
+                color: body.color,
+                text_content: body.text_content,
+                locator: body.locator.map(Into::into),
+                source_locator: body.source_locator.map(Into::into),
+            },
         )
         .await
         .map_err(ApiError::from)?;
 
+    let status = if creation.created {
+        http::StatusCode::CREATED
+    } else {
+        http::StatusCode::OK
+    };
     Ok((
-        http::StatusCode::CREATED,
-        crate::extract::Json(HighlightResponse::from_domain(highlight)),
+        status,
+        crate::extract::Json(HighlightResponse::from_domain(creation.highlight)),
     ))
 }
 

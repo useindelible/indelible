@@ -5,7 +5,7 @@ use http::HeaderMap;
 use ind_application::handlers::extension_save::{
     FullArchiveInput, QuickSaveInput, ReaderSaveInput,
 };
-use ind_application::ports::PatchExtensionEntryRequest;
+use ind_application::ports::{CreateHighlightRequest, PatchExtensionEntryRequest};
 use ind_domain::{ClientType, ItemType};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;

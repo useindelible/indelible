@@ -7,8 +7,10 @@ use super::*;
     request_body = CreateHighlightBody,
     responses(
         (status = 201, description = "Highlight created", body = HighlightResponse),
+        (status = 200, description = "Highlight already existed with identical content", body = HighlightResponse),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Document not found"),
+        (status = 409, description = "Highlight id already used with different content"),
         (status = 422, description = "Document not yet rendered, or validation error"),
         (status = 503, description = "Document reader service not configured"),
     ),
@@ -27,20 +29,28 @@ pub async fn create_document_highlight(
 ) -> Result<(http::StatusCode, crate::extract::Json<HighlightResponse>), ApiError> {
     let ops = require_document_reader_ops(&state)?;
     let document_id = parse_document_id(&document_id)?;
-    let highlight = ops
+    let creation = ops
         .create_highlight(
             auth_user.user_id,
             document_id,
-            body.color,
-            body.text_content,
-            Some(body.locator.into()),
-            body.source_locator.map(Into::into),
+            CreateHighlightRequest {
+                requested_id: body.id,
+                color: body.color,
+                text_content: body.text_content,
+                locator: Some(body.locator.into()),
+                source_locator: body.source_locator.map(Into::into),
+            },
         )
         .await
         .map_err(ApiError::from)?;
+    let status = if creation.created {
+        http::StatusCode::CREATED
+    } else {
+        http::StatusCode::OK
+    };
     Ok((
-        http::StatusCode::CREATED,
-        crate::extract::Json(HighlightResponse::from_domain(highlight)),
+        status,
+        crate::extract::Json(HighlightResponse::from_domain(creation.highlight)),
     ))
 }
 

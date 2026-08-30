@@ -4,6 +4,7 @@ use chrono::Utc;
 
 use ind_application::AppError;
 use ind_application::repos::event::MutationSideEffects;
+use ind_application::repos::highlight::HighlightWrite;
 use ind_domain::{DocumentId, Highlight, NewHighlight, UserId};
 
 use super::super::write_helpers::apply_mutation_side_effects_tx;
@@ -15,7 +16,7 @@ impl PgHighlightRepository {
         &self,
         highlight: &NewHighlight,
         effects: MutationSideEffects,
-    ) -> Result<Highlight, AppError> {
+    ) -> Result<HighlightWrite, AppError> {
         let now = Utc::now();
         let locator_json = highlight
             .locator
@@ -36,6 +37,7 @@ impl PgHighlightRepository {
             HighlightRow,
             "INSERT INTO highlights (id, document_id, user_id, color, text_content, locator, source_locator, created_at, updated_at) \
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) \
+             ON CONFLICT DO NOTHING \
              RETURNING id, document_id AS \"document_id!\", user_id, color, text_content, locator, source_locator, created_at, updated_at",
             highlight.id.into_uuid(),
             highlight.document_id.into_uuid(),
@@ -46,14 +48,21 @@ impl PgHighlightRepository {
             source_locator_json,
             now,
         )
-        .fetch_one(&mut *tx)
+        .fetch_optional(&mut *tx)
         .await
         .map_err(map_sqlx_error)?;
+
+        let Some(row) = row else {
+            tx.rollback().await.map_err(map_sqlx_error)?;
+            return Ok(HighlightWrite::IdTaken);
+        };
 
         apply_mutation_side_effects_tx(&mut tx, effects).await?;
 
         tx.commit().await.map_err(map_sqlx_error)?;
-        Highlight::try_from(row)
+        Ok(HighlightWrite::Inserted(Box::new(Highlight::try_from(
+            row,
+        )?)))
     }
 
     pub(super) async fn list_by_document_impl(
