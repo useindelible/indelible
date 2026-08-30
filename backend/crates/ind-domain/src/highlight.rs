@@ -36,7 +36,7 @@ pub struct Highlight {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum HighlightLocator {
     Html {
@@ -102,5 +102,52 @@ mod tests {
         }))
         .unwrap();
         assert!(matches!(locator, HighlightLocator::Pdf { rects: None, .. }));
+    }
+
+    /// Idempotent highlight create decides replay-versus-divergence by comparing locators, so
+    /// equality has to be structural across every variant and every field, not variant-deep.
+    #[test]
+    fn locator_equality_is_structural_across_variants_and_fields() {
+        let pdf = |page, snapshot: &str, rects| HighlightLocator::Pdf {
+            page,
+            x: 1.0,
+            y: 2.0,
+            width: 3.0,
+            height: 4.0,
+            text_snapshot: snapshot.into(),
+            rects,
+        };
+        let rect = |x| {
+            Some(vec![PdfRect {
+                x,
+                y: 2.0,
+                width: 3.0,
+                height: 4.0,
+            }])
+        };
+
+        assert_eq!(pdf(2, "quote", None), pdf(2, "quote", None));
+        assert_ne!(pdf(2, "quote", None), pdf(3, "quote", None));
+        assert_ne!(pdf(2, "quote", None), pdf(2, "other", None));
+        assert_ne!(pdf(2, "quote", None), pdf(2, "quote", rect(1.0)));
+        assert_ne!(pdf(2, "quote", rect(1.0)), pdf(2, "quote", rect(9.0)));
+
+        let epub = |chapter: &str, start| HighlightLocator::Epub {
+            chapter: chapter.into(),
+            start_offset: start,
+            end_offset: 20,
+        };
+        assert_eq!(epub("ch1", 10), epub("ch1", 10));
+        assert_ne!(epub("ch1", 10), epub("ch2", 10));
+        assert_ne!(epub("ch1", 10), epub("ch1", 11));
+
+        assert_ne!(
+            epub("ch1", 10),
+            HighlightLocator::Html {
+                start_offset: 10,
+                end_offset: 20,
+            },
+            "different variants are never equal, even with matching offsets"
+        );
     }
 }
