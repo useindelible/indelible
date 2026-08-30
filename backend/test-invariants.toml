@@ -837,3 +837,27 @@ owner_layer = "persistence"
 path = "crates/ind-persistence/tests/account_purge_tests.rs"
 test = "every_user_owned_column_cascades_from_users"
 rationale = "Delete-forever must remove every row a user owns; a new user-owned table must join the cascade before it ships."
+
+[[invariants]]
+id = "reading-event-append-atomic"
+risk = "atomicity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/reading_event_projection_tests.rs"
+test = "divergent_replay_conflicts_and_rolls_back_the_batch"
+rationale = "An accepted reading event must never exist without its projection, and a divergent replay must not be silently dropped."
+
+[[invariants]]
+id = "reading-position-stale-device"
+risk = "atomicity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/reading_event_projection_tests.rs"
+test = "stale_device_reconnecting_later_does_not_win"
+rationale = "A device reconnecting with older reading time must not overwrite a newer position."
+
+[[invariants]]
+id = "reading-position-covers-every-document-type"
+risk = "external-contracts"
+owner_layer = "http"
+path = "apps/ind-api/tests/api/reading_events_position_tests.rs"
+test = "every_document_type_records_and_returns_its_own_position"
+rationale = "Reading position is one model for every artifact: articles, books, PDFs, video and podcast must each record and return their own coordinates, and no type may lose a field the others keep."

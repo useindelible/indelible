@@ -1,9 +1,13 @@
 use super::*;
-use ind_domain::{Document, DocumentAsset, DocumentId, LibraryEntryId, UserDocumentState};
+use ind_domain::{
+    Document, DocumentAsset, DocumentId, EventOrigin, LibraryEntryId, NewReadingEvent,
+    ReadingPosition, UserDocumentState,
+};
+
+use crate::repos::user_document_state::AppendOutcome;
 
 /// Reader read-model for a materialized document. Distinguishes a prepared-but-unsaved
-/// document (`library_entry_id` is `None`) from a saved Library entry (`Some`). See
-/// docs/document-feed-library-architecture.md (Document Reader).
+/// document (`library_entry_id` is `None`) from a saved Library entry (`Some`).
 pub struct DocumentReaderView {
     pub document: Document,
     pub state: Option<UserDocumentState>,
@@ -19,9 +23,7 @@ pub struct DocumentReprocessOutput {
 
 /// HTTP-facing port for the document reader and its authored capabilities. Highlights and notes
 /// require the document to have a completed readable asset (canonical rendered content); progress
-/// writes `user_document_state` without requiring a Library entry. See
-/// docs/document-feed-library-architecture.md (User opens canonical reader; User highlights or
-/// notes an unsaved feed delivery; Reading progress).
+/// writes `user_document_state` without requiring a Library entry.
 pub trait DocumentReaderOperations: Send + Sync {
     fn get_reader(
         &self,
@@ -79,7 +81,14 @@ pub trait DocumentReaderOperations: Send + Sync {
         user_id: UserId,
         document_id: DocumentId,
         progress_percent: i32,
-        chapter_locator: Option<String>,
-        chapter_offset: Option<i32>,
+        position: Option<ReadingPosition>,
+        origin: EventOrigin,
     ) -> BoxFuture<'_, Result<UserDocumentState, AppError>>;
+
+    fn append_reading_events(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        events: Vec<NewReadingEvent>,
+    ) -> BoxFuture<'_, Result<AppendOutcome, AppError>>;
 }

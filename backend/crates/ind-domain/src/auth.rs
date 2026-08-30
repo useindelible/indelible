@@ -35,6 +35,15 @@ pub enum ClientType {
     Cli,
 }
 
+impl_string_enum!(ClientType, "client type", {
+    Web => "web",
+    Ios => "ios",
+    Android => "android",
+    Desktop => "desktop",
+    Extension => "extension",
+    Cli => "cli",
+});
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiToken {
     pub id: ApiTokenId,
@@ -139,4 +148,35 @@ pub struct PasswordResetToken {
     pub expires_at: DateTime<Utc>,
     pub used_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::ClientType;
+
+    // impl_string_enum!'s literals and #[serde(rename_all = "snake_case")] are independent
+    // tables that must agree; this test fails if a new variant lets them drift.
+    #[test]
+    fn client_type_wire_strings_match_serde() {
+        let variants = [
+            ClientType::Web,
+            ClientType::Ios,
+            ClientType::Android,
+            ClientType::Desktop,
+            ClientType::Extension,
+            ClientType::Cli,
+        ];
+        assert_eq!(variants.len(), ClientType::NAMES.len());
+
+        for variant in variants {
+            let expected = serde_json::Value::String(variant.as_str().to_owned());
+            assert_eq!(serde_json::to_value(variant).unwrap(), expected);
+            assert_eq!(
+                serde_json::from_value::<ClientType>(json!(variant.as_str())).unwrap(),
+                variant
+            );
+        }
+    }
 }
