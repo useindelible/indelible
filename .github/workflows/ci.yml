@@ -125,6 +125,7 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           elif git diff --quiet "${{ github.event.pull_request.base.sha }}"...HEAD -- \
             mutants.toml test-invariants.toml \
+            ../scripts/verify-critical-mutants.sh \
             crates/ind-auth/src/api_token.rs \
             crates/ind-auth/src/refresh_token.rs \
             crates/ind-persistence/src/repos/entity_repo/resolution.rs \

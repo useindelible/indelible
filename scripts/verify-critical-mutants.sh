@@ -7,6 +7,9 @@ output="$backend/target/critical-mutants"
 results="$output/mutants.out"
 
 cd "$backend"
+# cargo-mutants creates only the leaf of --output; on a fresh runner target/ does not
+# exist yet and the run dies before testing a single mutant.
+mkdir -p "$output"
 set +e
 cargo mutants \
   --workspace \
