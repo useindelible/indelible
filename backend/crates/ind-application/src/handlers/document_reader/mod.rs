@@ -221,8 +221,9 @@ impl DocumentReaderService {
             request.source_locator.as_ref(),
         )?;
 
+        let requested_id = request.requested_id;
         let new_highlight = NewHighlight {
-            id: request.requested_id.unwrap_or_else(HighlightId::new),
+            id: requested_id.unwrap_or_else(HighlightId::new),
             document_id,
             user_id,
             color: request.color,
@@ -245,6 +246,9 @@ impl DocumentReaderService {
                 highlight: *highlight,
                 created: true,
             }),
+            HighlightWrite::IdTaken if requested_id.is_none() => {
+                Err(highlight_id_conflict(new_highlight.id))
+            }
             HighlightWrite::IdTaken => {
                 match self
                     .highlight_repo

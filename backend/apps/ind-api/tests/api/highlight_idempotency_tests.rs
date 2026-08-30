@@ -9,6 +9,10 @@ use serde_json::{Value, json};
 
 use super::common::assert_json_response;
 
+/// Two in-flight writers can serialize by luck; eight cannot, so the losers really do meet a
+/// primary key the winner has not committed yet.
+const CONCURRENT_WRITERS: usize = 8;
+
 const ID: &str = "hlt_018f5b1e-0000-7000-8000-000000000001";
 const HIGHLIGHTED_EVENT: &str = "document.highlighted";
 
@@ -148,26 +152,25 @@ async fn concurrent_identical_creates_produce_one_highlight() {
     let doc = readable_article(&app, session.user.id).await;
     let request = body(Some(ID), "selected", None);
 
-    let (first, second) = tokio::join!(
-        create(&client, &doc, &request),
-        create(&client, &doc, &request)
-    );
-    let mut statuses = [first.status(), second.status()];
-    let bodies = [
-        first.text().await.expect("read body"),
-        second.text().await.expect("read body"),
-    ];
-    statuses.sort_by_key(StatusCode::as_u16);
+    let responses =
+        futures::future::join_all((0..CONCURRENT_WRITERS).map(|_| create(&client, &doc, &request)))
+            .await;
 
-    assert_eq!(
-        statuses,
-        [StatusCode::OK, StatusCode::CREATED],
-        "bodies: {bodies:?}"
-    );
-    for raw in &bodies {
-        let parsed: Value = serde_json::from_str(raw).expect("response was JSON");
+    let mut created = 0;
+    let mut replayed = 0;
+    for response in responses {
+        let status = response.status();
+        let raw = response.text().await.expect("read body");
+        match status {
+            StatusCode::CREATED => created += 1,
+            StatusCode::OK => replayed += 1,
+            other => panic!("unexpected {other}: {raw}"),
+        }
+        let parsed: Value = serde_json::from_str(&raw).expect("response was JSON");
         assert_eq!(parsed["id"], ID);
     }
+
+    assert_eq!((created, replayed), (1, CONCURRENT_WRITERS - 1));
     assert_eq!(count(&client, &doc).await, 1);
 }
 

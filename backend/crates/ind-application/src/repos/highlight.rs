@@ -23,9 +23,11 @@ pub trait HighlightRepository: Send + Sync {
         highlight: &NewHighlight,
         effects: MutationSideEffects,
     ) -> Result<Highlight, AppError>;
-    /// Create a document-keyed highlight (`item_id` NULL) and commit any `effects` (the
-    /// `document.highlighted` event plus document search reindex / embed outbox rows) atomically
-    /// with the annotation. An id already present yields `IdTaken` with nothing written.
+    /// Create a highlight and commit any `effects` (the `document.highlighted` event plus
+    /// document search reindex / embed outbox rows) atomically with the annotation. An id
+    /// already present yields `IdTaken` with nothing written, so a retry is safe; callers
+    /// resolving `IdTaken` compare against the stored row, which a later mutation such as
+    /// `update_color` can move out from under a still-queued retry.
     async fn create_for_document(
         &self,
         highlight: &NewHighlight,

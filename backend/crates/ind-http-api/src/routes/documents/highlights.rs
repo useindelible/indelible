@@ -8,6 +8,7 @@ use super::*;
     responses(
         (status = 201, description = "Highlight created", body = HighlightResponse),
         (status = 200, description = "Highlight already existed with identical content", body = HighlightResponse),
+        (status = 400, description = "Malformed body or highlight id"),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Document not found"),
         (status = 409, description = "Highlight id already used with different content"),
