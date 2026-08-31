@@ -180,6 +180,44 @@
         ],
         "type": "object"
       },
+      "AppendReadingEventsBody": {
+        "properties": {
+          "client_id": {
+            "description": "Stable per-install id, `cli_` prefixed. Omitted by callers with no device\nidentity, who are attributed from their credential instead.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingEventBody"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "AppendReadingEventsResponse": {
+        "properties": {
+          "accepted": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "replayed": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "accepted",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "ArchivalProcessingSettingsDto": {
         "properties": {
           "ai_auto_processing": {
@@ -652,6 +690,13 @@
         "properties": {
           "color": {
             "type": "string"
+          },
+          "id": {
+            "description": "Client-generated `hlt_` id. Replaying it with identical content returns the stored\nhighlight with 200; reusing it with different content is a conflict.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "locator": {
             "$ref": "#/components/schemas/LocatorSchemaFlat"
@@ -1163,6 +1208,16 @@
             "type": [
               "integer",
               "null"
+            ]
+          },
+          "position": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReadingPositionSchema"
+              }
             ]
           },
           "progress_percent": {
@@ -1809,6 +1864,13 @@
         "properties": {
           "color": {
             "type": "string"
+          },
+          "id": {
+            "description": "Client-generated `hlt_` id. Replaying it with identical content returns the stored\nhighlight with 200; reusing it with different content is a conflict.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "locator": {
             "oneOf": [
@@ -6107,6 +6169,259 @@
         ],
         "type": "object"
       },
+      "ReadingAnchorSchema": {
+        "description": "The structural landmark a position sits on. A closed set: an unrecognised `type` is a\nmalformed body, not a validation error.",
+        "oneOf": [
+          {
+            "properties": {
+              "page": {
+                "format": "int32",
+                "type": "integer"
+              },
+              "type": {
+                "enum": [
+                  "page"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "page",
+              "type"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "chapter": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "spine"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "chapter",
+              "type"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "cue": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "cue"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "cue",
+              "type"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "section": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "section"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "section",
+              "type"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ReadingAnchorSchemaFlat": {
+        "description": "Schema-only flat representation of `ReadingAnchorSchema` for OpenAPI code generators, which\nmap an undiscriminated `oneOf` to `Any`. Mirrors the `LocatorSchemaFlat` treatment.",
+        "properties": {
+          "chapter": {
+            "description": "spine: EPUB spine key.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cue": {
+            "description": "cue: transcript cue id.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "page": {
+            "description": "page: 1-based page number.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "section": {
+            "description": "section: article, email or tweet section id.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "Discriminator: \"page\", \"spine\", \"cue\" or \"section\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ReadingEventBody": {
+        "properties": {
+          "active_ms": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "asset_kind": {
+            "description": "Which readable representation `position` refers to.",
+            "example": "epub",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attempt": {
+            "description": "Which pass through the document. Increment to start a reread; a higher attempt\noutranks a lower one regardless of arrival time.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cause": {
+            "description": "Why the event happened. Defaults to `reader` telemetry.",
+            "example": "reader",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "`rev_` prefixed, generated by the client so retries are idempotent.",
+            "type": "string"
+          },
+          "kind": {
+            "example": "progress",
+            "type": "string"
+          },
+          "origin_seq": {
+            "description": "Required when the batch carries a `client_id`; the server allocates it otherwise.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "position": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReadingPositionSchema"
+              }
+            ]
+          },
+          "position_version": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "progress_basis_points": {
+            "description": "Hundredths of a percent: 42.37% is 4237.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "Groups one continuous sitting; omit if the client does not track sessions.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "recorded_at"
+        ],
+        "type": "object"
+      },
+      "ReadingPositionSchema": {
+        "description": "Where the reader stopped, in coordinates every artifact type can speak. The fields are\nindependent, not a union keyed on document type: an article sends `anchor` + `offset`, a\nPDF `anchor` + `fraction`, a video or podcast adds `seconds`.",
+        "properties": {
+          "anchor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReadingAnchorSchemaFlat"
+              }
+            ]
+          },
+          "fraction": {
+            "description": "`0..=1` through the whole artifact.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "offset": {
+            "description": "Units into `anchor` — characters for text.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "seconds": {
+            "description": "Media playhead in seconds, for video and podcast.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "ReadingStatsWidget": {
         "properties": {
           "documents_read": {
@@ -7235,7 +7550,7 @@
             ]
           },
           "type": {
-            "description": "Discriminator: \"web_page_dom_range\"",
+            "description": "Discriminator: \"web_page_dom_range\" or \"text_quote\"",
             "type": "string"
           },
           "url": {
@@ -7664,6 +7979,7 @@
         "type": "object"
       },
       "UpdateDocumentProgressBody": {
+        "description": "`chapter_locator` and `chapter_offset` map onto `ReadingPositionSchema::anchor` / `offset`.",
         "properties": {
           "chapter_locator": {
             "type": [
@@ -10384,6 +10700,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HighlightResponse"
+                }
+              }
+            },
+            "description": "Highlight already existed with identical content"
+          },
           "201": {
             "content": {
               "application/json": {
@@ -10394,11 +10720,17 @@
             },
             "description": "Highlight created"
           },
+          "400": {
+            "description": "Malformed body or highlight id"
+          },
           "401": {
             "description": "Authentication required"
           },
           "404": {
             "description": "Document not found"
+          },
+          "409": {
+            "description": "Highlight id already used with different content"
           },
           "422": {
             "description": "Document not yet rendered, or validation error"
@@ -10670,6 +11002,73 @@
           },
           "404": {
             "description": "Document not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "503": {
+            "description": "Document reader service not configured"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "api_token": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "x-indelible-permissions": [
+          "library:write"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/reading-events": {
+      "post": {
+        "operationId": "append_reading_events",
+        "parameters": [
+          {
+            "description": "Document id with doc_ prefix",
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendReadingEventsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppendReadingEventsResponse"
+                }
+              }
+            },
+            "description": "Events appended; exact duplicates counted as replayed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "409": {
+            "description": "An event id or client sequence was reused with different content"
           },
           "422": {
             "description": "Validation error"
@@ -12253,6 +12652,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HighlightResponse"
+                }
+              }
+            },
+            "description": "Highlight already existed with identical content"
+          },
           "201": {
             "content": {
               "application/json": {
@@ -12263,11 +12672,17 @@
             },
             "description": "Created highlight"
           },
+          "400": {
+            "description": "Malformed body or highlight id"
+          },
           "401": {
             "description": "Authentication required"
           },
           "404": {
             "description": "Saved entry not found"
+          },
+          "409": {
+            "description": "Highlight id already used with different content"
           },
           "422": {
             "description": "Validation error"
