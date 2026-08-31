@@ -1,0 +1,178 @@
+CREATE TABLE cached_document (
+    scope TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    reader_json TEXT NOT NULL,
+    pinned INTEGER NOT NULL DEFAULT 0,
+    last_opened_at INTEGER NOT NULL,
+    last_synced_at INTEGER,
+    bytes INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (scope, document_id)
+);
+
+CREATE TABLE cached_asset (
+    scope TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    idx INTEGER NOT NULL DEFAULT 0,
+    path TEXT NOT NULL,
+    bytes INTEGER NOT NULL,
+    PRIMARY KEY (scope, document_id, kind, idx)
+);
+
+CREATE TABLE cached_highlight (
+    scope TEXT NOT NULL,
+    id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (scope, id)
+);
+
+CREATE TABLE outbox (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    scope TEXT NOT NULL,
+    id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at INTEGER,
+    next_attempt_at INTEGER NOT NULL DEFAULT 0,
+    state TEXT NOT NULL DEFAULT 'pending',
+    last_error TEXT
+);
+CREATE UNIQUE INDEX outbox_scope_id ON outbox(scope, id);
+CREATE INDEX outbox_drain ON outbox(scope, state, next_attempt_at, seq);
+CREATE INDEX outbox_entity ON outbox(scope, entity_id, seq);
+
+CREATE TABLE client_state (
+    scope TEXT NOT NULL PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    next_origin_seq INTEGER NOT NULL DEFAULT 0,
+    purge_pending INTEGER NOT NULL DEFAULT 0
+);
+
+insertOutbox:
+INSERT INTO outbox(scope, id, kind, entity_id, document_id, payload_json, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+drainable:
+SELECT * FROM outbox WHERE scope = ? AND state = 'pending' AND next_attempt_at <= ? ORDER BY seq;
+
+rowsForEntity:
+SELECT * FROM outbox WHERE scope = ? AND entity_id = ? ORDER BY seq;
+
+earliestPendingRetry:
+SELECT MIN(next_attempt_at) FROM outbox WHERE scope = ? AND state = 'pending' AND next_attempt_at > ?;
+
+outboxByState:
+SELECT * FROM outbox WHERE scope = ? AND state = ? ORDER BY seq;
+
+deleteOutboxRow:
+DELETE FROM outbox WHERE scope = ? AND id = ?;
+
+markAttempt:
+UPDATE outbox
+SET attempts = attempts + 1, last_attempt_at = ?, next_attempt_at = ?, last_error = ?
+WHERE scope = ? AND id = ?;
+
+setState:
+UPDATE outbox SET state = ?, last_error = ? WHERE scope = ? AND id = ?;
+
+setStateForEntity:
+UPDATE outbox SET state = ? WHERE scope = ? AND entity_id = ? AND state = ?;
+
+resetForRetry:
+UPDATE outbox
+SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL
+WHERE scope = ? AND id = ?;
+
+outboxForScope:
+SELECT * FROM outbox WHERE scope = ? ORDER BY seq;
+
+outboxForDocument:
+SELECT * FROM outbox WHERE scope = ? AND document_id = ? ORDER BY seq;
+
+setDocumentSyncedAt:
+UPDATE cached_document SET last_synced_at = ? WHERE scope = ? AND document_id = ?;
+
+upsertCachedDocument:
+INSERT OR REPLACE INTO cached_document(scope, document_id, document_type, title, reader_json, pinned, last_opened_at, last_synced_at, bytes)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+touchDocumentOpened:
+UPDATE cached_document SET last_opened_at = ? WHERE scope = ? AND document_id = ?;
+
+setPinned:
+UPDATE cached_document SET pinned = ? WHERE scope = ? AND document_id = ?;
+
+setDocumentBytes:
+UPDATE cached_document SET bytes = ? WHERE scope = ? AND document_id = ?;
+
+cachedDocuments:
+SELECT * FROM cached_document WHERE scope = ? ORDER BY last_opened_at DESC;
+
+cachedDocument:
+SELECT * FROM cached_document WHERE scope = ? AND document_id = ?;
+
+unpinnedLru:
+SELECT * FROM cached_document WHERE scope = ? AND pinned = 0 ORDER BY last_opened_at ASC;
+
+totalBytes:
+SELECT SUM(bytes) FROM cached_document WHERE scope = ?;
+
+insertCachedAsset:
+INSERT INTO cached_asset(scope, document_id, kind, idx, path, bytes)
+VALUES (?, ?, ?, ?, ?, ?);
+
+assetsForDocument:
+SELECT * FROM cached_asset WHERE scope = ? AND document_id = ?;
+
+deleteAssetsForDocument:
+DELETE FROM cached_asset WHERE scope = ? AND document_id = ?;
+
+upsertCachedHighlight:
+INSERT OR REPLACE INTO cached_highlight(scope, id, document_id, payload_json, updated_at)
+VALUES (?, ?, ?, ?, ?);
+
+deleteCachedHighlight:
+DELETE FROM cached_highlight WHERE scope = ? AND id = ?;
+
+highlightsForDocument:
+SELECT * FROM cached_highlight WHERE scope = ? AND document_id = ?;
+
+getClientState:
+SELECT * FROM client_state WHERE scope = ?;
+
+insertClientState:
+INSERT INTO client_state(scope, client_id, next_origin_seq, purge_pending)
+VALUES (?, ?, ?, ?);
+
+setNextOriginSeq:
+UPDATE client_state SET next_origin_seq = ? WHERE scope = ?;
+
+setPurgePending:
+UPDATE client_state SET purge_pending = ? WHERE scope = ?;
+
+scopesWithState:
+SELECT scope FROM client_state;
+
+deleteCachedDocument:
+DELETE FROM cached_document WHERE scope = ? AND document_id = ?;
+
+purgeRows {
+  DELETE FROM cached_document WHERE scope = :scope;
+  DELETE FROM cached_asset WHERE scope = :scope;
+  DELETE FROM cached_highlight WHERE scope = :scope;
+  DELETE FROM outbox WHERE scope = :scope;
+}
+
+purgeOutbox:
+DELETE FROM outbox WHERE scope = ?;
+
+deleteClientState:
+DELETE FROM client_state WHERE scope = ?;
