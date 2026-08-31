@@ -456,7 +456,8 @@ class AuthViewModel(
         }
     }
 
-    private fun handleAuthenticatedUser(user: AuthUser) {
+    private suspend fun handleAuthenticatedUser(user: AuthUser) {
+        tokenStorage.saveUserId(user.id)
         val wasSetupRequired = _setupRequired.value
         _authState.value =
             when {

@@ -2,6 +2,7 @@ package app.indelible.core.network
 
 import app.indelible.core.config.ServerBuildConfig
 import app.indelible.core.storage.TokenStorage
+import io.ktor.http.parseUrl
 
 /**
  * Resolution order for the active server: what the user connected to, then the
@@ -14,8 +15,19 @@ internal fun resolveServerUrl(
     bakedDefaultUrl: String = ServerBuildConfig.SERVER_URL_DEFAULT,
 ): String =
     storedUrl
-        ?.let(::canonicalServerOrigin)
+        ?.let(::normalizedOrigin)
         ?.takeIf { it.isNotEmpty() }
-        ?: canonicalServerOrigin(bakedDefaultUrl).ifEmpty { AuthenticatedApiTransport.DEFAULT_SERVER_URL }
+        ?: normalizedOrigin(bakedDefaultUrl).ifEmpty { AuthenticatedApiTransport.DEFAULT_SERVER_URL }
 
-internal fun canonicalServerOrigin(url: String): String = url.trim().trimEnd('/')
+/**
+ * Parses with Ktor so equivalent servers (case, default port, trailing slash) collapse to the
+ * same scope key. Falls back to trim-only normalization for input Ktor cannot parse as a URL,
+ * since this also feeds request-URL resolution and must never throw.
+ */
+internal fun normalizedOrigin(url: String): String {
+    val trimmed = url.trim()
+    val parsed = parseUrl(trimmed) ?: return trimmed.trimEnd('/')
+    val portSuffix = if (parsed.port == parsed.protocol.defaultPort) "" else ":${parsed.port}"
+    val path = parsed.encodedPath.trimEnd('/')
+    return "${parsed.protocol.name}://${parsed.host.lowercase()}$portSuffix$path"
+}
