@@ -31,13 +31,13 @@ jobs:
       tag: ${{ steps.state.outputs.tag }}
       version: ${{ steps.state.outputs.version }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -48,7 +48,7 @@ jobs:
       - name: Test release version management
         run: node --test scripts/release-version.test.mjs scripts/self-hosting-installer.test.mjs
 
-      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: state-token
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
@@ -221,7 +221,7 @@ jobs:
           node scripts/release-version.mjs inspect
           git diff --check
 
-      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         if: ${{ steps.state.outputs.bumped == 'true' }}
         id: commit-token
         with:
@@ -282,7 +282,7 @@ jobs:
           echo "::error::CI did not succeed within 120 minutes for $SOURCE_SHA"
           exit 1
 
-      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: release-token
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
@@ -338,12 +338,12 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.tag }}
           persist-credentials: false
       - run: bash scripts/package-self-hosting-release.sh "${{ needs.prepare.outputs.tag }}" "$RUNNER_TEMP/release"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-self-hosting
           path: ${{ runner.temp }}/release/*
@@ -357,11 +357,11 @@ jobs:
       run:
         working-directory: extension
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.tag }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -375,7 +375,7 @@ jobs:
           cp .output/*.zip "$RUNNER_TEMP/release/"
           cd "$RUNNER_TEMP/release"
           sha256sum ./*.zip > extension-checksums-sha256.txt
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-extension
           path: ${{ runner.temp }}/release/*
@@ -390,11 +390,11 @@ jobs:
       run:
         working-directory: mobile
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.tag }}
           persist-credentials: false
-      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v4
         with:
           distribution: temurin
           java-version: '21'
@@ -419,7 +419,7 @@ jobs:
           cd "$RUNNER_TEMP/release"
           sha256sum "indelible-$TAG.apk" > "indelible-$TAG.apk.sha256"
           sha256sum "indelible-$TAG.aab" > "indelible-$TAG.aab.sha256"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-android
           path: ${{ runner.temp }}/release/*
@@ -443,7 +443,7 @@ jobs:
       contents: write
       packages: read
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: release-*
           merge-multiple: true
