@@ -16,6 +16,21 @@ const libraryLayer: ScopeLayer = {
 	handlers: { triage_archive: vi.fn(), select_next: vi.fn(), select_prev: vi.fn() }
 };
 
+const searchLayer: ScopeLayer = {
+	scope: 'search',
+	handlers: { select_next: vi.fn(), select_prev: vi.fn() }
+};
+
+const readerLayer: ScopeLayer = {
+	scope: 'reader',
+	handlers: {
+		reader_back: vi.fn(),
+		focus_toggle: vi.fn(),
+		chapter_prev: vi.fn(),
+		chapter_next: vi.fn()
+	}
+};
+
 function resolve(event: ResolvableEvent, layers: ScopeLayer[] = [globalLayer], typing = false) {
 	return resolveShortcut({ event, layers, typing });
 }
@@ -77,6 +92,35 @@ describe('resolveShortcut', () => {
 	it('stays silent during IME composition', () => {
 		expect(resolve({ ...press('n'), isComposing: true })).toBeNull();
 		expect(resolve({ ...press('n'), keyCode: 229 })).toBeNull();
+	});
+
+	it('moves the search selection on bare j and k only', () => {
+		const layers = [globalLayer, searchLayer];
+		expect(resolve(press('j'), layers)?.id).toBe('select_next');
+		expect(resolve(press('ArrowUp'), layers)?.id).toBe('select_prev');
+		expect(resolve(press('j', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('k', { ctrlKey: true }), layers)).toBeNull();
+		expect(resolve(press('k', { altKey: true }), layers)).toBeNull();
+	});
+
+	it('gives the reader escape, f, and the chapter arrows without modifiers', () => {
+		const layers = [globalLayer, readerLayer];
+		expect(resolve(press('Escape'), layers)?.id).toBe('reader_back');
+		expect(resolve(press('F', { shiftKey: true }), layers)?.id).toBe('focus_toggle');
+		expect(resolve(press('ArrowLeft'), layers)?.id).toBe('chapter_prev');
+		expect(resolve(press('ArrowRight'), layers)?.id).toBe('chapter_next');
+		expect(resolve(press('f', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('ArrowLeft', { altKey: true }), layers)).toBeNull();
+		expect(resolve(press('ArrowRight', { ctrlKey: true }), layers)).toBeNull();
+	});
+
+	it('hands escape to an open popover instead of leaving the reader', () => {
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			readerLayer,
+			{ scope: 'modal', handlers: {}, exclusive: true }
+		];
+		expect(resolve(press('Escape'), layers)).toBeNull();
 	});
 
 	it('returns the handler belonging to the winning layer', () => {

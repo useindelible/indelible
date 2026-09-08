@@ -189,8 +189,10 @@
 			onclick={handleSeekClick}
 			onkeydown={(e) => {
 				if (e.key === 'ArrowLeft') {
+					e.stopPropagation();
 					onSeek(Math.max(0, currentTime - 5));
 				} else if (e.key === 'ArrowRight') {
+					e.stopPropagation();
 					onSeek(Math.min(duration, currentTime + 5));
 				}
 			}}

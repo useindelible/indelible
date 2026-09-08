@@ -19,6 +19,7 @@
 	import { getLibrary } from '$lib/stores/library.svelte';
 	import { getReaderPreferences } from '$lib/stores/reader-preferences.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
 	import { applyTheme, getSavedTheme } from '$lib/styles/theme';
 	import { t } from '$lib/i18n';
 	import { setDocumentTitle } from '$lib/stores/page-title.svelte';
@@ -404,28 +405,15 @@
 		}
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
-		const target = event.target as HTMLElement;
-		const tag = target?.tagName;
-		if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
-
-		if (event.key === 'Escape') {
-			event.preventDefault();
-			if (showTypography) {
-				showTypography = false;
-			} else {
-				handleBack();
-			}
-			return;
-		}
-
-		if (event.key === 'f' || event.key === 'F') {
-			if (!event.metaKey && !event.ctrlKey && !event.altKey) {
-				event.preventDefault();
-				handleFocusModeToggle();
-			}
-		}
-	}
+	// Book items mount BookReader, which registers its own reader layer.
+	registerShortcuts(() =>
+		isBookItem
+			? null
+			: {
+					scope: 'reader',
+					handlers: { reader_back: handleBack, focus_toggle: handleFocusModeToggle }
+				}
+	);
 
 	async function handleHighlightCreate(data: {
 		text_content: string;
@@ -564,8 +552,6 @@
 		};
 	});
 </script>
-
-<svelte:window onkeydown={isBookItem ? undefined : handleKeydown} />
 
 {#if aiFailure}
 	<AiFailureNotice

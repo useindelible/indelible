@@ -1,9 +1,18 @@
 import type { MessageKey } from '$lib/i18n';
 
 /** `modal` carries no keymap rows; it exists so an open dialog can own the keyboard. */
-export type ShortcutScope = 'global' | 'library' | 'modal';
+export type ShortcutScope = 'global' | 'library' | 'search' | 'reader' | 'modal';
 
-export type ShortcutId = 'add_url' | 'add_rss' | 'select_next' | 'select_prev' | 'triage_archive';
+export type ShortcutId =
+	| 'add_url'
+	| 'add_rss'
+	| 'select_next'
+	| 'select_prev'
+	| 'triage_archive'
+	| 'reader_back'
+	| 'focus_toggle'
+	| 'chapter_prev'
+	| 'chapter_next';
 
 export type ShortcutGroup = 'triage' | 'reading' | 'global';
 
@@ -98,6 +107,70 @@ export const KEYMAP: readonly ShortcutDef[] = [
 		chord: { key: 'ArrowUp' },
 		labelKey: 'reader_previous_item',
 		caps: ['↑'],
+		group: null
+	},
+	{
+		id: 'select_next',
+		scope: 'search',
+		chord: { key: 'j' },
+		labelKey: 'reader_next_item',
+		caps: ['J'],
+		group: null
+	},
+	{
+		id: 'select_next',
+		scope: 'search',
+		chord: { key: 'ArrowDown' },
+		labelKey: 'reader_next_item',
+		caps: ['↓'],
+		group: null
+	},
+	{
+		id: 'select_prev',
+		scope: 'search',
+		chord: { key: 'k' },
+		labelKey: 'reader_previous_item',
+		caps: ['K'],
+		group: null
+	},
+	{
+		id: 'select_prev',
+		scope: 'search',
+		chord: { key: 'ArrowUp' },
+		labelKey: 'reader_previous_item',
+		caps: ['↑'],
+		group: null
+	},
+	{
+		id: 'reader_back',
+		scope: 'reader',
+		chord: { key: 'Escape' },
+		labelKey: 'common_back',
+		caps: ['⎋'],
+		group: null
+	},
+	{
+		id: 'focus_toggle',
+		scope: 'reader',
+		chord: { key: 'f' },
+		labelKey: 'prefs_reading_shortcut_toggle_focus_mode',
+		caps: ['F'],
+		group: null
+	},
+	{
+		id: 'chapter_prev',
+		scope: 'reader',
+		chord: { key: 'ArrowLeft' },
+		labelKey: 'prefs_reading_shortcut_previous_chapter',
+		caps: ['←'],
+		group: null
+	},
+	{
+		id: 'chapter_next',
+		scope: 'reader',
+		chord: { key: 'ArrowRight' },
+		labelKey: 'prefs_reading_shortcut_next_chapter',
+		caps: ['→'],
 		group: null
 	}
 ];

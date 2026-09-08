@@ -30,10 +30,7 @@ const BESPOKE_KEYDOWN_ALLOWLIST = [
 	'src/lib/components/library/ViewConfigDropdown.svelte',
 	'src/lib/components/reader/FocusMode.svelte',
 	'src/lib/components/reader/TypographyPopover.svelte',
-	'src/lib/components/reader/book/BookReader.svelte',
-	'src/routes/(app)/preferences/feed-management/+page.svelte',
-	'src/routes/(app)/reader/[documentId]/+page.svelte',
-	'src/routes/(app)/search/+page.svelte'
+	'src/routes/(app)/preferences/feed-management/+page.svelte'
 ];
 
 const GLOBAL_LISTENER =
