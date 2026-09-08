@@ -9,10 +9,14 @@ highlights, and sync.
 
 ## Get the app
 
-The apps aren't in the app stores yet. For now, build them from source in the
-repository's `mobile/` folder: open it in Android Studio for Android
-(`:composeApp:assembleDebug`), or run the iOS app through Xcode via the included
-`iosApp` project.
+Android: install
+[Indelible on Google Play](https://play.google.com/store/apps/details?id=com.useindelible.app).
+
+iOS: the App Store release is pending. Until then, run the iOS app through Xcode
+via the `iosApp` project in the repository's `mobile/` folder.
+
+You can also build the Android app from source in the same folder: open it in
+Android Studio and run `:composeApp:assembleDebug`.
 
 ## Connect to your server
 
