@@ -8,6 +8,9 @@
 	import AddRssFeedModal from '$lib/components/library/AddRssFeedModal.svelte';
 	import XPostModal from '$lib/components/library/XPostModal.svelte';
 	import YouTubeModal from '$lib/components/library/YouTubeModal.svelte';
+	import ShortcutHost from '$lib/components/shortcuts/ShortcutHost.svelte';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 	import {
 		addDomainEventHandler,
 		startDomainEventStream,
@@ -34,29 +37,19 @@
 		stopDomainEventStream();
 	});
 
-	function handleKeydown(e: KeyboardEvent) {
-		if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-			e.preventDefault();
-			modal.open('url');
-			return;
+	registerShortcuts(() => ({
+		scope: 'global',
+		handlers: {
+			add_url: () => modal.open('url'),
+			add_rss: () => modal.open('rss')
 		}
-		const tag = (e.target as HTMLElement)?.tagName;
-		if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable)
-			return;
-		if (e.metaKey || e.ctrlKey || e.altKey) return;
-		if (e.key === 'a' || e.key === 'A') {
-			e.preventDefault();
-			modal.open('url');
-		} else if (e.key === 'r' || e.key === 'R') {
-			e.preventDefault();
-			modal.open('rss');
-		}
-	}
+	}));
+
+	suppressShortcutsWhileOpen(() => modal.overlayOpen);
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if !auth.loading && auth.isAuthenticated}
+	<ShortcutHost />
 	{@render children()}
 	<AddPopover />
 	{#if modal.active === 'url'}<SaveUrlModal />{/if}

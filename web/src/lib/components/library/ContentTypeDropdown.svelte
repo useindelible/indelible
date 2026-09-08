@@ -3,10 +3,13 @@
 	import { resolve } from '$app/paths';
 	import { t, type MessageKey } from '$lib/i18n';
 	import { getLibrary } from '$lib/stores/library.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	const lib = getLibrary();
 
 	let open = $state(false);
+
+	suppressShortcutsWhileOpen(() => open);
 	let wrapperEl = $state<HTMLDivElement | undefined>(undefined);
 
 	type LibraryRoute =

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { VoicePersonaResponse } from '$lib/api/generated/types.gen';
 	import { t } from '$lib/i18n';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		playing: boolean;
@@ -42,6 +43,8 @@
 
 	let showSpeedPopover = $state(false);
 	let showVoicePopover = $state(false);
+
+	suppressShortcutsWhileOpen(() => showSpeedPopover || showVoicePopover);
 
 	let speedWrapperEl = $state<HTMLDivElement | undefined>(undefined);
 	let voiceWrapperEl = $state<HTMLDivElement | undefined>(undefined);

@@ -2,6 +2,7 @@
 	import type { SmartListResponse, TriageModeDto } from '$lib/api/generated/types.gen';
 	import { t } from '$lib/i18n';
 	import type { GroupBy } from '$lib/stores/library.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		smartList?: SmartListResponse;
@@ -50,6 +51,9 @@
 	);
 
 	let confirmDelete = $state(false);
+
+	// Mounted only while the panel is showing, so presence is the open state.
+	suppressShortcutsWhileOpen(() => true);
 
 	function handleDelete() {
 		if (confirmDelete) {

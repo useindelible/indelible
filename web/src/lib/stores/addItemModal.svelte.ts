@@ -19,6 +19,13 @@ export function getModalStore() {
 		get popoverOpen() {
 			return popoverOpen;
 		},
+		/**
+		 * True while any add surface owns the keyboard. The popover's trigger keeps
+		 * focus outside the menu, so callers cannot infer this from an event target.
+		 */
+		get overlayOpen() {
+			return activeModal !== null || popoverOpen;
+		},
 		togglePopover() {
 			popoverOpen = !popoverOpen;
 		},

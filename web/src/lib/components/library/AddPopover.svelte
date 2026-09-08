@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
+	import { capsFor } from '$lib/shortcuts/keymap';
 
 	const modal = getModalStore();
+	const addUrlCap = capsFor('add_url').join('');
+	const addRssCap = capsFor('add_rss').join('');
 
 	function handleWindowClick() {
 		if (modal.popoverOpen) modal.closePopover();
@@ -21,7 +24,7 @@
 				</svg>
 				{$t('library_save_url')}
 			</span>
-			<span class="popover-shortcut">A</span>
+			<span class="popover-shortcut">{addUrlCap}</span>
 		</button>
 		<button type="button" class="popover-item" role="menuitem" onclick={() => modal.open('upload')}>
 			<span class="popover-label">
@@ -53,7 +56,7 @@
 				</svg>
 				{$t('library_add_rss_feed')}
 			</span>
-			<span class="popover-shortcut">R</span>
+			<span class="popover-shortcut">{addRssCap}</span>
 		</button>
 		<div class="popover-divider" role="separator"></div>
 		<button type="button" class="popover-item" role="menuitem" onclick={() => modal.open('x')}>

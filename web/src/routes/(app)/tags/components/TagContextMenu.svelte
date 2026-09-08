@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { TagResponse } from '$lib/api/generated/types.gen';
 	import { t } from '$lib/i18n';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		menuEl?: HTMLElement;
@@ -33,6 +34,9 @@
 		onSetParent,
 		onToggleColors
 	}: Props = $props();
+
+	// Mounted only while the menu is showing, so presence is the open state.
+	suppressShortcutsWhileOpen(() => true);
 </script>
 
 <div
@@ -43,7 +47,7 @@
 	role="menu"
 >
 	<button type="button" class="ctx-item" role="menuitem" onclick={() => onRename(tag)}>
-		{$t('tag_rename')} <span class="ctx-shortcut">R</span>
+		{$t('tag_rename')}
 	</button>
 	<button type="button" class="ctx-item" role="menuitem" onclick={() => onCreateChild(tag.id)}>
 		{$t('tag_new_child')}

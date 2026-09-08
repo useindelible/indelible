@@ -21,6 +21,7 @@
 		getSmartListHref,
 		isSidebarPathActive
 	} from './library-sidebar-model';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 	import './library-sidebar.css';
 
 	const auth = getAuth();
@@ -33,6 +34,8 @@
 	let initialized = $state(false);
 	let popupOpen = $state(false);
 	let userPopupWrap: HTMLElement | null = null;
+
+	suppressShortcutsWhileOpen(() => popupOpen);
 
 	onMount(() => {
 		appPrefs.load();

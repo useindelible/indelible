@@ -2,6 +2,7 @@
 	import FeedRowErrorDetail from './FeedRowErrorDetail.svelte';
 	import { formatSchedule, isFresh, type Feed } from '../feed-model';
 	import { t } from '$lib/i18n';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		feed: Feed;
@@ -26,6 +27,8 @@
 		onRetry,
 		onDelete
 	}: Props = $props();
+
+	suppressShortcutsWhileOpen(() => menuOpen);
 
 	function menuAction(callback: (id: string) => void) {
 		onCloseMenu();

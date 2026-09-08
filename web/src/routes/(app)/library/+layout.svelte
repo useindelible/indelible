@@ -2,48 +2,29 @@
 	import LibraryShell from '$lib/components/library/LibraryShell.svelte';
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
 	import { getLibrary } from '$lib/stores/library.svelte';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
 
 	let { children } = $props();
 	const lib = getLibrary();
 
-	$effect(() => {
-		function onKeydown(e: KeyboardEvent) {
-			const target = e.target as HTMLElement;
-			if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-				return;
-			}
+	function moveSelection(offset: number): void {
+		const { items, selectedId } = lib;
+		const index = items.findIndex((item) => item.id === selectedId);
+		const next = Math.min(Math.max(index + offset, 0), items.length - 1);
+		lib.setSelectedId(items[next]?.id ?? null);
+	}
 
-			const { items, selectedId } = lib;
-			const idx = items.findIndex((i) => i.id === selectedId);
-
-			switch (e.key) {
-				case 'j':
-				case 'ArrowDown': {
-					e.preventDefault();
-					const next = idx < items.length - 1 ? idx + 1 : idx;
-					lib.setSelectedId(items[next]?.id ?? null);
-					break;
-				}
-				case 'k':
-				case 'ArrowUp': {
-					e.preventDefault();
-					const prev = idx > 0 ? idx - 1 : 0;
-					lib.setSelectedId(items[prev]?.id ?? null);
-					break;
-				}
-				case 'a': {
-					if (selectedId) {
-						e.preventDefault();
-						lib.triageAction(selectedId, 'archive');
-					}
-					break;
-				}
+	registerShortcuts(() => ({
+		scope: 'library',
+		handlers: {
+			select_next: () => moveSelection(1),
+			select_prev: () => moveSelection(-1),
+			triage_archive: () => {
+				const { selectedId } = lib;
+				if (selectedId) lib.triageAction(selectedId, 'archive');
 			}
 		}
-
-		document.addEventListener('keydown', onKeydown);
-		return () => document.removeEventListener('keydown', onKeydown);
-	});
+	}));
 </script>
 
 {#snippet sidebar()}

@@ -2,6 +2,7 @@
 	import type { DocumentListEntry } from '$lib/api';
 	import type { ViewTab } from './ViewTabs.svelte';
 	import { t, type MessageKey } from '$lib/i18n';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -82,6 +83,8 @@
 	const canSwitch = $derived((availableTabs?.length ?? 0) > 1);
 
 	let showViewDropdown = $state(false);
+
+	suppressShortcutsWhileOpen(() => showViewDropdown);
 	let viewPillWrapperEl = $state<HTMLDivElement | undefined>(undefined);
 
 	$effect(() => {

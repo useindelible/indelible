@@ -9,6 +9,7 @@
 	} from '$lib/utils/library-filter-fields';
 	import FilterActions from './FilterActions.svelte';
 	import FilterConditionRow from './FilterConditionRow.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 	import {
 		coerceFilterFieldChange,
 		coerceFilterOperatorChange,
@@ -38,6 +39,10 @@
 	let openFieldPicker = $state<string | null>(null);
 	let openOpPicker = $state<string | null>(null);
 	let openValuePicker = $state<string | null>(null);
+
+	suppressShortcutsWhileOpen(
+		() => openFieldPicker !== null || openOpPicker !== null || openValuePicker !== null
+	);
 	let tagSuggestions = $state<TagResponse[]>([]);
 
 	const sidebar = getSidebar();
