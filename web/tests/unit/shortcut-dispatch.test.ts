@@ -13,7 +13,14 @@ const globalLayer: ScopeLayer = {
 
 const libraryLayer: ScopeLayer = {
 	scope: 'library',
-	handlers: { triage_archive: vi.fn(), select_next: vi.fn(), select_prev: vi.fn() }
+	handlers: {
+		triage_archive: vi.fn(),
+		triage_inbox: vi.fn(),
+		triage_later: vi.fn(),
+		open_item: vi.fn(),
+		select_next: vi.fn(),
+		select_prev: vi.fn()
+	}
 };
 
 const searchLayer: ScopeLayer = {
@@ -92,6 +99,16 @@ describe('resolveShortcut', () => {
 	it('stays silent during IME composition', () => {
 		expect(resolve({ ...press('n'), isComposing: true })).toBeNull();
 		expect(resolve({ ...press('n'), keyCode: 229 })).toBeNull();
+	});
+
+	it('binds the digit row and enter to triage and open in the library', () => {
+		const layers = [globalLayer, libraryLayer];
+		expect(resolve(press('1'), layers)?.id).toBe('triage_inbox');
+		expect(resolve(press('2'), layers)?.id).toBe('triage_later');
+		expect(resolve(press('3'), layers)?.id).toBe('triage_archive');
+		expect(resolve(press('Enter'), layers)?.id).toBe('open_item');
+		expect(resolve(press('1', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('Enter', { altKey: true }), layers)).toBeNull();
 	});
 
 	it('moves the search selection on bare j and k only', () => {

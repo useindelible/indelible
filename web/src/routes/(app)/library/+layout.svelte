@@ -1,28 +1,28 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import LibraryShell from '$lib/components/library/LibraryShell.svelte';
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
-	import { getLibrary } from '$lib/stores/library.svelte';
+	import { getLibrarySelection } from '$lib/stores/library-selection.svelte';
 	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
 
 	let { children } = $props();
-	const lib = getLibrary();
+	const selection = getLibrarySelection();
 
-	function moveSelection(offset: number): void {
-		const { items, selectedId } = lib;
-		const index = items.findIndex((item) => item.id === selectedId);
-		const next = Math.min(Math.max(index + offset, 0), items.length - 1);
-		lib.setSelectedId(items[next]?.id ?? null);
+	function openSelected(): void {
+		const item = selection.selectedItem;
+		if (item) goto(resolve('/(app)/reader/[documentId]', { documentId: item.id }));
 	}
 
 	registerShortcuts(() => ({
 		scope: 'library',
 		handlers: {
-			select_next: () => moveSelection(1),
-			select_prev: () => moveSelection(-1),
-			triage_archive: () => {
-				const { selectedId } = lib;
-				if (selectedId) lib.triageAction(selectedId, 'archive');
-			}
+			select_next: () => selection.moveSelection(1),
+			select_prev: () => selection.moveSelection(-1),
+			triage_inbox: () => selection.triageSelected('inbox'),
+			triage_later: () => selection.triageSelected('later'),
+			triage_archive: () => selection.triageSelected('archive'),
+			open_item: openSelected
 		}
 	}));
 </script>

@@ -45,6 +45,20 @@ describe('ShortcutHost', () => {
 		expect(archive).not.toHaveBeenCalled();
 	});
 
+	it('lets enter activate a focused button instead of opening the selection', async () => {
+		const open = vi.fn();
+		mount([{ scope: 'library', handlers: { open_item: open } }]);
+		const button = document.createElement('button');
+		document.body.append(button);
+
+		await fireEvent.keyDown(button, { key: 'Enter' });
+		expect(open).not.toHaveBeenCalled();
+
+		await fireEvent.keyDown(window, { key: 'Enter' });
+		expect(open).toHaveBeenCalledOnce();
+		button.remove();
+	});
+
 	it('leaves cmd+a to the browser', async () => {
 		const { addUrl, archive } = mount();
 

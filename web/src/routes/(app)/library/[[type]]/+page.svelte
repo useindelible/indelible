@@ -11,6 +11,7 @@
 	} from '$lib/stores/library.svelte';
 	import { getSmartLists } from '$lib/stores/smart-lists.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
+	import { getLibrarySelection } from '$lib/stores/library-selection.svelte';
 	import ItemList from '$lib/components/library/ItemList.svelte';
 	import MorphSwitcher from '$lib/components/ui/MorphSwitcher.svelte';
 	import DetailPanel from '$lib/components/library/DetailPanel.svelte';
@@ -21,6 +22,7 @@
 	import { t, type MessageKey } from '$lib/i18n';
 
 	const lib = getLibrary();
+	const selection = getLibrarySelection();
 	const smartListsStore = getSmartLists();
 	const vp = getViewport();
 
@@ -81,14 +83,6 @@
 	const triageOptions = $derived(triageOptionsForMode(lib.triageMode));
 
 	const hasActiveConditions = $derived(lib.draftConditions.length > 0);
-
-	const displayItems = $derived(
-		lib.groupBy === 'read_status'
-			? lib.readStatusTab === 'unseen'
-				? lib.items.filter((i) => !i.last_read_at)
-				: lib.items.filter((i) => !!i.last_read_at)
-			: lib.items
-	);
 
 	function currentLibraryHref(): string {
 		const base = resolve('/(app)/library');
@@ -265,16 +259,18 @@
 			</div>
 		{/if}
 		<ItemList
-			items={displayItems}
+			items={selection.displayItems}
 			loading={lib.loading}
 			loadingMore={lib.loadingMore}
 			hasMore={lib.groupBy === 'triage' ? lib.hasMore : false}
-			isEmpty={!lib.loading && displayItems.length === 0}
+			isEmpty={!lib.loading && selection.displayItems.length === 0}
 			selectedId={lib.selectedId}
 			triageTab={lib.triageTab}
 			triageMode={lib.triageMode}
 			onLoadMore={() => lib.loadMore()}
-			onSelect={(id) => lib.setSelectedId(id)}
+			onSelect={(id, event) => {
+				if (selection.hoverSelects(event)) lib.setSelectedId(id);
+			}}
 			onOpen={(id) => goto(resolve('/(app)/reader/[documentId]', { documentId: id }))}
 			onTriage={(id, state) => lib.triageAction(id, state)}
 			onDelete={(id) => lib.deleteAction(id)}
