@@ -96,6 +96,9 @@ describe('keymap', () => {
 				group: 'triage',
 				groupLabelKey: 'prefs_reading_shortcuts_triage',
 				rows: [
+					{ id: 'triage_inbox', labelKey: 'prefs_reading_shortcut_move_inbox', caps: ['1'] },
+					{ id: 'triage_later', labelKey: 'prefs_reading_shortcut_move_later', caps: ['2'] },
+					{ id: 'triage_archive', labelKey: 'prefs_reading_shortcut_move_archive', caps: ['3'] },
 					{
 						id: 'triage_archive',
 						labelKey: 'prefs_reading_shortcut_archive_selected',
@@ -107,6 +110,7 @@ describe('keymap', () => {
 				group: 'reading',
 				groupLabelKey: 'prefs_reading_shortcuts_reading',
 				rows: [
+					{ id: 'open_item', labelKey: 'prefs_reading_shortcut_open_reader', caps: ['↵'] },
 					{ id: 'select_next', labelKey: 'reader_next_item', caps: ['J'] },
 					{ id: 'select_prev', labelKey: 'reader_previous_item', caps: ['K'] }
 				]
@@ -117,6 +121,13 @@ describe('keymap', () => {
 				rows: [{ id: 'add_url', labelKey: 'library_save_url', caps: ['N'] }]
 			}
 		]);
+	});
+
+	it('gives every documented row a distinct label, which the table keys rows by', () => {
+		for (const group of shortcutDocRows()) {
+			const labels = group.rows.map((row) => row.labelKey);
+			expect(new Set(labels).size).toBe(labels.length);
+		}
 	});
 
 	it('routes every global keydown listener through the dispatcher', () => {

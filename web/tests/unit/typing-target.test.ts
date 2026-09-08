@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isTypingTarget } from '$lib/shortcuts/typing-target';
+import { isActivationTarget, isTypingTarget } from '$lib/shortcuts/typing-target';
 
 function element(html: string): HTMLElement {
 	const host = document.createElement('div');
@@ -43,4 +43,24 @@ describe('isTypingTarget', () => {
 		expect(isTypingTarget(null)).toBe(false);
 		expect(isTypingTarget(new EventTarget())).toBe(false);
 	});
+});
+
+describe('isActivationTarget', () => {
+	it.each([
+		['<button></button>'],
+		['<a href="/x"></a>'],
+		['<div role="option"></div>'],
+		['<div role="tab"></div>'],
+		['<button><span>inner</span></button>']
+	])('claims %s', (html) => {
+		const el = element(html);
+		expect(isActivationTarget(el.querySelector('span') ?? el)).toBe(true);
+	});
+
+	it.each([['<div></div>'], ['<a></a>'], ['<span></span>'], ['<input />']])(
+		'leaves %s alone',
+		(html) => {
+			expect(isActivationTarget(element(html))).toBe(false);
+		}
+	);
 });

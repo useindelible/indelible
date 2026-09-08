@@ -13,7 +13,8 @@
 	interface Props {
 		item: DocumentListEntry;
 		selected: boolean;
-		onSelect: () => void;
+		/** Fires on pointer entry and movement; the parent decides whether that selects. */
+		onSelect: (event: MouseEvent) => void;
 		onOpen: () => void;
 		onTriage: (state: TriageTab) => void;
 		onDelete?: () => void;
@@ -174,6 +175,7 @@
 	class="item-row"
 	class:selected
 	class:hovered
+	data-item-id={item.id}
 	role="option"
 	aria-selected={selected}
 	tabindex="0"
@@ -184,10 +186,11 @@
 			onOpen();
 		}
 	}}
-	onmouseenter={() => {
+	onmouseenter={(e) => {
 		hovered = true;
-		onSelect();
+		onSelect(e);
 	}}
+	onmousemove={onSelect}
 	onmouseleave={() => (hovered = false)}
 	oncontextmenu={openContextMenu}
 >

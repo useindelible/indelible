@@ -10,7 +10,7 @@
 		{#each groups as group (group.group)}
 			<div class="kbd-col">
 				<div class="kbd-col-label">{$t(group.groupLabelKey)}</div>
-				{#each group.rows as row (row.id)}
+				{#each group.rows as row (row.labelKey)}
 					<div class="kbd-row">
 						<span class="kbd-name">{$t(row.labelKey)}</span>
 						<span class="kbd-keys">

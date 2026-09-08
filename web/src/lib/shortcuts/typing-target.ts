@@ -16,3 +16,22 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 
 	return target.closest('[contenteditable="true"]') !== null;
 }
+
+const ACTIVATION_SELECTOR = [
+	'button',
+	'a[href]',
+	'summary',
+	'[role="button"]',
+	'[role="link"]',
+	'[role="option"]',
+	'[role="menuitem"]',
+	'[role="tab"]',
+	'[role="checkbox"]',
+	'[role="switch"]',
+	'[role="radio"]'
+].join(', ');
+
+/** True when Enter or Space on the target activates it, so a shortcut must not also fire. */
+export function isActivationTarget(target: EventTarget | null): boolean {
+	return target instanceof HTMLElement && target.closest(ACTIVATION_SELECTOR) !== null;
+}

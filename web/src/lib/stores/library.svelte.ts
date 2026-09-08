@@ -564,14 +564,25 @@ function toggleCountBadge(): void {
 	}
 }
 
+/**
+ * Only the built-in triage scope filters by exact state, so only it can be applied
+ * locally. Smart lists and explicit conditions are re-evaluated by the backend.
+ */
+function triageScopesList(): boolean {
+	if (smartListId) return false;
+	return groupBy === 'triage' && !draftConditions.some((c) => c.field === 'triage_state');
+}
+
 async function triageAction(itemId: string, state: TriageTab): Promise<void> {
 	const prev = items.find((i) => i.id === itemId);
 	if (!prev) return;
 
-	// Optimistic update — remove from current list since triage state changed
-	items = items.filter((i) => i.id !== itemId);
-	if (selectedId === itemId) {
-		selectedId = null;
+	const leaves = triageScopesList();
+	if (leaves) {
+		items = items.filter((i) => i.id !== itemId);
+		if (selectedId === itemId) selectedId = null;
+	} else {
+		items = items.map((i) => (i.id === itemId ? { ...i, triage_state: state } : i));
 	}
 
 	try {
@@ -579,9 +590,9 @@ async function triageAction(itemId: string, state: TriageTab): Promise<void> {
 			path: { document_id: itemId },
 			body: { state }
 		});
+		if (hasBackendOwnedActiveFilter()) scheduleRealtimeReset();
 	} catch {
-		// Revert on failure
-		items = sortItems([...items, prev]);
+		items = leaves ? sortItems([...items, prev]) : items.map((i) => (i.id === itemId ? prev : i));
 	}
 }
 
@@ -759,6 +770,7 @@ export function getLibrary() {
 		resetAndFetch,
 		loadMore,
 		handleDomainEvent,
+		triageScopesList,
 		triageAction,
 		deleteAction,
 		markAllSeen,

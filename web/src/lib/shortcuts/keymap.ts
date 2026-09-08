@@ -9,6 +9,9 @@ export type ShortcutId =
 	| 'select_next'
 	| 'select_prev'
 	| 'triage_archive'
+	| 'triage_inbox'
+	| 'triage_later'
+	| 'open_item'
 	| 'reader_back'
 	| 'focus_toggle'
 	| 'chapter_prev'
@@ -70,12 +73,44 @@ export const KEYMAP: readonly ShortcutDef[] = [
 		group: null
 	},
 	{
+		id: 'triage_inbox',
+		scope: 'library',
+		chord: { key: '1' },
+		labelKey: 'prefs_reading_shortcut_move_inbox',
+		caps: ['1'],
+		group: 'triage'
+	},
+	{
+		id: 'triage_later',
+		scope: 'library',
+		chord: { key: '2' },
+		labelKey: 'prefs_reading_shortcut_move_later',
+		caps: ['2'],
+		group: 'triage'
+	},
+	{
+		id: 'triage_archive',
+		scope: 'library',
+		chord: { key: '3' },
+		labelKey: 'prefs_reading_shortcut_move_archive',
+		caps: ['3'],
+		group: 'triage'
+	},
+	{
 		id: 'triage_archive',
 		scope: 'library',
 		chord: { key: 'a' },
 		labelKey: 'prefs_reading_shortcut_archive_selected',
 		caps: ['A'],
 		group: 'triage'
+	},
+	{
+		id: 'open_item',
+		scope: 'library',
+		chord: { key: 'Enter' },
+		labelKey: 'prefs_reading_shortcut_open_reader',
+		caps: ['↵'],
+		group: 'reading'
 	},
 	{
 		id: 'select_next',

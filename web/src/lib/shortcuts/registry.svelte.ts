@@ -1,6 +1,6 @@
 import { KEYMAP, type ShortcutId } from './keymap';
 import { resolveShortcut, type ScopeLayer } from './dispatch';
-import { isTypingTarget } from './typing-target';
+import { isActivationTarget, isTypingTarget } from './typing-target';
 
 /**
  * Plain array rather than `$state`: nothing renders from the stack, and the
@@ -56,6 +56,8 @@ export function activeLayers(): readonly ScopeLayer[] {
  */
 const OVERLAY_SELECTOR = '[role="dialog"], [role="alertdialog"]';
 
+const ACTIVATION_KEYS = new Set(['Enter', ' ']);
+
 /**
  * Keeps app shortcuts from acting on the page behind an open dialog whose own
  * handlers already own the keyboard, including dialogs that never register a
@@ -67,6 +69,7 @@ function isInsideOverlay(target: EventTarget | null): boolean {
 
 export function handleGlobalKeydown(event: KeyboardEvent): void {
 	if (isInsideOverlay(event.target)) return;
+	if (ACTIVATION_KEYS.has(event.key) && isActivationTarget(event.target)) return;
 
 	const resolved = resolveShortcut({
 		event,
