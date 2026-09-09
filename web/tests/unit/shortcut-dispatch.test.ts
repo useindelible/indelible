@@ -24,6 +24,7 @@ const libraryLayer: ScopeLayer = {
 		triage_inbox: vi.fn(),
 		triage_later: vi.fn(),
 		open_item: vi.fn(),
+		mark_unread: vi.fn(),
 		select_next: vi.fn(),
 		select_prev: vi.fn()
 	}
@@ -113,6 +114,8 @@ describe('resolveShortcut', () => {
 		expect(resolve(press('2'), layers)?.id).toBe('triage_later');
 		expect(resolve(press('3'), layers)?.id).toBe('triage_archive');
 		expect(resolve(press('Enter'), layers)?.id).toBe('open_item');
+		expect(resolve(press('u'), layers)?.id).toBe('mark_unread');
+		expect(resolve(press('u', { metaKey: true }), layers)).toBeNull();
 		expect(resolve(press('1', { metaKey: true }), layers)).toBeNull();
 		expect(resolve(press('Enter', { altKey: true }), layers)).toBeNull();
 	});

@@ -3610,6 +3610,43 @@ export type CreateDocumentHighlightResponses = {
 export type CreateDocumentHighlightResponse =
 	CreateDocumentHighlightResponses[keyof CreateDocumentHighlightResponses];
 
+export type MarkDocumentUnreadData = {
+	body?: never;
+	path: {
+		/**
+		 * Document id with doc_ prefix
+		 */
+		document_id: string;
+	};
+	query?: never;
+	url: '/api/v1/documents/{document_id}/mark-unread';
+};
+
+export type MarkDocumentUnreadErrors = {
+	/**
+	 * Authentication required
+	 */
+	401: unknown;
+	/**
+	 * Document not found
+	 */
+	404: unknown;
+	/**
+	 * Document reader service not configured
+	 */
+	503: unknown;
+};
+
+export type MarkDocumentUnreadResponses = {
+	/**
+	 * Read status reset; the chapter position is kept
+	 */
+	204: void;
+};
+
+export type MarkDocumentUnreadResponse =
+	MarkDocumentUnreadResponses[keyof MarkDocumentUnreadResponses];
+
 export type GetDocumentNoteData = {
 	body?: never;
 	path: {

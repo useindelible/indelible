@@ -22,6 +22,9 @@
 			triage_inbox: () => selection.triageSelected('inbox'),
 			triage_later: () => selection.triageSelected('later'),
 			triage_archive: () => selection.triageSelected('archive'),
+			mark_unread: (event) => {
+				if (!event.repeat) selection.markSelectedUnread();
+			},
 			open_item: openSelected
 		}
 	}));

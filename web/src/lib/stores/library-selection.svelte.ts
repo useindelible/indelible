@@ -56,6 +56,20 @@ export function getLibrarySelection() {
 			void lib.triageAction(item.id, state);
 			lib.setSelectedId(next);
 		},
+		// The list does not carry read state, so the request goes out for any selected row.
+		markSelectedUnread(): void {
+			const item = displayItems.find((row) => row.id === lib.selectedId);
+			if (!item) return;
+			const leaves = lib.groupBy === 'read_status' && lib.readStatusTab === 'seen';
+			const next = leaves ? neighbourId(displayItems, item.id) : item.id;
+			const request = lib.markUnread(item.id);
+			lib.setSelectedId(next);
+			const picked = lib.selectionRevision;
+			void request.then((accepted) => {
+				if (accepted || lib.selectionRevision !== picked) return;
+				if (displayItems.some((row) => row.id === item.id)) lib.setSelectedId(item.id);
+			});
+		},
 		/**
 		 * Whether a pointer event over a row should select it. Scrolling the list
 		 * with j/k fires mouseenter on whatever slides under a still pointer, at the

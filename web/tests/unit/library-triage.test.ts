@@ -2,34 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DocumentListEntry } from '$lib/api';
 
+import { entry } from './library-fixtures';
+
 const api = {
 	queryLibraryEntries: vi.fn(),
-	triageLibraryEntry: vi.fn()
+	triageLibraryEntry: vi.fn(),
+	deleteLibraryEntry: vi.fn(),
+	markDocumentUnread: vi.fn()
 };
 vi.mock('$lib/api', () => api);
 vi.mock('$lib/stores/sidebar.svelte', () => ({
 	getSidebar: () => ({ refreshTrashCount: vi.fn() })
 }));
-
-function entry(id: string, lastRead: string | null = null): DocumentListEntry {
-	return {
-		id,
-		document_id: id,
-		document_type: 'article',
-		library_entry_id: `lib_${id}`,
-		object: 'library_entry',
-		title: id,
-		saved_at: '2026-05-18T10:00:00Z',
-		created_at: '2026-05-18T10:00:00Z',
-		updated_at: '2026-05-18T10:00:00Z',
-		source: 'web',
-		item_type: 'article',
-		triage_state: 'inbox',
-		is_favorite: false,
-		is_shortlisted: false,
-		last_read_at: lastRead
-	} as DocumentListEntry;
-}
 
 const { getLibrary } = await import('$lib/stores/library.svelte');
 const { getLibrarySelection } = await import('$lib/stores/library-selection.svelte');
@@ -43,10 +27,13 @@ async function seed(items: DocumentListEntry[]) {
 
 beforeEach(() => {
 	api.triageLibraryEntry.mockReset().mockResolvedValue({ data: {} });
+	api.deleteLibraryEntry.mockReset().mockResolvedValue({ data: undefined });
+	api.markDocumentUnread.mockReset().mockResolvedValue({ data: undefined });
 });
 
 afterEach(() => {
 	lib.setDraftConditions([]);
+	lib.setTriageTab('inbox');
 	vi.useRealTimers();
 });
 

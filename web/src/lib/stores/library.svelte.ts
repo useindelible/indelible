@@ -4,7 +4,6 @@ import { SvelteSet } from 'svelte/reactivity';
 import type {
 	DocumentListEntry,
 	ListDensityDto,
-	LibraryQueryBody,
 	PreferencesSettingsResponse,
 	RealtimeEventResponse,
 	SidebarModeDto,
@@ -13,6 +12,22 @@ import type {
 } from '$lib/api';
 import { LIBRARY_DOMAIN_EVENT_TYPES } from '$lib/realtime/event-types';
 import { getSidebar } from '$lib/stores/sidebar.svelte';
+import { createLibraryMutations } from './library-mutations.svelte';
+import {
+	buildLibraryItemsQueryBody,
+	buildSmartListItemsQueryBody,
+	coerceTriageTabForMode,
+	SLUG_TO_API_TYPE,
+	sortItems,
+	triageOptionsForMode,
+	type GroupBy,
+	type ReadStatusTab,
+	type SortOrder,
+	type TriageTab
+} from './library-query';
+
+export { triageOptionsForMode, buildLibraryItemsQueryBody, buildSmartListItemsQueryBody };
+export type { GroupBy, ReadStatusTab, SortOrder, TriageOption, TriageTab };
 import {
 	buildFilterExpression,
 	fromApiFilterExpression,
@@ -22,171 +37,21 @@ import {
 	type FilterExpression,
 	type FilterCondition
 } from '$lib/utils/filter-expression';
-import { t, type MessageKey } from '$lib/i18n';
+import { t } from '$lib/i18n';
 import { get } from 'svelte/store';
-
-export type TriageTab = 'inbox' | 'later' | 'archive';
-export type GroupBy = 'triage' | 'read_status' | 'none';
-export type ReadStatusTab = 'unseen' | 'seen';
-export type TriageOption = { value: TriageTab; labelKey: MessageKey };
-export type SortOrder =
-	| 'date_saved_desc'
-	| 'date_saved_asc'
-	| 'date_published_desc'
-	| 'date_published_asc'
-	| 'title_asc'
-	| 'title_desc'
-	| 'reading_progress'
-	| 'reading_time';
+import type { TriageOption } from './library-query';
+import { describeQueryError } from './library-query';
+import {
+	getInitialShowCountBadge,
+	getInitialSidebarMode,
+	getInitialSort,
+	SHOW_COUNT_BADGE_KEY,
+	SIDEBAR_MODE_KEY,
+	SORT_KEY
+} from './library-local-prefs';
 
 const PAGE_LIMIT = 50;
-const SORT_KEY = 'indelible_library_sort';
-const SIDEBAR_MODE_KEY = 'indelible_sidebar_mode';
-const SHOW_COUNT_BADGE_KEY = 'indelible_show_count_badge';
 const REALTIME_RESET_DEBOUNCE_MS = 500;
-
-function getInitialSort(): SortOrder {
-	try {
-		return (localStorage.getItem(SORT_KEY) as SortOrder) || 'date_saved_desc';
-	} catch {
-		return 'date_saved_desc';
-	}
-}
-
-function getInitialSidebarMode(): SidebarModeDto {
-	try {
-		return (localStorage.getItem(SIDEBAR_MODE_KEY) as SidebarModeDto) || 'expanded';
-	} catch {
-		return 'expanded';
-	}
-}
-
-function getInitialShowCountBadge(): boolean {
-	try {
-		const stored = localStorage.getItem(SHOW_COUNT_BADGE_KEY);
-		return stored === null ? true : stored === 'true';
-	} catch {
-		return true;
-	}
-}
-
-const SLUG_TO_API_TYPE: Record<string, string> = {
-	articles: 'article',
-	books: 'book',
-	emails: 'email',
-	pdfs: 'pdf',
-	tweets: 'tweet',
-	videos: 'video',
-	podcasts: 'podcast'
-};
-
-export function triageOptionsForMode(mode: TriageModeDto): TriageOption[] {
-	return mode === 'manual'
-		? [
-				{ value: 'inbox', labelKey: 'library_triage_saved' },
-				{ value: 'archive', labelKey: 'library_triage_archived' }
-			]
-		: [
-				{ value: 'inbox', labelKey: 'library_triage_inbox' },
-				{ value: 'later', labelKey: 'library_triage_later' },
-				{ value: 'archive', labelKey: 'library_triage_archive' }
-			];
-}
-
-function coerceTriageTabForMode(tab: TriageTab, mode: TriageModeDto): TriageTab {
-	return triageOptionsForMode(mode).some((option) => option.value === tab) ? tab : 'inbox';
-}
-
-type BuildLibraryItemsQueryBodyInput = {
-	draftConditions: FilterCondition[];
-	draftConjunction: 'and' | 'or';
-	activeType?: string;
-	groupBy: GroupBy;
-	triageTab: TriageTab;
-	cursor?: string;
-	limit: number;
-};
-
-export function buildLibraryItemsQueryBody({
-	draftConditions,
-	draftConjunction,
-	activeType,
-	groupBy,
-	triageTab,
-	cursor,
-	limit
-}: BuildLibraryItemsQueryBodyInput): LibraryQueryBody {
-	const scopeConditions: FilterCondition[] = [];
-	const hasExplicitItemType = draftConditions.some((condition) => condition.field === 'item_type');
-	const hasExplicitTriageState = draftConditions.some(
-		(condition) => condition.field === 'triage_state'
-	);
-
-	if (!hasExplicitItemType && activeType) {
-		scopeConditions.push({
-			id: 'scope:item_type',
-			field: 'item_type',
-			op: 'eq',
-			value: SLUG_TO_API_TYPE[activeType] ?? activeType
-		});
-	}
-
-	if (!hasExplicitTriageState && groupBy === 'triage') {
-		scopeConditions.push({
-			id: 'scope:triage_state',
-			field: 'triage_state',
-			op: 'eq',
-			value: triageTab
-		});
-	}
-
-	const draftExpression =
-		draftConditions.length > 0
-			? (buildFilterExpression([...draftConditions], draftConjunction) as FilterExpression)
-			: null;
-	const scopeExpression =
-		scopeConditions.length > 0
-			? (buildFilterExpression(scopeConditions, 'and') as FilterExpression)
-			: null;
-
-	let filterExpression: FilterExpression | null = null;
-	if (draftExpression && scopeExpression) {
-		filterExpression = {
-			type: 'and',
-			conditions: [draftExpression, scopeExpression]
-		};
-	} else {
-		filterExpression = draftExpression ?? scopeExpression;
-	}
-
-	return {
-		filter_expression: toApiFilterExpression(filterExpression) ?? null,
-		cursor: cursor ?? null,
-		limit
-	};
-}
-
-type BuildSmartListItemsQueryBodyInput = {
-	filterExpression: FilterExpression | null;
-	cursor?: string;
-	limit: number;
-};
-
-// A smart list is a complete scope: its expression is sent verbatim, never composed
-// with the page's type. An email-only list opened under /library/articles previously
-// ANDed item_type=article into the query and emptied the view.
-export function buildSmartListItemsQueryBody({
-	filterExpression,
-	cursor,
-	limit
-}: BuildSmartListItemsQueryBodyInput): LibraryQueryBody {
-	return {
-		filter_expression: toApiFilterExpression(filterExpression) ?? null,
-		cursor: cursor ?? null,
-		limit
-	};
-}
-
 let items = $state<DocumentListEntry[]>([]);
 let cursor = $state<string | undefined>(undefined);
 let hasMore = $state(true);
@@ -196,6 +61,13 @@ let triageTab = $state<TriageTab>('inbox');
 let activeType = $state<string | undefined>(undefined);
 let sortOrder = $state<SortOrder>(getInitialSort());
 let selectedId = $state<string | null>(null);
+// Bumped by every selection write, so an optimistic pick can tell whether it still stands.
+let selectionRevision = $state(0);
+
+function select(id: string | null): void {
+	selectedId = id;
+	selectionRevision += 1;
+}
 let fetchError = $state<string | null>(null);
 let triageMode = $state<TriageModeDto>('focus');
 let listDensity = $state<ListDensityDto>('comfortable');
@@ -222,9 +94,6 @@ let draftConjunction = $state<'and' | 'or'>('and');
 let draftTouched = $state(false);
 let viewPanelOpen = $state(false);
 let showCountBadge = $state(getInitialShowCountBadge());
-
-const selectedItem = $derived(items.find((i) => i.id === selectedId) ?? null);
-const isEmpty = $derived(!loading && items.length === 0);
 
 // The filter bar's draft is the single source of truth for what gets queried, so
 // the same expression backs the request, the save-as-view fork, and the modified
@@ -254,48 +123,9 @@ const smartListModified = $derived.by(() => {
 	);
 });
 
-function sortItems(list: DocumentListEntry[]): DocumentListEntry[] {
-	const sorted = [...list];
-	switch (sortOrder) {
-		case 'date_saved_asc':
-			return sorted.sort((a, b) => a.saved_at.localeCompare(b.saved_at));
-		case 'date_saved_desc':
-			return sorted.sort((a, b) => b.saved_at.localeCompare(a.saved_at));
-		case 'date_published_desc':
-			return sorted.sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''));
-		case 'date_published_asc':
-			return sorted.sort((a, b) => (a.published_at ?? '').localeCompare(b.published_at ?? ''));
-		case 'title_asc':
-			return sorted.sort((a, b) => a.title.localeCompare(b.title));
-		case 'title_desc':
-			return sorted.sort((a, b) => b.title.localeCompare(a.title));
-		case 'reading_time':
-			return sorted.sort((a, b) => (b.reading_time_minutes ?? 0) - (a.reading_time_minutes ?? 0));
-		case 'reading_progress':
-			return sorted.sort(
-				(a, b) =>
-					(b.max_progress_percent ?? b.progress_percent ?? 0) -
-					(a.max_progress_percent ?? a.progress_percent ?? 0)
-			);
-		default:
-			return sorted;
-	}
-}
-
 // Monotonic token so a slow response from a superseded fetch (e.g. the type-page fetch
 // racing the smart-list fetch on mount) can never overwrite newer results.
 let fetchGeneration = 0;
-
-function describeQueryError(error: unknown): string {
-	if (error && typeof error === 'object') {
-		const e = error as { errors?: Array<{ message?: string }>; detail?: string; title?: string };
-		const first = e.errors?.[0]?.message;
-		if (first) return first;
-		if (e.detail && e.detail !== 'validation error') return e.detail;
-		if (e.title) return e.title;
-	}
-	return get(t)('library_error_load_items');
-}
 
 async function fetchPage(): Promise<void> {
 	const generation = ++fetchGeneration;
@@ -329,9 +159,9 @@ async function fetchPage(): Promise<void> {
 		if (data) {
 			const incoming: DocumentListEntry[] = data.data ?? [];
 			if (cursor === undefined) {
-				items = sortItems(incoming);
+				items = sortItems(incoming, sortOrder);
 			} else {
-				items = sortItems([...items, ...incoming]);
+				items = sortItems([...items, ...incoming], sortOrder);
 			}
 			hasMore = data.page?.has_more ?? incoming.length >= PAGE_LIMIT;
 			cursor = data.page?.next_cursor ?? undefined;
@@ -352,11 +182,11 @@ async function resetAndFetch(): Promise<void> {
 	cursor = undefined;
 	hasMore = true;
 	fetchError = null;
-	selectedId = null;
+	select(null);
 	loading = true;
 	await fetchPage();
-	if (selectedId === null && items.length > 0) {
-		selectedId = items[0]!.id;
+	if (selectedId === null && visibleItems.length > 0) {
+		select(visibleItems[0]!.id);
 	}
 	loading = false;
 }
@@ -391,7 +221,7 @@ function scheduleRealtimeReset(): void {
 
 function removeItemById(itemId: string): void {
 	items = items.filter((item) => item.id !== itemId);
-	if (selectedId === itemId) selectedId = null;
+	if (selectedId === itemId) select(null);
 }
 
 function itemMatchesSimpleView(item: DocumentListEntry): boolean {
@@ -440,7 +270,8 @@ async function handleDomainEvent(event: RealtimeEventResponse): Promise<void> {
 			}
 			const existing = items.some((item) => item.id === documentId);
 			items = sortItems(
-				existing ? items.map((item) => (item.id === documentId ? data : item)) : [data, ...items]
+				existing ? items.map((item) => (item.id === documentId ? data : item)) : [data, ...items],
+				sortOrder
 			);
 			return;
 		}
@@ -573,52 +404,32 @@ function triageScopesList(): boolean {
 	return groupBy === 'triage' && !draftConditions.some((c) => c.field === 'triage_state');
 }
 
-async function triageAction(itemId: string, state: TriageTab): Promise<void> {
-	const prev = items.find((i) => i.id === itemId);
-	if (!prev) return;
-
-	const leaves = triageScopesList();
-	if (leaves) {
-		items = items.filter((i) => i.id !== itemId);
-		if (selectedId === itemId) selectedId = null;
-	} else {
-		items = items.map((i) => (i.id === itemId ? { ...i, triage_state: state } : i));
-	}
-
-	try {
-		await apiSdk.triageLibraryEntry({
-			path: { document_id: itemId },
-			body: { state }
-		});
+const mutations = createLibraryMutations({
+	base: () => items,
+	setBase: (next) => {
+		items = next;
+	},
+	selectedId: () => selectedId,
+	setSelectedId: select,
+	triageScopesList,
+	viewShows: itemMatchesSimpleView,
+	refetchIfBackendOwnsFilter: () => {
 		if (hasBackendOwnedActiveFilter()) scheduleRealtimeReset();
-	} catch {
-		items = leaves ? sortItems([...items, prev]) : items.map((i) => (i.id === itemId ? prev : i));
-	}
-}
+	},
+	refreshTrashCount: () => getSidebar().refreshTrashCount()
+});
 
-async function deleteAction(itemId: string): Promise<void> {
-	const prev = items.find((i) => i.id === itemId);
-	if (!prev) return;
+// Everything a user sees or acts on goes through the overlay; `items` holds server rows only.
+const visibleItems = $derived(sortItems(mutations.overlay(items), sortOrder));
+const selectedItem = $derived(visibleItems.find((i) => i.id === selectedId) ?? null);
+const isEmpty = $derived(!loading && visibleItems.length === 0);
 
-	// Optimistic removal; the entry is recoverable from Trash after the call.
-	items = items.filter((i) => i.id !== itemId);
-	if (selectedId === itemId) {
-		selectedId = null;
-	}
-
-	try {
-		await apiSdk.deleteLibraryEntry({ path: { document_id: itemId } });
-		await getSidebar().refreshTrashCount();
-	} catch {
-		// Revert on failure
-		items = sortItems([...items, prev]);
-	}
-}
-
-async function markAllSeen(): Promise<void> {
-	const snapshot = [...items];
-	items = [];
-	selectedId = null;
+// Rows hidden by a pending removal stay in the base so a failed removal can still show them.
+async function archiveVisible(): Promise<void> {
+	const snapshot = [...visibleItems];
+	const archived = new Set(snapshot.map((item) => item.id));
+	items = items.filter((item) => !archived.has(item.id));
+	select(null);
 	await Promise.allSettled(
 		snapshot.map((item) =>
 			apiSdk.triageLibraryEntry({ path: { document_id: item.id }, body: { state: 'archive' } })
@@ -626,21 +437,13 @@ async function markAllSeen(): Promise<void> {
 	);
 }
 
-async function archiveAll(): Promise<void> {
-	const snapshot = [...items];
-	items = [];
-	selectedId = null;
-	await Promise.allSettled(
-		snapshot.map((item) =>
-			apiSdk.triageLibraryEntry({ path: { document_id: item.id }, body: { state: 'archive' } })
-		)
-	);
-}
+const markAllSeen = archiveVisible;
+const archiveAll = archiveVisible;
 
 export function getLibrary() {
 	return {
 		get items() {
-			return items;
+			return visibleItems;
 		},
 		get loading() {
 			return loading;
@@ -659,6 +462,9 @@ export function getLibrary() {
 		},
 		get sortOrder() {
 			return sortOrder;
+		},
+		get selectionRevision() {
+			return selectionRevision;
 		},
 		get selectedId() {
 			return selectedId;
@@ -741,11 +547,9 @@ export function getLibrary() {
 			} catch {
 				// localStorage unavailable (SSR or private mode)
 			}
-			items = sortItems([...items]);
+			items = sortItems([...items], sortOrder);
 		},
-		setSelectedId(id: string | null) {
-			selectedId = id;
-		},
+		setSelectedId: select,
 		updateItemInList(updated: DocumentListEntry): void {
 			items = items.map((i) => (i.id === updated.id ? updated : i));
 		},
@@ -771,8 +575,9 @@ export function getLibrary() {
 		loadMore,
 		handleDomainEvent,
 		triageScopesList,
-		triageAction,
-		deleteAction,
+		triageAction: mutations.triageAction,
+		deleteAction: mutations.deleteAction,
+		markUnread: mutations.markUnread,
 		markAllSeen,
 		archiveAll
 	};

@@ -359,6 +359,9 @@ import type {
 	MarkDeliverySeenData,
 	MarkDeliverySeenErrors,
 	MarkDeliverySeenResponses,
+	MarkDocumentUnreadData,
+	MarkDocumentUnreadErrors,
+	MarkDocumentUnreadResponses,
 	MergeEntityData,
 	MergeEntityErrors,
 	MergeEntityResponses,
@@ -1233,6 +1236,22 @@ export const createDocumentHighlight = <ThrowOnError extends boolean = false>(
 			'Content-Type': 'application/json',
 			...options.headers
 		}
+	});
+
+export const markDocumentUnread = <ThrowOnError extends boolean = false>(
+	options: Options<MarkDocumentUnreadData, ThrowOnError>
+) =>
+	(options.client ?? client).post<
+		MarkDocumentUnreadResponses,
+		MarkDocumentUnreadErrors,
+		ThrowOnError
+	>({
+		security: [
+			{ scheme: 'bearer', type: 'http' },
+			{ scheme: 'bearer', type: 'http' }
+		],
+		url: '/api/v1/documents/{document_id}/mark-unread',
+		...options
 	});
 
 export const getDocumentNote = <ThrowOnError extends boolean = false>(

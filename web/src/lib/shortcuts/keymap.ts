@@ -12,6 +12,7 @@ export type ShortcutId =
 	| 'triage_inbox'
 	| 'triage_later'
 	| 'open_item'
+	| 'mark_unread'
 	| 'reader_back'
 	| 'focus_toggle'
 	| 'chapter_prev'
@@ -132,6 +133,14 @@ export const KEYMAP: readonly ShortcutDef[] = [
 		chord: { key: 'a' },
 		labelKey: 'prefs_reading_shortcut_archive_selected',
 		caps: ['A'],
+		group: 'triage'
+	},
+	{
+		id: 'mark_unread',
+		scope: 'library',
+		chord: { key: 'u' },
+		labelKey: 'prefs_reading_shortcut_mark_unread',
+		caps: ['U'],
 		group: 'triage'
 	},
 	{

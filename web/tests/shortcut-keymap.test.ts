@@ -103,7 +103,8 @@ describe('keymap', () => {
 						id: 'triage_archive',
 						labelKey: 'prefs_reading_shortcut_archive_selected',
 						caps: ['A']
-					}
+					},
+					{ id: 'mark_unread', labelKey: 'prefs_reading_shortcut_mark_unread', caps: ['U'] }
 				]
 			},
 			{
