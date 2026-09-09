@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { shortcutDocRows } from '$lib/shortcuts/keymap';
+	import { displayCaps, shortcutDocRows } from '$lib/shortcuts/keymap';
+	import { isApplePlatform } from '$lib/shortcuts/platform';
 
 	const groups = shortcutDocRows();
+	const modCap = $derived(isApplePlatform() ? '⌘' : $t('common_key_control'));
 </script>
 
 <div class="group-card">
@@ -14,7 +16,7 @@
 					<div class="kbd-row">
 						<span class="kbd-name">{$t(row.labelKey)}</span>
 						<span class="kbd-keys">
-							{#each row.caps as cap (cap)}
+							{#each displayCaps(row.caps, modCap) as cap (cap)}
 								<span class="kbd">{cap}</span>
 							{/each}
 						</span>

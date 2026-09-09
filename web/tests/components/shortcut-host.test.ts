@@ -59,6 +59,18 @@ describe('ShortcutHost', () => {
 		button.remove();
 	});
 
+	it('shows help on ? and toggles dark mode on d', async () => {
+		const help = vi.fn();
+		const dark = vi.fn();
+		mount([{ scope: 'global', handlers: { show_help: help, toggle_dark: dark } }]);
+
+		await fireEvent.keyDown(window, { key: '?', shiftKey: true });
+		await fireEvent.keyDown(window, { key: 'd' });
+
+		expect(help).toHaveBeenCalledOnce();
+		expect(dark).toHaveBeenCalledOnce();
+	});
+
 	it('leaves cmd+a to the browser', async () => {
 		const { addUrl, archive } = mount();
 

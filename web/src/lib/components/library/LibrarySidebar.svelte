@@ -8,8 +8,7 @@
 	import { getModalStore } from '$lib/stores/addItemModal.svelte';
 	import { getSidebar } from '$lib/stores/sidebar.svelte';
 	import { getLibrary } from '$lib/stores/library.svelte';
-	import { saveTheme } from '$lib/styles/theme';
-	import { loadPreferencesSettings, savePreferencesSettings } from '$lib/api/settings';
+	import { isDarkTheme, toggleTheme } from '$lib/styles/theme-toggle';
 	import { getAppPreferences } from '$lib/stores/app-preferences.svelte';
 	import SidebarHeader from './SidebarHeader.svelte';
 	import SidebarNavItem from './SidebarNavItem.svelte';
@@ -62,9 +61,9 @@
 	});
 
 	$effect(() => {
-		isDark = document.documentElement.dataset.theme === 'dark';
+		isDark = isDarkTheme();
 		const observer = new MutationObserver(() => {
-			isDark = document.documentElement.dataset.theme === 'dark';
+			isDark = isDarkTheme();
 		});
 		observer.observe(document.documentElement, {
 			attributes: true,
@@ -79,17 +78,6 @@
 			sidebar.initSidebar();
 		}
 	});
-
-	async function toggleTheme() {
-		const next = isDark ? 'light' : 'dark';
-		saveTheme(next);
-		isDark = next === 'dark';
-
-		const result = await loadPreferencesSettings();
-		if (result.success) {
-			await savePreferencesSettings({ ...result.data, theme: next });
-		}
-	}
 
 	function isActive(href: string): boolean {
 		return isSidebarPathActive(page.url.pathname, href);

@@ -8,7 +8,13 @@ function press(key: string, modifiers: Partial<ResolvableEvent> = {}): Resolvabl
 
 const globalLayer: ScopeLayer = {
 	scope: 'global',
-	handlers: { add_url: vi.fn(), add_rss: vi.fn() }
+	handlers: {
+		add_url: vi.fn(),
+		add_rss: vi.fn(),
+		open_search: vi.fn(),
+		show_help: vi.fn(),
+		toggle_dark: vi.fn()
+	}
 };
 
 const libraryLayer: ScopeLayer = {
@@ -116,7 +122,7 @@ describe('resolveShortcut', () => {
 		expect(resolve(press('j'), layers)?.id).toBe('select_next');
 		expect(resolve(press('ArrowUp'), layers)?.id).toBe('select_prev');
 		expect(resolve(press('j', { metaKey: true }), layers)).toBeNull();
-		expect(resolve(press('k', { ctrlKey: true }), layers)).toBeNull();
+		expect(resolve(press('k', { ctrlKey: true }), layers)?.id).toBe('open_search');
 		expect(resolve(press('k', { altKey: true }), layers)).toBeNull();
 	});
 
@@ -138,6 +144,60 @@ describe('resolveShortcut', () => {
 			{ scope: 'modal', handlers: {}, exclusive: true }
 		];
 		expect(resolve(press('Escape'), layers)).toBeNull();
+	});
+
+	it('opens search on mod+k even while a scope binds bare k', () => {
+		const layers = [globalLayer, searchLayer];
+		expect(resolve(press('k', { metaKey: true }), layers)?.id).toBe('open_search');
+		expect(resolve(press('k', { ctrlKey: true }), layers)?.id).toBe('open_search');
+		expect(resolve(press('k'), layers)?.id).toBe('select_prev');
+		expect(resolve(press('k', { metaKey: true }), layers, true)).toBeNull();
+	});
+
+	it('shows help on ? however the layout produces it', () => {
+		expect(resolve(press('?', { shiftKey: true }))?.id).toBe('show_help');
+		expect(resolve(press('?'))?.id).toBe('show_help');
+		expect(resolve(press('/', { shiftKey: true }))).toBeNull();
+	});
+
+	it('toggles dark mode on bare d only, so browsers and extensions keep their chords', () => {
+		expect(resolve(press('d'))?.id).toBe('toggle_dark');
+		expect(resolve(press('D', { shiftKey: true }))?.id).toBe('toggle_dark');
+		expect(resolve(press('d', { metaKey: true }))).toBeNull();
+		expect(resolve(press('d', { altKey: true }))).toBeNull();
+		expect(resolve(press('d'), [globalLayer], true)).toBeNull();
+	});
+
+	it('steps between documents on j and k in the reader', () => {
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			{ scope: 'reader', handlers: { next_document: vi.fn(), prev_document: vi.fn() } }
+		];
+		expect(resolve(press('j'), layers)?.id).toBe('next_document');
+		expect(resolve(press('k'), layers)?.id).toBe('prev_document');
+		expect(resolve(press('k', { metaKey: true }), layers)?.id).toBe('open_search');
+	});
+
+	it('falls through a reader layer that lacks a handler to the one beneath it', () => {
+		const page: ScopeLayer = {
+			scope: 'reader',
+			handlers: { next_document: vi.fn(), prev_document: vi.fn() }
+		};
+		const book: ScopeLayer = { scope: 'reader', handlers: { reader_back: vi.fn() } };
+		const layers = [globalLayer, page, book];
+		expect(resolve(press('j'), layers)?.handler).toBe(page.handlers.next_document);
+		expect(resolve(press('Escape'), layers)?.handler).toBe(book.handlers.reader_back);
+	});
+
+	it('lets an exclusive dialog claim escape for itself and nothing else', () => {
+		const dismiss = vi.fn();
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			readerLayer,
+			{ scope: 'modal', handlers: { dismiss }, exclusive: true }
+		];
+		expect(resolve(press('Escape'), layers)?.handler).toBe(dismiss);
+		expect(resolve(press('n'), layers)).toBeNull();
 	});
 
 	it('returns the handler belonging to the winning layer', () => {

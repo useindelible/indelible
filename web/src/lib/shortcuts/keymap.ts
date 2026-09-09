@@ -1,6 +1,6 @@
 import type { MessageKey } from '$lib/i18n';
 
-/** `modal` carries no keymap rows; it exists so an open dialog can own the keyboard. */
+/** `modal` binds only dismissal; a dialog registers it exclusively to own the keyboard. */
 export type ShortcutScope = 'global' | 'library' | 'search' | 'reader' | 'modal';
 
 export type ShortcutId =
@@ -15,7 +15,13 @@ export type ShortcutId =
 	| 'reader_back'
 	| 'focus_toggle'
 	| 'chapter_prev'
-	| 'chapter_next';
+	| 'chapter_next'
+	| 'open_search'
+	| 'show_help'
+	| 'toggle_dark'
+	| 'next_document'
+	| 'prev_document'
+	| 'dismiss';
 
 export type ShortcutGroup = 'triage' | 'reading' | 'global';
 
@@ -71,6 +77,30 @@ export const KEYMAP: readonly ShortcutDef[] = [
 		labelKey: 'library_add_rss_feed',
 		caps: ['R'],
 		group: null
+	},
+	{
+		id: 'open_search',
+		scope: 'global',
+		chord: { key: 'k', mod: true },
+		labelKey: 'common_search',
+		caps: ['⌘', 'K'],
+		group: 'global'
+	},
+	{
+		id: 'show_help',
+		scope: 'global',
+		chord: { key: '?' },
+		labelKey: 'prefs_reading_shortcut_show_shortcuts',
+		caps: ['?'],
+		group: 'global'
+	},
+	{
+		id: 'toggle_dark',
+		scope: 'global',
+		chord: { key: 'd' },
+		labelKey: 'prefs_reading_shortcut_toggle_dark',
+		caps: ['D'],
+		group: 'global'
 	},
 	{
 		id: 'triage_inbox',
@@ -207,6 +237,30 @@ export const KEYMAP: readonly ShortcutDef[] = [
 		labelKey: 'prefs_reading_shortcut_next_chapter',
 		caps: ['→'],
 		group: null
+	},
+	{
+		id: 'dismiss',
+		scope: 'modal',
+		chord: { key: 'Escape' },
+		labelKey: 'common_close',
+		caps: ['⎋'],
+		group: null
+	},
+	{
+		id: 'next_document',
+		scope: 'reader',
+		chord: { key: 'j' },
+		labelKey: 'reader_next_item',
+		caps: ['J'],
+		group: null
+	},
+	{
+		id: 'prev_document',
+		scope: 'reader',
+		chord: { key: 'k' },
+		labelKey: 'reader_previous_item',
+		caps: ['K'],
+		group: null
 	}
 ];
 
@@ -240,6 +294,13 @@ export function capsFor(id: ShortcutId): string[] {
 	const rows = KEYMAP.filter((def) => def.id === id);
 	const plain = rows.find((def) => !def.chord.mod && !def.chord.alt);
 	return (plain ?? rows[0])?.caps ?? [];
+}
+
+const MOD_CAP = '⌘';
+
+/** Caps store the Apple glyph; non-Apple platforms render the control label instead. */
+export function displayCaps(caps: readonly string[], modCap: string): string[] {
+	return caps.map((cap) => (cap === MOD_CAP ? modCap : cap));
 }
 
 export type DocGroup = {

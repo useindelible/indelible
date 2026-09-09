@@ -405,15 +405,18 @@
 		}
 	}
 
-	// Book items mount BookReader, which registers its own reader layer.
-	registerShortcuts(() =>
-		isBookItem
-			? null
+	// BookReader registers its own reader layer for escape and the chapter arrows.
+	registerShortcuts(() => ({
+		scope: 'reader',
+		handlers: isBookItem
+			? { next_document: handleNext, prev_document: handlePrev }
 			: {
-					scope: 'reader',
-					handlers: { reader_back: handleBack, focus_toggle: handleFocusModeToggle }
+					reader_back: handleBack,
+					focus_toggle: handleFocusModeToggle,
+					next_document: handleNext,
+					prev_document: handlePrev
 				}
-	);
+	}));
 
 	async function handleHighlightCreate(data: {
 		text_content: string;

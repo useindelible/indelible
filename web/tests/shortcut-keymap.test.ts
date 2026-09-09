@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import en from '$lib/i18n/locales/en.json';
 import fr from '$lib/i18n/locales/fr.json';
-import { KEYMAP, chordId, shortcutDocRows } from '$lib/shortcuts/keymap';
+import { KEYMAP, chordId, displayCaps, shortcutDocRows } from '$lib/shortcuts/keymap';
 
 const SOURCE_DIR = 'src';
 
@@ -118,7 +118,16 @@ describe('keymap', () => {
 			{
 				group: 'global',
 				groupLabelKey: 'prefs_reading_shortcuts_global',
-				rows: [{ id: 'add_url', labelKey: 'library_save_url', caps: ['N'] }]
+				rows: [
+					{ id: 'add_url', labelKey: 'library_save_url', caps: ['N'] },
+					{ id: 'open_search', labelKey: 'common_search', caps: ['⌘', 'K'] },
+					{ id: 'show_help', labelKey: 'prefs_reading_shortcut_show_shortcuts', caps: ['?'] },
+					{
+						id: 'toggle_dark',
+						labelKey: 'prefs_reading_shortcut_toggle_dark',
+						caps: ['D']
+					}
+				]
 			}
 		]);
 	});
@@ -128,6 +137,12 @@ describe('keymap', () => {
 			const labels = group.rows.map((row) => row.labelKey);
 			expect(new Set(labels).size).toBe(labels.length);
 		}
+	});
+
+	it('swaps only the command glyph for the platform modifier label', () => {
+		expect(displayCaps(['⌘', 'K'], 'Ctrl')).toEqual(['Ctrl', 'K']);
+		expect(displayCaps(['⌘', 'K'], '⌘')).toEqual(['⌘', 'K']);
+		expect(displayCaps(['⇧', 'D'], 'Ctrl')).toEqual(['⇧', 'D']);
 	});
 
 	it('routes every global keydown listener through the dispatcher', () => {
