@@ -837,3 +837,11 @@ owner_layer = "persistence"
 path = "crates/ind-persistence/tests/account_purge_tests.rs"
 test = "every_user_owned_column_cascades_from_users"
 rationale = "Delete-forever must remove every row a user owns; a new user-owned table must join the cascade before it ships."
+
+[[invariants]]
+id = "mark-unread-preserves-resume-position"
+risk = "data-integrity"
+owner_layer = "persistence"
+path = "crates/ind-persistence/tests/user_document_state_tests.rs"
+test = "clear_read_state_resets_read_status_and_keeps_the_chapter_position"
+rationale = "Marking a document unread must reset every read-status column, including the furthest progress that finished_at and the library counts derive from, while keeping the chapter position so the reader can resume."

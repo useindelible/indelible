@@ -38,3 +38,33 @@ pub async fn update_document_progress(
     .map_err(ApiError::from)?;
     Ok(EmptyResponse)
 }
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/documents/{document_id}/mark-unread",
+    params(("document_id" = String, Path, description = "Document id with doc_ prefix")),
+    responses(
+        (status = 204, description = "Read status reset; the chapter position is kept"),
+        (status = 401, description = "Authentication required"),
+        (status = 404, description = "Document not found"),
+        (status = 503, description = "Document reader service not configured"),
+    ),
+    security(("bearer" = []), ("api_token" = [])),
+    extensions(("x-indelible-permissions" = json!(["library:write"]))),
+    tag = "Documents",
+)]
+pub async fn mark_document_unread(
+    RequireLibraryWrite {
+        principal: auth_user,
+        ..
+    }: RequireLibraryWrite,
+    State(state): State<AppState>,
+    Path(document_id): Path<String>,
+) -> Result<EmptyResponse, ApiError> {
+    let ops = require_document_reader_ops(&state)?;
+    let document_id = parse_document_id(&document_id)?;
+    ops.mark_unread(auth_user.user_id, document_id)
+        .await
+        .map_err(ApiError::from)?;
+    Ok(EmptyResponse)
+}

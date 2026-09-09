@@ -34,4 +34,13 @@ pub trait UserDocumentStateRepository: Send + Sync {
         user_id: UserId,
         document_id: DocumentId,
     ) -> Result<(), AppError>;
+
+    /// Resets every read-status column: `progress_percent`, `max_progress_percent`,
+    /// `last_read_at`, and `finished_at`. The chapter position survives so resuming lands where
+    /// the reader left off. A document with no state row is already unread and succeeds.
+    async fn clear_read_state(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> Result<(), AppError>;
 }

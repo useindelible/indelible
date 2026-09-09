@@ -82,4 +82,11 @@ pub trait DocumentReaderOperations: Send + Sync {
         chapter_locator: Option<String>,
         chapter_offset: Option<i32>,
     ) -> BoxFuture<'_, Result<UserDocumentState, AppError>>;
+
+    /// Resets read status while keeping the chapter position.
+    fn mark_unread(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<(), AppError>>;
 }

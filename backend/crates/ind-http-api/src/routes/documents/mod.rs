@@ -36,7 +36,7 @@ pub(crate) use dto::{
 pub use entities::list_document_entities;
 pub use highlights::{create_document_highlight, list_document_highlights};
 pub use notes::{get_document_note, upsert_document_note};
-pub use progress::update_document_progress;
+pub use progress::{mark_document_unread, update_document_progress};
 pub use reader::{get_document_asset, get_document_reader, reprocess_document};
 
 // Reused DTOs so the document surface speaks the same shapes as the legacy item surface.
@@ -85,5 +85,9 @@ pub fn document_routes() -> Router<AppState> {
         .route(
             "/api/v1/documents/{document_id}/progress",
             patch(update_document_progress),
+        )
+        .route(
+            "/api/v1/documents/{document_id}/mark-unread",
+            post(mark_document_unread),
         )
 }

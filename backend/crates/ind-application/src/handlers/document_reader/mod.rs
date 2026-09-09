@@ -318,6 +318,15 @@ impl DocumentReaderService {
             )
             .await
     }
+
+    pub async fn mark_unread(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> Result<(), AppError> {
+        self.require_document(user_id, document_id).await?;
+        self.state_repo.clear_read_state(user_id, document_id).await
+    }
 }
 
 impl DocumentReaderOperations for DocumentReaderService {
@@ -405,5 +414,13 @@ impl DocumentReaderOperations for DocumentReaderService {
             chapter_locator,
             chapter_offset,
         ))
+    }
+
+    fn mark_unread(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<(), AppError>> {
+        Box::pin(self.mark_unread(user_id, document_id))
     }
 }

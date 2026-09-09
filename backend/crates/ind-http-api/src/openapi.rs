@@ -121,6 +121,7 @@ pub use ui::{scalar_ui, swagger_ui};
         crate::routes::documents::notes::get_document_note,
         crate::routes::documents::notes::upsert_document_note,
         crate::routes::documents::progress::update_document_progress,
+        crate::routes::documents::progress::mark_document_unread,
         crate::routes::documents::entities::list_document_entities,
         crate::routes::epub::get_epub_toc,
         crate::routes::epub::get_epub_chapter,
