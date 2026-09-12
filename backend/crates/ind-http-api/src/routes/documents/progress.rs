@@ -27,12 +27,14 @@ pub async fn update_document_progress(
 ) -> Result<EmptyResponse, ApiError> {
     let ops = require_document_reader_ops(&state)?;
     let document_id = parse_document_id(&document_id)?;
+    let origin = origin_from(&auth_user, None);
+    let position = body.position();
     ops.update_progress(
         auth_user.user_id,
         document_id,
         body.progress_percent.round() as i32,
-        body.chapter_locator,
-        body.chapter_offset,
+        position,
+        origin,
     )
     .await
     .map_err(ApiError::from)?;

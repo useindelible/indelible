@@ -5,16 +5,17 @@
 //! served via a presigned URL from `/documents/{id}/assets/{kind}`. Highlights and the single
 //! note require completed readable content (422 otherwise); progress writes `user_document_state`
 //! without requiring a Library entry. The canonical-reader-open flow itself is the Feed
-//! `POST /feeds/deliveries/{id}/prepare` (TASK-231); this surface is what the reader loads after.
-//! See docs/document-feed-library-architecture.md (Document Reader; API Shape).
+//! `POST /feeds/deliveries/{id}/prepare`; this surface is what the reader loads after.
 
 pub(crate) mod dto;
 
 pub(crate) mod entities;
 pub(crate) mod highlights;
 pub(crate) mod notes;
+pub(crate) mod origin;
 pub(crate) mod progress;
 pub(crate) mod reader;
+pub(crate) mod reading_events;
 pub(crate) mod toc;
 
 use axum::Router;
@@ -29,15 +30,19 @@ use crate::response::{ApiResponse, EmptyResponse};
 use crate::state::AppState;
 
 pub(crate) use dto::{
-    DocumentAssetResponse, DocumentNoteResponse, DocumentReaderAssetResponse,
-    DocumentReaderResponse, DocumentReprocessResponse, DocumentUpsertNoteBody,
-    UpdateDocumentProgressBody, parse_document_id,
+    AppendReadingEventsBody, AppendReadingEventsResponse, DocumentAssetResponse,
+    DocumentNoteResponse, DocumentReaderAssetResponse, DocumentReaderResponse,
+    DocumentReprocessResponse, DocumentUpsertNoteBody, ReadingAnchorSchema,
+    ReadingAnchorSchemaFlat, ReadingEventBody, ReadingPositionSchema, UpdateDocumentProgressBody,
+    parse_document_id,
 };
 pub use entities::list_document_entities;
 pub use highlights::{create_document_highlight, list_document_highlights};
 pub use notes::{get_document_note, upsert_document_note};
+pub(crate) use origin::origin_from;
 pub use progress::update_document_progress;
 pub use reader::{get_document_asset, get_document_reader, reprocess_document};
+pub use reading_events::append_reading_events;
 
 // Reused DTOs so the document surface speaks the same shapes as the legacy item surface.
 pub(crate) use crate::routes::highlights::dto::{
@@ -85,5 +90,9 @@ pub fn document_routes() -> Router<AppState> {
         .route(
             "/api/v1/documents/{document_id}/progress",
             patch(update_document_progress),
+        )
+        .route(
+            "/api/v1/documents/{document_id}/reading-events",
+            post(append_reading_events),
         )
 }

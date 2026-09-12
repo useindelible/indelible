@@ -10,8 +10,9 @@ use ind_application::repos::document_lifecycle::{
 use ind_application::repos::event::MutationSideEffects;
 use ind_application::repos::lifecycle_outbox::youtube_ingest_document_outbox;
 use ind_domain::{
-    CanonicalizationConfig, ContentSource, DocumentId, DocumentOriginType, NewOriginDocument,
-    NewUrlDocument, TagSource, TriageState, UserId, canonicalize_url, deterministic_origin_id,
+    CanonicalizationConfig, ContentSource, DocumentId, DocumentOriginType, EventOrigin,
+    IntegrationSource, NewOriginDocument, NewUrlDocument, TagSource, TriageState, UserId,
+    canonicalize_url, deterministic_origin_id,
 };
 use tracing::warn;
 
@@ -25,8 +26,8 @@ use crate::context::IntegrationJobDeps;
 use crate::jobs::ai::enqueue_document_embed_if_engaged;
 use crate::jobs::search::enqueue_search_reindex_document;
 
-/// Deterministic `document_origins` key for a no-URL Readwise row (TASK-236). Idempotency derives
-/// from the Readwise id, replacing the legacy `items.external_id` dedup.
+/// Deterministic `document_origins` key for a no-URL Readwise row: idempotency derives from the
+/// Readwise id.
 fn readwise_origin_id(user_id: UserId, readwise_id: &str) -> MaterializeOrigin {
     MaterializeOrigin {
         origin_type: DocumentOriginType::ReadwiseImportItem,
@@ -39,7 +40,7 @@ fn readwise_origin_id(user_id: UserId, readwise_id: &str) -> MaterializeOrigin {
 }
 
 /// Returns Imported for a fresh save, Duplicate when the content already has an active library
-/// entry (TASK-236). URL rows dedupe on canonical URL; no-URL/book rows dedupe via
+/// entry. URL rows dedupe on canonical URL; no-URL/book rows dedupe via
 /// `document_origins`. Provided ZIP snapshots are attached document-keyed; URL rows without a
 /// snapshot are prepared by the content-gated AI pipeline.
 pub(super) async fn process_csv_row(
@@ -89,7 +90,7 @@ pub(super) async fn process_csv_row(
         .as_deref()
         .is_some_and(ind_application::dispatch::is_youtube_url);
     let attach_entry = if is_youtube { None } else { zip_entry };
-    // TASK-241: per-row provenance recorded on import_job_items. zip_path is the snapshot the
+    // Per-row provenance on import_job_items: zip_path is the snapshot the
     // document content came from (none for YouTube, whose readable asset is the transcript);
     // tag_parse_errors preserves malformed-tag diagnostics instead of silently dropping them.
     let diagnostics = RowDiagnostics {
@@ -309,7 +310,7 @@ pub(super) async fn process_zip_only_entry(
         })
         .await?;
 
-    // TASK-241: a ZIP-only entry came from this ZIP path and has no CSV tags to parse.
+    // A ZIP-only entry came from this ZIP path and has no CSV tags to parse.
     let diagnostics = RowDiagnostics {
         zip_path: Some(entry.path.clone()),
         zip_only: true,
@@ -437,7 +438,13 @@ async fn apply_reading_progress(
     }
     let progress_percent = (row.reading_progress * 100.0).round() as i32;
     ctx.user_document_state_repo
-        .record_progress(user_id, outcome.document.id, progress_percent, None, None)
+        .record_progress(
+            user_id,
+            outcome.document.id,
+            progress_percent,
+            None,
+            EventOrigin::Integration(IntegrationSource::Readwise),
+        )
         .await?;
     Ok(())
 }

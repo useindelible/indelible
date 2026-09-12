@@ -39,6 +39,10 @@ mod api {
     mod oauth_journey_tests;
     mod platform_journey_tests;
     mod product_journey_tests;
+    mod reading_events_journey_tests;
+    mod reading_events_lifecycle_tests;
+    mod reading_events_origin_tests;
+    mod reading_events_position_tests;
     mod realtime_journey_tests;
     mod resource_route_permission_support;
     mod save_pipeline_tests;

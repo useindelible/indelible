@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO user_document_state (user_id, document_id, progress_percent, max_progress_percent, finished_at, chapter_locator, chapter_offset, last_read_at, created_at, updated_at) SELECT $1, $2, $3, $3, CASE WHEN $3 >= 100 THEN now() END, $4, $5, now(), now(), now() FROM documents d WHERE d.id = $2 AND d.user_id = $1 ON CONFLICT (user_id, document_id) DO UPDATE SET progress_percent = EXCLUDED.progress_percent, max_progress_percent = GREATEST(user_document_state.max_progress_percent, EXCLUDED.max_progress_percent), finished_at = CASE WHEN GREATEST(COALESCE(user_document_state.max_progress_percent, 0), EXCLUDED.max_progress_percent) >= 100 THEN COALESCE(user_document_state.finished_at, now()) ELSE user_document_state.finished_at END, chapter_locator = COALESCE(EXCLUDED.chapter_locator, user_document_state.chapter_locator), chapter_offset = COALESCE(EXCLUDED.chapter_offset, user_document_state.chapter_offset), last_read_at = now(), updated_at = now() RETURNING user_id, document_id, progress_percent, max_progress_percent, scroll_position AS \"scroll_position?: serde_json::Value\", chapter_locator, chapter_offset, last_read_at, finished_at, first_opened_at, last_opened_at, created_at, updated_at",
+  "query": "UPDATE user_document_state SET current_attempt = $3, max_progress_percent = $4, finished_at = $5, progress_percent = CASE WHEN $6 THEN $7 ELSE progress_percent END, chapter_locator = CASE WHEN $6 THEN COALESCE($8, chapter_locator) ELSE chapter_locator END, chapter_offset = CASE WHEN $6 THEN COALESCE($9, chapter_offset) ELSE chapter_offset END, scroll_position = CASE WHEN $6 THEN COALESCE($10, scroll_position) ELSE scroll_position END, position_origin = CASE WHEN $6 THEN $11 ELSE position_origin END, position_origin_seq = CASE WHEN $6 THEN $12 ELSE position_origin_seq END, position_effective_at = CASE WHEN $6 THEN $13 ELSE position_effective_at END, position_received_at = CASE WHEN $6 THEN $14 ELSE position_received_at END, position_event_id = CASE WHEN $6 THEN $15 ELSE position_event_id END, last_read_at = now(), updated_at = now() WHERE user_id = $1 AND document_id = $2 RETURNING user_id, document_id, progress_percent, max_progress_percent, scroll_position AS \"scroll_position?: serde_json::Value\", chapter_locator, chapter_offset, last_read_at, finished_at, first_opened_at, last_opened_at, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -73,9 +73,19 @@
       "Left": [
         "Uuid",
         "Uuid",
+        "Int2",
+        "Int4",
+        "Timestamptz",
+        "Bool",
         "Int4",
         "Text",
-        "Int4"
+        "Int4",
+        "Jsonb",
+        "Text",
+        "Int8",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -94,5 +104,5 @@
       false
     ]
   },
-  "hash": "0ca6ed7e33296becb54fde854b5e1a6e83abe6130301bbd2fab7ad7f752c5616"
+  "hash": "4a280dc1378a3f129fe107357f0323b8669d069c904e56401c2834a48184218b"
 }

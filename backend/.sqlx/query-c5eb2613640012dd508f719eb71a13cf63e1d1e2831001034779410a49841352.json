@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT max(origin_seq) AS \"max?\" FROM reading_events WHERE user_id = $1 AND document_id = $2 AND origin = $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "max?",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c5eb2613640012dd508f719eb71a13cf63e1d1e2831001034779410a49841352"
+}
