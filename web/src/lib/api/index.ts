@@ -403,7 +403,8 @@ export async function triageLibraryEntry(options: {
 	const library_entry_id = await resolveLibraryEntryId(options.path.document_id);
 	const { data } = await generated.triageEntry({
 		path: { library_entry_id },
-		body: { triage_state: options.body.state }
+		body: { triage_state: options.body.state },
+		throwOnError: true
 	});
 	return { data: data ? toDocumentListEntry(data) : undefined };
 }

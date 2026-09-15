@@ -56,7 +56,7 @@ export function getLibrarySelection() {
 			void lib.triageAction(item.id, state);
 			lib.setSelectedId(next);
 		},
-		// The list does not carry read state, so the request goes out for any selected row.
+		// Any selected row may be marked unread; the backend treats an unread document as a no-op.
 		markSelectedUnread(): void {
 			const item = displayItems.find((row) => row.id === lib.selectedId);
 			if (!item) return;
