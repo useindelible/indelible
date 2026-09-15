@@ -9,7 +9,9 @@ use ind_application::repos::{Cursor, Page};
 use ind_domain::{LibraryEntryId, LibraryEntryWithDocument, Tag, TagId, TagSource, UserId};
 
 use crate::cursor::{clamp_limit, decode_cursor_ts, encode_cursor_ts};
-use crate::repos::library_repo::rows::{LIBRARY_DOC_COLUMNS, LibraryEntryLinkRow};
+use crate::repos::library_repo::rows::{
+    LIBRARY_DOC_COLUMNS, LIBRARY_READ_STATE_JOIN, LibraryEntryLinkRow,
+};
 use crate::repos::write_helpers::apply_mutation_side_effects_tx;
 
 use super::rows::TagRow;
@@ -129,9 +131,10 @@ impl PgTagRepository {
             ", let.added_at AS link_added_at \
              FROM library_entry_tags let \
              JOIN library_entries le ON le.id = let.library_entry_id \
-             JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
-             WHERE let.tag_id = ",
+             JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id",
         );
+        builder.push(LIBRARY_READ_STATE_JOIN);
+        builder.push("WHERE let.tag_id = ");
         builder.push_bind(tag_id.into_uuid());
         builder.push(" AND le.user_id = ");
         builder.push_bind(user_id.into_uuid());

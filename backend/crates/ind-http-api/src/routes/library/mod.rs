@@ -74,20 +74,30 @@ fn parse_entry_id(raw: &str) -> Result<LibraryEntryId, ApiError> {
     })
 }
 
+/// A save outcome only carries the entry and document. The joined row is re-read so the
+/// response also carries what lives on the join, such as the caller's read state.
 pub(crate) async fn library_entry_response_from_parts(
     state: &AppState,
     entry: LibraryEntry,
     document: Document,
 ) -> Result<LibraryEntryResponse, ApiError> {
-    let summary = if let Some(provider) = state.export_summary_provider.as_ref() {
-        provider
-            .summary_for_document(document.id, document.excerpt.as_deref())
+    let joined = match state.library_ops.as_deref() {
+        Some(ops) => ops
+            .get(entry.user_id, entry.id)
             .await
-            .map_err(ApiError::from)?
-    } else {
-        normalized_summary(document.excerpt.as_deref())
+            .map_err(ApiError::from)?,
+        None => None,
     };
-    Ok(LibraryEntryResponse::from_parts(entry, document).with_summary(summary))
+    let joined = joined.unwrap_or(LibraryEntryWithDocument {
+        entry,
+        document,
+        ingest_failure_reason: None,
+        progress_percent: None,
+        max_progress_percent: None,
+        last_read_at: None,
+        finished_at: None,
+    });
+    library_entry_response(state, joined).await
 }
 
 pub(crate) async fn library_entry_response(

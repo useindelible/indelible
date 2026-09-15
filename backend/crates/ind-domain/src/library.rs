@@ -36,4 +36,13 @@ pub struct LibraryEntryWithDocument {
     /// `None` for healthy, still-processing, or binary-upload documents.
     #[serde(default)]
     pub ingest_failure_reason: Option<String>,
+    /// Reader progress for the owning user; every field is `None` until the document is opened.
+    #[serde(default)]
+    pub progress_percent: Option<i32>,
+    #[serde(default)]
+    pub max_progress_percent: Option<i32>,
+    #[serde(default)]
+    pub last_read_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub finished_at: Option<DateTime<Utc>>,
 }

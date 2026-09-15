@@ -239,6 +239,16 @@ pub struct LibraryEntryResponse {
     pub created_at: DateTime<Utc>,
     #[schema(value_type = String, format = DateTime)]
     pub updated_at: DateTime<Utc>,
+    /// Reader progress for the signed-in user. Always serialized so a client can tell
+    /// unread (`null`) apart from unknown.
+    #[schema(required = true, nullable)]
+    pub progress_percent: Option<i32>,
+    #[schema(required = true, nullable)]
+    pub max_progress_percent: Option<i32>,
+    #[schema(value_type = Option<String>, format = DateTime, required = true, nullable)]
+    pub last_read_at: Option<DateTime<Utc>>,
+    #[schema(value_type = Option<String>, format = DateTime, required = true, nullable)]
+    pub finished_at: Option<DateTime<Utc>>,
 }
 
 impl LibraryEntryResponse {
@@ -278,12 +288,20 @@ impl LibraryEntryResponse {
             saved_at: entry.saved_at,
             created_at: entry.created_at,
             updated_at: entry.updated_at,
+            progress_percent: None,
+            max_progress_percent: None,
+            last_read_at: None,
+            finished_at: None,
         }
     }
 
     pub(crate) fn from_with_document(joined: LibraryEntryWithDocument) -> Self {
         let mut response = Self::from_parts(joined.entry, joined.document);
         response.ingest_failure_reason = joined.ingest_failure_reason;
+        response.progress_percent = joined.progress_percent;
+        response.max_progress_percent = joined.max_progress_percent;
+        response.last_read_at = joined.last_read_at;
+        response.finished_at = joined.finished_at;
         response
     }
 

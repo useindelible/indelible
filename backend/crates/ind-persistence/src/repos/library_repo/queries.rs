@@ -112,9 +112,15 @@ impl PgLibraryRepository {
                     d.created_at AS doc_created_at, d.updated_at AS doc_updated_at, \
                     (SELECT aa.failed_reason FROM archive_assets aa \
                      WHERE aa.document_id = d.id AND aa.asset_kind = 'readable_html' \
-                       AND aa.status = 'failed') AS \"ingest_failure_reason?\" \
+                       AND aa.status = 'failed') AS \"ingest_failure_reason?\", \
+                    uds.progress_percent AS \"read_progress_percent?\", \
+                    uds.max_progress_percent AS \"read_max_progress_percent?\", \
+                    uds.last_read_at AS \"read_last_read_at?\", \
+                    uds.finished_at AS \"read_finished_at?\" \
              FROM library_entries le \
              JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
+             LEFT JOIN user_document_state uds \
+                    ON uds.user_id = le.user_id AND uds.document_id = le.document_id \
              WHERE le.id = $1 AND le.user_id = $2 AND le.deleted_at IS NULL",
             id.into_uuid(),
             user_id.into_uuid(),
@@ -146,9 +152,15 @@ impl PgLibraryRepository {
                     d.created_at AS doc_created_at, d.updated_at AS doc_updated_at, \
                     (SELECT aa.failed_reason FROM archive_assets aa \
                      WHERE aa.document_id = d.id AND aa.asset_kind = 'readable_html' \
-                       AND aa.status = 'failed') AS \"ingest_failure_reason?\" \
+                       AND aa.status = 'failed') AS \"ingest_failure_reason?\", \
+                    uds.progress_percent AS \"read_progress_percent?\", \
+                    uds.max_progress_percent AS \"read_max_progress_percent?\", \
+                    uds.last_read_at AS \"read_last_read_at?\", \
+                    uds.finished_at AS \"read_finished_at?\" \
              FROM library_entries le \
              JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
+             LEFT JOIN user_document_state uds \
+                    ON uds.user_id = le.user_id AND uds.document_id = le.document_id \
              WHERE le.user_id = $1 AND d.canonical_url = $2 AND le.deleted_at IS NULL \
              LIMIT 1",
             user_id.into_uuid(),
@@ -257,9 +269,15 @@ impl PgLibraryRepository {
                         d.created_at AS doc_created_at, d.updated_at AS doc_updated_at, \
                     (SELECT aa.failed_reason FROM archive_assets aa \
                      WHERE aa.document_id = d.id AND aa.asset_kind = 'readable_html' \
-                       AND aa.status = 'failed') AS \"ingest_failure_reason?\" \
+                       AND aa.status = 'failed') AS \"ingest_failure_reason?\", \
+                    uds.progress_percent AS \"read_progress_percent?\", \
+                    uds.max_progress_percent AS \"read_max_progress_percent?\", \
+                    uds.last_read_at AS \"read_last_read_at?\", \
+                    uds.finished_at AS \"read_finished_at?\" \
                  FROM library_entries le \
                  JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
+             LEFT JOIN user_document_state uds \
+                    ON uds.user_id = le.user_id AND uds.document_id = le.document_id \
                  WHERE le.user_id = $1 AND le.deleted_at IS NULL \
                    AND ($2::text IS NULL OR le.triage_state = $2) \
                    AND (le.saved_at, le.id) < ($3, $4) \
@@ -290,9 +308,15 @@ impl PgLibraryRepository {
                         d.created_at AS doc_created_at, d.updated_at AS doc_updated_at, \
                     (SELECT aa.failed_reason FROM archive_assets aa \
                      WHERE aa.document_id = d.id AND aa.asset_kind = 'readable_html' \
-                       AND aa.status = 'failed') AS \"ingest_failure_reason?\" \
+                       AND aa.status = 'failed') AS \"ingest_failure_reason?\", \
+                    uds.progress_percent AS \"read_progress_percent?\", \
+                    uds.max_progress_percent AS \"read_max_progress_percent?\", \
+                    uds.last_read_at AS \"read_last_read_at?\", \
+                    uds.finished_at AS \"read_finished_at?\" \
                  FROM library_entries le \
                  JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
+             LEFT JOIN user_document_state uds \
+                    ON uds.user_id = le.user_id AND uds.document_id = le.document_id \
                  WHERE le.user_id = $1 AND le.deleted_at IS NULL \
                    AND ($2::text IS NULL OR le.triage_state = $2) \
                  ORDER BY le.saved_at DESC, le.id DESC \

@@ -82,7 +82,14 @@ pub(crate) const LIBRARY_DOC_COLUMNS: &str = "le.id, le.user_id, le.document_id,
      d.reading_time_minutes AS doc_reading_time_minutes, d.created_at AS doc_created_at, \
      d.updated_at AS doc_updated_at, \
      (SELECT aa.failed_reason FROM archive_assets aa WHERE aa.document_id = d.id \
-        AND aa.asset_kind = 'readable_html' AND aa.status = 'failed') AS ingest_failure_reason";
+        AND aa.asset_kind = 'readable_html' AND aa.status = 'failed') AS ingest_failure_reason, \
+     uds.progress_percent AS read_progress_percent, \
+     uds.max_progress_percent AS read_max_progress_percent, \
+     uds.last_read_at AS read_last_read_at, uds.finished_at AS read_finished_at";
+
+/// Pairs with `LIBRARY_DOC_COLUMNS`: the reader-state join every library projection needs.
+pub(crate) const LIBRARY_READ_STATE_JOIN: &str = " LEFT JOIN user_document_state uds \
+     ON uds.user_id = le.user_id AND uds.document_id = le.document_id ";
 
 /// Shared library-entry-with-document projection. Reused by `library_query` (smart-list
 /// evaluation, via `QueryBuilder`/`FromRow`) and by collection/tag contents listings, so the
@@ -118,6 +125,10 @@ pub(crate) struct LibraryWithDocRow {
     pub doc_created_at: DateTime<Utc>,
     pub doc_updated_at: DateTime<Utc>,
     pub ingest_failure_reason: Option<String>,
+    pub read_progress_percent: Option<i32>,
+    pub read_max_progress_percent: Option<i32>,
+    pub read_last_read_at: Option<DateTime<Utc>>,
+    pub read_finished_at: Option<DateTime<Utc>>,
 }
 
 /// `LibraryWithDocRow` plus the membership `added_at`, used by collection/tag contents listings to
@@ -171,6 +182,10 @@ impl LibraryWithDocRow {
             entry,
             document,
             ingest_failure_reason: self.ingest_failure_reason,
+            progress_percent: self.read_progress_percent,
+            max_progress_percent: self.read_max_progress_percent,
+            last_read_at: self.read_last_read_at,
+            finished_at: self.read_finished_at,
         })
     }
 }
