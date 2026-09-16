@@ -30,8 +30,17 @@ import app.indelible.core.network.SearchApiService
 import app.indelible.core.network.SettingsApiService
 import app.indelible.core.network.TagsApiService
 import app.indelible.core.network.TrashApiService
+import app.indelible.core.offline.ApiOutboxSender
+import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.OfflineStore
+import app.indelible.core.offline.OutboxSender
+import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.SqlDelightOfflineStore
+import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.storage.TokenStorage
 import app.indelible.core.storage.UserPreferencesStorage
+import app.indelible.db.DatabaseDriverFactory
+import app.indelible.db.OfflineDatabase
 import app.indelible.feed.repository.ApiFeedRepository
 import app.indelible.feed.repository.FeedRepository
 import app.indelible.feed.viewmodel.AddFeedViewModel
@@ -72,6 +81,7 @@ import app.indelible.tags.repository.ApiTagsRepository
 import app.indelible.tags.repository.TagsRepository
 import app.indelible.trash.repository.ApiTrashRepository
 import app.indelible.trash.repository.TrashRepository
+import io.ktor.util.date.getTimeMillis
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 
@@ -102,6 +112,8 @@ data class AppContainer(
     val aiSettingsViewModel: AiSettingsViewModel,
     val searchViewModel: SearchViewModel,
     val sidebarViewModel: SidebarViewModel,
+    val outboxWorker: OutboxWorker,
+    val connectivityObserver: ConnectivityObserver,
 )
 
 @Composable
@@ -109,17 +121,22 @@ fun rememberAppContainer(
     tokenStorage: TokenStorage,
     userPreferencesStorage: UserPreferencesStorage,
     pendingSaveRepository: PendingSaveRepository,
+    databaseDriverFactory: DatabaseDriverFactory,
+    connectivityObserver: ConnectivityObserver,
 ): AppContainer {
     val oauthBrowserLauncher = rememberOAuthBrowserLauncher()
     val authViewModelRef = remember { mutableStateOf<AuthViewModel?>(null) }
     val koinApplication =
-        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher) {
+        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher, databaseDriverFactory) {
             koinApplication {
                 modules(
                     module {
                         single<TokenStorage> { tokenStorage }
                         single<UserPreferencesStorage> { userPreferencesStorage }
                         single<PendingSaveRepository> { pendingSaveRepository }
+                        single { connectivityObserver }
+                        single { OfflineDatabase(databaseDriverFactory.createDriver()) }
+                        single<OfflineStore> { SqlDelightOfflineStore(get()) }
                         single {
                             AuthenticatedApiTransport(
                                 tokenStorage = get(),
@@ -168,7 +185,16 @@ fun rememberAppContainer(
                                 devPrefillUrl = ServerBuildConfig.DEV_SERVER_PREFILL,
                             )
                         }
-                        single { AuthViewModel(get(), get(), oauthBrowserLauncher) }
+                        single<OutboxSender> { ApiOutboxSender(get(), get()) }
+                        single {
+                            OutboxWorker(
+                                store = get(),
+                                scope = { tokenStorage.currentOfflineScope() },
+                                sender = get(),
+                                clock = { getTimeMillis() },
+                            )
+                        }
+                        single { AuthViewModel(get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
                         single { LibraryViewModel(get()) }
@@ -226,6 +252,8 @@ fun rememberAppContainer(
             aiSettingsViewModel = koin.get(),
             searchViewModel = koin.get(),
             sidebarViewModel = koin.get(),
+            outboxWorker = koin.get(),
+            connectivityObserver = connectivityObserver,
         )
     }
 }

@@ -19,6 +19,7 @@ import app.indelible.core.model.AuthUser
 import app.indelible.core.model.toAuthUser
 import app.indelible.core.network.ApiException
 import app.indelible.core.network.resolvedServerUrl
+import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_login_failed
@@ -60,6 +61,7 @@ private sealed class OAuthValidationResult {
 class AuthViewModel(
     private val repository: AuthRepository,
     private val tokenStorage: TokenStorage,
+    private val outboxWorker: OutboxWorker,
     private val oauthBrowserLauncher: OAuthBrowserLauncher = NoopOAuthBrowserLauncher,
 ) : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -458,6 +460,7 @@ class AuthViewModel(
 
     private suspend fun handleAuthenticatedUser(user: AuthUser) {
         tokenStorage.saveUserId(user.id)
+        outboxWorker.resumeAuth()
         val wasSetupRequired = _setupRequired.value
         _authState.value =
             when {

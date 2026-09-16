@@ -15,13 +15,31 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.date.getTimeMillis
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+
+/**
+ * A response the caller inspects by status instead of by thrown failure. [bodyText] is empty on
+ * success so a caller that only needs the status never pays for the body.
+ */
+data class RawApiResponse(
+    val status: Int,
+    val retryAfterSeconds: Long?,
+    val bodyText: String,
+)
 
 class AuthenticatedApiTransport(
     private val tokenStorage: TokenStorage,
@@ -52,6 +70,12 @@ class AuthenticatedApiTransport(
 
     private val refreshMutex = Mutex()
 
+    private val requestSucceededState =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** Emits once per call that reached the server and came back 2xx. */
+    val requestSucceeded: SharedFlow<Unit> = requestSucceededState.asSharedFlow()
+
     internal suspend fun baseUrl(): String = tokenStorage.resolvedServerUrl()
 
     internal suspend fun <T> publicRequest(block: suspend (HttpClient, ApiConfiguration) -> NetworkResult<T>): Result<T> =
@@ -67,7 +91,7 @@ class AuthenticatedApiTransport(
             authenticatedValue(retryOn401) { token ->
                 block(httpClient, configuration(token)).getOrThrow()
             }
-        }
+        }.onSuccess { requestSucceededState.tryEmit(Unit) }
 
     internal suspend fun <T> directAuthenticatedRequest(
         retryOn401: Boolean = true,
@@ -77,6 +101,31 @@ class AuthenticatedApiTransport(
             authenticatedValue(retryOn401) { token ->
                 block(httpClient, baseUrl(), token)
             }
+        }.onSuccess { requestSucceededState.tryEmit(Unit) }
+
+    /**
+     * Surfaces the status instead of throwing on it, for callers that must classify 429/5xx
+     * themselves. A block that simply returned a 401 would bypass [authenticatedValue]'s refresh,
+     * so the 401 is rethrown inside the block to engage it; a 401 that reaches the caller here has
+     * therefore already survived a refresh and means the session, not the request, is rejected.
+     */
+    suspend fun rawAuthenticatedRequest(
+        block: suspend (client: HttpClient, baseUrl: String, token: String) -> HttpResponse,
+    ): RawApiResponse =
+        try {
+            authenticatedValue(retryOn401 = true) { token ->
+                val response = block(httpClient, baseUrl(), token)
+                if (response.status.value == UNAUTHORIZED_STATUS) {
+                    throw ApiException(UNAUTHORIZED_STATUS, response.bodyAsText())
+                }
+                RawApiResponse(
+                    status = response.status.value,
+                    retryAfterSeconds = response.headers[HttpHeaders.RetryAfter]?.toLongOrNull(),
+                    bodyText = if (response.status.isSuccess()) "" else response.bodyAsText(),
+                )
+            }.also { if (it.status in SUCCESS_STATUS_RANGE) requestSucceededState.tryEmit(Unit) }
+        } catch (error: ApiException) {
+            RawApiResponse(error.statusCode, retryAfterSeconds = null, bodyText = error.message)
         }
 
     internal suspend fun bearerToken(): String = ensureValidToken()
@@ -191,6 +240,7 @@ class AuthenticatedApiTransport(
         const val DEFAULT_SERVER_URL = "http://localhost:38473"
         private const val UNAUTHORIZED_STATUS = 401
         private val SESSION_REJECTED_STATUSES = setOf(401, 403)
+        private val SUCCESS_STATUS_RANGE = 200..299
         private const val REFRESH_BUFFER_SECONDS = 120L
         private const val MS_PER_SECOND = 1000L
     }
