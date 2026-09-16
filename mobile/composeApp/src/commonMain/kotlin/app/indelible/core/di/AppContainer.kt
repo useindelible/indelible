@@ -69,6 +69,7 @@ import app.indelible.profile.viewmodel.AiSettingsViewModel
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import app.indelible.reader.repository.ApiReaderRepository
 import app.indelible.reader.repository.ReaderRepository
+import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.search.repository.ApiSearchRepository
 import app.indelible.search.repository.SearchRepository
 import app.indelible.search.viewmodel.SearchViewModel
@@ -95,6 +96,7 @@ data class AppContainer(
     val libraryRepository: LibraryRepository,
     val feedRepository: FeedRepository,
     val readerRepository: ReaderRepository,
+    val readingEventWriter: ReadingEventWriter,
     val milaRepository: MilaRepository,
     val searchRepository: SearchRepository,
     val sidebarRepository: SidebarRepository,
@@ -164,7 +166,17 @@ fun rememberAppContainer(
                         single<HomeRepository> { ApiHomeRepository(get()) }
                         single<LibraryRepository> { ApiLibraryRepository(get()) }
                         single<FeedRepository> { ApiFeedRepository(get()) }
-                        single<ReaderRepository> { ApiReaderRepository(get(), get()) }
+                        single {
+                            ApiReaderRepository(
+                                readerApiService = get(),
+                                libraryApiService = get(),
+                                offlineStore = get(),
+                                worker = get(),
+                                scopeProvider = { tokenStorage.currentOfflineScope() },
+                            )
+                        }
+                        single<ReaderRepository> { get<ApiReaderRepository>() }
+                        single<ReadingEventWriter> { get<ApiReaderRepository>() }
                         single { MilaRepository(get()) }
                         single<OnboardingRepository> { ApiOnboardingRepository(get()) }
                         single<SearchRepository> { ApiSearchRepository(get()) }
@@ -235,6 +247,7 @@ fun rememberAppContainer(
             libraryRepository = koin.get(),
             feedRepository = koin.get(),
             readerRepository = koin.get(),
+            readingEventWriter = koin.get(),
             milaRepository = koin.get(),
             searchRepository = koin.get(),
             sidebarRepository = koin.get(),

@@ -231,6 +231,7 @@ fun MainNavigation(
                     navController = navController,
                     libraryRepository = appContainer.libraryRepository,
                     readerRepository = appContainer.readerRepository,
+                    readingEventWriter = appContainer.readingEventWriter,
                     milaRepository = appContainer.milaRepository,
                     collectionsRepository = appContainer.collectionsRepository,
                     tagsRepository = appContainer.tagsRepository,

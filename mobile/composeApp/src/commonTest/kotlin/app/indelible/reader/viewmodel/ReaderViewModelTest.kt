@@ -37,12 +37,14 @@ import kotlin.test.assertTrue
 class ReaderViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeReaderRepository
+    private lateinit var events: RecordingReadingEventWriter
     private lateinit var viewModel: ReaderViewModel
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeReaderRepository()
+        events = RecordingReadingEventWriter()
     }
 
     @AfterTest
@@ -54,7 +56,7 @@ class ReaderViewModelTest {
     fun load_item_transitions_to_success() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -66,7 +68,7 @@ class ReaderViewModelTest {
     fun load_item_failure_transitions_to_error() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.failure(RuntimeException("Not found"))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Error>(viewModel.uiState.value)
@@ -78,7 +80,7 @@ class ReaderViewModelTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.fetchHtmlResult = Result.success("<p>Article content</p>")
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -94,7 +96,7 @@ class ReaderViewModelTest {
                     Result.success(fakeItemDetail(readableReady = true)),
                 )
             repository.fetchHtmlResult = Result.success("<p>Prepared content</p>")
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -106,7 +108,7 @@ class ReaderViewModelTest {
     fun content_unavailable_after_polls_exhausted() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(readableReady = false))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -118,7 +120,7 @@ class ReaderViewModelTest {
     fun retry_reloads_content_after_unavailable() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(readableReady = false))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
             assertEquals(
                 ReaderContentStatus.UNAVAILABLE,
@@ -139,7 +141,7 @@ class ReaderViewModelTest {
     fun retry_reprocesses_document_before_polling_or_fetching_content() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(readableReady = false))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
             assertEquals(
                 ReaderContentStatus.UNAVAILABLE,
@@ -165,7 +167,7 @@ class ReaderViewModelTest {
     fun failed_retry_reprocess_keeps_content_unavailable_and_emits_error() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(readableReady = false))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
             assertEquals(
                 ReaderContentStatus.UNAVAILABLE,
@@ -199,7 +201,7 @@ class ReaderViewModelTest {
     fun retry_surfaces_server_cooldown_while_polling() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(readableReady = false))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
             repository.reprocessDocumentResult =
                 Result.success(ReaderReprocessResult(queued = false, retryAfterSeconds = 45))
@@ -225,7 +227,7 @@ class ReaderViewModelTest {
                     Result.success(fakeItemDetail(saved = false)),
                     Result.success(fakeItemDetail(saved = true)),
                 )
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
             assertFalse(assertIs<ReaderUiState.Success>(viewModel.uiState.value).item.saved)
 
@@ -241,7 +243,7 @@ class ReaderViewModelTest {
     fun pdf_item_uses_pdf_coming_soon_mode_without_fetching_html() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(itemType = "pdf"))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -253,7 +255,7 @@ class ReaderViewModelTest {
     fun book_item_uses_epub_coming_soon_mode_without_fetching_html() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(itemType = "book"))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -265,7 +267,7 @@ class ReaderViewModelTest {
     fun update_preferences_updates_state() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val newPrefs = ReaderPreferences(typeface = Typeface.SERIF)
@@ -279,7 +281,7 @@ class ReaderViewModelTest {
     fun scroll_progress_updates_state() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.onContentLoaded()
@@ -289,7 +291,7 @@ class ReaderViewModelTest {
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
             assertEquals(42.5f, state.progress)
-            assertEquals(42.5f, repository.lastProgressPercent)
+            assertEquals(42.5f, events.progressPercents.last())
         }
 
     @Test
@@ -299,14 +301,14 @@ class ReaderViewModelTest {
                 Result.success(
                     fakeItemDetail(progressPercent = 60f),
                 )
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.onScrollProgress(0f)
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
             assertEquals(60f, state.progress)
-            assertNull(repository.lastProgressPercent)
+            assertTrue(events.progressPercents.isEmpty())
         }
 
     @Test
@@ -316,7 +318,7 @@ class ReaderViewModelTest {
                 Result.success(
                     fakeItemDetail(progressPercent = 60f),
                 )
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -330,7 +332,7 @@ class ReaderViewModelTest {
                 Result.success(
                     fakeItemDetail(progressPercent = 60f),
                 )
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val effects = mutableListOf<ReaderEffect>()
@@ -356,7 +358,7 @@ class ReaderViewModelTest {
                         finishedAt = Instant.parse("2026-07-28T12:00:00Z"),
                     ),
                 )
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -379,7 +381,7 @@ class ReaderViewModelTest {
                 Result.success(
                     fakeItemDetail(progressPercent = 100f),
                 )
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -392,7 +394,7 @@ class ReaderViewModelTest {
             val highlight = fakeHighlight(id = "hlt_new", color = "Green")
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.createHighlightResult = Result.success(highlight)
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.createHighlight(HighlightColor.GREEN, "text", 0, 10)
@@ -409,7 +411,7 @@ class ReaderViewModelTest {
             val highlight = fakeHighlight(id = "hlt_remove")
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.listHighlightsResult = Result.success(listOf(highlight))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.deleteHighlight("hlt_remove")
@@ -427,7 +429,7 @@ class ReaderViewModelTest {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.listHighlightsResult = Result.success(listOf(highlight))
             repository.deleteHighlightResult = Result.failure(RuntimeException("Server error"))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.deleteHighlight("hlt_fail")
@@ -445,7 +447,7 @@ class ReaderViewModelTest {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.listHighlightsResult = Result.success(listOf(highlight))
             repository.updateHighlightColorResult = Result.success(updated)
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.updateHighlightColor("hlt_color", HighlightColor.BLUE)
@@ -462,7 +464,7 @@ class ReaderViewModelTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.triageItemResult = Result.success(Unit)
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.moveToTriage("archive")
@@ -477,7 +479,7 @@ class ReaderViewModelTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.triageItemResult = Result.failure(RuntimeException("Server error"))
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.moveToTriage("archive")
@@ -491,7 +493,7 @@ class ReaderViewModelTest {
     fun navigate_back_emits_effect() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val effects = mutableListOf<ReaderEffect>()
@@ -514,7 +516,7 @@ class ReaderViewModelTest {
                 )
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.listHighlightsResult = Result.success(highlights)
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -529,7 +531,7 @@ class ReaderViewModelTest {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.listHighlightsResult = Result.success(listOf(highlight))
             repository.upsertNoteResult = Result.success(note)
-            viewModel = ReaderViewModel("doc_test1", repository)
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             assertNull(

@@ -51,8 +51,12 @@ internal class ReaderProgressSync(
         syncInFlight = true
         lastSyncAtMillis = Clock.System.now().toEpochMilliseconds()
         scope.launch {
-            updateProgress(percent)
-            syncInFlight = false
+            // A callback that fails must not leave the flag set, or nothing ever flushes again.
+            try {
+                updateProgress(percent)
+            } finally {
+                syncInFlight = false
+            }
             if (flushAfterInFlight || pendingProgress != null) {
                 flushAfterInFlight = false
                 flushPending()

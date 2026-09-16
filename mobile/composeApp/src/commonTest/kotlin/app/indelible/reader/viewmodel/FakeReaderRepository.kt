@@ -53,6 +53,7 @@ class FakeReaderRepository : ReaderRepository {
     var createHighlightCallCount = 0
     var deleteHighlightCallCount = 0
     var lastDeletedHighlightId: String? = null
+    var lastHighlightMutationItemId: String? = null
     var lastUpsertedNote: String? = null
     var lastSetItemTags: List<String>? = null
     var lastTriagedState: String? = null
@@ -135,28 +136,50 @@ class FakeReaderRepository : ReaderRepository {
         return createHighlightResult
     }
 
-    override suspend fun deleteHighlight(highlightId: String): Result<Unit> {
+    override suspend fun deleteHighlight(
+        itemId: String,
+        highlightId: String,
+    ): Result<Unit> {
         deleteHighlightCallCount++
         lastDeletedHighlightId = highlightId
+        lastHighlightMutationItemId = itemId
         return deleteHighlightResult
     }
 
     override suspend fun updateHighlightColor(
+        itemId: String,
         highlightId: String,
         color: String,
-    ): Result<HighlightData> = updateHighlightColorResult
+    ): Result<HighlightData> {
+        lastHighlightMutationItemId = itemId
+        return updateHighlightColorResult
+    }
 
     override suspend fun upsertHighlightNote(
+        itemId: String,
         highlightId: String,
         body: String,
-    ): Result<HighlightNoteData> = upsertNoteResult
+    ): Result<HighlightNoteData> {
+        lastHighlightMutationItemId = itemId
+        return upsertNoteResult
+    }
 
-    override suspend fun deleteHighlightNote(highlightId: String): Result<Unit> = deleteNoteResult
+    override suspend fun deleteHighlightNote(
+        itemId: String,
+        highlightId: String,
+    ): Result<Unit> {
+        lastHighlightMutationItemId = itemId
+        return deleteNoteResult
+    }
 
     override suspend fun setHighlightTags(
+        itemId: String,
         highlightId: String,
         tags: List<String>,
-    ): Result<List<String>> = setHighlightTagsResult
+    ): Result<List<String>> {
+        lastHighlightMutationItemId = itemId
+        return setHighlightTagsResult
+    }
 
     override suspend fun listTags(): Result<List<TagData>> = listTagsResult
 
