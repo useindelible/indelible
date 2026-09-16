@@ -11,14 +11,9 @@ on:
       - 'prototypes/**'
       - 'obsidian/**'
       - 'linkwarden-docs/**'
+  # No path filter on pull requests: main requires these checks, and a skipped
+  # workflow never reports them, which would leave a docs-only PR unmergeable.
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.backlog/**'
-      - 'prototypes/**'
-      - 'obsidian/**'
-      - 'linkwarden-docs/**'
   schedule:
     - cron: '17 3 * * 1'
 
