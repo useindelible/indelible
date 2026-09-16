@@ -97,6 +97,9 @@ SELECT * FROM outbox WHERE scope = ? ORDER BY seq;
 outboxForDocument:
 SELECT * FROM outbox WHERE scope = ? AND document_id = ? ORDER BY seq;
 
+outboxRow:
+SELECT * FROM outbox WHERE scope = ? AND id = ?;
+
 setDocumentSyncedAt:
 UPDATE cached_document SET last_synced_at = ? WHERE scope = ? AND document_id = ?;
 
@@ -142,8 +145,14 @@ VALUES (?, ?, ?, ?, ?);
 deleteCachedHighlight:
 DELETE FROM cached_highlight WHERE scope = ? AND id = ?;
 
+deleteHighlightsForDocument:
+DELETE FROM cached_highlight WHERE scope = ? AND document_id = ?;
+
 highlightsForDocument:
 SELECT * FROM cached_highlight WHERE scope = ? AND document_id = ?;
+
+cachedHighlight:
+SELECT * FROM cached_highlight WHERE scope = ? AND id = ?;
 
 getClientState:
 SELECT * FROM client_state WHERE scope = ?;
@@ -159,7 +168,7 @@ setPurgePending:
 UPDATE client_state SET purge_pending = ? WHERE scope = ?;
 
 scopesWithState:
-SELECT scope FROM client_state;
+SELECT scope, purge_pending FROM client_state;
 
 deleteCachedDocument:
 DELETE FROM cached_document WHERE scope = ? AND document_id = ?;
