@@ -2,7 +2,6 @@ package app.indelible.core.offline
 
 import app.indelible.core.network.AuthenticatedApiTransport
 import app.indelible.core.storage.InMemoryTokenStorage
-import app.indelible.db.testOfflineDatabase
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
@@ -23,6 +22,7 @@ import kotlin.test.assertTrue
 private const val SCOPE = "http://localhost:38473|usr_1"
 private const val DOCUMENT_ID = "doc_01"
 private const val HIGHLIGHT_ID = "hlt_01"
+private const val CLIENT_ID = "cli_test"
 
 class ApiOutboxSenderTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
@@ -35,7 +35,6 @@ class ApiOutboxSenderTest {
 
     private suspend fun senderWith(
         capture: Capture = Capture(),
-        store: OfflineStore = SqlDelightOfflineStore(testOfflineDatabase()),
         handler: MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
     ): ApiOutboxSender {
         val tokenStorage = InMemoryTokenStorage()
@@ -48,7 +47,7 @@ class ApiOutboxSenderTest {
                 capture.bodies += (request.body as? TextContent)?.text
                 handler(request)
             }
-        return ApiOutboxSender(store, AuthenticatedApiTransport(tokenStorage, engine = engine))
+        return ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
     }
 
     private fun row(
@@ -96,17 +95,16 @@ class ApiOutboxSenderTest {
     fun readingEventBatchPostsClientIdAndOriginSeqs() =
         runTest {
             val capture = Capture()
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
             val accepted = """{"accepted":2,"replayed":0}"""
-            val sender = senderWith(capture, store) { respond(accepted, HttpStatusCode.Accepted) }
+            val sender = senderWith(capture) { respond(accepted, HttpStatusCode.Accepted) }
 
-            val outcome = sender.send(SCOPE, listOf(readingEventRow(1), readingEventRow(2)))
+            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(readingEventRow(1), readingEventRow(2)))
 
             assertEquals(SendOutcome.Success, outcome)
             assertEquals(HttpMethod.Post, capture.methods.single())
             assertEquals("/api/v1/documents/doc_01/reading-events", capture.paths.single())
             val body = assertNotNull(capture.bodies.single())
-            assertTrue(body.contains("\"client_id\":\"${store.clientIdentity(SCOPE).clientId}\""), body)
+            assertTrue(body.contains("\"client_id\":\"$CLIENT_ID\""), body)
             assertTrue(body.contains("\"origin_seq\":1"), body)
             assertTrue(body.contains("\"origin_seq\":2"), body)
             assertTrue(body.contains("\"recorded_at\":\"2026-01-01T00:00:00Z\""), body)
@@ -126,7 +124,10 @@ class ApiOutboxSenderTest {
                 )
             val capture = Capture()
             val created = senderWith(capture) { respond("{}", HttpStatusCode.Created, jsonHeaders) }
-            assertEquals(SendOutcome.Success, created.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))))
+            assertEquals(
+                SendOutcome.Success,
+                created.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
+            )
             assertEquals(HttpMethod.Post, capture.methods.single())
             assertEquals("/api/v1/documents/doc_01/highlights", capture.paths.single())
             assertTrue(assertNotNull(capture.bodies.single()).contains("\"id\":\"$HIGHLIGHT_ID\""))
@@ -134,7 +135,7 @@ class ApiOutboxSenderTest {
             val replayed = senderWith { respond("{}", HttpStatusCode.OK, jsonHeaders) }
             assertEquals(
                 SendOutcome.ReplaySuccess,
-                replayed.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
+                replayed.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
             )
         }
 
@@ -145,7 +146,10 @@ class ApiOutboxSenderTest {
             val sender = senderWith(capture) { respond("{}", HttpStatusCode.OK, jsonHeaders) }
 
             val payload = OutboxPayload.HighlightColor(HIGHLIGHT_ID, "blue")
-            assertEquals(SendOutcome.Success, sender.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_COLOR, payload))))
+            assertEquals(
+                SendOutcome.Success,
+                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_COLOR, payload))),
+            )
             assertEquals(HttpMethod.Patch, capture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID", capture.paths.single())
             assertTrue(assertNotNull(capture.bodies.single()).contains("\"color\":\"blue\""))
@@ -157,7 +161,10 @@ class ApiOutboxSenderTest {
             val putCapture = Capture()
             val put = senderWith(putCapture) { respond("{}", HttpStatusCode.OK, jsonHeaders) }
             val withBody = OutboxPayload.HighlightNote(HIGHLIGHT_ID, "note text")
-            assertEquals(SendOutcome.Success, put.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_NOTE, withBody))))
+            assertEquals(
+                SendOutcome.Success,
+                put.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_NOTE, withBody))),
+            )
             assertEquals(HttpMethod.Put, putCapture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID/note", putCapture.paths.single())
 
@@ -166,7 +173,7 @@ class ApiOutboxSenderTest {
             val cleared = OutboxPayload.HighlightNote(HIGHLIGHT_ID, null)
             assertEquals(
                 SendOutcome.ReplaySuccess,
-                delete.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_NOTE, cleared))),
+                delete.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_NOTE, cleared))),
             )
             assertEquals(HttpMethod.Delete, deleteCapture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID/note", deleteCapture.paths.single())
@@ -179,7 +186,10 @@ class ApiOutboxSenderTest {
             val sender = senderWith(capture) { respond("{}", HttpStatusCode.OK, jsonHeaders) }
 
             val payload = OutboxPayload.HighlightTags(HIGHLIGHT_ID, listOf("a", "b"))
-            assertEquals(SendOutcome.Success, sender.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_TAGS, payload))))
+            assertEquals(
+                SendOutcome.Success,
+                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_TAGS, payload))),
+            )
             assertEquals(HttpMethod.Put, capture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID/tags", capture.paths.single())
             assertTrue(assertNotNull(capture.bodies.single()).contains("\"tags\":[\"a\",\"b\"]"))
@@ -194,7 +204,7 @@ class ApiOutboxSenderTest {
             val payload = OutboxPayload.HighlightDelete(HIGHLIGHT_ID)
             assertEquals(
                 SendOutcome.ReplaySuccess,
-                sender.send(SCOPE, listOf(row(OutboxKind.HIGHLIGHT_DELETE, payload))),
+                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_DELETE, payload))),
             )
             assertEquals(HttpMethod.Delete, capture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID", capture.paths.single())
@@ -209,7 +219,7 @@ class ApiOutboxSenderTest {
             val payload = OutboxPayload.DocumentNote("note body", null)
             assertEquals(
                 SendOutcome.Success,
-                sender.send(SCOPE, listOf(row(OutboxKind.DOCUMENT_NOTE, payload, entityId = DOCUMENT_ID))),
+                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload, entityId = DOCUMENT_ID))),
             )
             assertEquals(HttpMethod.Put, capture.methods.single())
             assertEquals("/api/v1/documents/doc_01/note", capture.paths.single())
@@ -223,7 +233,7 @@ class ApiOutboxSenderTest {
                 senderWith {
                     respond("slow down", HttpStatusCode.TooManyRequests, headersOf(HttpHeaders.RetryAfter, "42"))
                 }
-            val numericOutcome = numeric.send(SCOPE, listOf(row(OutboxKind.DOCUMENT_NOTE, payload)))
+            val numericOutcome = numeric.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload)))
             assertEquals(SendOutcome.Http(429, 42L, "slow down"), numericOutcome)
 
             val httpDate =
@@ -234,7 +244,7 @@ class ApiOutboxSenderTest {
                         headersOf(HttpHeaders.RetryAfter, "Wed, 21 Oct 2026 07:28:00 GMT"),
                     )
                 }
-            val dateOutcome = httpDate.send(SCOPE, listOf(row(OutboxKind.DOCUMENT_NOTE, payload)))
+            val dateOutcome = httpDate.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload)))
             assertEquals(SendOutcome.Http(429, null, "slow down"), dateOutcome)
         }
 
@@ -264,12 +274,9 @@ class ApiOutboxSenderTest {
                     }
                 }
             val sender =
-                ApiOutboxSender(
-                    SqlDelightOfflineStore(testOfflineDatabase()),
-                    AuthenticatedApiTransport(tokenStorage, engine = engine),
-                )
+                ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
 
-            val outcome = sender.send(SCOPE, listOf(noteRow()))
+            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(noteRow()))
 
             assertEquals(SendOutcome.Success, outcome)
             assertEquals(listOf<String?>("Bearer stale-token", "Bearer access-new"), authorizations)
@@ -290,12 +297,9 @@ class ApiOutboxSenderTest {
                     }
                 }
             val sender =
-                ApiOutboxSender(
-                    SqlDelightOfflineStore(testOfflineDatabase()),
-                    AuthenticatedApiTransport(tokenStorage, engine = engine),
-                )
+                ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
 
-            val outcome = sender.send(SCOPE, listOf(noteRow()))
+            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(noteRow()))
 
             val http = assertIs<SendOutcome.Http>(outcome)
             assertEquals(401, http.status)
@@ -307,7 +311,7 @@ class ApiOutboxSenderTest {
         runTest {
             val sender = senderWith { throw FakeNetworkFailure() }
 
-            val outcome = sender.send(SCOPE, listOf(noteRow()))
+            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(noteRow()))
 
             assertIs<SendOutcome.Transport>(outcome)
         }

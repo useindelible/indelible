@@ -9,7 +9,7 @@ class ApiReaderRepositoryFailureTest {
     @Test
     fun a_local_write_that_cannot_commit_fails_the_result_instead_of_throwing() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope, failingStore = true)
+            val harness = readerOutboxHarness(failingStore = true)
 
             val results =
                 listOf(
@@ -29,7 +29,7 @@ class ApiReaderRepositoryFailureTest {
     @Test
     fun recording_an_event_swallows_a_local_write_failure() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope, failingStore = true)
+            val harness = readerOutboxHarness(failingStore = true)
 
             harness.repository.recordOpened(OFFLINE_DOCUMENT_ID, "ses_1")
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 42.5f, "ses_1")

@@ -57,17 +57,17 @@ CREATE TABLE client_state (
 );
 
 insertOutbox:
-INSERT INTO outbox(scope, id, kind, entity_id, document_id, payload_json, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO outbox(scope, id, kind, entity_id, document_id, payload_json, created_at, state)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
-drainable:
-SELECT * FROM outbox WHERE scope = ? AND state = 'pending' AND next_attempt_at <= ? ORDER BY seq;
+pendingOrdered:
+SELECT * FROM outbox WHERE scope = ? AND state = 'pending' ORDER BY seq;
 
-rowsForEntity:
-SELECT * FROM outbox WHERE scope = ? AND entity_id = ? ORDER BY seq;
-
-earliestPendingRetry:
-SELECT MIN(next_attempt_at) FROM outbox WHERE scope = ? AND state = 'pending' AND next_attempt_at > ?;
+hasFailedCreate:
+SELECT EXISTS(
+  SELECT 1 FROM outbox
+  WHERE scope = ? AND entity_id = ? AND kind = 'highlight_create' AND state = 'failed'
+);
 
 outboxByState:
 SELECT * FROM outbox WHERE scope = ? AND state = ? ORDER BY seq;
@@ -179,9 +179,6 @@ purgeRows {
   DELETE FROM cached_highlight WHERE scope = :scope;
   DELETE FROM outbox WHERE scope = :scope;
 }
-
-purgeOutbox:
-DELETE FROM outbox WHERE scope = ?;
 
 deleteClientState:
 DELETE FROM client_state WHERE scope = ?;

@@ -12,8 +12,6 @@ import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.toHighlightLocator
 import app.indelible.reader.model.toLocatorSchemaFlat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -53,12 +51,11 @@ private data class HighlightTarget(
 
 /**
  * The local half of every reader write: the cache change and the outbox row are one transaction,
- * and the drain that follows is fire-and-forget so a write returns at local-write speed.
+ * and the drain request that follows never blocks, so a write returns at local-write speed.
  */
 internal class ReaderOutboxWrites(
     private val store: OfflineStore,
     private val worker: OutboxWorker,
-    private val drainScope: CoroutineScope,
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -244,7 +241,7 @@ internal class ReaderOutboxWrites(
     }
 
     private fun drain() {
-        drainScope.launch { worker.drain() }
+        worker.requestDrain()
     }
 
     private fun highlightFrom(

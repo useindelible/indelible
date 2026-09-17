@@ -5,7 +5,6 @@ import app.indelible.core.offline.OutboxPayload
 import app.indelible.reader.repository.OFFLINE_DOCUMENT_ID
 import app.indelible.reader.repository.OFFLINE_SCOPE
 import app.indelible.reader.repository.ReaderOutboxHarness
-import app.indelible.reader.repository.awaitStore
 import app.indelible.reader.repository.readerOutboxHarness
 import app.indelible.reader.repository.rowsOf
 import kotlinx.coroutines.Dispatchers
@@ -40,17 +39,15 @@ class ReaderOfflineWritesTest {
     }
 
     private suspend fun ReaderOutboxHarness.readingEvents(count: Int): List<OutboxPayload.ReadingEvent> =
-        awaitStore {
-            store
-                .rowsOf(OFFLINE_SCOPE, OutboxKind.READING_EVENT)
-                .map { it.payload as OutboxPayload.ReadingEvent }
-                .takeIf { it.size >= count }
-        }
+        store
+            .rowsOf(OFFLINE_SCOPE, OutboxKind.READING_EVENT)
+            .map { it.payload as OutboxPayload.ReadingEvent }
+            .also { assertEquals(count, it.size) }
 
     @Test
     fun opening_a_reader_enqueues_one_opened_event_without_progress_fields() =
         runTest(testDispatcher) {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             ReaderViewModel(OFFLINE_DOCUMENT_ID, repository, readingEvents = harness.repository)
             advanceUntilIdle()
@@ -65,7 +62,7 @@ class ReaderOfflineWritesTest {
     @Test
     fun scroll_progress_enqueues_one_progress_event_in_basis_points() =
         runTest(testDispatcher) {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val viewModel = ReaderViewModel(OFFLINE_DOCUMENT_ID, repository, readingEvents = harness.repository)
             advanceUntilIdle()
 
@@ -81,7 +78,7 @@ class ReaderOfflineWritesTest {
     @Test
     fun every_event_of_one_reader_shares_the_session_id() =
         runTest(testDispatcher) {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val viewModel = ReaderViewModel(OFFLINE_DOCUMENT_ID, repository, readingEvents = harness.repository)
             advanceUntilIdle()
 

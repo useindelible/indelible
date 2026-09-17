@@ -88,7 +88,7 @@ class OfflineStorePurgeTest {
             store.purgeRows(scope)
 
             assertNull(store.cachedDocument(scope, "doc_1"))
-            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
+            assertTrue(store.pendingOrdered(scope).isEmpty())
             assertEquals(listOf(scope to false), store.scopesWithState())
         }
 

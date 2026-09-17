@@ -16,7 +16,7 @@ class ApiReaderRepositoryEventOutboxTest {
     @Test
     fun progress_enqueues_one_reading_event_in_basis_points() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 42.5f, SESSION_ID)
 
@@ -34,7 +34,7 @@ class ApiReaderRepositoryEventOutboxTest {
     @Test
     fun progress_basis_points_are_clamped_to_the_valid_range() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 150f, SESSION_ID)
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, -4f, SESSION_ID)
@@ -49,7 +49,7 @@ class ApiReaderRepositoryEventOutboxTest {
     @Test
     fun successive_events_take_successive_origin_seqs() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 10f, SESSION_ID)
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 20f, SESSION_ID)
@@ -65,7 +65,7 @@ class ApiReaderRepositoryEventOutboxTest {
     @Test
     fun an_opened_event_carries_no_progress_fields() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             harness.repository.recordOpened(OFFLINE_DOCUMENT_ID, SESSION_ID)
 
@@ -86,7 +86,7 @@ class ApiReaderRepositoryEventOutboxTest {
     @Test
     fun item_note_enqueues_a_document_note() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             val saved = harness.repository.upsertItemNote(OFFLINE_DOCUMENT_ID, "a note").getOrThrow()
 
@@ -99,7 +99,7 @@ class ApiReaderRepositoryEventOutboxTest {
     @Test
     fun without_a_scope_writes_go_straight_to_the_network() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope, scope = null)
+            val harness = readerOutboxHarness(scope = null)
 
             harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 42.5f, SESSION_ID)
             harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted", 0, 5)
@@ -110,7 +110,7 @@ class ApiReaderRepositoryEventOutboxTest {
             harness.repository.setHighlightTags(OFFLINE_DOCUMENT_ID, "hlt_1", listOf("t"))
             harness.repository.upsertItemNote(OFFLINE_DOCUMENT_ID, "a note")
 
-            assertTrue(harness.store.drainable(OFFLINE_SCOPE, Long.MAX_VALUE).isEmpty())
+            assertTrue(harness.store.pendingOrdered(OFFLINE_SCOPE).isEmpty())
             assertEquals(
                 listOf(
                     HttpMethod.Patch to "/api/v1/documents/$OFFLINE_DOCUMENT_ID/progress",

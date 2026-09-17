@@ -185,7 +185,7 @@ class OfflineStoreCatalogTest {
 
             assertNull(store.cachedDocument(scope, "doc_1"))
             assertTrue(store.assetsForDocument(scope, "doc_1").isEmpty())
-            assertEquals(1, store.drainable(scope, Long.MAX_VALUE).size)
+            assertEquals(1, store.pendingOrdered(scope).size)
             val remainingHighlight =
                 store.enqueue(scope, OutboxKind.HIGHLIGHT_DELETE, "hlt_1", "doc_1") {
                     val existing = getCachedHighlight("hlt_1")

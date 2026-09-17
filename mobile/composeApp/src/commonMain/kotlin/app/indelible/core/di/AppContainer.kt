@@ -199,7 +199,7 @@ fun rememberAppContainer(
                                 devPrefillUrl = ServerBuildConfig.DEV_SERVER_PREFILL,
                             )
                         }
-                        single<OutboxSender> { ApiOutboxSender(get(), get()) }
+                        single<OutboxSender> { ApiOutboxSender(get()) }
                         single {
                             OutboxWorker(
                                 store = get(),
@@ -229,7 +229,9 @@ fun rememberAppContainer(
     val authViewModel = remember(koin) { koin.get<AuthViewModel>() }
 
     DisposableEffect(koinApplication) {
+        koin.get<OutboxWorker>().start()
         onDispose {
+            koin.get<OutboxWorker>().stop()
             koin.get<AuthenticatedApiTransport>().close()
             koinApplication.close()
         }

@@ -28,7 +28,7 @@ class OfflineStoreEnqueueTest {
                 }
 
             assertEquals("builder-result", result)
-            val rows = store.drainable(scope, Long.MAX_VALUE)
+            val rows = store.pendingOrdered(scope)
             assertEquals(1, rows.size)
             val row = rows.single()
             assertEquals(OutboxKind.DOCUMENT_NOTE, row.kind)
@@ -51,7 +51,7 @@ class OfflineStoreEnqueueTest {
                 }
             }
 
-            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
+            assertTrue(store.pendingOrdered(scope).isEmpty())
 
             val nextSeq =
                 store.enqueue(scope, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
@@ -74,7 +74,7 @@ class OfflineStoreEnqueueTest {
                 }
             }
 
-            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
+            assertTrue(store.pendingOrdered(scope).isEmpty())
             val stillMissing =
                 store.enqueue(scope, OutboxKind.HIGHLIGHT_CREATE, "hlt_1", "doc_1") {
                     val existing = getCachedHighlight("hlt_1")
@@ -143,5 +143,61 @@ class OfflineStoreEnqueueTest {
 
             val seqAfterMisuseAttempt = store.enqueueSeq(scope)
             assertEquals(seqAfterEnqueue + 1, seqAfterMisuseAttempt)
+        }
+
+    @Test
+    fun dependantEnqueuedAfterFailedCreateIsInsertedBlocked() =
+        runTest {
+            val store = store()
+            val scope = "scope"
+            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+
+            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+
+            assertEquals(1, store.rowsByState(scope, OutboxState.BLOCKED).size)
+            assertTrue(store.pendingOrdered(scope).isEmpty())
+        }
+
+    @Test
+    fun dependantEnqueuedAfterRetriedCreateIsInsertedPending() =
+        runTest {
+            val store = store()
+            val scope = "scope"
+            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.retryRow(scope, createId)
+
+            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+
+            assertEquals(2, store.pendingOrdered(scope).size)
+            assertTrue(store.rowsByState(scope, OutboxState.BLOCKED).isEmpty())
+        }
+
+    @Test
+    fun failedColorDoesNotBlockLaterRowsForTheSameHighlight() =
+        runTest {
+            val store = store()
+            val scope = "scope"
+            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            store.markFailed(scope, colorId, "400")
+
+            store.enqueueHighlightDelete(scope, "hlt_1", "doc_1")
+
+            assertEquals(1, store.pendingOrdered(scope).size)
+            assertTrue(store.rowsByState(scope, OutboxState.BLOCKED).isEmpty())
+        }
+
+    @Test
+    fun createEnqueuedAfterAFailedCreateForTheSameIdIsInsertedPending() =
+        runTest {
+            val store = store()
+            val scope = "scope"
+            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+
+            store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+
+            assertEquals(1, store.pendingOrdered(scope).size)
         }
 }

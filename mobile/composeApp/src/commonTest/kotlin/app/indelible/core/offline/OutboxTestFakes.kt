@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class FakeOutboxSender : OutboxSender {
     val calls = mutableListOf<List<OutboxRow>>()
@@ -12,6 +13,7 @@ class FakeOutboxSender : OutboxSender {
 
     override suspend fun send(
         scope: String,
+        clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
         calls += batch
@@ -19,8 +21,8 @@ class FakeOutboxSender : OutboxSender {
     }
 }
 
-/** A worker with no resolvable scope: drain() is inert, so only resumeAuth() is observable. */
-fun testOutboxWorker(): OutboxWorker = testWorker(UnreachableOfflineStore, FakeOutboxSender(), scope = null) { 0L }
+/** A never-started worker with no resolvable scope, so only resumeAuth() and authPaused are observable. */
+fun testOutboxWorker(): OutboxWorker = OutboxWorker(UnreachableOfflineStore, { null }, FakeOutboxSender(), { 0L })
 
 /**
  * A purger backed by a store with no known scopes, so [ScopePurger.purgeInactive] and
@@ -45,20 +47,12 @@ private object UnreachableOfflineStore : OfflineStore {
         buildPayload: EnqueueTx.() -> Pair<OutboxPayload, T>,
     ): T = unreachable()
 
-    override suspend fun drainable(
-        scope: String,
-        now: Long,
-    ): List<OutboxRow> = unreachable()
+    override suspend fun pendingOrdered(scope: String): List<OutboxRow> = unreachable()
 
     override suspend fun rowsByState(
         scope: String,
         state: OutboxState,
     ): List<OutboxRow> = unreachable()
-
-    override suspend fun earliestRetryAt(
-        scope: String,
-        now: Long,
-    ): Long? = unreachable()
 
     override suspend fun remove(
         scope: String,
@@ -79,9 +73,11 @@ private object UnreachableOfflineStore : OfflineStore {
         error: String?,
     ): Unit = unreachable()
 
-    override suspend fun blockDependants(
+    override suspend fun failCreateAndBlockDependants(
         scope: String,
+        id: String,
         entityId: String,
+        error: String?,
     ): Unit = unreachable()
 
     override suspend fun retryRow(
@@ -200,13 +196,6 @@ class FakeClock(
     fun current(): Long = now
 }
 
-fun testWorker(
-    store: OfflineStore,
-    sender: OutboxSender,
-    scope: String?,
-    clock: () -> Long,
-): OutboxWorker = OutboxWorker(store, { scope }, sender, clock, isNetwork = { it is FakeNetworkFailure })
-
 suspend fun OfflineStore.enqueueNote(
     scope: String,
     entityId: String,
@@ -215,7 +204,7 @@ suspend fun OfflineStore.enqueueNote(
     enqueue(scope, OutboxKind.DOCUMENT_NOTE, entityId, documentId) {
         OutboxPayload.DocumentNote(entityId, null) to Unit
     }
-    return drainable(scope, Long.MAX_VALUE).last().id
+    return observeOutbox(scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueHighlightCreate(
@@ -226,7 +215,7 @@ suspend fun OfflineStore.enqueueHighlightCreate(
     enqueue(scope, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
         OutboxPayload.HighlightCreate(highlightId, "yellow", "quoted text", null, null) to Unit
     }
-    return drainable(scope, Long.MAX_VALUE).last().id
+    return observeOutbox(scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueHighlightColor(
@@ -237,7 +226,7 @@ suspend fun OfflineStore.enqueueHighlightColor(
     enqueue(scope, OutboxKind.HIGHLIGHT_COLOR, highlightId, documentId) {
         OutboxPayload.HighlightColor(highlightId, "blue") to Unit
     }
-    return drainable(scope, Long.MAX_VALUE).last().id
+    return observeOutbox(scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueHighlightDelete(
@@ -248,7 +237,7 @@ suspend fun OfflineStore.enqueueHighlightDelete(
     enqueue(scope, OutboxKind.HIGHLIGHT_DELETE, highlightId, documentId) {
         OutboxPayload.HighlightDelete(highlightId) to Unit
     }
-    return drainable(scope, Long.MAX_VALUE).last().id
+    return observeOutbox(scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueReadingEvent(
@@ -272,5 +261,5 @@ suspend fun OfflineStore.enqueueReadingEvent(
             recordedAtEpochMs = recordedAtEpochMs,
         ) to Unit
     }
-    return drainable(scope, Long.MAX_VALUE).last().id
+    return observeOutbox(scope).first().last().id
 }

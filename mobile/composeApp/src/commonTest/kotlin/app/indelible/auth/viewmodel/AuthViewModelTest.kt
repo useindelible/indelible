@@ -384,7 +384,7 @@ class AuthViewModelTest {
             assertNull(tokenStorage.getExpiresAt())
             assertEquals(
                 UiMessage(Res.string.auth_logout_revoke_failed),
-                viewModel.loginState.value.serverError,
+                viewModel.loginState.first { it.serverError != null }.serverError,
             )
         }
 

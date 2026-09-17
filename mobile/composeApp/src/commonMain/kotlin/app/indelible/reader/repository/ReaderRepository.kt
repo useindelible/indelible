@@ -19,9 +19,6 @@ import app.indelible.reader.model.toHighlightNoteData
 import app.indelible.reader.model.toReaderDocument
 import app.indelible.reader.model.toTagData
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 interface ReaderRepository {
     suspend fun getItem(itemId: String): Result<ReaderDocument>
@@ -109,10 +106,9 @@ class ApiReaderRepository(
     offlineStore: OfflineStore,
     worker: OutboxWorker,
     private val scopeProvider: suspend () -> String?,
-    drainScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : ReaderRepository,
     ReadingEventWriter {
-    private val outbox = ReaderOutboxWrites(offlineStore, worker, drainScope)
+    private val outbox = ReaderOutboxWrites(offlineStore, worker)
 
     override suspend fun getItem(itemId: String): Result<ReaderDocument> =
         readerApiService.getDocumentReader(itemId).map { it.toReaderDocument() }

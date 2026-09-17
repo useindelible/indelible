@@ -7,9 +7,7 @@ import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.SendOutcome
-import app.indelible.core.offline.SqlDelightOfflineStore
 import app.indelible.core.storage.InMemoryTokenStorage
-import app.indelible.db.testOfflineDatabase
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -25,6 +23,7 @@ import kotlin.test.assertTrue
 
 private const val SCOPE = "http://localhost:38473|usr_1"
 private const val DOCUMENT_ID = "doc_01ABC"
+private const val CLIENT_ID = "cli_parity"
 
 class ReadingEventsParityTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
@@ -83,12 +82,12 @@ class ReadingEventsParityTest {
                     sent.body = (request.body as TextContent).text
                     respond("""{"accepted":2,"replayed":0}""", HttpStatusCode.Accepted, jsonHeaders)
                 }
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
-            val sender = ApiOutboxSender(store, AuthenticatedApiTransport(tokenStorage, engine = engine))
+            val sender = ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
 
             val outcome =
                 sender.send(
                     SCOPE,
+                    CLIENT_ID,
                     listOf(
                         readingEventRow(originSeq = 1, recordedAtEpochMs = 1_767_225_600_000L),
                         readingEventRow(originSeq = 2, recordedAtEpochMs = 1_767_225_601_000L),
@@ -101,7 +100,7 @@ class ReadingEventsParityTest {
             assertEquals("Bearer test-token", sent.authorization)
 
             val body = assertNotNull(sent.body)
-            assertTrue(body.contains(""""client_id":"${store.clientIdentity(SCOPE).clientId}""""), body)
+            assertTrue(body.contains(""""client_id":"$CLIENT_ID""""), body)
             assertTrue(body.contains(""""progress_basis_points":4237"""), body)
             assertTrue(body.contains(""""recorded_at":"2026-01-01T00:00:00Z""""), body)
             assertTrue(body.contains(""""recorded_at":"2026-01-01T00:00:01Z""""), body)

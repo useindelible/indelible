@@ -16,20 +16,13 @@ interface OfflineStore {
         buildPayload: EnqueueTx.() -> Pair<OutboxPayload, T>,
     ): T
 
-    suspend fun drainable(
-        scope: String,
-        now: Long,
-    ): List<OutboxRow>
+    /** Every PENDING row in seq order; due-ness is decided by the caller. */
+    suspend fun pendingOrdered(scope: String): List<OutboxRow>
 
     suspend fun rowsByState(
         scope: String,
         state: OutboxState,
     ): List<OutboxRow>
-
-    suspend fun earliestRetryAt(
-        scope: String,
-        now: Long,
-    ): Long?
 
     suspend fun remove(
         scope: String,
@@ -50,10 +43,12 @@ interface OfflineStore {
         error: String?,
     )
 
-    /** Moves PENDING rows for the entity to BLOCKED. */
-    suspend fun blockDependants(
+    /** One transaction: the create becomes FAILED and every PENDING row for its entity becomes BLOCKED. */
+    suspend fun failCreateAndBlockDependants(
         scope: String,
+        id: String,
         entityId: String,
+        error: String?,
     )
 
     /**

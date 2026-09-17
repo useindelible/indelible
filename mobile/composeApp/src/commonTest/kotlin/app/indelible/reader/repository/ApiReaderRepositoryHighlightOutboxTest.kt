@@ -2,6 +2,7 @@ package app.indelible.reader.repository
 
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -21,7 +22,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
     @Test
     fun create_enqueues_highlight_create_and_caches_the_highlight_in_one_transaction() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             val created =
                 harness.repository
@@ -61,17 +62,18 @@ class ApiReaderRepositoryHighlightOutboxTest {
     @Test
     fun create_triggers_a_drain() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+            runCurrent()
 
-            assertTrue(awaitStore { harness.sender.calls.takeIf { it > 0 } } > 0)
+            assertEquals(1, harness.sender.calls)
         }
 
     @Test
     fun color_change_rewrites_the_cached_color_in_the_same_transaction() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val created =
                 harness.repository
                     .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
@@ -91,7 +93,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
     @Test
     fun color_change_on_an_uncached_highlight_enqueues_without_touching_the_cache() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
 
             harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, "hlt_unknown", "Blue").getOrThrow()
 
@@ -104,7 +106,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
     @Test
     fun note_upsert_and_delete_rewrite_the_cached_note_body() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val created =
                 harness.repository
                     .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
@@ -140,7 +142,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
     @Test
     fun tag_change_rewrites_the_cached_tags() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val created =
                 harness.repository
                     .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
@@ -169,7 +171,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
     @Test
     fun every_highlight_row_carries_the_document_it_was_written_in() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val created =
                 harness.repository
                     .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
@@ -182,14 +184,14 @@ class ApiReaderRepositoryHighlightOutboxTest {
             harness.repository.deleteHighlight(OFFLINE_DOCUMENT_ID, created.id).getOrThrow()
             harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, "hlt_uncached", "Blue").getOrThrow()
 
-            val documents = harness.store.drainable(OFFLINE_SCOPE, Long.MAX_VALUE).map { it.documentId }
+            val documents = harness.store.pendingOrdered(OFFLINE_SCOPE).map { it.documentId }
             assertEquals(List(documents.size) { OFFLINE_DOCUMENT_ID }, documents)
         }
 
     @Test
     fun delete_removes_the_cached_row_in_the_same_transaction() =
         runTest {
-            val harness = readerOutboxHarness(backgroundScope)
+            val harness = readerOutboxHarness()
             val created =
                 harness.repository
                     .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)

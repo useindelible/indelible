@@ -9,6 +9,7 @@ import app.indelible.db.Cached_document
 import app.indelible.db.OfflineDatabase
 import app.indelible.db.OfflineQueries
 import app.indelible.db.Outbox
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -24,6 +25,8 @@ internal val offlineJson = Json { ignoreUnknownKeys = true }
 
 class SqlDelightOfflineStore(
     private val database: OfflineDatabase,
+    private val failCreateHook: () -> Unit = {},
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : OfflineStore {
     private val queries: OfflineQueries get() = database.offlineQueries
 
@@ -41,7 +44,7 @@ class SqlDelightOfflineStore(
         buildPayload: EnqueueTx.() -> Pair<OutboxPayload, T>,
     ): T =
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 val tx = EnqueueTxImpl(scope, queries)
                 try {
                     database.transactionWithResult {
@@ -54,6 +57,7 @@ class SqlDelightOfflineStore(
                             document_id = documentId,
                             payload_json = offlineJson.encodeToString(payload),
                             created_at = Clock.System.now().toEpochMilliseconds(),
+                            state = initialState(scope, kind, entityId).wireName(),
                         )
                         result
                     }
@@ -63,28 +67,28 @@ class SqlDelightOfflineStore(
             }
         }
 
-    override suspend fun drainable(
+    private fun initialState(
         scope: String,
-        now: Long,
-    ): List<OutboxRow> =
-        withContext(Dispatchers.Default) {
-            queries.drainable(scope, now).executeAsList().map(::outboxRowFrom)
+        kind: OutboxKind,
+        entityId: String,
+    ): OutboxState =
+        if (kind.dependsOnCreate() && queries.hasFailedCreate(scope, entityId).executeAsOne()) {
+            OutboxState.BLOCKED
+        } else {
+            OutboxState.PENDING
+        }
+
+    override suspend fun pendingOrdered(scope: String): List<OutboxRow> =
+        withContext(dispatcher) {
+            queries.pendingOrdered(scope).executeAsList().map(::outboxRowFrom)
         }
 
     override suspend fun rowsByState(
         scope: String,
         state: OutboxState,
     ): List<OutboxRow> =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.outboxByState(scope, state.wireName()).executeAsList().map(::outboxRowFrom)
-        }
-
-    override suspend fun earliestRetryAt(
-        scope: String,
-        now: Long,
-    ): Long? =
-        withContext(Dispatchers.Default) {
-            queries.earliestPendingRetry(scope, now).executeAsOne().MIN
         }
 
     override suspend fun remove(
@@ -92,7 +96,7 @@ class SqlDelightOfflineStore(
         id: String,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.deleteOutboxRow(scope, id)
             }
         }
@@ -106,7 +110,7 @@ class SqlDelightOfflineStore(
         error: String?,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.markAttempt(
                     last_attempt_at = now,
                     next_attempt_at = nextAttemptAt,
@@ -124,24 +128,30 @@ class SqlDelightOfflineStore(
         error: String?,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.setState(OutboxState.FAILED.wireName(), error, scope, id)
             }
         }
     }
 
-    override suspend fun blockDependants(
+    override suspend fun failCreateAndBlockDependants(
         scope: String,
+        id: String,
         entityId: String,
+        error: String?,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
-                queries.setStateForEntity(
-                    OutboxState.BLOCKED.wireName(),
-                    scope,
-                    entityId,
-                    OutboxState.PENDING.wireName(),
-                )
+            withContext(dispatcher) {
+                database.transaction {
+                    queries.setState(OutboxState.FAILED.wireName(), error, scope, id)
+                    failCreateHook()
+                    queries.setStateForEntity(
+                        OutboxState.BLOCKED.wireName(),
+                        scope,
+                        entityId,
+                        OutboxState.PENDING.wireName(),
+                    )
+                }
             }
         }
     }
@@ -151,7 +161,7 @@ class SqlDelightOfflineStore(
         id: String,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 database.transaction {
                     val row = queries.outboxRow(scope, id).executeAsOneOrNull()
                     if (row != null && row.state == OutboxState.FAILED.wireName()) {
@@ -172,14 +182,14 @@ class SqlDelightOfflineStore(
         queries
             .outboxForScope(scope)
             .asFlow()
-            .mapToList(Dispatchers.Default)
+            .mapToList(dispatcher)
             .map { rows -> rows.map(::outboxRowFrom) }
 
     override fun observeOutboxForDocument(
         scope: String,
         documentId: String,
     ): Flow<List<OutboxRow>> =
-        queries.outboxForDocument(scope, documentId).asFlow().mapToList(Dispatchers.Default).map { rows ->
+        queries.outboxForDocument(scope, documentId).asFlow().mapToList(dispatcher).map { rows ->
             rows.map(::outboxRowFrom)
         }
 
@@ -188,7 +198,7 @@ class SqlDelightOfflineStore(
         row: CachedDocumentRow,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.upsertCachedDocument(
                     scope = scope,
                     document_id = row.documentId,
@@ -210,7 +220,7 @@ class SqlDelightOfflineStore(
         at: Long,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.touchDocumentOpened(at, scope, documentId)
             }
         }
@@ -222,7 +232,7 @@ class SqlDelightOfflineStore(
         pinned: Boolean,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.setPinned(pinned.toLong(), scope, documentId)
             }
         }
@@ -234,14 +244,14 @@ class SqlDelightOfflineStore(
         bytes: Long,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.setDocumentBytes(bytes, scope, documentId)
             }
         }
     }
 
     override suspend fun cachedDocuments(scope: String): List<CachedDocumentRow> =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.cachedDocuments(scope).executeAsList().map(::cachedDocumentRowFrom)
         }
 
@@ -249,17 +259,17 @@ class SqlDelightOfflineStore(
         scope: String,
         documentId: String,
     ): CachedDocumentRow? =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.cachedDocument(scope, documentId).executeAsOneOrNull()?.let(::cachedDocumentRowFrom)
         }
 
     override suspend fun unpinnedLru(scope: String): List<CachedDocumentRow> =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.unpinnedLru(scope).executeAsList().map(::cachedDocumentRowFrom)
         }
 
     override suspend fun totalBytes(scope: String): Long =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.totalBytes(scope).executeAsOne().SUM ?: 0L
         }
 
@@ -269,7 +279,7 @@ class SqlDelightOfflineStore(
         assets: List<CachedAssetRow>,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 database.transaction {
                     queries.upsertCachedDocument(
                         scope = scope,
@@ -302,7 +312,7 @@ class SqlDelightOfflineStore(
         scope: String,
         documentId: String,
     ): List<CachedAssetRow> =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.assetsForDocument(scope, documentId).executeAsList().map(::cachedAssetRowFrom)
         }
 
@@ -312,7 +322,7 @@ class SqlDelightOfflineStore(
         at: Long,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.setDocumentSyncedAt(at, scope, documentId)
             }
         }
@@ -326,7 +336,7 @@ class SqlDelightOfflineStore(
         updatedAt: Long,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.upsertCachedHighlight(scope, id, documentId, payloadJson, updatedAt)
             }
         }
@@ -337,7 +347,7 @@ class SqlDelightOfflineStore(
         documentId: String,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 database.transaction {
                     queries.deleteCachedDocument(scope, documentId)
                     queries.deleteAssetsForDocument(scope, documentId)
@@ -349,7 +359,7 @@ class SqlDelightOfflineStore(
 
     override suspend fun clientIdentity(scope: String): ClientIdentity =
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 database.transactionWithResult {
                     val existing = queries.getClientState(scope).executeAsOneOrNull()
                     if (existing != null) {
@@ -364,7 +374,7 @@ class SqlDelightOfflineStore(
         }
 
     override suspend fun scopesWithState(): List<Pair<String, Boolean>> =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             queries.scopesWithState().executeAsList().map { it.scope to (it.purge_pending != 0L) }
         }
 
@@ -373,7 +383,7 @@ class SqlDelightOfflineStore(
         pending: Boolean,
     ) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.setPurgePending(pending.toLong(), scope)
             }
         }
@@ -381,7 +391,7 @@ class SqlDelightOfflineStore(
 
     override suspend fun purgeRows(scope: String) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.purgeRows(scope)
             }
         }
@@ -389,7 +399,7 @@ class SqlDelightOfflineStore(
 
     override suspend fun finishPurge(scope: String) {
         mutex.withLock {
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 queries.deleteClientState(scope)
             }
         }
@@ -397,6 +407,19 @@ class SqlDelightOfflineStore(
 }
 
 private fun OutboxKind.wireName(): String = name.lowercase()
+
+private fun OutboxKind.dependsOnCreate(): Boolean =
+    when (this) {
+        OutboxKind.HIGHLIGHT_COLOR,
+        OutboxKind.HIGHLIGHT_NOTE,
+        OutboxKind.HIGHLIGHT_TAGS,
+        OutboxKind.HIGHLIGHT_DELETE,
+        -> true
+        OutboxKind.READING_EVENT,
+        OutboxKind.HIGHLIGHT_CREATE,
+        OutboxKind.DOCUMENT_NOTE,
+        -> false
+    }
 
 private fun OutboxState.wireName(): String = name.lowercase()
 

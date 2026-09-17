@@ -1,6 +1,6 @@
 package app.indelible.core.offline
 
-import app.indelible.db.testOfflineDatabase
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,10 +12,10 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row4ConnectionDropMidDrainKeepsCommittedRowsAndStopsAtTheFailure() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val sender = FakeOutboxSender()
             val clock = FakeClock(0L)
-            val worker = testWorker(store, sender, scope, clock::current)
+            val worker = startedWorker(store, sender, scope, clock::current)
             store.enqueueNote(scope, "doc_1")
             store.enqueueNote(scope, "doc_2")
             val thirdId = store.enqueueNote(scope, "doc_3")
@@ -24,7 +24,8 @@ class OutboxWorkerTaxonomyTest {
             sender.enqueueOutcome(SendOutcome.Success)
             sender.enqueueOutcome(SendOutcome.Transport(FakeNetworkFailure()))
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
             assertEquals(3, sender.calls.size)
             val pendingRows = store.rowsByState(scope, OutboxState.PENDING)
@@ -37,29 +38,31 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row5PostRefreshSuccessLeavesNoTraceAndDoesNotPauseAuth() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val sender = FakeOutboxSender()
-            val worker = testWorker(store, sender, scope) { 0L }
+            val worker = startedWorker(store, sender, scope)
             store.enqueueNote(scope, "doc_1")
             sender.enqueueOutcome(SendOutcome.Success)
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
-            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
+            assertTrue(store.pendingOrdered(scope).isEmpty())
             assertEquals(false, worker.authPaused.value)
         }
 
     @Test
     fun row18FailedCreateBlocksDependantsAndRetryRowUnblocksThem() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val sender = FakeOutboxSender()
-            val worker = testWorker(store, sender, scope) { 0L }
+            val worker = startedWorker(store, sender, scope)
             val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
             val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.Http(422, null, "anchor invalid"))
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
             assertEquals(createId, store.rowsByState(scope, OutboxState.FAILED).single().id)
             assertEquals(colorId, store.rowsByState(scope, OutboxState.BLOCKED).single().id)
@@ -76,48 +79,50 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row19DeleteReplayedAs404IsTreatedAsSuccess() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val sender = FakeOutboxSender()
-            val worker = testWorker(store, sender, scope) { 0L }
+            val worker = startedWorker(store, sender, scope)
             store.enqueueHighlightDelete(scope, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.ReplaySuccess)
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
-            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
+            assertTrue(store.pendingOrdered(scope).isEmpty())
         }
 
     @Test
     fun row22RowsLeftPendingAreDrainedByANewWorkerInstance() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val firstSender = FakeOutboxSender()
-            val firstWorker = testWorker(store, firstSender, scope) { 0L }
+            val firstWorker = startedWorker(store, firstSender, scope)
             store.enqueueNote(scope, "doc_1")
             firstSender.enqueueOutcome(SendOutcome.Transport(FakeNetworkFailure()))
-            firstWorker.drain()
+            firstWorker.requestDrain()
+            runCurrent()
             assertEquals(1, store.rowsByState(scope, OutboxState.PENDING).size)
 
             val secondSender = FakeOutboxSender()
-            val secondWorker = testWorker(store, secondSender, scope) { Long.MAX_VALUE }
             secondSender.enqueueOutcome(SendOutcome.Success)
-            secondWorker.drain()
+            startedWorker(store, secondSender, scope) { Long.MAX_VALUE }
 
-            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
+            assertTrue(store.pendingOrdered(scope).isEmpty())
             assertEquals(1, secondSender.calls.size)
         }
 
     @Test
     fun row23RecordedAtPassesThroughUnclampedToTheSender() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val sender = FakeOutboxSender()
-            val worker = testWorker(store, sender, scope) { 0L }
+            val worker = startedWorker(store, sender, scope)
             val skewedRecordedAt = 9_999_999_999_999L
             store.enqueueReadingEvent(scope, "doc_1", skewedRecordedAt)
             sender.enqueueOutcome(SendOutcome.Success)
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
             val sentPayload =
                 sender.calls
@@ -130,14 +135,15 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row24LargeBacklogBatchesReadingEventsInSeqOrder() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val spyStore = MarkDocumentSyncedSpyStore(store)
             val sender = FakeOutboxSender()
-            val worker = testWorker(spyStore, sender, scope) { 0L }
+            val worker = startedWorker(spyStore, sender, scope)
             repeat(250) { store.enqueueReadingEvent(scope, "doc_1", it.toLong()) }
             repeat(2) { sender.enqueueOutcome(SendOutcome.Success) }
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
             assertEquals(2, sender.calls.size)
             assertEquals(200, sender.calls[0].size)
@@ -152,15 +158,16 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row14RetryAfterPersistsToTheStoreAndStopsBeforeTheNextEntity() =
         runTest {
-            val store = SqlDelightOfflineStore(testOfflineDatabase())
+            val store = testStore()
             val sender = FakeOutboxSender()
             val clock = FakeClock(1_000L)
-            val worker = testWorker(store, sender, scope, clock::current)
+            val worker = startedWorker(store, sender, scope, clock::current)
             val rateLimitedId = store.enqueueNote(scope, "doc_1")
             val followingId = store.enqueueNote(scope, "doc_2")
             sender.enqueueOutcome(SendOutcome.Http(429, retryAfterSeconds = 7, message = "slow down"))
 
-            worker.drain()
+            worker.requestDrain()
+            runCurrent()
 
             assertEquals(1, sender.calls.size)
             val pendingRows = store.rowsByState(scope, OutboxState.PENDING)

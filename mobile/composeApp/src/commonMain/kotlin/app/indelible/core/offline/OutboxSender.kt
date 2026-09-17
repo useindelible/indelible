@@ -28,6 +28,7 @@ import kotlinx.serialization.json.Json
 interface OutboxSender {
     suspend fun send(
         scope: String,
+        clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome
 }
@@ -37,27 +38,27 @@ private const val NOT_FOUND_STATUS = 404
 private val SUCCESS_STATUS_RANGE = 200..299
 
 class ApiOutboxSender(
-    private val store: OfflineStore,
     private val transport: AuthenticatedApiTransport,
 ) : OutboxSender {
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun send(
         scope: String,
+        clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
-        val result = runCatching { dispatch(scope, batch) }
+        val result = runCatching { dispatch(clientId, batch) }
         result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
         return result.getOrElse { SendOutcome.Transport(it) }
     }
 
     private suspend fun dispatch(
-        scope: String,
+        clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
         val head = batch.first()
         return when (head.kind) {
-            OutboxKind.READING_EVENT -> sendReadingEvents(scope, head.documentId, batch)
+            OutboxKind.READING_EVENT -> sendReadingEvents(clientId, head.documentId, batch)
             OutboxKind.HIGHLIGHT_CREATE -> sendHighlightCreate(head)
             OutboxKind.HIGHLIGHT_COLOR -> sendHighlightColor(head)
             OutboxKind.HIGHLIGHT_NOTE -> sendHighlightNote(head)
@@ -68,13 +69,13 @@ class ApiOutboxSender(
     }
 
     private suspend fun sendReadingEvents(
-        scope: String,
+        clientId: String,
         documentId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
         val body =
             AppendReadingEventsBody(
-                clientId = store.clientIdentity(scope).clientId,
+                clientId = clientId,
                 events = batch.map { readingEventBody(it.payload as OutboxPayload.ReadingEvent) },
             )
         val response =
