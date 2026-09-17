@@ -56,20 +56,21 @@ class OutboxWorkerTaxonomyTest {
             val sender = FakeOutboxSender()
             val worker = testWorker(store, sender, scope) { 0L }
             val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.Http(422, null, "anchor invalid"))
 
             worker.drain()
 
-            val failed = store.rowsByState(scope, OutboxState.FAILED).single()
-            assertEquals(createId, failed.id)
-            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
-            store.blockDependants(scope, "hlt_1")
-            assertEquals(1, store.rowsByState(scope, OutboxState.BLOCKED).size)
+            assertEquals(createId, store.rowsByState(scope, OutboxState.FAILED).single().id)
+            assertEquals(colorId, store.rowsByState(scope, OutboxState.BLOCKED).single().id)
 
             store.retryRow(scope, createId)
 
             assertTrue(store.rowsByState(scope, OutboxState.BLOCKED).isEmpty())
-            assertEquals(2, store.rowsByState(scope, OutboxState.PENDING).size)
+            assertEquals(
+                setOf(createId, colorId),
+                store.rowsByState(scope, OutboxState.PENDING).map { it.id }.toSet(),
+            )
         }
 
     @Test

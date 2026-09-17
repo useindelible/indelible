@@ -9,8 +9,7 @@ import app.indelible.core.storage.TokenStorage
  * has completed a session fetch, so callers must treat null as "offline store unavailable" rather
  * than falling back to a default server.
  */
-suspend fun TokenStorage.currentOfflineScope(): String? {
-    val serverUrl = getServerUrl() ?: return null
-    val userId = getUserId() ?: return null
-    return "${normalizedOrigin(serverUrl)}|$userId"
-}
+suspend fun TokenStorage.currentOfflineScope(): String? =
+    getServerUrl()?.let { serverUrl ->
+        getUserId()?.let { userId -> "${normalizedOrigin(serverUrl)}|$userId" }
+    }

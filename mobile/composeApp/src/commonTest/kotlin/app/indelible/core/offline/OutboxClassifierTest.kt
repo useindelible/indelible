@@ -80,6 +80,14 @@ class OutboxClassifierTest {
     }
 
     @Test
+    fun unmappedHttpStatusIsTerminal() {
+        assertEquals(
+            Classification.Terminal("method not allowed"),
+            classify(SendOutcome.Http(405, null, "method not allowed"), attempts = 0, now = 0L, isNetwork),
+        )
+    }
+
+    @Test
     fun unclassifiableLocalExceptionSurfacesAsTerminal() {
         val classification = classify(SendOutcome.Transport(FakeLocalException()), attempts = 0, now = 0L, isNetwork)
 

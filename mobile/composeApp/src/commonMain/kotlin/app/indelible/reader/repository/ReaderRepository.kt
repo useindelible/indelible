@@ -43,11 +43,6 @@ interface ReaderRepository {
         itemType: String?,
     ): Result<Unit>
 
-    suspend fun updateProgress(
-        itemId: String,
-        percent: Float,
-    ): Result<Unit>
-
     suspend fun listHighlights(itemId: String): Result<List<HighlightData>>
 
     suspend fun listDocumentEntities(itemId: String): Result<List<DocumentEntity>>
@@ -148,11 +143,6 @@ class ApiReaderRepository(
         libraryApiService
             .saveItem(SaveItemRequest(url = url, title = title, itemType = itemType))
             .map {}
-
-    override suspend fun updateProgress(
-        itemId: String,
-        percent: Float,
-    ): Result<Unit> = readerApiService.updateProgress(itemId, percent)
 
     override suspend fun recordOpened(
         documentId: String,

@@ -13,7 +13,7 @@ class OutboxWorkerTest {
     private val scope = "scope"
 
     @Test
-    fun singleFlightSecondDrainReturnsImmediatelyWhileFirstIsInFlight() =
+    fun secondDrainReturnsImmediatelyAndRerunsOnceTheFirstFinishes() =
         runTest {
             val store = SqlDelightOfflineStore(testOfflineDatabase())
             store.enqueueNote(scope, "doc_1")
@@ -27,8 +27,7 @@ class OutboxWorkerTest {
                         batch: List<OutboxRow>,
                     ): SendOutcome {
                         sendCount++
-                        sendStarted.complete(Unit)
-                        releaseSend.await()
+                        if (sendStarted.complete(Unit)) releaseSend.await()
                         return SendOutcome.Success
                     }
                 }
@@ -36,11 +35,16 @@ class OutboxWorkerTest {
 
             val firstDrain = launch { worker.drain() }
             sendStarted.await()
+            store.enqueueNote(scope, "doc_2")
             worker.drain()
+
+            assertEquals(1, sendCount)
+
             releaseSend.complete(Unit)
             firstDrain.join()
 
-            assertEquals(1, sendCount)
+            assertEquals(2, sendCount)
+            assertTrue(store.drainable(scope, Long.MAX_VALUE).isEmpty())
         }
 
     @Test

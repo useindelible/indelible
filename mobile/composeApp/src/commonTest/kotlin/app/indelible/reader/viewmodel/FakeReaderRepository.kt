@@ -26,7 +26,6 @@ class FakeReaderRepository : ReaderRepository {
     /** When set, successive getArticleToc calls return these in order, repeating the last entry. */
     var getArticleTocResults: List<Result<ArticleToc>>? = null
     var getArticleTocCallCount = 0
-    var updateProgressResult: Result<Unit> = Result.success(Unit)
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
@@ -48,8 +47,6 @@ class FakeReaderRepository : ReaderRepository {
     var getItemTagsResult: Result<List<String>> = Result.success(emptyList())
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
-    var lastProgressItemId: String? = null
-    var lastProgressPercent: Float? = null
     var createHighlightCallCount = 0
     var deleteHighlightCallCount = 0
     var lastDeletedHighlightId: String? = null
@@ -110,15 +107,6 @@ class FakeReaderRepository : ReaderRepository {
     ): Result<Unit> {
         lastSavedUrl = url
         return saveToLibraryResult
-    }
-
-    override suspend fun updateProgress(
-        itemId: String,
-        percent: Float,
-    ): Result<Unit> {
-        lastProgressItemId = itemId
-        lastProgressPercent = percent
-        return updateProgressResult
     }
 
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> = listHighlightsResult

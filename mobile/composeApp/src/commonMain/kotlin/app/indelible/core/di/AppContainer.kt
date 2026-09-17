@@ -35,6 +35,7 @@ import app.indelible.core.offline.ConnectivityObserver
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.ScopePurger
 import app.indelible.core.offline.SqlDelightOfflineStore
 import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.storage.TokenStorage
@@ -115,6 +116,7 @@ data class AppContainer(
     val searchViewModel: SearchViewModel,
     val sidebarViewModel: SidebarViewModel,
     val outboxWorker: OutboxWorker,
+    val scopePurger: ScopePurger,
     val connectivityObserver: ConnectivityObserver,
 )
 
@@ -206,7 +208,8 @@ fun rememberAppContainer(
                                 clock = { getTimeMillis() },
                             )
                         }
-                        single { AuthViewModel(get(), get(), get(), oauthBrowserLauncher) }
+                        single { ScopePurger(get()) }
+                        single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
                         single { LibraryViewModel(get()) }
@@ -266,6 +269,7 @@ fun rememberAppContainer(
             searchViewModel = koin.get(),
             sidebarViewModel = koin.get(),
             outboxWorker = koin.get(),
+            scopePurger = koin.get(),
             connectivityObserver = connectivityObserver,
         )
     }

@@ -4,8 +4,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.indelible.auth.navigation.AuthNavigation
 import app.indelible.auth.viewmodel.AuthState
@@ -26,6 +30,7 @@ import app.indelible.ui.components.AppStartupSplash
 import app.indelible.ui.components.StartupSplashGate
 import app.indelible.ui.theme.AppTheme
 import coil3.compose.setSingletonImageLoaderFactory
+import kotlinx.coroutines.CancellationException
 
 @Composable
 fun App(
@@ -46,7 +51,17 @@ fun App(
             connectivityObserver,
         )
     val transport = appContainer.apiTransport
-    SyncDrainEffect(appContainer.outboxWorker, appContainer.connectivityObserver, transport)
+    var scopesResumed by remember { mutableStateOf(false) }
+    LaunchedEffect(appContainer.scopePurger) {
+        // A failed sweep must not block sync from ever starting: the purge_pending flag it
+        // left behind is retried on the next launch, so the gate opens regardless of outcome.
+        runCatching { appContainer.scopePurger.resumeInterrupted() }
+            .onFailure { if (it is CancellationException) throw it }
+        scopesResumed = true
+    }
+    if (scopesResumed) {
+        SyncDrainEffect(appContainer.outboxWorker, appContainer.connectivityObserver, transport)
+    }
     setSingletonImageLoaderFactory { context -> newImageLoader(context, transport) }
     val authViewModel = appContainer.authViewModel
     val userPreferencesViewModel = appContainer.userPreferencesViewModel

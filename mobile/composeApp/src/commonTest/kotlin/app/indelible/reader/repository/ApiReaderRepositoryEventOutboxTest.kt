@@ -14,20 +14,6 @@ private const val SESSION_ID = "ses_1"
 
 class ApiReaderRepositoryEventOutboxTest {
     @Test
-    fun progress_from_a_non_reader_caller_still_patches_the_document() =
-        runTest {
-            val harness = readerOutboxHarness(backgroundScope)
-
-            harness.repository.updateProgress(OFFLINE_DOCUMENT_ID, 42.5f)
-
-            assertTrue(harness.store.drainable(OFFLINE_SCOPE, Long.MAX_VALUE).isEmpty())
-            assertEquals(
-                listOf(HttpMethod.Patch to "/api/v1/documents/$OFFLINE_DOCUMENT_ID/progress"),
-                harness.requests.map { it.method to it.path },
-            )
-        }
-
-    @Test
     fun progress_enqueues_one_reading_event_in_basis_points() =
         runTest {
             val harness = readerOutboxHarness(backgroundScope)

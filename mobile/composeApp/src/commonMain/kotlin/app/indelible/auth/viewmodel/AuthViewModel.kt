@@ -20,6 +20,8 @@ import app.indelible.core.model.toAuthUser
 import app.indelible.core.network.ApiException
 import app.indelible.core.network.resolvedServerUrl
 import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.ScopePurger
+import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_login_failed
@@ -33,6 +35,7 @@ import indelible.composeapp.generated.resources.auth_oauth_state_mismatch
 import indelible.composeapp.generated.resources.auth_password_reset_failed
 import indelible.composeapp.generated.resources.auth_register_failed
 import indelible.composeapp.generated.resources.auth_session_load_failed
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,6 +65,7 @@ class AuthViewModel(
     private val repository: AuthRepository,
     private val tokenStorage: TokenStorage,
     private val outboxWorker: OutboxWorker,
+    private val scopePurger: ScopePurger,
     private val oauthBrowserLauncher: OAuthBrowserLauncher = NoopOAuthBrowserLauncher,
 ) : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -414,7 +418,15 @@ class AuthViewModel(
     fun logout() {
         viewModelScope.launch {
             val logoutResult = repository.logout()
+            val scope = tokenStorage.currentOfflineScope()
             clearAuthState()
+            // Signing out must survive a failed purge, and the token clear must land first:
+            // purge() sets purge_pending before it deletes anything, so a crash the other way
+            // round would leave a signed-in account whose next launch wipes its live queue.
+            scope?.let {
+                runCatching { scopePurger.purge(it) }
+                    .onFailure { failure -> if (failure is CancellationException) throw failure }
+            }
             logoutResult.exceptionOrNull()?.let {
                 _loginState.value =
                     LoginState(
@@ -460,6 +472,10 @@ class AuthViewModel(
 
     private suspend fun handleAuthenticatedUser(user: AuthUser) {
         tokenStorage.saveUserId(user.id)
+        // Sweeping stale scopes is housekeeping, so a failure must not strand the session on the
+        // splash: the scopes it could not clear keep purge_pending and are retried next launch.
+        runCatching { scopePurger.purgeInactive(tokenStorage.currentOfflineScope()) }
+            .onFailure { if (it is CancellationException) throw it }
         outboxWorker.resumeAuth()
         val wasSetupRequired = _setupRequired.value
         _authState.value =

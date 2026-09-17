@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private const val MAX_READING_EVENT_BATCH = 200
 
@@ -16,6 +17,8 @@ class OutboxWorker(
     private val isNetwork: (Throwable) -> Boolean = ::isNetworkException,
 ) {
     private val drainLock = Mutex()
+    private val triggerLock = Mutex()
+    private var rerunRequested = false
     private val authPausedState = MutableStateFlow(false)
     val authPaused: StateFlow<Boolean> = authPausedState.asStateFlow()
 
@@ -29,13 +32,36 @@ class OutboxWorker(
     }
 
     suspend fun drain() {
-        if (!drainLock.tryLock()) return
+        if (!acquireOrRequestRerun()) return
         try {
-            drainLocked()
+            do {
+                drainLocked()
+            } while (consumeRerunRequest())
         } finally {
             drainLock.unlock()
         }
     }
+
+    /**
+     * A trigger that loses the lock must not be dropped: [runDrain] snapshots its work once, so
+     * anything enqueued after that snapshot only ships if the winner runs again. The flag is
+     * never cleared on acquisition, so a request landing in the gap between the winner's last
+     * check and its unlock costs one redundant pass rather than a lost row.
+     */
+    private suspend fun acquireOrRequestRerun(): Boolean =
+        triggerLock.withLock {
+            if (drainLock.tryLock()) {
+                true
+            } else {
+                rerunRequested = true
+                false
+            }
+        }
+
+    private suspend fun consumeRerunRequest(): Boolean =
+        triggerLock.withLock {
+            rerunRequested.also { rerunRequested = false }
+        }
 
     private suspend fun drainLocked() {
         val currentScope = scope() ?: return

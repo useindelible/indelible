@@ -136,7 +136,12 @@ class SqlDelightOfflineStore(
     ) {
         mutex.withLock {
             withContext(Dispatchers.Default) {
-                queries.setStateForEntity(OutboxState.BLOCKED.wireName(), scope, entityId, OutboxState.PENDING.wireName())
+                queries.setStateForEntity(
+                    OutboxState.BLOCKED.wireName(),
+                    scope,
+                    entityId,
+                    OutboxState.PENDING.wireName(),
+                )
             }
         }
     }

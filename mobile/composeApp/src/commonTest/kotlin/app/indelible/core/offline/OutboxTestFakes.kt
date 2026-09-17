@@ -23,6 +23,16 @@ class FakeOutboxSender : OutboxSender {
 fun testOutboxWorker(): OutboxWorker = testWorker(UnreachableOfflineStore, FakeOutboxSender(), scope = null) { 0L }
 
 /**
+ * A purger backed by a store with no known scopes, so [ScopePurger.purgeInactive] and
+ * [ScopePurger.resumeInterrupted] are no-ops regardless of the active scope passed in.
+ */
+fun testScopePurger(): ScopePurger = ScopePurger(NoScopesOfflineStore)
+
+private object NoScopesOfflineStore : OfflineStore by UnreachableOfflineStore {
+    override suspend fun scopesWithState(): List<Pair<String, Boolean>> = emptyList()
+}
+
+/**
  * Every member throws rather than returning a neutral value: a scope-less worker must never reach
  * the store, so any call here is a bug that should fail loudly instead of passing on empty data.
  */

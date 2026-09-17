@@ -27,7 +27,10 @@ fun main() =
             }
 
         Window(
-            onCloseRequest = ::exitApplication,
+            onCloseRequest = {
+                databaseDriverFactory.close()
+                exitApplication()
+            },
             title = "Indelible",
         ) {
             App(
