@@ -154,10 +154,13 @@ class AuthenticatedApiTransport(
                 return token
             }
 
-            val result = refreshTokens()
-            if (result.isFailure) {
-                clearSession()
-                throw ApiException(UNAUTHORIZED_STATUS, "Session expired")
+            val failure = refreshTokens().exceptionOrNull()
+            if (failure != null) {
+                if (failure is ApiException && failure.statusCode in SESSION_REJECTED_STATUSES) {
+                    clearSession()
+                    throw ApiException(UNAUTHORIZED_STATUS, "Session expired")
+                }
+                throw failure
             }
             tokenStorage.getToken()
                 ?: throw ApiException(UNAUTHORIZED_STATUS, "Token missing after refresh")
@@ -187,6 +190,7 @@ class AuthenticatedApiTransport(
     companion object {
         const val DEFAULT_SERVER_URL = "http://localhost:38473"
         private const val UNAUTHORIZED_STATUS = 401
+        private val SESSION_REJECTED_STATUSES = setOf(401, 403)
         private const val REFRESH_BUFFER_SECONDS = 120L
         private const val MS_PER_SECOND = 1000L
     }
