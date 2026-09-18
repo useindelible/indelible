@@ -234,6 +234,12 @@ DELETE FROM cached_highlight
 WHERE scope = :scope AND document_id = :document_id
   AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
 
+deleteOrphanHighlights:
+DELETE FROM cached_highlight
+WHERE scope = :scope
+  AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
+  AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+
 highlightsForDocument:
 SELECT * FROM cached_highlight WHERE scope = ? AND document_id = ?;
 

@@ -90,6 +90,12 @@ internal class SqlDelightCachedContent(
         }
     }
 
+    override suspend fun dropOrphanHighlights(scope: String) {
+        context.write {
+            queries.deleteOrphanHighlights(scope)
+        }
+    }
+
     private fun install(
         scope: String,
         request: InstallRequest,

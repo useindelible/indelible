@@ -25,8 +25,8 @@ import okio.Path
 sealed interface FetchResult {
     data object Installed : FetchResult
 
-    /** An auto-cache of a document with nothing readable yet; nothing was fetched or written. */
-    data object NotReady : FetchResult
+    /** An auto-cache of a document with nothing readable yet or larger than the cap; nothing was installed. */
+    data object Skipped : FetchResult
 
     /** Local changes moved under every attempt's fetch; nothing was installed. */
     data object Stale : FetchResult
@@ -43,6 +43,7 @@ class OfflineSetFetcher(
     private val store: OfflineStore,
     private val files: OfflineFiles,
     private val clock: () -> Long,
+    private val capBytes: suspend () -> Long,
 ) {
     private class Reader(
         val raw: String,
@@ -56,7 +57,7 @@ class OfflineSetFetcher(
         onProgress: (Float) -> Unit = {},
     ): FetchResult {
         val first = readerDocument(session, documentId)
-        if (!pin && !first.model.hasReadableContent()) return FetchResult.NotReady
+        if (!pin && !first.model.fitsAutoCache(capBytes())) return FetchResult.Skipped
         val scope = session.scope
         val previous = store.cachedDocument(scope, documentId)?.generation
         val generation = (previous ?: 0L) + 1
@@ -64,25 +65,32 @@ class OfflineSetFetcher(
         files.deleteTree(dir)
         try {
             val assets = downloadAssets(session, first.model, dir, onProgress)
+            val bytes = assets.sumOf { it.bytes }
+            val tooLarge = !pin && bytes > capBytes()
             val installed =
-                (1..INSTALL_ATTEMPTS).any {
-                    val revision = store.localChanges(scope, documentId).revision
-                    val request =
-                        InstallRequest(
-                            documentId = documentId,
-                            documentType = first.model.documentType,
-                            revision = revision,
-                            server = serverDocument(session, documentId),
-                            generation = generation,
-                            assets = assets,
-                            bytes = assets.sumOf { it.bytes },
-                            pin = pin,
-                            at = clock(),
-                        )
-                    store.installCachedDocument(session, request) == InstallResult.Installed
-                }
+                !tooLarge &&
+                    (1..INSTALL_ATTEMPTS).any {
+                        val revision = store.localChanges(scope, documentId).revision
+                        val request =
+                            InstallRequest(
+                                documentId = documentId,
+                                documentType = first.model.documentType,
+                                revision = revision,
+                                server = serverDocument(session, documentId),
+                                generation = generation,
+                                assets = assets,
+                                bytes = bytes,
+                                pin = pin,
+                                at = clock(),
+                            )
+                        store.installCachedDocument(session, request) == InstallResult.Installed
+                    }
             if (installed) previous?.let { deleteQuietly(files.generationDir(scope, documentId, it)) }
-            return if (installed) FetchResult.Installed else FetchResult.Stale
+            return when {
+                tooLarge -> FetchResult.Skipped
+                installed -> FetchResult.Installed
+                else -> FetchResult.Stale
+            }
         } finally {
             withContext(NonCancellable) { releaseUnlessInstalled(scope, documentId, generation, dir) }
         }
@@ -250,12 +258,21 @@ class OfflineSetFetcher(
             kind: String,
         ) = "/api/v1/assets/documents/$documentId/$kind"
 
-        fun DocumentReaderResponse.hasReadableContent(): Boolean =
+        fun DocumentReaderResponse.readableKind(): String? =
             when (documentType) {
-                TYPE_PDF -> PDF_KINDS.any { it in availableAssets }
-                TYPE_BOOK -> EPUB in availableAssets
-                else -> READABLE_HTML in availableAssets
+                TYPE_PDF -> PDF_KINDS.firstOrNull { it in availableAssets }
+                TYPE_BOOK -> EPUB
+                else -> READABLE_HTML
             }
+
+        // The announced size is the stored asset's; a book's chapters can unpack to more than its
+        // EPUB, so the downloaded total is checked again before an auto-cache installs.
+        fun DocumentReaderResponse.fitsAutoCache(cap: Long): Boolean {
+            val kind = readableKind()
+            return kind != null &&
+                kind in availableAssets &&
+                assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
+        }
 
         fun HttpRequestBuilder.bearer(token: String) {
             header(HttpHeaders.Authorization, "Bearer $token")

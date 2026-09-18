@@ -32,6 +32,7 @@ import app.indelible.core.network.TrashApiService
 import app.indelible.core.offline.ApiOutboxSender
 import app.indelible.core.offline.ConnectivityObserver
 import app.indelible.core.offline.DownloadManager
+import app.indelible.core.offline.OfflineCopies
 import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.offline.OfflineSetFetcher
 import app.indelible.core.offline.OfflineStore
@@ -220,19 +221,32 @@ fun rememberAppContainer(
                         }
                         single { SessionTransitions(get(), get(), get(), get()) }
                         single { offlineFilesRoot.offlineFiles() }
-                        single { OfflineSetFetcher(get(), get(), get(), clock = { getTimeMillis() }) }
+                        single {
+                            val preferences = get<UserPreferencesStorage>()
+                            OfflineCopies(get(), get()) { preferences.getOfflineCapBytes() }
+                        }
+                        single {
+                            val preferences = get<UserPreferencesStorage>()
+                            OfflineSetFetcher(
+                                transport = get(),
+                                store = get(),
+                                files = get(),
+                                clock = { getTimeMillis() },
+                                capBytes = { preferences.getOfflineCapBytes() },
+                            )
+                        }
                         single {
                             DownloadManager(
                                 registry = get(),
                                 fetcher = get(),
                                 store = get(),
-                                files = get(),
+                                copies = get(),
                                 online = connectivityObserver.online,
                             )
                         }
                         single {
                             val downloads = get<DownloadManager>()
-                            ScopePurger(get()) { scope -> downloads.purge(scope) }
+                            ScopePurger(get()) { scope -> downloads.removeAllDownloads(scope) }
                         }
                         single { AuthViewModel(get(), get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }

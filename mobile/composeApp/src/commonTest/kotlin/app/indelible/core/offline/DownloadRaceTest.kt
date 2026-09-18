@@ -3,7 +3,6 @@ package app.indelible.core.offline
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -26,8 +25,6 @@ class DownloadRaceTest {
                 respond("<p>late</p>", HttpStatusCode.OK)
             }
         }
-
-    private suspend fun DownloadHarness.acquisition(): Acquisition? = manager.acquisitions.observe(DL_SCOPE).first()[DL_DOC]
 
     @Test
     fun sessionChangeMidDownloadLeavesNoRowsOrFiles() =
@@ -54,7 +51,7 @@ class DownloadRaceTest {
             h.manager.keepOffline(h.session, DL_DOC)
             runCurrent()
 
-            ScopePurger(h.store) { h.manager.purge(it) }.purge(DL_SCOPE)
+            ScopePurger(h.store) { h.manager.removeAllDownloads(it) }.purge(DL_SCOPE)
             release.complete(Unit)
             runCurrent()
 
