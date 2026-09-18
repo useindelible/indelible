@@ -39,8 +39,6 @@ internal class ReaderOutboxWrites(
     private val worker: OutboxWorker,
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
-
     suspend fun createHighlight(
         session: Session,
         documentId: String,
@@ -55,7 +53,7 @@ internal class ReaderOutboxWrites(
                 highlightId = highlightId,
                 color = color,
                 textContent = textContent,
-                locatorJson = json.encodeToString(LocatorSchemaFlat.serializer(), locator.toLocatorSchemaFlat()),
+                locatorJson = locatorJson.encodeToString(LocatorSchemaFlat.serializer(), locator.toLocatorSchemaFlat()),
                 sourceLocatorJson = null,
             )
         val cached =
@@ -63,7 +61,7 @@ internal class ReaderOutboxWrites(
                 payload to applyToCachedHighlight(highlightId, documentId, payload, at)
             }
         drain()
-        return highlightFrom(checkNotNull(cached), at)
+        return checkNotNull(cached).toHighlightData(at)
     }
 
     suspend fun updateHighlightColor(
@@ -79,7 +77,7 @@ internal class ReaderOutboxWrites(
                 kind = OutboxKind.HIGHLIGHT_COLOR,
                 payload = OutboxPayload.HighlightColor(highlightId, color),
             )
-        return patched?.let { highlightFrom(it, at) }
+        return patched?.toHighlightData(at)
             ?: HighlightData(
                 id = highlightId,
                 color = color,
@@ -208,35 +206,33 @@ internal class ReaderOutboxWrites(
     private fun drain() {
         worker.requestDrain()
     }
-
-    private fun highlightFrom(
-        cached: CachedHighlight,
-        at: Long,
-    ): HighlightData =
-        HighlightData(
-            id = cached.id,
-            color = cached.color,
-            textContent = cached.textContent,
-            locator =
-                cached.locator?.let {
-                    json.decodeFromString(LocatorSchemaFlat.serializer(), it).toHighlightLocator()
-                },
-            tags = cached.tags,
-            createdAt = Instant.fromEpochMilliseconds(at),
-            updatedAt = Instant.fromEpochMilliseconds(at),
-            documentId = cached.documentId,
-            note =
-                cached.note?.let {
-                    HighlightNoteData(
-                        id = cached.id,
-                        highlightId = cached.id,
-                        body = it.body,
-                        createdAt = Instant.fromEpochMilliseconds(at),
-                        updatedAt = Instant.fromEpochMilliseconds(at),
-                    )
-                },
-        )
 }
+
+/** The reader's highlight from its cached shape; a time the cache does not hold reads as [at]. */
+internal fun CachedHighlight.toHighlightData(at: Long): HighlightData {
+    val created = Instant.fromEpochMilliseconds(createdAtEpochMs ?: at)
+    val updated = Instant.fromEpochMilliseconds(updatedAtEpochMs ?: at)
+    return HighlightData(
+        id = id,
+        color = color,
+        textContent = textContent,
+        locator =
+            locator?.let {
+                locatorJson.decodeFromString(LocatorSchemaFlat.serializer(), it).toHighlightLocator()
+            },
+        tags = tags,
+        createdAt = created,
+        updatedAt = updated,
+        documentId = documentId,
+        note =
+            note?.let {
+                // The server mints the durable note id when the row syncs; the highlight id stands in.
+                HighlightNoteData(id = id, highlightId = id, body = it.body, createdAt = created, updatedAt = updated)
+            },
+    )
+}
+
+private val locatorJson = Json { ignoreUnknownKeys = true }
 
 internal fun basisPoints(percent: Float): Int {
     val points = (percent * BASIS_POINTS_PER_PERCENT).roundToInt()

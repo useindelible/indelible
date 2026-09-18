@@ -73,6 +73,7 @@ import app.indelible.profile.viewmodel.AddLibraryViewModel
 import app.indelible.profile.viewmodel.AiSettingsViewModel
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import app.indelible.reader.repository.ApiReaderRepository
+import app.indelible.reader.repository.ReaderOfflineCopy
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.search.repository.ApiSearchRepository
@@ -179,12 +180,24 @@ fun rememberAppContainer(
                         single<FeedRepository> { ApiFeedRepository(get()) }
                         single {
                             val registry = get<SessionRegistry>()
+                            val downloads = get<DownloadManager>()
+                            ReaderOfflineCopy(
+                                store = get(),
+                                files = get(),
+                                sessionProvider = { registry.current.value.session },
+                                clock = { getTimeMillis() },
+                                requestCache = { session, documentId -> downloads.cacheOnOpen(session, documentId) },
+                            )
+                        }
+                        single {
+                            val registry = get<SessionRegistry>()
                             ApiReaderRepository(
                                 readerApiService = get(),
                                 libraryApiService = get(),
                                 offlineStore = get(),
                                 worker = get(),
                                 sessionProvider = { registry.current.value.session },
+                                offlineCopy = get(),
                             )
                         }
                         single<ReaderRepository> { get<ApiReaderRepository>() }

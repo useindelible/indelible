@@ -104,7 +104,7 @@ internal class DownloadHarness(
     val signedIn: SignedIn,
     val fs: FileSystem,
     val server: FakeServer,
-    transport: AuthenticatedApiTransport,
+    val transport: AuthenticatedApiTransport,
     backing: OfflineStore,
     scheduler: TestCoroutineScheduler,
 ) {

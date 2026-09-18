@@ -32,7 +32,7 @@ internal class SqlDelightCachedContent(
                 if (queries.cachedDocument(session.scope, request.documentId).executeAsOneOrNull() == null) {
                     RefreshResult.NoCopy
                 } else {
-                    RefreshResult.Applied(refresh(session.scope, request))
+                    refresh(session.scope, request)
                 }
             }
         }
@@ -130,26 +130,40 @@ internal class SqlDelightCachedContent(
     private fun refresh(
         scope: String,
         request: RefreshRequest,
-    ): Staleness {
-        val stale = queries.staleness(scope, request.documentId, request.revision)
-        val changes = queries.localChanges(scope, request.documentId)
-        val server = request.server
-        queries.refreshDocumentMeta(server.title, server.readerJson, scope, request.documentId)
-        if (!stale.position) {
-            val progress = changes.progress(server.progress)
-            queries.setCachedProgress(
-                progress_percent = progress.percent?.toLong(),
-                max_progress_percent = progress.maxPercent?.toLong(),
-                scope = scope,
-                document_id = request.documentId,
-            )
+    ): RefreshResult {
+        val documentId = request.documentId
+        val stale = queries.staleness(scope, documentId, request.revision)
+        val changes = queries.localChanges(scope, documentId)
+        return when (val part = request.part) {
+            is ServerPart.Reader -> {
+                queries.refreshDocumentMeta(part.title, part.readerJson, scope, documentId)
+                if (!stale.position) {
+                    val progress = changes.progress(part.progress)
+                    queries.setCachedProgress(
+                        progress_percent = progress.percent?.toLong(),
+                        max_progress_percent = progress.maxPercent?.toLong(),
+                        scope = scope,
+                        document_id = documentId,
+                    )
+                }
+                if (stale.position) RefreshResult.Stale else RefreshResult.Applied
+            }
+            is ServerPart.Highlights ->
+                if (stale.content) {
+                    RefreshResult.Stale
+                } else {
+                    replaceHighlights(scope, documentId, changes.highlights(part.highlights))
+                    RefreshResult.Applied
+                }
+            is ServerPart.Note ->
+                if (stale.content) {
+                    RefreshResult.Stale
+                } else {
+                    val note = changes.note(part.note?.body)
+                    queries.setCachedServerNote(note, part.note?.updatedAtEpochMs, scope, documentId)
+                    RefreshResult.Applied
+                }
         }
-        if (!stale.content) {
-            val note = changes.note(server.note?.body)
-            queries.setCachedServerNote(note, server.note?.updatedAtEpochMs, scope, request.documentId)
-            replaceHighlights(scope, request.documentId, changes.highlights(server.highlights))
-        }
-        return stale
     }
 
     private fun replaceHighlights(

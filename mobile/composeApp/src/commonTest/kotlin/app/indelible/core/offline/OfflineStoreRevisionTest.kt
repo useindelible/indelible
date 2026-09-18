@@ -96,33 +96,22 @@ class OfflineStoreRevisionTest {
             s.installNow(serverDocument(highlights = listOf(serverHighlight("hlt_1")), note = "kept"))
             val fetchedAt = s.revision()
             s.store.remove(s.scope, s.enqueue(OutboxPayload.DocumentNote("kept", null)))
+            val refresh: suspend (String, ServerPart) -> RefreshResult = { documentId, part ->
+                s.store.refreshCachedCopy(s.session, RefreshRequest(documentId, fetchedAt, part))
+            }
 
-            val result =
-                s.store.refreshCachedCopy(
-                    s.session,
-                    RefreshRequest(
-                        documentId = VIEW_DOC,
-                        revision = fetchedAt,
-                        server =
-                            serverDocument(
-                                highlights = listOf(serverHighlight("hlt_1"), serverHighlight("hlt_2")),
-                                note = "stale",
-                                progress = Progress(percent = 45, maxPercent = 50),
-                                title = "Renamed",
-                            ),
-                    ),
-                )
+            val highlights = listOf(serverHighlight("hlt_1"), serverHighlight("hlt_2"))
+            assertEquals(RefreshResult.Stale, refresh(VIEW_DOC, ServerPart.Highlights(highlights)))
+            assertEquals(RefreshResult.Stale, refresh(VIEW_DOC, ServerPart.Note(ServerNote("stale", 2_000L))))
+            val reader = ServerPart.Reader("Renamed", "{}", Progress(percent = 45, maxPercent = 50))
+            assertEquals(RefreshResult.Applied, refresh(VIEW_DOC, reader))
 
-            assertEquals(RefreshResult.Applied(Staleness(content = true, position = false)), result)
             val copy = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
             assertEquals("Renamed", copy.title)
             assertEquals(45, copy.progressPercent)
             assertEquals(50, copy.maxProgressPercent)
             assertEquals("kept", copy.noteBody)
             assertEquals(listOf("hlt_1"), s.store.cachedHighlights(s.scope, VIEW_DOC).map { it.id })
-            assertEquals(
-                RefreshResult.NoCopy,
-                s.store.refreshCachedCopy(s.session, RefreshRequest("doc_other", fetchedAt, serverDocument())),
-            )
+            assertEquals(RefreshResult.NoCopy, refresh("doc_other", reader))
         }
 }
