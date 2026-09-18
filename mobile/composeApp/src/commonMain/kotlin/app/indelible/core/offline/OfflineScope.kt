@@ -11,5 +11,10 @@ import app.indelible.core.storage.TokenStorage
  */
 suspend fun TokenStorage.currentOfflineScope(): String? =
     getServerUrl()?.let { serverUrl ->
-        getUserId()?.let { userId -> "${normalizedOrigin(serverUrl)}|$userId" }
+        getUserId()?.let { userId -> sessionScope(normalizedOrigin(serverUrl), userId) }
     }
+
+internal fun sessionScope(
+    origin: String,
+    userId: String,
+): String = "$origin|$userId"

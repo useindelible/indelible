@@ -11,6 +11,7 @@ private const val BITS_PER_BYTE = 8
 private const val NIBBLE_BITS = 4
 private const val BYTE_MASK = 0xFF
 private const val VERSION_NIBBLE_MASK = 0x0F
+private const val LOW_NIBBLE_MASK = 0x0F
 private const val VERSION_NIBBLE_VALUE = 0x70
 private const val VARIANT_NIBBLE_MASK = 0x3F
 private const val VARIANT_NIBBLE_VALUE = 0x80
@@ -50,7 +51,7 @@ private fun ByteArray.toUuidString(): String {
     for (i in indices) {
         val value = this[i].toInt() and BYTE_MASK
         hex[i * 2] = HEX_DIGITS[value ushr NIBBLE_BITS]
-        hex[i * 2 + 1] = HEX_DIGITS[value and VERSION_NIBBLE_MASK]
+        hex[i * 2 + 1] = HEX_DIGITS[value and LOW_NIBBLE_MASK]
     }
     val digits = hex.concatToString()
     return buildString {

@@ -6,9 +6,9 @@ import app.indelible.reader.repository.OFFLINE_DOCUMENT_ID
 import app.indelible.reader.repository.OFFLINE_SCOPE
 import app.indelible.reader.repository.ReaderOutboxHarness
 import app.indelible.reader.repository.readerOutboxHarness
-import app.indelible.reader.repository.rowsOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -38,9 +38,12 @@ class ReaderOfflineWritesTest {
         Dispatchers.resetMain()
     }
 
+    /** The view model's writes land whenever the main dispatcher yields, so wait on the outbox itself. */
     private suspend fun ReaderOutboxHarness.readingEvents(count: Int): List<OutboxPayload.ReadingEvent> =
         store
-            .rowsOf(OFFLINE_SCOPE, OutboxKind.READING_EVENT)
+            .observeOutbox(OFFLINE_SCOPE)
+            .first { rows -> rows.count { it.kind == OutboxKind.READING_EVENT } >= count }
+            .filter { it.kind == OutboxKind.READING_EVENT }
             .map { it.payload as OutboxPayload.ReadingEvent }
             .also { assertEquals(count, it.size) }
 

@@ -9,6 +9,7 @@ import app.indelible.core.offline.ScopePurger
 import app.indelible.core.offline.SqlDelightOfflineStore
 import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.offline.testOutboxWorker
+import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.db.testOfflineDatabase
 import io.ktor.client.engine.mock.MockEngine
@@ -64,7 +65,7 @@ class AuthViewModelPurgeTest {
             val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
             val viewModel = authViewModel(apiClient, tokenStorage, ScopePurger(store))
 
-            viewModel.forceLogout()
+            viewModel.forceLogout(0)
             advanceUntilIdle()
 
             assertIs<AuthState.Unauthenticated>(viewModel.authState.value)
@@ -147,6 +148,7 @@ class AuthViewModelPurgeTest {
                     tokenStorage,
                     worker,
                     ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
+                    testSessionTransitions(tokenStorage, worker = worker),
                 )
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
@@ -271,6 +273,7 @@ class AuthViewModelPurgeTest {
             tokenStorage,
             testOutboxWorker(),
             scopePurger,
+            testSessionTransitions(tokenStorage),
         )
 
     /** Fails the first purge step that touches data, after purge_pending is already set. */

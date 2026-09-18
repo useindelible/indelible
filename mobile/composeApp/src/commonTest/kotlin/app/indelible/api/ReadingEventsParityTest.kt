@@ -7,6 +7,9 @@ import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.SendOutcome
+import app.indelible.core.offline.Session
+import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.SessionState
 import app.indelible.core.storage.InMemoryTokenStorage
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -24,6 +27,7 @@ import kotlin.test.assertTrue
 private const val SCOPE = "http://localhost:38473|usr_1"
 private const val DOCUMENT_ID = "doc_01ABC"
 private const val CLIENT_ID = "cli_parity"
+private val SESSION = Session(epoch = 0, origin = "http://localhost:38473", scope = SCOPE)
 
 class ReadingEventsParityTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
@@ -82,11 +86,12 @@ class ReadingEventsParityTest {
                     sent.body = (request.body as TextContent).text
                     respond("""{"accepted":2,"replayed":0}""", HttpStatusCode.Accepted, jsonHeaders)
                 }
-            val sender = ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
+            val registry = SessionRegistry().apply { publish(SessionState(0, SESSION)) }
+            val sender = ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = registry))
 
             val outcome =
                 sender.send(
-                    SCOPE,
+                    SESSION,
                     CLIENT_ID,
                     listOf(
                         readingEventRow(originSeq = 1, recordedAtEpochMs = 1_767_225_600_000L),

@@ -17,6 +17,8 @@ interface TokenStorage {
 
     suspend fun getUserId(): String?
 
+    suspend fun clearUserId()
+
     suspend fun saveRefreshToken(token: String)
 
     suspend fun getRefreshToken(): String?

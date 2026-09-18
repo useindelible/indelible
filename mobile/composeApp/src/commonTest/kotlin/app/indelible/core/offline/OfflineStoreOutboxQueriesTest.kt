@@ -15,11 +15,13 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun pendingOrderedReturnsEveryPendingRowInSeqOrderRegardlessOfNextAttemptAt() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val firstId = store.enqueueNote(scope, "doc_1")
-            val secondId = store.enqueueNote(scope, "doc_2")
-            val thirdId = store.enqueueNote(scope, "doc_3")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val firstId = store.enqueueNote(session, "doc_1")
+            val secondId = store.enqueueNote(session, "doc_2")
+            val thirdId = store.enqueueNote(session, "doc_3")
             store.markAttempt(scope, firstId, now = 10L, nextAttemptAt = 1_000_000L, error = "500")
             store.markFailed(scope, thirdId, error = "fatal")
 
@@ -31,11 +33,13 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun failCreateAndBlockDependantsMovesCreateToFailedAndPendingDependantsToBlockedTogether() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
-            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
-            val unrelated = store.enqueueNote(scope, "doc_2")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
+            val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
+            val unrelated = store.enqueueNote(session, "doc_2")
 
             store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422 anchor")
 
@@ -48,10 +52,12 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun failCreateAndBlockDependantsLeavesAlreadyFailedDependantsAlone() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
-            val failedColor = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
+            val failedColor = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             store.markFailed(scope, failedColor, "400")
 
             store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
@@ -65,10 +71,12 @@ class OfflineStoreOutboxQueriesTest {
     fun failCreateAndBlockDependantsRollsBackWhenBlockingFails() =
         runTest {
             val database = testOfflineDatabase()
-            val store = SqlDelightOfflineStore(database)
-            val scope = "scope"
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
-            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore(database = database)
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             val faulting = SqlDelightOfflineStore(database, failCreateHook = { throw InjectedStoreFailure() })
 
             assertFailsWith<InjectedStoreFailure> {
@@ -83,10 +91,12 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun rowsByStateFiltersByStateWithinScope() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val failedId = store.enqueueNote(scope, "doc_1")
-            store.enqueueNote(scope, "doc_2")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val failedId = store.enqueueNote(session, "doc_1")
+            store.enqueueNote(session, "doc_2")
             store.markFailed(scope, failedId, "boom")
 
             val failedRows = store.rowsByState(scope, OutboxState.FAILED)
@@ -100,9 +110,11 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun markAttemptIncrementsAttemptsAndRecordsError() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val id = store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val id = store.enqueueNote(session, "doc_1")
 
             store.markAttempt(scope, id, now = 10L, nextAttemptAt = 20L, error = "network")
 
@@ -116,9 +128,11 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun markFailedTransitionsRowToFailedState() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val id = store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val id = store.enqueueNote(session, "doc_1")
 
             store.markFailed(scope, id, "unrecoverable")
 
@@ -162,9 +176,11 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun removeDeletesTheOutboxRow() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val id = store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val id = store.enqueueNote(session, "doc_1")
 
             store.remove(scope, id)
 
@@ -174,8 +190,10 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun readingEventPayloadRoundTripsThroughPendingOrderedAndRowsByState() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
             val payload =
                 OutboxPayload.ReadingEvent(
                     eventId = "evt_1",
@@ -191,7 +209,7 @@ class OfflineStoreOutboxQueriesTest {
                     recordedAtEpochMs = 1_700_000_000_000L,
                 )
 
-            store.enqueue(scope, OutboxKind.READING_EVENT, "doc_1", "doc_1") { payload to Unit }
+            store.enqueue(session, OutboxKind.READING_EVENT, "doc_1", "doc_1") { payload to Unit }
 
             val fromPending = store.pendingOrdered(scope).single().payload
             val fromRowsByState = store.rowsByState(scope, OutboxState.PENDING).single().payload
@@ -202,8 +220,10 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun readingEventPayloadWithNullableFieldsRoundTrips() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
             val payload =
                 OutboxPayload.ReadingEvent(
                     eventId = "evt_2",
@@ -219,7 +239,7 @@ class OfflineStoreOutboxQueriesTest {
                     recordedAtEpochMs = 0L,
                 )
 
-            store.enqueue(scope, OutboxKind.READING_EVENT, "doc_2", "doc_2") { payload to Unit }
+            store.enqueue(session, OutboxKind.READING_EVENT, "doc_2", "doc_2") { payload to Unit }
 
             assertEquals(payload, store.pendingOrdered(scope).single().payload)
         }
@@ -227,8 +247,9 @@ class OfflineStoreOutboxQueriesTest {
     @Test
     fun outboxQueriesAreIsolatedByScope() =
         runTest {
-            val store = store()
-            store.enqueueNote("scopeA", "doc_1")
+            val signedIn = signedInStore("scopeA")
+            val store = signedIn.store
+            store.enqueueNote(signedIn.session, "doc_1")
 
             assertTrue(store.pendingOrdered("scopeB").isEmpty())
             assertTrue(store.rowsByState("scopeB", OutboxState.PENDING).isEmpty())

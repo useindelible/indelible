@@ -1,13 +1,12 @@
 package app.indelible.core.offline
 
-import app.indelible.core.util.clientId
 import app.indelible.db.Cached_highlight
 import app.indelible.db.OfflineQueries
 
 /**
  * The [EnqueueTx] receiver only makes sense while its backing transaction is open; a caller
  * that stashes it and calls it later would otherwise run queries outside any transaction
- * boundary. [close] is called once [SqlDelightOfflineStore.enqueue]'s transaction finishes
+ * boundary. [close] is called once [SqlDelightOutbox.enqueue]'s transaction finishes
  * (success or failure), after which every method throws.
  */
 internal class EnqueueTxImpl(
@@ -26,14 +25,8 @@ internal class EnqueueTxImpl(
 
     override fun allocateOriginSeq(): Long {
         checkOpen()
-        val state = queries.getClientState(scope).executeAsOneOrNull()
-        val current =
-            if (state != null) {
-                state.next_origin_seq
-            } else {
-                queries.insertClientState(scope, clientId(), 0, 0)
-                0L
-            }
+        val state = queries.getClientState(scope).executeAsOneOrNull() ?: throw ScopeNotLiveException(scope)
+        val current = state.next_origin_seq
         queries.setNextOriginSeq(current + 1, scope)
         return current
     }

@@ -15,15 +15,17 @@ class OutboxSchedulerTest {
     @Test
     fun requestDuringAPassRunsASecondPass() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
             val started = sender.holdNextSend()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
 
             worker.requestDrain()
             started.await()
-            store.enqueueNote(scope, "doc_2")
+            store.enqueueNote(session, "doc_2")
             worker.requestDrain()
             sender.release()
             runCurrent()
@@ -35,12 +37,14 @@ class OutboxSchedulerTest {
     @Test
     fun slowFailureUsesTheClockAtTheOutcomeAndArmsATimerThatFires() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
             sender.enqueueOutcome(SendOutcome.Http(500, null, "boom"))
             val started = sender.holdNextSend()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
 
             worker.requestDrain()
             started.await()
@@ -62,13 +66,15 @@ class OutboxSchedulerTest {
     @Test
     fun enqueueAfterAnEmptyPassThenA500ArmsTheRetryTimerFromTheWorkerAlone() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = GatedSender()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
             runCurrent()
             assertTrue(sender.calls.isEmpty())
 
-            store.enqueueNote(scope, "doc_1")
+            store.enqueueNote(session, "doc_1")
             sender.enqueueOutcome(SendOutcome.Http(500, null, "boom"))
             worker.requestDrain()
             runCurrent()
@@ -86,12 +92,14 @@ class OutboxSchedulerTest {
     @Test
     fun shieldedDueDependantDoesNotSpinAndTheTimerTargetsTheHeadDeadline() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = GatedSender()
-            val worker = startedWorker(store, sender, scope)
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.markAttempt(scope, createId, now = 0, nextAttemptAt = 30_000, error = "500")
-            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
 
             worker.requestDrain()
             advanceTimeBy(29_999)
@@ -106,12 +114,34 @@ class OutboxSchedulerTest {
         }
 
     @Test
+    fun terminalFailureOnAnEntityLeavesItsLaterDueRowsToAFollowUpPass() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val sender = GatedSender()
+            sender.enqueueOutcome(SendOutcome.Http(422, retryAfterSeconds = null, message = "unprocessable"))
+            val worker = startedWorker(store, sender, signedIn.registry)
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
+
+            worker.requestDrain()
+            runCurrent()
+
+            assertEquals(2, sender.calls.size)
+            assertTrue(store.pendingOrdered(scope).isEmpty())
+            assertEquals(1, store.rowsByState(scope, OutboxState.FAILED).size)
+        }
+
+    @Test
     fun completedPassWithNothingWaitingArmsNoTimer() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
 
             worker.requestDrain()
             runCurrent()
@@ -124,11 +154,13 @@ class OutboxSchedulerTest {
     @Test
     fun authPauseAndTransitionPauseArmNothingAndClearingOneDoesNotClearTheOther() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
             sender.enqueueOutcome(SendOutcome.Http(401, null, "expired"))
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
             worker.requestDrain()
             runCurrent()
             assertTrue(worker.authPaused.value)
@@ -150,10 +182,12 @@ class OutboxSchedulerTest {
     @Test
     fun noSendBeforeStartupReadyAndTheRequestIsServedOnceReady() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
-            val worker = testWorker(store, sender, scope)
+            val worker = testWorker(store, sender, signedIn.registry)
             worker.start()
 
             worker.requestDrain()
@@ -168,11 +202,13 @@ class OutboxSchedulerTest {
     @Test
     fun beginTransitionAwaitsTheRunningPass() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
             val started = sender.holdNextSend()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
             worker.requestDrain()
             started.await()
 
@@ -196,7 +232,7 @@ class OutboxSchedulerTest {
         runTest {
             val store = testStore()
             val sender = GatedSender()
-            val worker = startedWorker(store, sender, scope = null)
+            val worker = startedWorker(store, sender, SessionRegistry())
 
             worker.requestDrain()
             runCurrent()

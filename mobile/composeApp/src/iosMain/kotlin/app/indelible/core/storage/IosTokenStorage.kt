@@ -66,6 +66,10 @@ class IosTokenStorage : TokenStorage {
 
     override suspend fun getUserId(): String? = appGroupDefaults?.stringForKey(KEY_USER_ID)
 
+    override suspend fun clearUserId() {
+        appGroupDefaults?.removeObjectForKey(KEY_USER_ID)
+    }
+
     override suspend fun saveRefreshToken(token: String) {
         saveToKeychain(KEY_REFRESH_TOKEN, token)
     }

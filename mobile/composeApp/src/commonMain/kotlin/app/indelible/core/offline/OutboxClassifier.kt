@@ -15,6 +15,9 @@ sealed interface SendOutcome {
     data class Transport(
         val cause: Throwable,
     ) : SendOutcome
+
+    /** The session changed before the request was dispatched; nothing reached the server. */
+    data object Stale : SendOutcome
 }
 
 sealed interface Classification {
@@ -29,6 +32,8 @@ sealed interface Classification {
     ) : Classification
 
     data object Done : Classification
+
+    data object Stale : Classification
 }
 
 private const val BACKOFF_ATTEMPT_1_MS = 2_000L
@@ -36,7 +41,7 @@ private const val BACKOFF_ATTEMPT_2_MS = 8_000L
 private const val BACKOFF_ATTEMPT_3_MS = 30_000L
 private const val BACKOFF_ATTEMPT_4_MS = 120_000L
 private const val BACKOFF_ATTEMPT_5_MS = 600_000L
-private const val HOURLY_CAP_MS = 3_600_000L
+internal const val HOURLY_CAP_MS = 3_600_000L
 private const val MILLIS_PER_SECOND = 1_000L
 
 private const val HTTP_BAD_REQUEST = 400
@@ -73,6 +78,7 @@ fun classify(
 ): Classification =
     when (outcome) {
         is SendOutcome.Success, is SendOutcome.ReplaySuccess -> Classification.Done
+        SendOutcome.Stale -> Classification.Stale
         is SendOutcome.Transport ->
             if (isNetwork(outcome.cause)) {
                 Classification.Retryable(now + backoffMs(attempts + 1))
@@ -100,9 +106,14 @@ private fun classifyHttp(
         // 507 always waits the hourly cap regardless of Retry-After or attempt count: it signals
         // server-side capacity, not a per-row problem that shorter backoff would resolve sooner.
         status == HTTP_INSUFFICIENT_STORAGE -> Classification.Retryable(now + HOURLY_CAP_MS)
+        // A server can ask for a long wait, but never for one longer than the schedule's own cap:
+        // a misconfigured header must not park a row for days.
         isRetryableFailure -> {
-            val delayMs = outcome.retryAfterSeconds?.let { it * MILLIS_PER_SECOND } ?: backoffMs(attempts + 1)
-            Classification.Retryable(now + delayMs)
+            val requested =
+                outcome.retryAfterSeconds
+                    ?.coerceIn(0, HOURLY_CAP_MS / MILLIS_PER_SECOND)
+                    ?.let { it * MILLIS_PER_SECOND }
+            Classification.Retryable(now + (requested ?: backoffMs(attempts + 1)))
         }
         else -> Classification.Terminal(outcome.message)
     }

@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -184,6 +185,26 @@ class ScopePurgerTest {
             ScopePurger(store).purgeInactive(null)
 
             assertTrue(store.scopesWithState().isEmpty())
+        }
+
+    @Test
+    fun writerHoldingTheSessionCannotEnqueueBetweenPurgeRowsAndFinishPurge() =
+        runTest {
+            val signedIn = signedInStore()
+            val session = signedIn.session
+            var attempt: Result<String>? = null
+            val store =
+                object : OfflineStore by signedIn.store {
+                    override suspend fun purgeRows(scope: String) {
+                        signedIn.store.purgeRows(scope)
+                        attempt = runCatching { signedIn.store.enqueueNote(session, "doc_1") }
+                    }
+                }
+
+            ScopePurger(store).purge(session.scope)
+
+            assertIs<ScopeNotLiveException>(attempt?.exceptionOrNull())
+            assertTrue(signedIn.store.scopesWithState().isEmpty())
         }
 
     private class ThrowingFinishPurgeStore(

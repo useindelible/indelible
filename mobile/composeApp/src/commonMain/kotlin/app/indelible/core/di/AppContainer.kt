@@ -2,7 +2,6 @@ package app.indelible.core.di
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import app.indelible.auth.oauth.rememberOAuthBrowserLauncher
@@ -36,8 +35,9 @@ import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.ScopePurger
+import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.SessionTransitions
 import app.indelible.core.offline.SqlDelightOfflineStore
-import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.storage.TokenStorage
 import app.indelible.core.storage.UserPreferencesStorage
 import app.indelible.db.DatabaseDriverFactory
@@ -116,6 +116,7 @@ data class AppContainer(
     val searchViewModel: SearchViewModel,
     val sidebarViewModel: SidebarViewModel,
     val outboxWorker: OutboxWorker,
+    val sessionTransitions: SessionTransitions,
     val scopePurger: ScopePurger,
     val connectivityObserver: ConnectivityObserver,
 )
@@ -140,13 +141,15 @@ fun rememberAppContainer(
                         single<PendingSaveRepository> { pendingSaveRepository }
                         single { connectivityObserver }
                         single { OfflineDatabase(databaseDriverFactory.createDriver()) }
-                        single<OfflineStore> { SqlDelightOfflineStore(get()) }
+                        single { SessionRegistry() }
+                        single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get()) }
                         single {
                             AuthenticatedApiTransport(
                                 tokenStorage = get(),
-                                onUnauthorized = {
-                                    authViewModelRef.value?.forceLogout()
+                                onUnauthorized = { epoch ->
+                                    authViewModelRef.value?.forceLogout(epoch)
                                 },
+                                registry = get(),
                             )
                         }
                         single { LibraryApiService(get()) }
@@ -169,12 +172,13 @@ fun rememberAppContainer(
                         single<LibraryRepository> { ApiLibraryRepository(get()) }
                         single<FeedRepository> { ApiFeedRepository(get()) }
                         single {
+                            val registry = get<SessionRegistry>()
                             ApiReaderRepository(
                                 readerApiService = get(),
                                 libraryApiService = get(),
                                 offlineStore = get(),
                                 worker = get(),
-                                scopeProvider = { tokenStorage.currentOfflineScope() },
+                                sessionProvider = { registry.current.value.session },
                             )
                         }
                         single<ReaderRepository> { get<ApiReaderRepository>() }
@@ -195,6 +199,7 @@ fun rememberAppContainer(
                             ConnectServerViewModel(
                                 tokenStorage = get(),
                                 healthChecker = get(),
+                                sessions = get(),
                                 bakedDefaultUrl = ServerBuildConfig.SERVER_URL_DEFAULT,
                                 devPrefillUrl = ServerBuildConfig.DEV_SERVER_PREFILL,
                             )
@@ -203,13 +208,14 @@ fun rememberAppContainer(
                         single {
                             OutboxWorker(
                                 store = get(),
-                                scope = { tokenStorage.currentOfflineScope() },
+                                registry = get(),
                                 sender = get(),
                                 clock = { getTimeMillis() },
                             )
                         }
+                        single { SessionTransitions(get(), get(), get(), get()) }
                         single { ScopePurger(get()) }
-                        single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }
+                        single { AuthViewModel(get(), get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
                         single { LibraryViewModel(get()) }
@@ -226,7 +232,9 @@ fun rememberAppContainer(
             }
         }
     val koin = koinApplication.koin
-    val authViewModel = remember(koin) { koin.get<AuthViewModel>() }
+    // Assigned during the first composition, not from an effect: a 401 resolved before the first
+    // frame's effects ran would otherwise withdraw the session without ever signing the user out.
+    val authViewModel = remember(koin) { koin.get<AuthViewModel>().also { authViewModelRef.value = it } }
 
     DisposableEffect(koinApplication) {
         koin.get<OutboxWorker>().start()
@@ -235,10 +243,6 @@ fun rememberAppContainer(
             koin.get<AuthenticatedApiTransport>().close()
             koinApplication.close()
         }
-    }
-
-    LaunchedEffect(authViewModel) {
-        authViewModelRef.value = authViewModel
     }
 
     return remember(koin, authViewModel) {
@@ -271,6 +275,7 @@ fun rememberAppContainer(
             searchViewModel = koin.get(),
             sidebarViewModel = koin.get(),
             outboxWorker = koin.get(),
+            sessionTransitions = koin.get(),
             scopePurger = koin.get(),
             connectivityObserver = connectivityObserver,
         )

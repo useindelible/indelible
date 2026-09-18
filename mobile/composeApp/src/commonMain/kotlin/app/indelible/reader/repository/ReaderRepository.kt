@@ -3,10 +3,11 @@ package app.indelible.reader.repository
 import app.indelible.core.model.SaveItemRequest
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
+import app.indelible.core.offline.NoSessionException
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.Session
 import app.indelible.reader.model.ArticleToc
-import app.indelible.reader.model.CreateHighlightRequest
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
@@ -15,7 +16,6 @@ import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
 import app.indelible.reader.model.toHighlightData
-import app.indelible.reader.model.toHighlightNoteData
 import app.indelible.reader.model.toReaderDocument
 import app.indelible.reader.model.toTagData
 import kotlinx.coroutines.CancellationException
@@ -105,7 +105,7 @@ class ApiReaderRepository(
     private val libraryApiService: LibraryApiService,
     offlineStore: OfflineStore,
     worker: OutboxWorker,
-    private val scopeProvider: suspend () -> String?,
+    private val sessionProvider: () -> Session?,
 ) : ReaderRepository,
     ReadingEventWriter {
     private val outbox = ReaderOutboxWrites(offlineStore, worker)
@@ -144,9 +144,7 @@ class ApiReaderRepository(
         documentId: String,
         sessionId: String,
     ) {
-        recordEvent(documentId, KIND_OPENED, sessionId, progressBasisPoints = null) {
-            Result.success(Unit)
-        }
+        recordEvent(documentId, KIND_OPENED, sessionId, progressBasisPoints = null)
     }
 
     override suspend fun recordProgress(
@@ -154,9 +152,7 @@ class ApiReaderRepository(
         percent: Float,
         sessionId: String,
     ) {
-        recordEvent(documentId, KIND_PROGRESS, sessionId, basisPoints(percent)) {
-            readerApiService.updateProgress(documentId, percent)
-        }
+        recordEvent(documentId, KIND_PROGRESS, sessionId, basisPoints(percent))
     }
 
     /** Recording is best-effort: a reader must keep reading when its event cannot be written. */
@@ -165,14 +161,9 @@ class ApiReaderRepository(
         kind: String,
         sessionId: String,
         progressBasisPoints: Int?,
-        withoutScope: suspend () -> Result<Unit>,
     ) {
-        val scope = scopeProvider()
-        if (scope == null) {
-            withoutScope()
-            return
-        }
-        offlineResult { outbox.readingEvent(scope, documentId, kind, sessionId, progressBasisPoints) }
+        val session = sessionProvider() ?: return
+        offlineResult { outbox.readingEvent(session, documentId, kind, sessionId, progressBasisPoints) }
     }
 
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> =
@@ -188,21 +179,16 @@ class ApiReaderRepository(
         endOffset: Long,
     ): Result<HighlightData> {
         val locator = HighlightLocator(type = "html", startOffset = startOffset, endOffset = endOffset)
-        val scope =
-            scopeProvider() ?: return readerApiService
-                .createHighlight(
-                    itemId,
-                    CreateHighlightRequest(color = color, textContent = textContent, locator = locator),
-                ).map { it.toHighlightData() }
-        return offlineResult { outbox.createHighlight(scope, itemId, color, textContent, locator) }
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
+        return offlineResult { outbox.createHighlight(session, itemId, color, textContent, locator) }
     }
 
     override suspend fun deleteHighlight(
         itemId: String,
         highlightId: String,
     ): Result<Unit> {
-        val scope = scopeProvider() ?: return readerApiService.deleteHighlight(highlightId)
-        return offlineResult { outbox.deleteHighlight(scope, itemId, highlightId) }
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
+        return offlineResult { outbox.deleteHighlight(session, itemId, highlightId) }
     }
 
     override suspend fun updateHighlightColor(
@@ -210,9 +196,8 @@ class ApiReaderRepository(
         highlightId: String,
         color: String,
     ): Result<HighlightData> {
-        val scope =
-            scopeProvider() ?: return readerApiService.patchHighlight(highlightId, color).map { it.toHighlightData() }
-        return offlineResult { outbox.updateHighlightColor(scope, itemId, highlightId, color) }
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
+        return offlineResult { outbox.updateHighlightColor(session, itemId, highlightId, color) }
     }
 
     override suspend fun upsertHighlightNote(
@@ -220,19 +205,16 @@ class ApiReaderRepository(
         highlightId: String,
         body: String,
     ): Result<HighlightNoteData> {
-        val scope =
-            scopeProvider() ?: return readerApiService
-                .upsertHighlightNote(highlightId, body)
-                .map { it.toHighlightNoteData() }
-        return offlineResult { outbox.upsertHighlightNote(scope, itemId, highlightId, body) }
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
+        return offlineResult { outbox.upsertHighlightNote(session, itemId, highlightId, body) }
     }
 
     override suspend fun deleteHighlightNote(
         itemId: String,
         highlightId: String,
     ): Result<Unit> {
-        val scope = scopeProvider() ?: return readerApiService.deleteHighlightNote(highlightId)
-        return offlineResult { outbox.deleteHighlightNote(scope, itemId, highlightId) }
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
+        return offlineResult { outbox.deleteHighlightNote(session, itemId, highlightId) }
     }
 
     override suspend fun setHighlightTags(
@@ -240,9 +222,9 @@ class ApiReaderRepository(
         highlightId: String,
         tags: List<String>,
     ): Result<List<String>> {
-        val scope = scopeProvider() ?: return readerApiService.setHighlightTags(highlightId, tags)
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
         return offlineResult {
-            outbox.setHighlightTags(scope, itemId, highlightId, tags)
+            outbox.setHighlightTags(session, itemId, highlightId, tags)
             tags
         }
     }
@@ -255,9 +237,9 @@ class ApiReaderRepository(
         itemId: String,
         body: String,
     ): Result<String> {
-        val scope = scopeProvider() ?: return readerApiService.upsertItemNote(itemId, body).map { it.body }
+        val session = sessionProvider() ?: return Result.failure(NoSessionException())
         return offlineResult {
-            outbox.upsertDocumentNote(scope, itemId, body)
+            outbox.upsertDocumentNote(session, itemId, body)
             body
         }
     }

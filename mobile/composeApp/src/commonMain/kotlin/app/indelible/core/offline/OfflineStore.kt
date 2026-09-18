@@ -2,14 +2,17 @@ package app.indelible.core.offline
 
 import kotlinx.coroutines.flow.Flow
 
-interface OfflineStore {
+/** The queue of local writes waiting to reach the server, in seq order per scope. */
+interface OutboxStore {
     /**
-     * Runs [buildPayload]'s cache mutations and the outbox insert in one transaction.
+     * Runs [buildPayload]'s cache mutations and the outbox insert in one transaction, after
+     * checking inside that transaction that [session] is still the published one
+     * ([StaleWriteException]) and that its scope is live ([ScopeNotLiveException]).
      * The [EnqueueTx] receiver exposes `allocateOriginSeq()` so a reading event's seq is
      * claimed atomically with its row; the receiver is unusable once this call returns.
      */
     suspend fun <T> enqueue(
-        scope: String,
+        session: Session,
         kind: OutboxKind,
         entityId: String,
         documentId: String,
@@ -59,7 +62,10 @@ interface OfflineStore {
         scope: String,
         id: String,
     )
+}
 
+/** Live views of the queue for screens that show sync state. */
+interface OutboxObservation {
     /** Seq-ordered, full rows including nextAttemptAt. */
     fun observeOutbox(scope: String): Flow<List<OutboxRow>>
 
@@ -67,7 +73,10 @@ interface OfflineStore {
         scope: String,
         documentId: String,
     ): Flow<List<OutboxRow>>
+}
 
+/** Cached document metadata: pinning, recency and byte accounting for eviction. */
+interface CachedDocumentStore {
     suspend fun upsertCachedDocument(
         scope: String,
         row: CachedDocumentRow,
@@ -101,7 +110,10 @@ interface OfflineStore {
     suspend fun unpinnedLru(scope: String): List<CachedDocumentRow>
 
     suspend fun totalBytes(scope: String): Long
+}
 
+/** Cached document content: assets, highlights and the sync stamp, always per document. */
+interface CachedContentStore {
     /** One transaction: upsert the document, delete its old asset rows, insert the new ones. */
     suspend fun installCachedDocument(
         scope: String,
@@ -134,8 +146,14 @@ interface OfflineStore {
         scope: String,
         documentId: String,
     )
+}
 
-    /** Lazily creates the client identity for scope via clientId() if none exists. */
+/** Per-scope lifecycle: client identity, purge state and the write barrier transitions rely on. */
+interface ScopeStore {
+    /** Returns once every write that already held the store lock has committed. */
+    suspend fun quiesce()
+
+    /** Creates the client identity for scope if none exists; the only place that does. */
     suspend fun clientIdentity(scope: String): ClientIdentity
 
     /** (scope, purgePending) for every known scope. */
@@ -152,6 +170,14 @@ interface OfflineStore {
     /** Deletes the client_state row; must be the last purge step. */
     suspend fun finishPurge(scope: String)
 }
+
+/** Everything the offline store offers; the parts are separate so a caller can depend on one. */
+interface OfflineStore :
+    OutboxStore,
+    OutboxObservation,
+    CachedDocumentStore,
+    CachedContentStore,
+    ScopeStore
 
 interface EnqueueTx {
     fun allocateOriginSeq(): Long

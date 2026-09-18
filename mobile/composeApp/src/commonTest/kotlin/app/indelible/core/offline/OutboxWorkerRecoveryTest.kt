@@ -13,10 +13,12 @@ class OutboxWorkerRecoveryTest {
     @Test
     fun failureReadingPendingRowsLeavesRowsPendingAndTheRecoveryTimerRunsThem() =
         runTest {
-            val backing = testStore()
-            backing.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val backing = signedIn.store
+            val session = signedIn.session
+            backing.enqueueNote(session, "doc_1")
             val sender = GatedSender()
-            startedWorker(ThrowingPendingReadStore(backing), sender, scope)
+            startedWorker(ThrowingPendingReadStore(backing), sender, signedIn.registry)
 
             assertTrue(sender.calls.isEmpty())
             assertEquals(1, backing.pendingOrdered(scope).size)
@@ -31,11 +33,13 @@ class OutboxWorkerRecoveryTest {
     @Test
     fun failureMarkingAnAttemptLeavesTheRowUntouchedAndRecovers() =
         runTest {
-            val backing = testStore()
-            backing.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val backing = signedIn.store
+            val session = signedIn.session
+            backing.enqueueNote(session, "doc_1")
             val sender = GatedSender()
             sender.enqueueOutcome(SendOutcome.Http(500, null, "boom"))
-            startedWorker(ThrowingMarkAttemptStore(backing), sender, scope)
+            startedWorker(ThrowingMarkAttemptStore(backing), sender, signedIn.registry)
 
             assertEquals(1, sender.calls.size)
             assertEquals(0, backing.pendingOrdered(scope).single().attempts)
@@ -50,10 +54,12 @@ class OutboxWorkerRecoveryTest {
     @Test
     fun failureReadingClientIdentitySendsNothingAndRecovers() =
         runTest {
-            val backing = testStore()
-            backing.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val backing = signedIn.store
+            val session = signedIn.session
+            backing.enqueueNote(session, "doc_1")
             val sender = GatedSender()
-            startedWorker(ThrowingClientIdentityStore(backing), sender, scope)
+            startedWorker(ThrowingClientIdentityStore(backing), sender, signedIn.registry)
 
             assertTrue(sender.calls.isEmpty())
             assertEquals(1, backing.pendingOrdered(scope).size)
@@ -67,11 +73,13 @@ class OutboxWorkerRecoveryTest {
     @Test
     fun consecutiveFailuresBackOffFurther() =
         runTest {
-            val backing = testStore()
-            backing.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val backing = signedIn.store
+            val session = signedIn.session
+            backing.enqueueNote(session, "doc_1")
             val store = ThrowingClientIdentityStore(ThrowingClientIdentityStore(backing))
             val sender = GatedSender()
-            startedWorker(store, sender, scope)
+            startedWorker(store, sender, signedIn.registry)
 
             advanceTimeBy(backoffMs(1))
             runCurrent()
@@ -88,11 +96,13 @@ class OutboxWorkerRecoveryTest {
     @Test
     fun stopCancelsTheRunningPassAndNoLaterRequestIsServed() =
         runTest {
-            val store = testStore()
-            store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            store.enqueueNote(session, "doc_1")
             val sender = GatedSender()
             val started = sender.holdNextSend()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
             worker.requestDrain()
             started.await()
 

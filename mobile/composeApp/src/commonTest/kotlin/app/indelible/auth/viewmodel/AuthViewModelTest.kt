@@ -5,6 +5,7 @@ import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiClient
 import app.indelible.core.offline.testOutboxWorker
 import app.indelible.core.offline.testScopePurger
+import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
@@ -503,6 +504,7 @@ class AuthViewModelTest {
             tokenStorage,
             testOutboxWorker(),
             testScopePurger(),
+            testSessionTransitions(tokenStorage),
         )
 
     companion object {

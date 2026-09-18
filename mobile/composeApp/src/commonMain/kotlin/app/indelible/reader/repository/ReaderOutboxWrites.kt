@@ -5,6 +5,7 @@ import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.Session
 import app.indelible.core.util.highlightClientId
 import app.indelible.core.util.readingEventId
 import app.indelible.reader.model.HighlightData
@@ -44,7 +45,7 @@ internal data class CachedHighlightNote(
 )
 
 private data class HighlightTarget(
-    val scope: String,
+    val session: Session,
     val documentId: String,
     val highlightId: String,
 )
@@ -61,7 +62,7 @@ internal class ReaderOutboxWrites(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun createHighlight(
-        scope: String,
+        session: Session,
         documentId: String,
         color: String,
         textContent: String,
@@ -78,7 +79,7 @@ internal class ReaderOutboxWrites(
                 textContent = textContent,
                 locator = locatorJson,
             )
-        store.enqueue(scope, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
+        store.enqueue(session, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
             upsertCachedHighlight(
                 highlightId,
                 documentId,
@@ -98,7 +99,7 @@ internal class ReaderOutboxWrites(
     }
 
     suspend fun updateHighlightColor(
-        scope: String,
+        session: Session,
         documentId: String,
         highlightId: String,
         color: String,
@@ -106,7 +107,7 @@ internal class ReaderOutboxWrites(
         val at = now()
         val patched =
             patchCachedHighlight(
-                target = HighlightTarget(scope, documentId, highlightId),
+                target = HighlightTarget(session, documentId, highlightId),
                 kind = OutboxKind.HIGHLIGHT_COLOR,
                 payload = OutboxPayload.HighlightColor(highlightId, color),
             ) { it.withField("color", JsonPrimitive(color)) }
@@ -123,14 +124,14 @@ internal class ReaderOutboxWrites(
     }
 
     suspend fun upsertHighlightNote(
-        scope: String,
+        session: Session,
         documentId: String,
         highlightId: String,
         body: String,
     ): HighlightNoteData {
         val at = now()
         patchCachedHighlight(
-            target = HighlightTarget(scope, documentId, highlightId),
+            target = HighlightTarget(session, documentId, highlightId),
             kind = OutboxKind.HIGHLIGHT_NOTE,
             payload = OutboxPayload.HighlightNote(highlightId, body),
         ) { it.withField("note", JsonObject(mapOf("body" to JsonPrimitive(body)))) }
@@ -145,36 +146,36 @@ internal class ReaderOutboxWrites(
     }
 
     suspend fun deleteHighlightNote(
-        scope: String,
+        session: Session,
         documentId: String,
         highlightId: String,
     ) {
         patchCachedHighlight(
-            target = HighlightTarget(scope, documentId, highlightId),
+            target = HighlightTarget(session, documentId, highlightId),
             kind = OutboxKind.HIGHLIGHT_NOTE,
             payload = OutboxPayload.HighlightNote(highlightId, null),
         ) { it.withField("note", null) }
     }
 
     suspend fun setHighlightTags(
-        scope: String,
+        session: Session,
         documentId: String,
         highlightId: String,
         tags: List<String>,
     ) {
         patchCachedHighlight(
-            target = HighlightTarget(scope, documentId, highlightId),
+            target = HighlightTarget(session, documentId, highlightId),
             kind = OutboxKind.HIGHLIGHT_TAGS,
             payload = OutboxPayload.HighlightTags(highlightId, tags),
         ) { it.withField("tags", JsonArray(tags.map(::JsonPrimitive))) }
     }
 
     suspend fun deleteHighlight(
-        scope: String,
+        session: Session,
         documentId: String,
         highlightId: String,
     ) {
-        store.enqueue(scope, OutboxKind.HIGHLIGHT_DELETE, highlightId, documentId) {
+        store.enqueue(session, OutboxKind.HIGHLIGHT_DELETE, highlightId, documentId) {
             deleteCachedHighlight(highlightId)
             OutboxPayload.HighlightDelete(highlightId) to Unit
         }
@@ -182,18 +183,18 @@ internal class ReaderOutboxWrites(
     }
 
     suspend fun upsertDocumentNote(
-        scope: String,
+        session: Session,
         documentId: String,
         body: String,
     ) {
-        store.enqueue(scope, OutboxKind.DOCUMENT_NOTE, documentId, documentId) {
+        store.enqueue(session, OutboxKind.DOCUMENT_NOTE, documentId, documentId) {
             OutboxPayload.DocumentNote(body = body, baseUpdatedAtEpochMs = null) to Unit
         }
         drain()
     }
 
     suspend fun readingEvent(
-        scope: String,
+        session: Session,
         documentId: String,
         kind: String,
         sessionId: String?,
@@ -201,7 +202,7 @@ internal class ReaderOutboxWrites(
     ) {
         val recordedAt = now()
         val eventId = readingEventId()
-        store.enqueue(scope, OutboxKind.READING_EVENT, documentId, documentId) {
+        store.enqueue(session, OutboxKind.READING_EVENT, documentId, documentId) {
             OutboxPayload.ReadingEvent(
                 eventId = eventId,
                 originSeq = allocateOriginSeq(),
@@ -225,10 +226,10 @@ internal class ReaderOutboxWrites(
         payload: OutboxPayload,
         patch: (JsonObject) -> JsonObject,
     ): CachedHighlight? {
-        val (scope, documentId, highlightId) = target
+        val (session, documentId, highlightId) = target
         val at = now()
         val patched =
-            store.enqueue(scope, kind, highlightId, documentId) {
+            store.enqueue(session, kind, highlightId, documentId) {
                 val cached = getCachedHighlight(highlightId)
                 val updated = cached?.let { patch(json.parseToJsonElement(it.payloadJson) as JsonObject) }
                 if (cached != null && updated != null) {

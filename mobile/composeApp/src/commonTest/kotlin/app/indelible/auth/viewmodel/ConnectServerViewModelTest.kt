@@ -2,6 +2,8 @@ package app.indelible.auth.viewmodel
 
 import app.indelible.auth.server.ServerHealthChecker
 import app.indelible.core.i18n.UiMessage
+import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_server_address_required
@@ -35,6 +37,7 @@ class ConnectServerViewModelTest {
 
     private val storage = InMemoryTokenStorage()
     private val health = FakeServerHealth()
+    private val registry = SessionRegistry()
 
     @BeforeTest
     fun setUp() {
@@ -52,9 +55,40 @@ class ConnectServerViewModelTest {
     ) = ConnectServerViewModel(
         tokenStorage = storage,
         healthChecker = health,
+        sessions = testSessionTransitions(storage, registry),
         bakedDefaultUrl = bakedDefaultUrl,
         devPrefillUrl = devPrefillUrl,
     )
+
+    @Test
+    fun healthyServerIsPersistedThroughATransitionThatAdvancesTheEpoch() =
+        runTest {
+            val vm = viewModel()
+            vm.updateUrl("https://indelible.acme.dev")
+
+            vm.connect()
+
+            assertEquals(1L, registry.current.value.epoch)
+            assertEquals("https://indelible.acme.dev", storage.getServerUrl())
+        }
+
+    @Test
+    fun changingServerLeavesNoCredentialsForTheOldServer() =
+        runTest {
+            storage.saveServerUrl("https://old.acme.dev")
+            storage.saveToken("token-u1")
+            storage.saveRefreshToken("refresh-u1")
+            storage.saveUserId("u1")
+            val vm = viewModel()
+            vm.updateUrl("https://indelible.acme.dev")
+
+            vm.connect()
+
+            assertEquals("https://indelible.acme.dev", storage.getServerUrl())
+            assertNull(storage.getToken())
+            assertNull(storage.getRefreshToken())
+            assertNull(registry.current.value.session)
+        }
 
     @Test
     fun setupIsRequiredWithNoStoredUrlAndNoBakedDefault() =

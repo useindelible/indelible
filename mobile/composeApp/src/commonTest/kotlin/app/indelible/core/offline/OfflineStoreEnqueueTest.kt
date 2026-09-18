@@ -13,17 +13,19 @@ class OfflineStoreEnqueueTest {
 
     private fun noopPayload() = OutboxPayload.DocumentNote("noop", null)
 
-    private suspend fun OfflineStore.enqueueSeq(scope: String): Long =
-        enqueue(scope, OutboxKind.READING_EVENT, "doc_1", "doc_1") { noopPayload() to allocateOriginSeq() }
+    private suspend fun OfflineStore.enqueueSeq(session: Session): Long =
+        enqueue(session, OutboxKind.READING_EVENT, "doc_1", "doc_1") { noopPayload() to allocateOriginSeq() }
 
     @Test
     fun enqueueCommitsOutboxRowAndReturnsBuilderResult() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
 
             val result =
-                store.enqueue(scope, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
+                store.enqueue(session, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
                     OutboxPayload.DocumentNote("hello", null) to "builder-result"
                 }
 
@@ -41,11 +43,13 @@ class OfflineStoreEnqueueTest {
     @Test
     fun enqueueThrowingBuildPayloadLeavesNoOutboxRowAndDoesNotConsumeSeq() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
 
             assertFailsWith<IllegalStateException> {
-                store.enqueue(scope, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
+                store.enqueue(session, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
                     allocateOriginSeq()
                     error("boom")
                 }
@@ -54,7 +58,7 @@ class OfflineStoreEnqueueTest {
             assertTrue(store.pendingOrdered(scope).isEmpty())
 
             val nextSeq =
-                store.enqueue(scope, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
+                store.enqueue(session, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
                     val seq = allocateOriginSeq()
                     noopPayload() to seq
                 }
@@ -64,11 +68,13 @@ class OfflineStoreEnqueueTest {
     @Test
     fun enqueueUpsertCachedHighlightThenThrowRollsBackTogetherWithOutboxRow() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
 
             assertFailsWith<IllegalStateException> {
-                store.enqueue(scope, OutboxKind.HIGHLIGHT_CREATE, "hlt_1", "doc_1") {
+                store.enqueue(session, OutboxKind.HIGHLIGHT_CREATE, "hlt_1", "doc_1") {
                     upsertCachedHighlight("hlt_1", "doc_1", "{}", 1L)
                     error("boom")
                 }
@@ -76,7 +82,7 @@ class OfflineStoreEnqueueTest {
 
             assertTrue(store.pendingOrdered(scope).isEmpty())
             val stillMissing =
-                store.enqueue(scope, OutboxKind.HIGHLIGHT_CREATE, "hlt_1", "doc_1") {
+                store.enqueue(session, OutboxKind.HIGHLIGHT_CREATE, "hlt_1", "doc_1") {
                     val existing = getCachedHighlight("hlt_1")
                     OutboxPayload.HighlightCreate("hlt_1", "yellow", "text", null, null) to existing
                 }
@@ -86,12 +92,14 @@ class OfflineStoreEnqueueTest {
     @Test
     fun allocateOriginSeqIncrementsPerScope() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
 
-            val first = store.enqueueSeq(scope)
-            val second = store.enqueueSeq(scope)
-            val third = store.enqueueSeq(scope)
+            val first = store.enqueueSeq(session)
+            val second = store.enqueueSeq(session)
+            val third = store.enqueueSeq(session)
 
             assertEquals(listOf(0L, 1L, 2L), listOf(first, second, third))
         }
@@ -99,11 +107,12 @@ class OfflineStoreEnqueueTest {
     @Test
     fun allocateOriginSeqIsIsolatedPerScope() =
         runTest {
-            val store = store()
+            val signedIn = signedInStore("scopeA")
+            val store = signedIn.store
 
-            val scopeASeq = store.enqueueSeq("scopeA")
-            val scopeBSeq = store.enqueueSeq("scopeB")
-            val scopeASecondSeq = store.enqueueSeq("scopeA")
+            val scopeASeq = store.enqueueSeq(signedIn.session)
+            val scopeBSeq = store.enqueueSeq(signedIn.switchTo("scopeB"))
+            val scopeASecondSeq = store.enqueueSeq(signedIn.switchTo("scopeA"))
 
             assertEquals(0L, scopeASeq)
             assertEquals(0L, scopeBSeq)
@@ -114,14 +123,15 @@ class OfflineStoreEnqueueTest {
     fun allocateOriginSeqPersistsAcrossStoreRebuild() =
         runTest {
             val database = testOfflineDatabase()
-            val scope = "scope"
+            val signedIn = signedInStore(database = database)
+            val session = signedIn.session
 
-            val firstStore = SqlDelightOfflineStore(database)
-            firstStore.enqueueSeq(scope)
-            firstStore.enqueueSeq(scope)
+            val firstStore = signedIn.store
+            firstStore.enqueueSeq(session)
+            firstStore.enqueueSeq(session)
 
-            val rebuiltStore = SqlDelightOfflineStore(database)
-            val nextSeq = rebuiltStore.enqueueSeq(scope)
+            val rebuiltStore = SqlDelightOfflineStore(database, registry = signedIn.registry)
+            val nextSeq = rebuiltStore.enqueueSeq(session)
 
             assertEquals(2L, nextSeq)
         }
@@ -129,31 +139,35 @@ class OfflineStoreEnqueueTest {
     @Test
     fun capturedEnqueueTxThrowsWhenUsedAfterEnqueueReturns() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
             var captured: EnqueueTx? = null
 
-            store.enqueue(scope, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
+            store.enqueue(session, OutboxKind.READING_EVENT, "doc_1", "doc_1") {
                 captured = this
                 noopPayload() to Unit
             }
-            val seqAfterEnqueue = store.enqueueSeq(scope)
+            val seqAfterEnqueue = store.enqueueSeq(session)
 
             assertFailsWith<IllegalStateException> { captured!!.allocateOriginSeq() }
 
-            val seqAfterMisuseAttempt = store.enqueueSeq(scope)
+            val seqAfterMisuseAttempt = store.enqueueSeq(session)
             assertEquals(seqAfterEnqueue + 1, seqAfterMisuseAttempt)
         }
 
     @Test
     fun dependantEnqueuedAfterFailedCreateIsInsertedBlocked() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
 
-            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
 
             assertEquals(1, store.rowsByState(scope, OutboxState.BLOCKED).size)
             assertTrue(store.pendingOrdered(scope).isEmpty())
@@ -162,13 +176,15 @@ class OfflineStoreEnqueueTest {
     @Test
     fun dependantEnqueuedAfterRetriedCreateIsInsertedPending() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
             store.retryRow(scope, createId)
 
-            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
 
             assertEquals(2, store.pendingOrdered(scope).size)
             assertTrue(store.rowsByState(scope, OutboxState.BLOCKED).isEmpty())
@@ -177,12 +193,14 @@ class OfflineStoreEnqueueTest {
     @Test
     fun failedColorDoesNotBlockLaterRowsForTheSameHighlight() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             store.markFailed(scope, colorId, "400")
 
-            store.enqueueHighlightDelete(scope, "hlt_1", "doc_1")
+            store.enqueueHighlightDelete(session, "hlt_1", "doc_1")
 
             assertEquals(1, store.pendingOrdered(scope).size)
             assertTrue(store.rowsByState(scope, OutboxState.BLOCKED).isEmpty())
@@ -191,12 +209,14 @@ class OfflineStoreEnqueueTest {
     @Test
     fun createEnqueuedAfterAFailedCreateForTheSameIdIsInsertedPending() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
 
-            store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
 
             assertEquals(1, store.pendingOrdered(scope).size)
         }

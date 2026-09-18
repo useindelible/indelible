@@ -27,7 +27,7 @@ import kotlinx.serialization.json.Json
 /** A batch is more than one row only when every row in it is READING_EVENT for the same document. */
 interface OutboxSender {
     suspend fun send(
-        scope: String,
+        session: Session,
         clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome
@@ -43,32 +43,39 @@ class ApiOutboxSender(
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun send(
-        scope: String,
+        session: Session,
         clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
-        val result = runCatching { dispatch(clientId, batch) }
-        result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
-        return result.getOrElse { SendOutcome.Transport(it) }
+        val result = runCatching { dispatch(session, clientId, batch) }
+        return result.getOrElse { failure ->
+            when (failure) {
+                is CancellationException -> throw failure
+                is StaleSessionException -> SendOutcome.Stale
+                else -> SendOutcome.Transport(failure)
+            }
+        }
     }
 
     private suspend fun dispatch(
+        session: Session,
         clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
         val head = batch.first()
         return when (head.kind) {
-            OutboxKind.READING_EVENT -> sendReadingEvents(clientId, head.documentId, batch)
-            OutboxKind.HIGHLIGHT_CREATE -> sendHighlightCreate(head)
-            OutboxKind.HIGHLIGHT_COLOR -> sendHighlightColor(head)
-            OutboxKind.HIGHLIGHT_NOTE -> sendHighlightNote(head)
-            OutboxKind.HIGHLIGHT_TAGS -> sendHighlightTags(head)
-            OutboxKind.HIGHLIGHT_DELETE -> sendHighlightDelete(head)
-            OutboxKind.DOCUMENT_NOTE -> sendDocumentNote(head)
+            OutboxKind.READING_EVENT -> sendReadingEvents(session, clientId, head.documentId, batch)
+            OutboxKind.HIGHLIGHT_CREATE -> sendHighlightCreate(session, head)
+            OutboxKind.HIGHLIGHT_COLOR -> sendHighlightColor(session, head)
+            OutboxKind.HIGHLIGHT_NOTE -> sendHighlightNote(session, head)
+            OutboxKind.HIGHLIGHT_TAGS -> sendHighlightTags(session, head)
+            OutboxKind.HIGHLIGHT_DELETE -> sendHighlightDelete(session, head)
+            OutboxKind.DOCUMENT_NOTE -> sendDocumentNote(session, head)
         }
     }
 
     private suspend fun sendReadingEvents(
+        session: Session,
         clientId: String,
         documentId: String,
         batch: List<OutboxRow>,
@@ -79,7 +86,7 @@ class ApiOutboxSender(
                 events = batch.map { readingEventBody(it.payload as OutboxPayload.ReadingEvent) },
             )
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.post("$baseUrl/api/v1/documents/$documentId/reading-events") {
                     authorize(token)
                     setBody(body)
@@ -88,7 +95,10 @@ class ApiOutboxSender(
         return outcome(response)
     }
 
-    private suspend fun sendHighlightCreate(row: OutboxRow): SendOutcome {
+    private suspend fun sendHighlightCreate(
+        session: Session,
+        row: OutboxRow,
+    ): SendOutcome {
         val payload = row.payload as OutboxPayload.HighlightCreate
         val locatorJson =
             requireNotNull(payload.locatorJson) { "highlight ${payload.highlightId} was queued without a locator" }
@@ -101,7 +111,7 @@ class ApiOutboxSender(
                 textContent = payload.textContent,
             )
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.post("$baseUrl/api/v1/documents/${row.documentId}/highlights") {
                     authorize(token)
                     setBody(body)
@@ -110,10 +120,13 @@ class ApiOutboxSender(
         return outcome(response, replayStatus = REPLAYED_STATUS)
     }
 
-    private suspend fun sendHighlightColor(row: OutboxRow): SendOutcome {
+    private suspend fun sendHighlightColor(
+        session: Session,
+        row: OutboxRow,
+    ): SendOutcome {
         val payload = row.payload as OutboxPayload.HighlightColor
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.patch("$baseUrl/api/v1/highlights/${payload.highlightId}") {
                     authorize(token)
                     setBody(PatchHighlightBody(color = payload.color))
@@ -122,19 +135,22 @@ class ApiOutboxSender(
         return outcome(response)
     }
 
-    private suspend fun sendHighlightNote(row: OutboxRow): SendOutcome {
+    private suspend fun sendHighlightNote(
+        session: Session,
+        row: OutboxRow,
+    ): SendOutcome {
         val payload = row.payload as OutboxPayload.HighlightNote
         val url = { baseUrl: String -> "$baseUrl/api/v1/highlights/${payload.highlightId}/note" }
         val noteBody = payload.body
         if (noteBody == null) {
             val response =
-                transport.rawAuthenticatedRequest { client, baseUrl, token ->
+                transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                     client.delete(url(baseUrl)) { authorize(token) }
                 }
             return outcome(response, replayStatus = NOT_FOUND_STATUS)
         }
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.put(url(baseUrl)) {
                     authorize(token)
                     setBody(UpsertNoteBody(body = noteBody))
@@ -143,10 +159,13 @@ class ApiOutboxSender(
         return outcome(response)
     }
 
-    private suspend fun sendHighlightTags(row: OutboxRow): SendOutcome {
+    private suspend fun sendHighlightTags(
+        session: Session,
+        row: OutboxRow,
+    ): SendOutcome {
         val payload = row.payload as OutboxPayload.HighlightTags
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.put("$baseUrl/api/v1/highlights/${payload.highlightId}/tags") {
                     authorize(token)
                     setBody(HighlightTagsBody(tags = payload.tags))
@@ -155,19 +174,25 @@ class ApiOutboxSender(
         return outcome(response)
     }
 
-    private suspend fun sendHighlightDelete(row: OutboxRow): SendOutcome {
+    private suspend fun sendHighlightDelete(
+        session: Session,
+        row: OutboxRow,
+    ): SendOutcome {
         val payload = row.payload as OutboxPayload.HighlightDelete
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.delete("$baseUrl/api/v1/highlights/${payload.highlightId}") { authorize(token) }
             }
         return outcome(response, replayStatus = NOT_FOUND_STATUS)
     }
 
-    private suspend fun sendDocumentNote(row: OutboxRow): SendOutcome {
+    private suspend fun sendDocumentNote(
+        session: Session,
+        row: OutboxRow,
+    ): SendOutcome {
         val payload = row.payload as OutboxPayload.DocumentNote
         val response =
-            transport.rawAuthenticatedRequest { client, baseUrl, token ->
+            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
                 client.put("$baseUrl/api/v1/documents/${row.documentId}/note") {
                     authorize(token)
                     setBody(DocumentUpsertNoteBody(body = payload.body))

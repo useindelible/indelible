@@ -65,9 +65,10 @@ class OfflineStorePurgeTest {
     @Test
     fun purgeRowsRemovesCachedAndOutboxRowsButLeavesClientState() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            store.clientIdentity(scope)
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
             store.upsertCachedDocument(
                 scope,
                 CachedDocumentRow(
@@ -81,7 +82,7 @@ class OfflineStorePurgeTest {
                     bytes = 5L,
                 ),
             )
-            store.enqueue(scope, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
+            store.enqueue(session, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
                 OutboxPayload.DocumentNote("note", null) to Unit
             }
 

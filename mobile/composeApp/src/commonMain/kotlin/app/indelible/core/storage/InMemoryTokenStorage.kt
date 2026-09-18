@@ -33,6 +33,10 @@ class InMemoryTokenStorage : TokenStorage {
 
     override suspend fun getUserId(): String? = userId
 
+    override suspend fun clearUserId() {
+        userId = null
+    }
+
     override suspend fun saveRefreshToken(token: String) {
         refreshToken = token
     }

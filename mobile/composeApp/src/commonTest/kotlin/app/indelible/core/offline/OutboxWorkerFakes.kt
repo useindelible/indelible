@@ -35,7 +35,7 @@ class GatedSender : OutboxSender {
     }
 
     override suspend fun send(
-        scope: String,
+        session: Session,
         clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
@@ -56,12 +56,12 @@ fun TestScope.testStore(database: OfflineDatabase = testOfflineDatabase()): SqlD
 fun TestScope.testWorker(
     store: OfflineStore,
     sender: OutboxSender,
-    scope: String?,
+    registry: SessionRegistry,
     clock: () -> Long = { testScheduler.currentTime },
 ): OutboxWorker =
     OutboxWorker(
         store = store,
-        scope = { scope },
+        registry = registry,
         sender = sender,
         clock = clock,
         isNetwork = { it is FakeNetworkFailure },
@@ -75,10 +75,10 @@ fun TestScope.testWorker(
 fun TestScope.startedWorker(
     store: OfflineStore,
     sender: OutboxSender,
-    scope: String?,
+    registry: SessionRegistry,
     clock: () -> Long = { testScheduler.currentTime },
 ): OutboxWorker =
-    testWorker(store, sender, scope, clock).also {
+    testWorker(store, sender, registry, clock).also {
         it.start()
         it.markStartupReady()
         runCurrent()

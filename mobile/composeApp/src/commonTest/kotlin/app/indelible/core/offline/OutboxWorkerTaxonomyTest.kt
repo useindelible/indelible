@@ -12,14 +12,16 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row4ConnectionDropMidDrainKeepsCommittedRowsAndStopsAtTheFailure() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
             val clock = FakeClock(0L)
-            val worker = startedWorker(store, sender, scope, clock::current)
-            store.enqueueNote(scope, "doc_1")
-            store.enqueueNote(scope, "doc_2")
-            val thirdId = store.enqueueNote(scope, "doc_3")
-            val fourthId = store.enqueueNote(scope, "doc_4")
+            val worker = startedWorker(store, sender, signedIn.registry, clock::current)
+            store.enqueueNote(session, "doc_1")
+            store.enqueueNote(session, "doc_2")
+            val thirdId = store.enqueueNote(session, "doc_3")
+            val fourthId = store.enqueueNote(session, "doc_4")
             sender.enqueueOutcome(SendOutcome.Success)
             sender.enqueueOutcome(SendOutcome.Success)
             sender.enqueueOutcome(SendOutcome.Transport(FakeNetworkFailure()))
@@ -38,10 +40,12 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row5PostRefreshSuccessLeavesNoTraceAndDoesNotPauseAuth() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
-            store.enqueueNote(scope, "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            store.enqueueNote(session, "doc_1")
             sender.enqueueOutcome(SendOutcome.Success)
 
             worker.requestDrain()
@@ -54,11 +58,13 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row18FailedCreateBlocksDependantsAndRetryRowUnblocksThem() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
-            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
+            val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.Http(422, null, "anchor invalid"))
 
             worker.requestDrain()
@@ -79,10 +85,12 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row19DeleteReplayedAs404IsTreatedAsSuccess() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
-            store.enqueueHighlightDelete(scope, "hlt_1", "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            store.enqueueHighlightDelete(session, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.ReplaySuccess)
 
             worker.requestDrain()
@@ -94,10 +102,12 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row22RowsLeftPendingAreDrainedByANewWorkerInstance() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val firstSender = FakeOutboxSender()
-            val firstWorker = startedWorker(store, firstSender, scope)
-            store.enqueueNote(scope, "doc_1")
+            val firstWorker = startedWorker(store, firstSender, signedIn.registry)
+            store.enqueueNote(session, "doc_1")
             firstSender.enqueueOutcome(SendOutcome.Transport(FakeNetworkFailure()))
             firstWorker.requestDrain()
             runCurrent()
@@ -105,7 +115,7 @@ class OutboxWorkerTaxonomyTest {
 
             val secondSender = FakeOutboxSender()
             secondSender.enqueueOutcome(SendOutcome.Success)
-            startedWorker(store, secondSender, scope) { Long.MAX_VALUE }
+            startedWorker(store, secondSender, signedIn.registry) { Long.MAX_VALUE }
 
             assertTrue(store.pendingOrdered(scope).isEmpty())
             assertEquals(1, secondSender.calls.size)
@@ -114,11 +124,13 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row23RecordedAtPassesThroughUnclampedToTheSender() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
             val skewedRecordedAt = 9_999_999_999_999L
-            store.enqueueReadingEvent(scope, "doc_1", skewedRecordedAt)
+            store.enqueueReadingEvent(session, "doc_1", skewedRecordedAt)
             sender.enqueueOutcome(SendOutcome.Success)
 
             worker.requestDrain()
@@ -135,11 +147,13 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row24LargeBacklogBatchesReadingEventsInSeqOrder() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val spyStore = MarkDocumentSyncedSpyStore(store)
             val sender = FakeOutboxSender()
-            val worker = startedWorker(spyStore, sender, scope)
-            repeat(250) { store.enqueueReadingEvent(scope, "doc_1", it.toLong()) }
+            val worker = startedWorker(spyStore, sender, signedIn.registry)
+            repeat(250) { store.enqueueReadingEvent(session, "doc_1", it.toLong()) }
             repeat(2) { sender.enqueueOutcome(SendOutcome.Success) }
 
             worker.requestDrain()
@@ -158,12 +172,14 @@ class OutboxWorkerTaxonomyTest {
     @Test
     fun row14RetryAfterPersistsToTheStoreAndStopsBeforeTheNextEntity() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
             val clock = FakeClock(1_000L)
-            val worker = startedWorker(store, sender, scope, clock::current)
-            val rateLimitedId = store.enqueueNote(scope, "doc_1")
-            val followingId = store.enqueueNote(scope, "doc_2")
+            val worker = startedWorker(store, sender, signedIn.registry, clock::current)
+            val rateLimitedId = store.enqueueNote(session, "doc_1")
+            val followingId = store.enqueueNote(session, "doc_2")
             sender.enqueueOutcome(SendOutcome.Http(429, retryAfterSeconds = 7, message = "slow down"))
 
             worker.requestDrain()

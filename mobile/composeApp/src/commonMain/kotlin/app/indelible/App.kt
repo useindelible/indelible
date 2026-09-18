@@ -53,6 +53,8 @@ fun App(
         // left behind is retried on the next launch, so the worker is released regardless.
         runCatching { appContainer.scopePurger.resumeInterrupted() }
             .onFailure { if (it is CancellationException) throw it }
+        runCatching { appContainer.sessionTransitions.restore() }
+            .onFailure { if (it is CancellationException) throw it }
         appContainer.outboxWorker.markStartupReady()
     }
     SyncDrainEffect(appContainer.outboxWorker, appContainer.connectivityObserver, transport)

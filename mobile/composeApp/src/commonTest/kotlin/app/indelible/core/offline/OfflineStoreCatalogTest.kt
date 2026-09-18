@@ -169,15 +169,17 @@ class OfflineStoreCatalogTest {
     @Test
     fun removeCachedDocumentDeletesAllCachedRowsButLeavesOutbox() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
             store.installCachedDocument(
                 scope,
                 documentRow("doc_1"),
                 listOf(CachedAssetRow("doc_1", "html", 0, "v1.html", 10L)),
             )
             store.upsertCachedHighlight(scope, "hlt_1", "doc_1", "{}", 1L)
-            store.enqueue(scope, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
+            store.enqueue(session, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
                 OutboxPayload.DocumentNote("note", null) to Unit
             }
 
@@ -187,7 +189,7 @@ class OfflineStoreCatalogTest {
             assertTrue(store.assetsForDocument(scope, "doc_1").isEmpty())
             assertEquals(1, store.pendingOrdered(scope).size)
             val remainingHighlight =
-                store.enqueue(scope, OutboxKind.HIGHLIGHT_DELETE, "hlt_1", "doc_1") {
+                store.enqueue(session, OutboxKind.HIGHLIGHT_DELETE, "hlt_1", "doc_1") {
                     val existing = getCachedHighlight("hlt_1")
                     OutboxPayload.HighlightDelete("hlt_1") to existing
                 }

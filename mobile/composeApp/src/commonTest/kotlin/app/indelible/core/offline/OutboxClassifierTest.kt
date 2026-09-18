@@ -55,6 +55,22 @@ class OutboxClassifierTest {
     }
 
     @Test
+    fun retryAfterNeverParksARowBeyondTheHourlyCap() {
+        val parked = SendOutcome.Http(503, retryAfterSeconds = 86_400, message = "later")
+        val classification = classify(parked, attempts = 0, now = 1_000L, isNetwork)
+
+        assertEquals(Classification.Retryable(1_000L + HOURLY_CAP_MS), classification)
+    }
+
+    @Test
+    fun retryAfterIsCappedBeforeItCanOverflow() {
+        val absurd = SendOutcome.Http(503, retryAfterSeconds = Long.MAX_VALUE, message = "later")
+        val classification = classify(absurd, attempts = 0, now = 10_000L, isNetwork)
+
+        assertEquals(Classification.Retryable(10_000L + HOURLY_CAP_MS), classification)
+    }
+
+    @Test
     fun row15ServerErrorIsRetryableWithBackoff() {
         val serverError = SendOutcome.Http(500, retryAfterSeconds = null, message = "boom")
         val classification = classify(serverError, attempts = 2, now = 1_000L, isNetwork)

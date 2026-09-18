@@ -13,10 +13,12 @@ class OfflineStoreRetryTest {
     @Test
     fun retryRowResetsFailedRowAndUnblocksSameEntityRows() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val failedId = store.enqueueNote(scope, "hlt_1", "doc_1")
-            val blockedId = store.enqueueNote(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val failedId = store.enqueueNote(session, "hlt_1", "doc_1")
+            val blockedId = store.enqueueNote(session, "hlt_1", "doc_1")
             store.markAttempt(scope, failedId, now = 5L, nextAttemptAt = 999L, error = "boom")
             store.failCreateAndBlockDependants(scope, failedId, "hlt_1", "boom")
             val blockedBeforeRetry = store.rowsByState(scope, OutboxState.BLOCKED).single { it.id == blockedId }
@@ -36,9 +38,11 @@ class OfflineStoreRetryTest {
     @Test
     fun retryRowIsANoOpOnAPendingRow() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val pendingId = store.enqueueNote(scope, "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val pendingId = store.enqueueNote(session, "doc_1")
 
             store.retryRow(scope, pendingId)
 
@@ -50,10 +54,12 @@ class OfflineStoreRetryTest {
     @Test
     fun retryRowIsANoOpOnABlockedRow() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            val failedId = store.enqueueNote(scope, "hlt_1", "doc_1")
-            val blockedId = store.enqueueNote(scope, "hlt_1", "doc_1")
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val scope = signedIn.scope
+            val failedId = store.enqueueNote(session, "hlt_1", "doc_1")
+            val blockedId = store.enqueueNote(session, "hlt_1", "doc_1")
             store.failCreateAndBlockDependants(scope, failedId, "hlt_1", "boom")
             val blockedBefore = store.rowsByState(scope, OutboxState.BLOCKED).single { it.id == blockedId }
             assertEquals(OutboxState.BLOCKED, blockedBefore.state)

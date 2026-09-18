@@ -2,7 +2,6 @@ package app.indelible.reader.repository
 
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
-import io.ktor.http.HttpMethod
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -94,35 +93,5 @@ class ApiReaderRepositoryEventOutboxTest {
             val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.DOCUMENT_NOTE).single()
             assertEquals(OFFLINE_DOCUMENT_ID, row.entityId)
             assertEquals(OutboxPayload.DocumentNote("a note", null), row.payload)
-        }
-
-    @Test
-    fun without_a_scope_writes_go_straight_to_the_network() =
-        runTest {
-            val harness = readerOutboxHarness(scope = null)
-
-            harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 42.5f, SESSION_ID)
-            harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted", 0, 5)
-            harness.repository.deleteHighlight(OFFLINE_DOCUMENT_ID, "hlt_1")
-            harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, "hlt_1", "Blue")
-            harness.repository.upsertHighlightNote(OFFLINE_DOCUMENT_ID, "hlt_1", "note")
-            harness.repository.deleteHighlightNote(OFFLINE_DOCUMENT_ID, "hlt_1")
-            harness.repository.setHighlightTags(OFFLINE_DOCUMENT_ID, "hlt_1", listOf("t"))
-            harness.repository.upsertItemNote(OFFLINE_DOCUMENT_ID, "a note")
-
-            assertTrue(harness.store.pendingOrdered(OFFLINE_SCOPE).isEmpty())
-            assertEquals(
-                listOf(
-                    HttpMethod.Patch to "/api/v1/documents/$OFFLINE_DOCUMENT_ID/progress",
-                    HttpMethod.Post to "/api/v1/documents/$OFFLINE_DOCUMENT_ID/highlights",
-                    HttpMethod.Delete to "/api/v1/highlights/hlt_1",
-                    HttpMethod.Patch to "/api/v1/highlights/hlt_1",
-                    HttpMethod.Put to "/api/v1/highlights/hlt_1/note",
-                    HttpMethod.Delete to "/api/v1/highlights/hlt_1/note",
-                    HttpMethod.Put to "/api/v1/highlights/hlt_1/tags",
-                    HttpMethod.Put to "/api/v1/documents/$OFFLINE_DOCUMENT_ID/note",
-                ),
-                harness.requests.map { it.method to it.path },
-            )
         }
 }

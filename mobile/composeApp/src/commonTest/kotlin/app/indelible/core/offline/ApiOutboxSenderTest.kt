@@ -23,9 +23,12 @@ private const val SCOPE = "http://localhost:38473|usr_1"
 private const val DOCUMENT_ID = "doc_01"
 private const val HIGHLIGHT_ID = "hlt_01"
 private const val CLIENT_ID = "cli_test"
+private val SESSION = Session(epoch = 0, origin = "http://localhost:38473", scope = SCOPE)
 
 class ApiOutboxSenderTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
+
+    private suspend fun boundRegistry(): SessionRegistry = SessionRegistry().apply { publish(SessionState(0, SESSION)) }
 
     private class Capture {
         val methods = mutableListOf<HttpMethod>()
@@ -47,7 +50,7 @@ class ApiOutboxSenderTest {
                 capture.bodies += (request.body as? TextContent)?.text
                 handler(request)
             }
-        return ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
+        return ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundRegistry()))
     }
 
     private fun row(
@@ -98,7 +101,7 @@ class ApiOutboxSenderTest {
             val accepted = """{"accepted":2,"replayed":0}"""
             val sender = senderWith(capture) { respond(accepted, HttpStatusCode.Accepted) }
 
-            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(readingEventRow(1), readingEventRow(2)))
+            val outcome = sender.send(SESSION, CLIENT_ID, listOf(readingEventRow(1), readingEventRow(2)))
 
             assertEquals(SendOutcome.Success, outcome)
             assertEquals(HttpMethod.Post, capture.methods.single())
@@ -126,7 +129,7 @@ class ApiOutboxSenderTest {
             val created = senderWith(capture) { respond("{}", HttpStatusCode.Created, jsonHeaders) }
             assertEquals(
                 SendOutcome.Success,
-                created.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
+                created.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
             )
             assertEquals(HttpMethod.Post, capture.methods.single())
             assertEquals("/api/v1/documents/doc_01/highlights", capture.paths.single())
@@ -135,7 +138,7 @@ class ApiOutboxSenderTest {
             val replayed = senderWith { respond("{}", HttpStatusCode.OK, jsonHeaders) }
             assertEquals(
                 SendOutcome.ReplaySuccess,
-                replayed.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
+                replayed.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_CREATE, payload))),
             )
         }
 
@@ -148,7 +151,7 @@ class ApiOutboxSenderTest {
             val payload = OutboxPayload.HighlightColor(HIGHLIGHT_ID, "blue")
             assertEquals(
                 SendOutcome.Success,
-                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_COLOR, payload))),
+                sender.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_COLOR, payload))),
             )
             assertEquals(HttpMethod.Patch, capture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID", capture.paths.single())
@@ -163,7 +166,7 @@ class ApiOutboxSenderTest {
             val withBody = OutboxPayload.HighlightNote(HIGHLIGHT_ID, "note text")
             assertEquals(
                 SendOutcome.Success,
-                put.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_NOTE, withBody))),
+                put.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_NOTE, withBody))),
             )
             assertEquals(HttpMethod.Put, putCapture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID/note", putCapture.paths.single())
@@ -173,7 +176,7 @@ class ApiOutboxSenderTest {
             val cleared = OutboxPayload.HighlightNote(HIGHLIGHT_ID, null)
             assertEquals(
                 SendOutcome.ReplaySuccess,
-                delete.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_NOTE, cleared))),
+                delete.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_NOTE, cleared))),
             )
             assertEquals(HttpMethod.Delete, deleteCapture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID/note", deleteCapture.paths.single())
@@ -188,7 +191,7 @@ class ApiOutboxSenderTest {
             val payload = OutboxPayload.HighlightTags(HIGHLIGHT_ID, listOf("a", "b"))
             assertEquals(
                 SendOutcome.Success,
-                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_TAGS, payload))),
+                sender.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_TAGS, payload))),
             )
             assertEquals(HttpMethod.Put, capture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID/tags", capture.paths.single())
@@ -204,7 +207,7 @@ class ApiOutboxSenderTest {
             val payload = OutboxPayload.HighlightDelete(HIGHLIGHT_ID)
             assertEquals(
                 SendOutcome.ReplaySuccess,
-                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_DELETE, payload))),
+                sender.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.HIGHLIGHT_DELETE, payload))),
             )
             assertEquals(HttpMethod.Delete, capture.methods.single())
             assertEquals("/api/v1/highlights/$HIGHLIGHT_ID", capture.paths.single())
@@ -219,33 +222,10 @@ class ApiOutboxSenderTest {
             val payload = OutboxPayload.DocumentNote("note body", null)
             assertEquals(
                 SendOutcome.Success,
-                sender.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload, entityId = DOCUMENT_ID))),
+                sender.send(SESSION, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload, entityId = DOCUMENT_ID))),
             )
             assertEquals(HttpMethod.Put, capture.methods.single())
             assertEquals("/api/v1/documents/doc_01/note", capture.paths.single())
-        }
-
-    @Test
-    fun numericRetryAfterIsExtractedAndHttpDateIsNot() =
-        runTest {
-            val payload = OutboxPayload.DocumentNote("note body", null)
-            val numeric =
-                senderWith {
-                    respond("slow down", HttpStatusCode.TooManyRequests, headersOf(HttpHeaders.RetryAfter, "42"))
-                }
-            val numericOutcome = numeric.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload)))
-            assertEquals(SendOutcome.Http(429, 42L, "slow down"), numericOutcome)
-
-            val httpDate =
-                senderWith {
-                    respond(
-                        "slow down",
-                        HttpStatusCode.TooManyRequests,
-                        headersOf(HttpHeaders.RetryAfter, "Wed, 21 Oct 2026 07:28:00 GMT"),
-                    )
-                }
-            val dateOutcome = httpDate.send(SCOPE, CLIENT_ID, listOf(row(OutboxKind.DOCUMENT_NOTE, payload)))
-            assertEquals(SendOutcome.Http(429, null, "slow down"), dateOutcome)
         }
 
     @Test
@@ -274,9 +254,9 @@ class ApiOutboxSenderTest {
                     }
                 }
             val sender =
-                ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
+                ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundRegistry()))
 
-            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(noteRow()))
+            val outcome = sender.send(SESSION, CLIENT_ID, listOf(noteRow()))
 
             assertEquals(SendOutcome.Success, outcome)
             assertEquals(listOf<String?>("Bearer stale-token", "Bearer access-new"), authorizations)
@@ -297,9 +277,9 @@ class ApiOutboxSenderTest {
                     }
                 }
             val sender =
-                ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine))
+                ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundRegistry()))
 
-            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(noteRow()))
+            val outcome = sender.send(SESSION, CLIENT_ID, listOf(noteRow()))
 
             val http = assertIs<SendOutcome.Http>(outcome)
             assertEquals(401, http.status)
@@ -311,7 +291,7 @@ class ApiOutboxSenderTest {
         runTest {
             val sender = senderWith { throw FakeNetworkFailure() }
 
-            val outcome = sender.send(SCOPE, CLIENT_ID, listOf(noteRow()))
+            val outcome = sender.send(SESSION, CLIENT_ID, listOf(noteRow()))
 
             assertIs<SendOutcome.Transport>(outcome)
         }

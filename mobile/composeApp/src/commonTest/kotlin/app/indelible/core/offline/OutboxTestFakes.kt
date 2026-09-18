@@ -12,7 +12,7 @@ class FakeOutboxSender : OutboxSender {
     }
 
     override suspend fun send(
-        scope: String,
+        session: Session,
         clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
@@ -22,7 +22,13 @@ class FakeOutboxSender : OutboxSender {
 }
 
 /** A never-started worker with no resolvable scope, so only resumeAuth() and authPaused are observable. */
-fun testOutboxWorker(): OutboxWorker = OutboxWorker(UnreachableOfflineStore, { null }, FakeOutboxSender(), { 0L })
+fun testOutboxWorker(): OutboxWorker =
+    OutboxWorker(
+        UnreachableOfflineStore,
+        SessionRegistry(),
+        FakeOutboxSender(),
+        clock = { 0L },
+    )
 
 /**
  * A purger backed by a store with no known scopes, so [ScopePurger.purgeInactive] and
@@ -40,12 +46,14 @@ private object NoScopesOfflineStore : OfflineStore by UnreachableOfflineStore {
  */
 private object UnreachableOfflineStore : OfflineStore {
     override suspend fun <T> enqueue(
-        scope: String,
+        session: Session,
         kind: OutboxKind,
         entityId: String,
         documentId: String,
         buildPayload: EnqueueTx.() -> Pair<OutboxPayload, T>,
     ): T = unreachable()
+
+    override suspend fun quiesce(): Unit = unreachable()
 
     override suspend fun pendingOrdered(scope: String): List<OutboxRow> = unreachable()
 
@@ -197,55 +205,55 @@ class FakeClock(
 }
 
 suspend fun OfflineStore.enqueueNote(
-    scope: String,
+    session: Session,
     entityId: String,
     documentId: String = entityId,
 ): String {
-    enqueue(scope, OutboxKind.DOCUMENT_NOTE, entityId, documentId) {
+    enqueue(session, OutboxKind.DOCUMENT_NOTE, entityId, documentId) {
         OutboxPayload.DocumentNote(entityId, null) to Unit
     }
-    return observeOutbox(scope).first().last().id
+    return observeOutbox(session.scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueHighlightCreate(
-    scope: String,
+    session: Session,
     highlightId: String,
     documentId: String,
 ): String {
-    enqueue(scope, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
+    enqueue(session, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
         OutboxPayload.HighlightCreate(highlightId, "yellow", "quoted text", null, null) to Unit
     }
-    return observeOutbox(scope).first().last().id
+    return observeOutbox(session.scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueHighlightColor(
-    scope: String,
+    session: Session,
     highlightId: String,
     documentId: String,
 ): String {
-    enqueue(scope, OutboxKind.HIGHLIGHT_COLOR, highlightId, documentId) {
+    enqueue(session, OutboxKind.HIGHLIGHT_COLOR, highlightId, documentId) {
         OutboxPayload.HighlightColor(highlightId, "blue") to Unit
     }
-    return observeOutbox(scope).first().last().id
+    return observeOutbox(session.scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueHighlightDelete(
-    scope: String,
+    session: Session,
     highlightId: String,
     documentId: String,
 ): String {
-    enqueue(scope, OutboxKind.HIGHLIGHT_DELETE, highlightId, documentId) {
+    enqueue(session, OutboxKind.HIGHLIGHT_DELETE, highlightId, documentId) {
         OutboxPayload.HighlightDelete(highlightId) to Unit
     }
-    return observeOutbox(scope).first().last().id
+    return observeOutbox(session.scope).first().last().id
 }
 
 suspend fun OfflineStore.enqueueReadingEvent(
-    scope: String,
+    session: Session,
     documentId: String,
     recordedAtEpochMs: Long,
 ): String {
-    enqueue(scope, OutboxKind.READING_EVENT, documentId, documentId) {
+    enqueue(session, OutboxKind.READING_EVENT, documentId, documentId) {
         val seq = allocateOriginSeq()
         OutboxPayload.ReadingEvent(
             eventId = "evt_$seq",
@@ -261,5 +269,5 @@ suspend fun OfflineStore.enqueueReadingEvent(
             recordedAtEpochMs = recordedAtEpochMs,
         ) to Unit
     }
-    return observeOutbox(scope).first().last().id
+    return observeOutbox(session.scope).first().last().id
 }

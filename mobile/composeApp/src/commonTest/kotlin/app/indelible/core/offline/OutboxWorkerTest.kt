@@ -13,11 +13,13 @@ class OutboxWorkerTest {
     @Test
     fun http401PausesAuthAndResumeAuthAllowsTheRowToDrainAgain() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
-            val rowId = store.enqueueNote(scope, "doc_1")
-            val followingId = store.enqueueNote(scope, "doc_2")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            val rowId = store.enqueueNote(session, "doc_1")
+            val followingId = store.enqueueNote(session, "doc_2")
             sender.enqueueOutcome(SendOutcome.Http(401, null, "expired"))
 
             worker.requestDrain()
@@ -47,12 +49,14 @@ class OutboxWorkerTest {
     @Test
     fun terminalCreateShieldsSiblingForThePassAndBlocksItInTheStore() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
-            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
-            val otherEntityId = store.enqueueNote(scope, "doc_2")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
+            val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
+            val otherEntityId = store.enqueueNote(session, "doc_2")
             sender.enqueueOutcome(SendOutcome.Http(422, null, "anchor invalid"))
             sender.enqueueOutcome(SendOutcome.Success)
 
@@ -70,9 +74,11 @@ class OutboxWorkerTest {
     @Test
     fun drainOnAnEmptyOutboxStillCreatesClientStateSoThePurgeSweepSeesTheScope() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
+            val worker = startedWorker(store, sender, signedIn.registry)
 
             worker.requestDrain()
             runCurrent()
@@ -84,13 +90,15 @@ class OutboxWorkerTest {
     @Test
     fun createInBackoffShieldsItsDueDependantAndTheDependantIsNotSent() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
             val clock = FakeClock(now = 1_000)
-            val worker = startedWorker(store, sender, scope, clock::current)
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry, clock::current)
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.markAttempt(scope, createId, now = 900, nextAttemptAt = 5_000, error = "500")
-            store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            store.enqueueHighlightColor(session, "hlt_1", "doc_1")
 
             worker.requestDrain()
             runCurrent()
@@ -102,13 +110,15 @@ class OutboxWorkerTest {
     @Test
     fun createDueAgainRunsBeforeItsDependantInSeqOrder() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
             val clock = FakeClock(now = 6_000)
-            val worker = startedWorker(store, sender, scope, clock::current)
-            val createId = store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry, clock::current)
+            val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.markAttempt(scope, createId, now = 900, nextAttemptAt = 5_000, error = "500")
-            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.Success)
             sender.enqueueOutcome(SendOutcome.Success)
 
@@ -122,11 +132,13 @@ class OutboxWorkerTest {
     @Test
     fun terminalCreateBlocksItsPendingDependantsInOneStep() =
         runTest {
-            val store = testStore()
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
             val sender = FakeOutboxSender()
-            val worker = startedWorker(store, sender, scope)
-            store.enqueueHighlightCreate(scope, "hlt_1", "doc_1")
-            val colorId = store.enqueueHighlightColor(scope, "hlt_1", "doc_1")
+            val worker = startedWorker(store, sender, signedIn.registry)
+            store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
+            val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             sender.enqueueOutcome(SendOutcome.Http(422, null, "anchor invalid"))
 
             worker.requestDrain()

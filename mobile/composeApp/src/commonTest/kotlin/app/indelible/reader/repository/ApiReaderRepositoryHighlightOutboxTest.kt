@@ -54,7 +54,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
                     .toInt(),
             )
 
-            val cachedRow = assertNotNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, created.id))
+            val cachedRow = assertNotNull(harness.store.probeCachedHighlight(harness.session, created.id))
             assertEquals(OFFLINE_DOCUMENT_ID, cachedRow.documentId)
             assertEquals("Yellow", cached(cachedRow.payloadJson).getValue("color").jsonPrimitive.content)
         }
@@ -84,7 +84,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             assertEquals("Blue", updated.color)
             val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.HIGHLIGHT_COLOR).single()
             assertEquals(OutboxPayload.HighlightColor(created.id, "Blue"), row.payload)
-            val cachedRow = assertNotNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, created.id))
+            val cachedRow = assertNotNull(harness.store.probeCachedHighlight(harness.session, created.id))
             val payload = cached(cachedRow.payloadJson)
             assertEquals("Blue", payload.getValue("color").jsonPrimitive.content)
             assertEquals("quoted text", payload.getValue("textContent").jsonPrimitive.content)
@@ -100,7 +100,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.HIGHLIGHT_COLOR).single()
             assertEquals("hlt_unknown", row.entityId)
             assertEquals(OFFLINE_DOCUMENT_ID, row.documentId)
-            assertNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, "hlt_unknown"))
+            assertNull(harness.store.probeCachedHighlight(harness.session, "hlt_unknown"))
         }
 
     @Test
@@ -116,7 +116,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
 
             assertEquals("my note", note.body)
             assertEquals(created.id, note.highlightId)
-            val withNote = assertNotNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, created.id))
+            val withNote = assertNotNull(harness.store.probeCachedHighlight(harness.session, created.id))
             assertEquals(
                 "my note",
                 cached(withNote.payloadJson)
@@ -128,7 +128,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
 
             harness.repository.deleteHighlightNote(OFFLINE_DOCUMENT_ID, created.id).getOrThrow()
 
-            val withoutNote = assertNotNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, created.id))
+            val withoutNote = assertNotNull(harness.store.probeCachedHighlight(harness.session, created.id))
             assertNull(cached(withoutNote.payloadJson)["note"])
             assertEquals(
                 listOf(
@@ -161,7 +161,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
                     .single()
                     .payload,
             )
-            val cachedRow = assertNotNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, created.id))
+            val cachedRow = assertNotNull(harness.store.probeCachedHighlight(harness.session, created.id))
             assertEquals(
                 listOf("ideas", "later"),
                 cached(cachedRow.payloadJson).getValue("tags").jsonArray.map { it.jsonPrimitive.content },
@@ -206,6 +206,6 @@ class ApiReaderRepositoryHighlightOutboxTest {
                     .single()
                     .payload,
             )
-            assertNull(harness.store.probeCachedHighlight(OFFLINE_SCOPE, created.id))
+            assertNull(harness.store.probeCachedHighlight(harness.session, created.id))
         }
 }

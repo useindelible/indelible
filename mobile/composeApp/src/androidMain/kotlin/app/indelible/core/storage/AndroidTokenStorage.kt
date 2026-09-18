@@ -43,6 +43,10 @@ class AndroidTokenStorage(
 
     override suspend fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
 
+    override suspend fun clearUserId() {
+        prefs.edit().remove(KEY_USER_ID).commit()
+    }
+
     override suspend fun saveRefreshToken(token: String) {
         prefs.edit().putString(KEY_REFRESH_TOKEN, token).commit()
     }

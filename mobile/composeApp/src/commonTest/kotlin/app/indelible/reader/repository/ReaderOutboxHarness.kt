@@ -11,9 +11,14 @@ import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.SendOutcome
+import app.indelible.core.offline.Session
+import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.SessionState
+import app.indelible.core.offline.SqlDelightOfflineStore
 import app.indelible.core.offline.startedWorker
-import app.indelible.core.offline.testStore
+import app.indelible.core.offline.testSession
 import app.indelible.core.storage.InMemoryTokenStorage
+import app.indelible.db.testOfflineDatabase
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -22,6 +27,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 
 internal const val OFFLINE_SCOPE = "http://localhost:38473|usr_1"
@@ -34,7 +40,7 @@ internal class StuckOutboxSender : OutboxSender {
         private set
 
     override suspend fun send(
-        scope: String,
+        session: Session,
         clientId: String,
         batch: List<OutboxRow>,
     ): SendOutcome {
@@ -50,7 +56,7 @@ internal class ThrowingEnqueueStore(
     delegate: OfflineStore,
 ) : OfflineStore by delegate {
     override suspend fun <T> enqueue(
-        scope: String,
+        session: Session,
         kind: OutboxKind,
         entityId: String,
         documentId: String,
@@ -69,7 +75,10 @@ internal class ReaderOutboxHarness(
     val sender: StuckOutboxSender,
     val repository: ApiReaderRepository,
     val requests: List<RecordedRequest>,
-)
+    val registry: SessionRegistry,
+) {
+    val session: Session get() = checkNotNull(registry.current.value.session)
+}
 
 internal suspend fun TestScope.readerOutboxHarness(
     scope: String? = OFFLINE_SCOPE,
@@ -85,8 +94,18 @@ internal suspend fun TestScope.readerOutboxHarness(
             requests += RecordedRequest(request.method, request.url.encodedPath, (request.body as? TextContent)?.text)
             respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         }
-    val transport = AuthenticatedApiTransport(tokenStorage, engine = engine)
-    val backing = testStore()
+    val registry = SessionRegistry()
+    val transport = AuthenticatedApiTransport(tokenStorage, engine = engine, registry = registry)
+    val backing =
+        SqlDelightOfflineStore(
+            testOfflineDatabase(),
+            registry = registry,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
+    if (scope != null) {
+        registry.publish(SessionState(0, testSession(scope)))
+        backing.clientIdentity(scope)
+    }
     val store = if (failingStore) ThrowingEnqueueStore(backing) else backing
     val sender = StuckOutboxSender()
     return ReaderOutboxHarness(
@@ -97,19 +116,20 @@ internal suspend fun TestScope.readerOutboxHarness(
                 readerApiService = ReaderApiService(transport),
                 libraryApiService = LibraryApiService(transport),
                 offlineStore = store,
-                worker = startedWorker(store, sender, scope),
-                scopeProvider = { scope },
+                worker = startedWorker(store, sender, registry),
+                sessionProvider = { registry.current.value.session },
             ),
         requests = requests,
+        registry = registry,
     )
 }
 
 /** Reads a cached highlight through an enqueue receiver, the only transactional read there is. */
 internal suspend fun OfflineStore.probeCachedHighlight(
-    scope: String,
+    session: Session,
     id: String,
 ): CachedHighlightRow? =
-    enqueue(scope, OutboxKind.DOCUMENT_NOTE, "probe", "probe") {
+    enqueue(session, OutboxKind.DOCUMENT_NOTE, "probe", "probe") {
         OutboxPayload.DocumentNote("probe", null) to getCachedHighlight(id)
     }
 

@@ -27,14 +27,14 @@ import kotlinx.coroutines.sync.withLock
  * without touching the others.
  */
 class OutboxWorker(
-    private val store: OfflineStore,
-    private val scope: suspend () -> String?,
+    store: OfflineStore,
+    private val registry: SessionRegistry,
     sender: OutboxSender,
     private val clock: () -> Long,
     isNetwork: (Throwable) -> Boolean = ::isNetworkException,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    private val pass = OutboxPass(store, sender, clock, isNetwork)
+    private val pass = OutboxPass(store, registry, sender, clock, isNetwork)
     private val requests = Channel<Unit>(Channel.CONFLATED)
     private val passGate = Mutex()
     private val workerScope = MutableStateFlow<CoroutineScope?>(null)
@@ -98,18 +98,20 @@ class OutboxWorker(
     }
 
     private suspend fun runPass(owner: CoroutineScope) {
-        val currentScope = scope()
+        val session = registry.current.value.session
         val outcome =
-            if (currentScope == null) {
+            if (session == null) {
                 PassOutcome(PassResult.NoSession, null)
             } else {
-                runCatching { pass.run(currentScope) }.getOrElse { failure ->
+                runCatching { pass.run(session) }.getOrElse { failure ->
                     if (failure is CancellationException) throw failure
                     PassOutcome(PassResult.Failed, null)
                 }
             }
         consecutiveFailures = if (outcome.result == PassResult.Failed) consecutiveFailures + 1 else 0
         if (outcome.result == PassResult.AuthPaused) authPausedState.value = true
+        // Rows passed over behind a terminal failure are still due; nothing else would re-run them.
+        if (outcome.skippedDue) requestDrain()
         schedule(owner, outcome)
     }
 
