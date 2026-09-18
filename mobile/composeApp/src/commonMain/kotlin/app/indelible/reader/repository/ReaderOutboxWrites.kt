@@ -1,11 +1,13 @@
 package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.LocatorSchemaFlat
+import app.indelible.core.offline.CachedHighlight
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.Session
+import app.indelible.core.offline.applyToCachedHighlight
 import app.indelible.core.util.highlightClientId
 import app.indelible.core.util.readingEventId
 import app.indelible.reader.model.HighlightData
@@ -15,34 +17,12 @@ import app.indelible.reader.model.toHighlightLocator
 import app.indelible.reader.model.toLocatorSchemaFlat
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.math.roundToInt
 
 private const val BASIS_POINTS_PER_PERCENT = 100
 private const val MAX_BASIS_POINTS = 10_000
 private const val EVENT_CAUSE = "reader"
-
-/** The locally cached shape of a highlight; mutations patch its fields inside their transaction. */
-@Serializable
-internal data class CachedHighlight(
-    val id: String,
-    val documentId: String,
-    val color: String,
-    val textContent: String,
-    val locator: String? = null,
-    val tags: List<String> = emptyList(),
-    val note: CachedHighlightNote? = null,
-)
-
-@Serializable
-internal data class CachedHighlightNote(
-    val body: String,
-)
 
 private data class HighlightTarget(
     val session: Session,
@@ -70,32 +50,20 @@ internal class ReaderOutboxWrites(
     ): HighlightData {
         val highlightId = highlightClientId()
         val at = now()
-        val locatorJson = json.encodeToString(LocatorSchemaFlat.serializer(), locator.toLocatorSchemaFlat())
-        val cached =
-            CachedHighlight(
-                id = highlightId,
-                documentId = documentId,
-                color = color,
-                textContent = textContent,
-                locator = locatorJson,
-            )
-        store.enqueue(session, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
-            upsertCachedHighlight(
-                highlightId,
-                documentId,
-                json.encodeToString(CachedHighlight.serializer(), cached),
-                at,
-            )
+        val payload =
             OutboxPayload.HighlightCreate(
                 highlightId = highlightId,
                 color = color,
                 textContent = textContent,
-                locatorJson = locatorJson,
+                locatorJson = json.encodeToString(LocatorSchemaFlat.serializer(), locator.toLocatorSchemaFlat()),
                 sourceLocatorJson = null,
-            ) to Unit
-        }
+            )
+        val cached =
+            store.enqueue(session, OutboxKind.HIGHLIGHT_CREATE, highlightId, documentId) {
+                payload to applyToCachedHighlight(highlightId, documentId, payload, at)
+            }
         drain()
-        return highlightFrom(cached, at)
+        return highlightFrom(checkNotNull(cached), at)
     }
 
     suspend fun updateHighlightColor(
@@ -110,7 +78,7 @@ internal class ReaderOutboxWrites(
                 target = HighlightTarget(session, documentId, highlightId),
                 kind = OutboxKind.HIGHLIGHT_COLOR,
                 payload = OutboxPayload.HighlightColor(highlightId, color),
-            ) { it.withField("color", JsonPrimitive(color)) }
+            )
         return patched?.let { highlightFrom(it, at) }
             ?: HighlightData(
                 id = highlightId,
@@ -134,7 +102,7 @@ internal class ReaderOutboxWrites(
             target = HighlightTarget(session, documentId, highlightId),
             kind = OutboxKind.HIGHLIGHT_NOTE,
             payload = OutboxPayload.HighlightNote(highlightId, body),
-        ) { it.withField("note", JsonObject(mapOf("body" to JsonPrimitive(body)))) }
+        )
         return HighlightNoteData(
             // The server mints the durable note id when the row syncs; this one only backs local state.
             id = highlightId,
@@ -154,7 +122,7 @@ internal class ReaderOutboxWrites(
             target = HighlightTarget(session, documentId, highlightId),
             kind = OutboxKind.HIGHLIGHT_NOTE,
             payload = OutboxPayload.HighlightNote(highlightId, null),
-        ) { it.withField("note", null) }
+        )
     }
 
     suspend fun setHighlightTags(
@@ -167,7 +135,7 @@ internal class ReaderOutboxWrites(
             target = HighlightTarget(session, documentId, highlightId),
             kind = OutboxKind.HIGHLIGHT_TAGS,
             payload = OutboxPayload.HighlightTags(highlightId, tags),
-        ) { it.withField("tags", JsonArray(tags.map(::JsonPrimitive))) }
+        )
     }
 
     suspend fun deleteHighlight(
@@ -175,11 +143,11 @@ internal class ReaderOutboxWrites(
         documentId: String,
         highlightId: String,
     ) {
-        store.enqueue(session, OutboxKind.HIGHLIGHT_DELETE, highlightId, documentId) {
-            deleteCachedHighlight(highlightId)
-            OutboxPayload.HighlightDelete(highlightId) to Unit
-        }
-        drain()
+        patchCachedHighlight(
+            target = HighlightTarget(session, documentId, highlightId),
+            kind = OutboxKind.HIGHLIGHT_DELETE,
+            payload = OutboxPayload.HighlightDelete(highlightId),
+        )
     }
 
     suspend fun upsertDocumentNote(
@@ -188,6 +156,7 @@ internal class ReaderOutboxWrites(
         body: String,
     ) {
         store.enqueue(session, OutboxKind.DOCUMENT_NOTE, documentId, documentId) {
+            setCachedNote(documentId, body)
             OutboxPayload.DocumentNote(body = body, baseUpdatedAtEpochMs = null) to Unit
         }
         drain()
@@ -203,6 +172,7 @@ internal class ReaderOutboxWrites(
         val recordedAt = now()
         val eventId = readingEventId()
         store.enqueue(session, OutboxKind.READING_EVENT, documentId, documentId) {
+            progressBasisPoints?.let { patchCachedProgress(documentId, it / BASIS_POINTS_PER_PERCENT) }
             OutboxPayload.ReadingEvent(
                 eventId = eventId,
                 originSeq = allocateOriginSeq(),
@@ -224,21 +194,15 @@ internal class ReaderOutboxWrites(
         target: HighlightTarget,
         kind: OutboxKind,
         payload: OutboxPayload,
-        patch: (JsonObject) -> JsonObject,
     ): CachedHighlight? {
         val (session, documentId, highlightId) = target
         val at = now()
         val patched =
             store.enqueue(session, kind, highlightId, documentId) {
-                val cached = getCachedHighlight(highlightId)
-                val updated = cached?.let { patch(json.parseToJsonElement(it.payloadJson) as JsonObject) }
-                if (cached != null && updated != null) {
-                    upsertCachedHighlight(highlightId, documentId, updated.toString(), at)
-                }
-                payload to updated
+                payload to applyToCachedHighlight(highlightId, documentId, payload, at)
             }
         drain()
-        return patched?.let { json.decodeFromJsonElement(CachedHighlight.serializer(), it) }
+        return patched
     }
 
     private fun drain() {
@@ -272,11 +236,6 @@ internal class ReaderOutboxWrites(
                     )
                 },
         )
-
-    private fun JsonObject.withField(
-        name: String,
-        value: JsonElement?,
-    ): JsonObject = JsonObject(if (value == null) this - name else this + (name to value))
 }
 
 internal fun basisPoints(percent: Float): Int {
