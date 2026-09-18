@@ -136,7 +136,7 @@ interface CachedContentStore {
         request: InstallRequest,
     ): InstallResult
 
-    /** Merges new server parts into an existing copy, skipping the parts whose revision moved. */
+    /** Merges a server part into an existing copy, unless the revision it depends on moved. */
     suspend fun refreshCachedCopy(
         session: Session,
         request: RefreshRequest,

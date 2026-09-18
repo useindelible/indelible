@@ -42,6 +42,8 @@ sealed class ReaderUiState {
         val progress: Float,
         val preferences: ReaderPreferences,
         val itemNote: String? = null,
+        /** The note came from the server or a complete copy; until then it cannot be edited. */
+        val itemNoteLoaded: Boolean = false,
         val itemTags: List<String> = emptyList(),
         val entities: List<DocumentEntity> = emptyList(),
         val contentStatus: ReaderContentStatus = ReaderContentStatus.LOADING,

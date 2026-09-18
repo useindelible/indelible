@@ -5,6 +5,7 @@ import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.offline.CachedHighlightRow
 import app.indelible.core.offline.EnqueueTx
+import app.indelible.core.offline.OfflineFiles
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
@@ -29,6 +30,8 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 
 internal const val OFFLINE_SCOPE = "http://localhost:38473|usr_1"
 internal const val OFFLINE_DOCUMENT_ID = "doc_01"
@@ -118,6 +121,14 @@ internal suspend fun TestScope.readerOutboxHarness(
                 offlineStore = store,
                 worker = startedWorker(store, sender, registry),
                 sessionProvider = { registry.current.value.session },
+                offlineCopy =
+                    ReaderOfflineCopy(
+                        store = store,
+                        files = OfflineFiles("/offline".toPath(), FakeFileSystem()),
+                        sessionProvider = { registry.current.value.session },
+                        clock = { testScheduler.currentTime },
+                        requestCache = { _, _ -> },
+                    ),
             ),
         requests = requests,
         registry = registry,

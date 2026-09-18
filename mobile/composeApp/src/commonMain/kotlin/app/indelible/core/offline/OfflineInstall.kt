@@ -27,11 +27,29 @@ data class InstallRequest(
     val at: Long,
 )
 
-/** New server parts for a document that already has a copy; files and generation stay. */
+/** One part of a document as the server returned it. */
+sealed interface ServerPart {
+    /** The title and reader JSON always apply; the progress is a position part. */
+    data class Reader(
+        val title: String,
+        val readerJson: String,
+        val progress: Progress,
+    ) : ServerPart
+
+    data class Highlights(
+        val highlights: List<CachedHighlight>,
+    ) : ServerPart
+
+    data class Note(
+        val note: ServerNote?,
+    ) : ServerPart
+}
+
+/** A server part for a document that already has a copy; [revision] is the one read before the fetch. */
 data class RefreshRequest(
     val documentId: String,
     val revision: DocumentRevision,
-    val server: ServerDocument,
+    val part: ServerPart,
 )
 
 /** Which parts of a server response predate a local change: content is highlights and note. */
@@ -53,10 +71,10 @@ sealed interface InstallResult {
 sealed interface RefreshResult {
     data object NoCopy : RefreshResult
 
-    /** Every part except the stale ones was applied. */
-    data class Applied(
-        val skipped: Staleness,
-    ) : RefreshResult
+    data object Applied : RefreshResult
+
+    /** The part predates a local change and was not applied; of a reader part, only its progress. */
+    data object Stale : RefreshResult
 }
 
 /** A cached document as lists show it, without its reader JSON. */
