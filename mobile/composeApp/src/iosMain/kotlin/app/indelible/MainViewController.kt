@@ -7,6 +7,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 import app.indelible.core.i18n.AppLanguage
 import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.storage.IosTokenStorage
 import app.indelible.core.storage.IosUserPreferencesStorage
 import app.indelible.db.DatabaseDriverFactory
@@ -21,6 +22,7 @@ fun MainViewController() =
     ComposeUIViewController {
         val databaseDriverFactory = remember { DatabaseDriverFactory() }
         val connectivityObserver = remember { ConnectivityObserver() }
+        val offlineFilesRoot = remember { OfflineFilesRoot() }
         val appLanguageSettings =
             AppLanguageSettings.SystemManaged(
                 language =
@@ -43,6 +45,7 @@ fun MainViewController() =
             pendingSaveRepository = IosPendingSaveRepository(),
             databaseDriverFactory = databaseDriverFactory,
             connectivityObserver = connectivityObserver,
+            offlineFilesRoot = offlineFilesRoot,
             appLanguageSettings = appLanguageSettings,
         )
     }

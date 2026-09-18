@@ -15,6 +15,7 @@ import app.indelible.core.di.rememberAppContainer
 import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.image.newImageLoader
 import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.offline.SyncDrainEffect
 import app.indelible.core.preferences.ThemePreference
 import app.indelible.core.storage.TokenStorage
@@ -36,6 +37,7 @@ fun App(
     pendingSaveRepository: PendingSaveRepository,
     databaseDriverFactory: DatabaseDriverFactory,
     connectivityObserver: ConnectivityObserver,
+    offlineFilesRoot: OfflineFilesRoot,
     appLanguageSettings: AppLanguageSettings? = null,
     onReady: () -> Unit = {},
 ) {
@@ -46,6 +48,7 @@ fun App(
             pendingSaveRepository,
             databaseDriverFactory,
             connectivityObserver,
+            offlineFilesRoot,
         )
     val transport = appContainer.apiTransport
     LaunchedEffect(appContainer) {
