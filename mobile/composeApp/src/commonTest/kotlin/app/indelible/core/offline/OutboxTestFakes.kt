@@ -174,6 +174,8 @@ private object UnreachableOfflineStore : OfflineStore {
         documentId: String,
     ): Unit = unreachable()
 
+    override suspend fun dropOrphanHighlights(scope: String): Unit = unreachable()
+
     override suspend fun clientIdentity(scope: String): ClientIdentity = unreachable()
 
     override suspend fun scopesWithState(): List<Pair<String, Boolean>> = unreachable()

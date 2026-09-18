@@ -42,7 +42,11 @@ class DownloadSetsTest {
     @Test
     fun pdfFollowsPresignedRedirectWithoutAuthorization() =
         runTest {
-            val h = downloadHarness { documentType = "pdf"; available = listOf("pdf") }
+            val h =
+                downloadHarness {
+                    documentType = "pdf"
+                    available = listOf("pdf")
+                }
 
             h.fetcher.download(h.session, DL_DOC, pin = true)
 
@@ -57,7 +61,11 @@ class DownloadSetsTest {
     @Test
     fun bookInstallsTocAndEveryChapter() =
         runTest {
-            val h = downloadHarness { documentType = "book"; available = listOf("epub") }
+            val h =
+                downloadHarness {
+                    documentType = "book"
+                    available = listOf("epub")
+                }
 
             h.fetcher.download(h.session, DL_DOC, pin = true)
 
@@ -95,7 +103,7 @@ class DownloadSetsTest {
         runTest {
             val h = downloadHarness { available = emptyList() }
 
-            assertEquals(FetchResult.NotReady, h.fetcher.download(h.session, DL_DOC, pin = false))
+            assertEquals(FetchResult.Skipped, h.fetcher.download(h.session, DL_DOC, pin = false))
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertEquals(FetchResult.Installed, h.fetcher.download(h.session, DL_DOC, pin = true))
 

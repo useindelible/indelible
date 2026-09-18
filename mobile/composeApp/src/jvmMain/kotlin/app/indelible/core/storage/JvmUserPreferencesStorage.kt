@@ -27,8 +27,16 @@ class JvmUserPreferencesStorage : UserPreferencesStorage {
         return DefaultViewPreference.entries.firstOrNull { it.name == name } ?: DefaultViewPreference.LIBRARY
     }
 
+    override suspend fun saveOfflineCapBytes(bytes: Long) {
+        prefs.putLong(KEY_OFFLINE_CAP_BYTES, bytes)
+        prefs.flush()
+    }
+
+    override suspend fun getOfflineCapBytes(): Long = prefs.getLong(KEY_OFFLINE_CAP_BYTES, DEFAULT_OFFLINE_CAP_BYTES)
+
     companion object {
         private const val KEY_THEME = "pref_theme"
         private const val KEY_DEFAULT_VIEW = "pref_default_view"
+        private const val KEY_OFFLINE_CAP_BYTES = "pref_offline_cap_bytes"
     }
 }

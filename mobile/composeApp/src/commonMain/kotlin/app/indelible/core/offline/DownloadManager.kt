@@ -16,18 +16,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Acquires offline copies one at a time. Every request is bound to the session that made it and
  * is dropped once that session is gone; duplicate requests for a document merge, and a pin wins
  * over an auto-cache. Removal and purge cancel and join the document's acquisition before any
- * row or file is deleted, so nothing an acquisition writes can outlive them.
+ * row or file is deleted, so nothing an acquisition writes can outlive them. An install evicts
+ * unpinned copies down to the cap, never the copy it just installed.
  */
 class DownloadManager(
     private val registry: SessionRegistry,
     private val fetcher: OfflineSetFetcher,
     private val store: OfflineStore,
-    private val files: OfflineFiles,
+    private val copies: OfflineCopies,
     private val online: Flow<Boolean>,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
@@ -47,6 +49,10 @@ class DownloadManager(
     val acquisitions = AcquisitionBoard()
 
     private val lock = Mutex()
+
+    // Held for the whole of each acquisition, so the launch sweep never sees a generation that is
+    // still being written.
+    private val acquiring = Mutex()
     private val queue = LinkedHashMap<DocumentKey, Request>()
 
     // Requests parked until connectivity returns or a new request for the same document arrives.
@@ -93,7 +99,7 @@ class DownloadManager(
     suspend fun removeFromDevice(
         scope: String,
         documentId: String,
-    ) {
+    ) = withContext(dispatcher) {
         val key = DocumentKey(scope, documentId)
         val job =
             lock.withLock {
@@ -103,35 +109,41 @@ class DownloadManager(
             }
         job?.cancelAndJoin()
         acquisitions.clear(key)
-        store.removeCachedDocument(scope, documentId)
-        files.deleteTree(files.documentDir(scope, documentId))
+        copies.remove(scope, documentId)
     }
 
-    /** Deletes every copy of [scope]; queued outbox rows are untouched. */
-    suspend fun removeAllDownloads(scope: String) {
-        cancelAndJoin(scope)
-        store.cachedDocuments(scope).forEach { store.removeCachedDocument(scope, it.documentId) }
-        files.deleteTree(files.scopeDir(scope))
-        lock.withLock { autoCachePaused -= scope }
+    /** Unpins a copy, which stays until it is evicted; without a copy, withdraws the request. */
+    suspend fun unpin(
+        scope: String,
+        documentId: String,
+    ) {
+        if (store.cachedDocument(scope, documentId) != null) {
+            store.setPinned(scope, documentId, pinned = false)
+        } else {
+            removeFromDevice(scope, documentId)
+        }
     }
 
-    /** The scope purge's file step: no acquisition of [scope] can write once this returns. */
-    suspend fun purge(scope: String) {
-        cancelAndJoin(scope)
-        files.deleteTree(files.scopeDir(scope))
-        lock.withLock { autoCachePaused -= scope }
-    }
+    /**
+     * Deletes every copy of [scope] and is the scope purge's file step: no acquisition of [scope]
+     * can write once this returns. Queued outbox rows are untouched.
+     */
+    suspend fun removeAllDownloads(scope: String) =
+        withContext(dispatcher) {
+            val job =
+                lock.withLock {
+                    queue.keys.removeAll { it.scope == scope }
+                    parked.keys.removeAll { it.scope == scope }
+                    active?.takeIf { it.request.key.scope == scope }?.job
+                }
+            job?.cancelAndJoin()
+            acquisitions.clearScope(scope)
+            copies.removeAll(scope)
+            lock.withLock { autoCachePaused -= scope }
+        }
 
-    suspend fun cancelAndJoin(scope: String) {
-        val job =
-            lock.withLock {
-                queue.keys.removeAll { it.scope == scope }
-                parked.keys.removeAll { it.scope == scope }
-                active?.takeIf { it.request.key.scope == scope }?.job
-            }
-        job?.cancelAndJoin()
-        acquisitions.clearScope(scope)
-    }
+    /** The launch sweep; it waits for the running acquisition, and the next one waits for it. */
+    suspend fun cleanupAtLaunch() = withContext(dispatcher) { acquiring.withLock { copies.sweep() } }
 
     private suspend fun request(
         session: Session,
@@ -150,17 +162,19 @@ class DownloadManager(
 
     private suspend fun drain(owned: CoroutineScope) {
         while (true) {
-            val job =
-                lock.withLock {
-                    val request = queue.values.firstOrNull() ?: return
-                    queue.remove(request.key)
-                    val job = owned.launch(start = CoroutineStart.LAZY) { acquire(request) }
-                    active = Active(request, job)
-                    job
-                }
-            job.start()
-            job.join()
-            lock.withLock { if (active?.job === job) active = null }
+            acquiring.withLock {
+                val job =
+                    lock.withLock {
+                        val request = queue.values.firstOrNull() ?: return
+                        queue.remove(request.key)
+                        val job = owned.launch(start = CoroutineStart.LAZY) { acquire(request) }
+                        active = Active(request, job)
+                        job
+                    }
+                job.start()
+                job.join()
+                lock.withLock { if (active?.job === job) active = null }
+            }
         }
     }
 
@@ -181,9 +195,10 @@ class DownloadManager(
         val key = request.key
         acquisitions.set(key, Acquisition.Downloading(0f))
         runCatching {
-            fetcher.download(request.session, request.documentId, request.pin) { fraction ->
-                acquisitions.set(key, Acquisition.Downloading(fraction))
-            }
+            fetcher
+                .download(request.session, request.documentId, request.pin) { fraction ->
+                    acquisitions.set(key, Acquisition.Downloading(fraction))
+                }.also { if (it == FetchResult.Installed) copies.enforceCap(key.scope, keep = request.documentId) }
         }.onSuccess { outcome ->
             if (outcome == FetchResult.Stale) park(request, Acquisition.Waiting) else acquisitions.clear(key)
         }.onFailure { error ->

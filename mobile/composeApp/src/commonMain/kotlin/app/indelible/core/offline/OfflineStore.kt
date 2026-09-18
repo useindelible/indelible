@@ -173,6 +173,9 @@ interface CachedContentStore {
         scope: String,
         documentId: String,
     )
+
+    /** Deletes cached highlights of documents without a copy once no live outbox row needs them. */
+    suspend fun dropOrphanHighlights(scope: String)
 }
 
 /** Per-scope lifecycle: client identity, purge state and the write barrier transitions rely on. */
