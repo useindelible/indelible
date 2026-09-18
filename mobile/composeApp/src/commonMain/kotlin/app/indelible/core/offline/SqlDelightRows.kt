@@ -7,6 +7,8 @@ import kotlinx.serialization.decodeFromString
 
 internal fun OutboxState.wireName(): String = name.lowercase()
 
+internal fun OutboxKind.wireName(): String = name.lowercase()
+
 internal fun Boolean.toLong(): Long = if (this) 1L else 0L
 
 internal fun outboxRowFrom(row: Outbox): OutboxRow =
@@ -24,6 +26,7 @@ internal fun outboxRowFrom(row: Outbox): OutboxRow =
         nextAttemptAt = row.next_attempt_at,
         state = OutboxState.valueOf(row.state.uppercase()),
         lastError = row.last_error,
+        superseded = row.superseded != 0L,
     )
 
 internal fun cachedDocumentRowFrom(row: Cached_document): CachedDocumentRow =
@@ -36,6 +39,11 @@ internal fun cachedDocumentRowFrom(row: Cached_document): CachedDocumentRow =
         lastOpenedAt = row.last_opened_at,
         lastSyncedAt = row.last_synced_at,
         bytes = row.bytes,
+        generation = row.generation,
+        noteBody = row.note_body,
+        noteServerUpdatedAt = row.note_server_updated_at,
+        progressPercent = row.progress_percent?.toInt(),
+        maxProgressPercent = row.max_progress_percent?.toInt(),
     )
 
 internal fun cachedAssetRowFrom(row: Cached_asset): CachedAssetRow =

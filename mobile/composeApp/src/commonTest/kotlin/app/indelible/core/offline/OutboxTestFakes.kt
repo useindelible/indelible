@@ -91,7 +91,7 @@ private object UnreachableOfflineStore : OfflineStore {
     override suspend fun retryRow(
         scope: String,
         id: String,
-    ): Unit = unreachable()
+    ): Boolean = unreachable()
 
     override fun observeOutbox(scope: String): Flow<List<OutboxRow>> = unreachable()
 
@@ -99,6 +99,8 @@ private object UnreachableOfflineStore : OfflineStore {
         scope: String,
         documentId: String,
     ): Flow<List<OutboxRow>> = unreachable()
+
+    override fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>> = unreachable()
 
     override suspend fun upsertCachedDocument(
         scope: String,
@@ -134,11 +136,27 @@ private object UnreachableOfflineStore : OfflineStore {
 
     override suspend fun totalBytes(scope: String): Long = unreachable()
 
+    override fun observeCatalog(scope: String): Flow<List<CatalogEntry>> = unreachable()
+
     override suspend fun installCachedDocument(
+        session: Session,
+        request: InstallRequest,
+    ): InstallResult = unreachable()
+
+    override suspend fun refreshCachedCopy(
+        session: Session,
+        request: RefreshRequest,
+    ): RefreshResult = unreachable()
+
+    override suspend fun localChanges(
         scope: String,
-        row: CachedDocumentRow,
-        assets: List<CachedAssetRow>,
-    ): Unit = unreachable()
+        documentId: String,
+    ): LocalChanges = unreachable()
+
+    override suspend fun cachedHighlights(
+        scope: String,
+        documentId: String,
+    ): List<CachedHighlight> = unreachable()
 
     override suspend fun assetsForDocument(
         scope: String,
@@ -149,14 +167,6 @@ private object UnreachableOfflineStore : OfflineStore {
         scope: String,
         documentId: String,
         at: Long,
-    ): Unit = unreachable()
-
-    override suspend fun upsertCachedHighlight(
-        scope: String,
-        id: String,
-        documentId: String,
-        payloadJson: String,
-        updatedAt: Long,
     ): Unit = unreachable()
 
     override suspend fun removeCachedDocument(

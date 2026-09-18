@@ -50,6 +50,22 @@ internal class EnqueueTxImpl(
         checkOpen()
         queries.deleteCachedHighlight(scope, id)
     }
+
+    override fun setCachedNote(
+        documentId: String,
+        body: String,
+    ) {
+        checkOpen()
+        queries.setCachedNote(body, scope, documentId)
+    }
+
+    override fun patchCachedProgress(
+        documentId: String,
+        percent: Int,
+    ) {
+        checkOpen()
+        queries.patchCachedProgress(percent = percent.toLong(), scope = scope, document_id = documentId)
+    }
 }
 
 private fun cachedHighlightRowFrom(row: Cached_highlight): CachedHighlightRow =

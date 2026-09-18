@@ -104,52 +104,53 @@ class OfflineStoreCatalogTest {
     @Test
     fun installCachedDocumentSwapsDocumentAndAssetsInOneTransaction() =
         runTest {
-            val store = store()
-            val scope = "scope"
+            val s = signedInStore()
 
-            store.installCachedDocument(
-                scope,
-                documentRow("doc_1", bytes = 10L),
-                listOf(CachedAssetRow("doc_1", "html", 0, "v1.html", 10L)),
+            s.store.installCachedDocument(
+                s.session,
+                installRequest(s.revision(), assets = listOf(CachedAssetRow(VIEW_DOC, "html", 0, "v1.html", 10L))),
             )
-            store.installCachedDocument(
-                scope,
-                documentRow("doc_1", bytes = 20L),
-                listOf(
-                    CachedAssetRow("doc_1", "html", 0, "v2.html", 15L),
-                    CachedAssetRow("doc_1", "img", 0, "v2.png", 5L),
+            s.store.installCachedDocument(
+                s.session,
+                installRequest(
+                    s.revision(),
+                    generation = 2,
+                    assets =
+                        listOf(
+                            CachedAssetRow(VIEW_DOC, "html", 0, "v2.html", 15L),
+                            CachedAssetRow(VIEW_DOC, "img", 0, "v2.png", 5L),
+                        ),
                 ),
             )
 
-            assertEquals(20L, store.cachedDocument(scope, "doc_1")?.bytes)
-            val assets = store.assetsForDocument(scope, "doc_1")
+            assertEquals(20L, s.store.cachedDocument(s.scope, VIEW_DOC)?.bytes)
+            val assets = s.store.assetsForDocument(s.scope, VIEW_DOC)
             assertEquals(setOf("v2.html", "v2.png"), assets.map { it.path }.toSet())
         }
 
     @Test
     fun installCachedDocumentFailureMidListLeavesPreviousInstallIntact() =
         runTest {
-            val store = store()
-            val scope = "scope"
-            store.installCachedDocument(
-                scope,
-                documentRow("doc_1", bytes = 100L),
-                listOf(CachedAssetRow("doc_1", "html", 0, "orig.html", 100L)),
+            val s = signedInStore()
+            s.store.installCachedDocument(
+                s.session,
+                installRequest(s.revision(), assets = listOf(CachedAssetRow(VIEW_DOC, "html", 0, "orig.html", 100L))),
             )
 
             val badAssets =
                 listOf(
-                    CachedAssetRow("doc_1", "img", 0, "a.png", 50L),
-                    CachedAssetRow("doc_1", "img", 0, "b.png", 50L),
+                    CachedAssetRow(VIEW_DOC, "img", 0, "a.png", 50L),
+                    CachedAssetRow(VIEW_DOC, "img", 0, "b.png", 50L),
                 )
             assertFails {
-                store.installCachedDocument(scope, documentRow("doc_1", bytes = 200L), badAssets)
+                val request = installRequest(s.revision(), generation = 2, assets = badAssets)
+                s.store.installCachedDocument(s.session, request)
             }
 
-            val persisted = store.cachedDocument(scope, "doc_1")!!
+            val persisted = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
             assertEquals(100L, persisted.bytes)
-            val assets = store.assetsForDocument(scope, "doc_1")
-            assertEquals(listOf("orig.html"), assets.map { it.path })
+            assertEquals(1L, persisted.generation)
+            assertEquals(listOf("orig.html"), s.store.assetsForDocument(s.scope, VIEW_DOC).map { it.path })
         }
 
     @Test
@@ -169,31 +170,16 @@ class OfflineStoreCatalogTest {
     @Test
     fun removeCachedDocumentDeletesAllCachedRowsButLeavesOutbox() =
         runTest {
-            val signedIn = signedInStore()
-            val store = signedIn.store
-            val session = signedIn.session
-            val scope = signedIn.scope
-            store.installCachedDocument(
-                scope,
-                documentRow("doc_1"),
-                listOf(CachedAssetRow("doc_1", "html", 0, "v1.html", 10L)),
-            )
-            store.upsertCachedHighlight(scope, "hlt_1", "doc_1", "{}", 1L)
-            store.enqueue(session, OutboxKind.DOCUMENT_NOTE, "doc_1", "doc_1") {
-                OutboxPayload.DocumentNote("note", null) to Unit
-            }
+            val s = signedInStore()
+            s.installNow(serverDocument(highlights = listOf(serverHighlight("hlt_1"))))
+            s.enqueue(OutboxPayload.DocumentNote("note", null))
 
-            store.removeCachedDocument(scope, "doc_1")
+            s.store.removeCachedDocument(s.scope, VIEW_DOC)
 
-            assertNull(store.cachedDocument(scope, "doc_1"))
-            assertTrue(store.assetsForDocument(scope, "doc_1").isEmpty())
-            assertEquals(1, store.pendingOrdered(scope).size)
-            val remainingHighlight =
-                store.enqueue(session, OutboxKind.HIGHLIGHT_DELETE, "hlt_1", "doc_1") {
-                    val existing = getCachedHighlight("hlt_1")
-                    OutboxPayload.HighlightDelete("hlt_1") to existing
-                }
-            assertNull(remainingHighlight)
+            assertNull(s.store.cachedDocument(s.scope, VIEW_DOC))
+            assertTrue(s.store.assetsForDocument(s.scope, VIEW_DOC).isEmpty())
+            assertTrue(s.store.cachedHighlights(s.scope, VIEW_DOC).isEmpty())
+            assertEquals(1, s.store.pendingOrdered(s.scope).size)
         }
 
     @Test
