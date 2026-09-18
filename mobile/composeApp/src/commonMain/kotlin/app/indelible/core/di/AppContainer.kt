@@ -31,6 +31,9 @@ import app.indelible.core.network.TagsApiService
 import app.indelible.core.network.TrashApiService
 import app.indelible.core.offline.ApiOutboxSender
 import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.DownloadManager
+import app.indelible.core.offline.OfflineFilesRoot
+import app.indelible.core.offline.OfflineSetFetcher
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.OutboxWorker
@@ -119,6 +122,7 @@ data class AppContainer(
     val sessionTransitions: SessionTransitions,
     val scopePurger: ScopePurger,
     val connectivityObserver: ConnectivityObserver,
+    val downloads: DownloadManager,
 )
 
 @Composable
@@ -128,11 +132,12 @@ fun rememberAppContainer(
     pendingSaveRepository: PendingSaveRepository,
     databaseDriverFactory: DatabaseDriverFactory,
     connectivityObserver: ConnectivityObserver,
+    offlineFilesRoot: OfflineFilesRoot,
 ): AppContainer {
     val oauthBrowserLauncher = rememberOAuthBrowserLauncher()
     val authViewModelRef = remember { mutableStateOf<AuthViewModel?>(null) }
     val koinApplication =
-        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher, databaseDriverFactory) {
+        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher, databaseDriverFactory, offlineFilesRoot) {
             koinApplication {
                 modules(
                     module {
@@ -214,7 +219,21 @@ fun rememberAppContainer(
                             )
                         }
                         single { SessionTransitions(get(), get(), get(), get()) }
-                        single { ScopePurger(get()) }
+                        single { offlineFilesRoot.offlineFiles() }
+                        single { OfflineSetFetcher(get(), get(), get(), clock = { getTimeMillis() }) }
+                        single {
+                            DownloadManager(
+                                registry = get(),
+                                fetcher = get(),
+                                store = get(),
+                                files = get(),
+                                online = connectivityObserver.online,
+                            )
+                        }
+                        single {
+                            val downloads = get<DownloadManager>()
+                            ScopePurger(get()) { scope -> downloads.purge(scope) }
+                        }
                         single { AuthViewModel(get(), get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
@@ -238,7 +257,9 @@ fun rememberAppContainer(
 
     DisposableEffect(koinApplication) {
         koin.get<OutboxWorker>().start()
+        koin.get<DownloadManager>().start()
         onDispose {
+            koin.get<DownloadManager>().stop()
             koin.get<OutboxWorker>().stop()
             koin.get<AuthenticatedApiTransport>().close()
             koinApplication.close()
@@ -278,6 +299,7 @@ fun rememberAppContainer(
             sessionTransitions = koin.get(),
             scopePurger = koin.get(),
             connectivityObserver = connectivityObserver,
+            downloads = koin.get(),
         )
     }
 }
