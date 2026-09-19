@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.core.model.LibraryItem
+import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import app.indelible.ui.platform.rememberHapticTick
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
@@ -41,6 +42,7 @@ fun ItemSwipeableRow(
     onTriage: (String) -> Unit,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
+    offlineStatus: DocumentOfflineStatus? = null,
 ) {
     val dismissState = rememberSwipeToDismissBoxState()
     val hapticTick = rememberHapticTick()
@@ -111,6 +113,7 @@ fun ItemSwipeableRow(
             item = item,
             onClick = onTap,
             showDivider = showDivider,
+            offlineStatus = offlineStatus,
         )
     }
 }

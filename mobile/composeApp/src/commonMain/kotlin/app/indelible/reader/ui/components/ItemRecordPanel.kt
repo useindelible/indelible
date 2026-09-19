@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,24 +26,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightData
-import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.TagData
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
-import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.SerifFontFamily
 import app.indelible.ui.theme.geistMonoFontFamily
 import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.offline_section
 import indelible.composeapp.generated.resources.reader_highlights_count
 import indelible.composeapp.generated.resources.reader_info_actions
 import indelible.composeapp.generated.resources.reader_info_entities
@@ -57,7 +54,6 @@ import indelible.composeapp.generated.resources.reader_info_share_link
 import indelible.composeapp.generated.resources.reader_info_summary
 import indelible.composeapp.generated.resources.reader_info_tags
 import indelible.composeapp.generated.resources.reader_tags_requires_library
-import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -83,6 +79,7 @@ fun ItemRecordPanel(
     entities: List<DocumentEntity> = emptyList(),
     onSaveToLibrary: () -> Unit = {},
     onShare: () -> Unit = {},
+    offline: ItemOffline? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -101,6 +98,10 @@ fun ItemRecordPanel(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+        }
+
+        offline?.let {
+            RecordSection(stringResource(Res.string.offline_section)) { ItemOfflineSection(it) }
         }
 
         RecordSection(stringResource(Res.string.reader_info_info)) {
@@ -402,109 +403,4 @@ private fun HighlightRow(highlight: HighlightData) {
 private fun sourceLabel(domain: String): String {
     val host = domain.trim().removePrefix("www.")
     return host.substringBefore('.').ifBlank { host }.uppercase()
-}
-
-// ============================================================
-// Previews
-// ============================================================
-
-@Suppress("MagicNumber") // preview-only sample timestamp
-private val sampleInstant = Instant.fromEpochMilliseconds(1_715_000_000_000L)
-
-private fun sampleRecordItem(): ReaderDocument =
-    ReaderDocument(
-        libraryEntryId = "lib_1",
-        id = "doc_1",
-        itemType = "article",
-        title = "The End of the Beginning",
-        url = "https://stratechery.com/x",
-        saved = true,
-        readableReady = true,
-        availableAssets = listOf("readable_html"),
-        lastReadAt = sampleInstant,
-    )
-
-private fun sampleHighlight(
-    id: String,
-    color: String,
-    text: String,
-    noteBody: String?,
-): HighlightData =
-    HighlightData(
-        color = color,
-        createdAt = sampleInstant,
-        id = id,
-        documentId = "doc_1",
-        tags = emptyList(),
-        textContent = text,
-        updatedAt = sampleInstant,
-        note =
-            noteBody?.let {
-                HighlightNoteData(
-                    body = it,
-                    createdAt = sampleInstant,
-                    highlightId = id,
-                    id = "note_$id",
-                    updatedAt = sampleInstant,
-                )
-            },
-    )
-
-private val sampleHighlights =
-    listOf(
-        sampleHighlight(
-            "hl_1",
-            "yellow",
-            "The winners compound their advantages quietly, turning scale into a moat " +
-                "that looks less like a wall and more like gravity.",
-            null,
-        ),
-        sampleHighlight(
-            "hl_2",
-            "blue",
-            "How incumbents allocate the surplus that maturity provides.",
-            "The core question of the whole piece.",
-        ),
-    )
-
-@Preview
-@Composable
-private fun ItemRecordPanelPreviewLight() {
-    AppTheme(darkTheme = false) {
-        Surface {
-            ItemRecordPanel(
-                item = sampleRecordItem(),
-                note = "\"Gravity, not walls\" is the keeper here — distribution moats compound quietly.",
-                tags = listOf("strategy", "platforms", "essays"),
-                availableTags = emptyList(),
-                highlights = sampleHighlights,
-                progress = 34f,
-                onEditNote = {},
-                onTagsChanged = {},
-                modifier = Modifier.padding(IndelibleSpacing.screenPaddingH),
-                entities = previewEntities,
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun ItemRecordPanelPreviewDark() {
-    AppTheme(darkTheme = true) {
-        Surface {
-            ItemRecordPanel(
-                item = sampleRecordItem(),
-                note = null,
-                tags = emptyList(),
-                availableTags = emptyList(),
-                highlights = sampleHighlights,
-                progress = 12f,
-                onEditNote = {},
-                onTagsChanged = {},
-                modifier = Modifier.padding(IndelibleSpacing.screenPaddingH),
-                entities = previewEntities,
-            )
-        }
-    }
 }

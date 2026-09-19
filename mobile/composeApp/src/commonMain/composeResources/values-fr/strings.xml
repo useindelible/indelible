@@ -393,6 +393,13 @@
     <string name="nav_review">Révision</string>
     <string name="nav_search">Recherche</string>
     <string name="offline_all_synced">Toutes les modifications sont synchronisées.</string>
+    <string name="offline_badge_cached">En cache</string>
+    <string name="offline_badge_downloading">En téléchargement</string>
+    <string name="offline_badge_kept">Conservé</string>
+    <plurals name="offline_badge_pending">
+        <item quantity="one">%1$d en attente</item>
+        <item quantity="other">%1$d en attente</item>
+    </plurals>
     <string name="offline_cached">En cache</string>
     <string name="offline_change_highlight_color">Couleur du surlignage</string>
     <string name="offline_change_highlight_create">Nouveau surlignage</string>
@@ -401,13 +408,23 @@
     <string name="offline_change_highlight_tags">Étiquettes du surlignage</string>
     <string name="offline_change_note">Note du document</string>
     <string name="offline_change_progress">Progression de lecture</string>
+    <string name="offline_download_failed">Échec du téléchargement</string>
+    <string name="offline_keep">Garder hors ligne</string>
     <string name="offline_kept">Conservés</string>
     <string name="offline_limit">Limite de stockage</string>
     <string name="offline_limit_hint">Les copies non conservées sont supprimées, en commençant par les moins récemment ouvertes, pour rester sous la limite.</string>
     <string name="offline_manage_kept">Gérer les éléments conservés</string>
     <string name="offline_manage_kept_body">Les éléments conservés dépassent à eux seuls la limite. Retirez-en pour libérer de l’espace.</string>
+    <string name="offline_manage_storage">Gérer le stockage</string>
+    <string name="offline_no_space">Espace insuffisant</string>
+    <string name="offline_not_on_device">Pas sur cet appareil</string>
+    <string name="offline_not_synced">%1$s · pas encore synchronisé</string>
     <string name="offline_nothing_downloaded">Rien n’est encore téléchargé sur cet appareil.</string>
     <string name="offline_pending">En attente de synchronisation</string>
+    <plurals name="offline_pending_changes">
+        <item quantity="one">%1$d modification en attente de synchronisation</item>
+        <item quantity="other">%1$d modifications en attente de synchronisation</item>
+    </plurals>
     <string name="offline_remove">Supprimer</string>
     <string name="offline_remove_copy">Retirer de l’appareil</string>
     <string name="offline_remove_downloads">Supprimer les téléchargements</string>
@@ -417,6 +434,7 @@
     </plurals>
     <string name="offline_remove_downloads_none_queued">Toutes les copies téléchargées sont supprimées de cet appareil.</string>
     <string name="offline_remove_downloads_title">Supprimer tous les téléchargements ?</string>
+    <string name="offline_section">Hors ligne</string>
     <string name="offline_size_gb">%1$s Go</string>
     <string name="offline_size_kb">%1$s Ko</string>
     <string name="offline_size_mb">%1$s Mo</string>
@@ -426,8 +444,11 @@
     <string name="offline_status_pending">En attente d’envoi</string>
     <string name="offline_status_retrying">Nouvelle tentative en cours</string>
     <string name="offline_status_superseded">Remplacée par une modification ultérieure</string>
+    <string name="offline_synced">%1$s · synchronisé %2$s</string>
     <string name="offline_title">Stockage et téléchargements</string>
     <string name="offline_used">%1$s utilisés sur %2$s</string>
+    <string name="offline_waiting">En attente de téléchargement</string>
+    <string name="offline_waiting_connection">En attente de connexion</string>
     <string name="onboarding_account_display_name">Nom d’affichage</string>
     <string name="onboarding_account_subtitle">Personnalisez votre expérience Indelible</string>
     <string name="onboarding_account_theme">Thème</string>

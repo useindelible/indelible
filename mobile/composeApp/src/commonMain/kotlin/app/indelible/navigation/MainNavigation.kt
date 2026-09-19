@@ -237,6 +237,7 @@ fun MainNavigation(
                     collectionsRepository = appContainer.collectionsRepository,
                     tagsRepository = appContainer.tagsRepository,
                     trashRepository = appContainer.trashRepository,
+                    documentOffline = appContainer.documentOffline,
                 )
                 profileRoutes(
                     navController = navController,
