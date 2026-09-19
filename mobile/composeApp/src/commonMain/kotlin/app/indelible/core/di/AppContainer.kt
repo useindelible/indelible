@@ -58,6 +58,8 @@ import app.indelible.library.repository.ApiLibraryRepository
 import app.indelible.library.repository.LibraryRepository
 import app.indelible.library.viewmodel.LibraryViewModel
 import app.indelible.mila.data.MilaRepository
+import app.indelible.offline.viewmodel.DocumentOfflineViewModel
+import app.indelible.offline.viewmodel.OfflineStatuses
 import app.indelible.offline.viewmodel.StorageViewModel
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.onboarding.repository.OnboardingRepository
@@ -128,6 +130,7 @@ data class AppContainer(
     val connectivityObserver: ConnectivityObserver,
     val downloads: DownloadManager,
     val storageViewModel: StorageViewModel,
+    val documentOffline: (String) -> DocumentOfflineViewModel,
 )
 
 @Composable
@@ -268,7 +271,8 @@ fun rememberAppContainer(
                         single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
-                        single { LibraryViewModel(get()) }
+                        single { OfflineStatuses(get(), get(), get<DownloadManager>().acquisitions) }
+                        single { LibraryViewModel(get(), get<OfflineStatuses>().observe()) }
                         single { FeedViewModel(get()) }
                         single { AddFeedViewModel(get()) }
                         single { AddLibraryViewModel(get()) }
@@ -335,6 +339,7 @@ fun rememberAppContainer(
             connectivityObserver = connectivityObserver,
             downloads = koin.get(),
             storageViewModel = koin.get(),
+            documentOffline = { id -> DocumentOfflineViewModel(id, koin.get(), koin.get(), koin.get()) },
         )
     }
 }
