@@ -14,11 +14,8 @@ import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.AuthUser
 import app.indelible.core.model.toAuthUser
 import app.indelible.core.network.ApiException
-import app.indelible.core.offline.OutboxWorker
-import app.indelible.core.offline.ScopePurger
 import app.indelible.core.offline.SessionTransitions
 import app.indelible.core.offline.TransitionResult
-import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_login_failed
@@ -45,8 +42,7 @@ import kotlinx.coroutines.sync.withLock
 class AuthViewModel(
     private val repository: AuthRepository,
     private val tokenStorage: TokenStorage,
-    private val outboxWorker: OutboxWorker,
-    private val scopePurger: ScopePurger,
+    private val offline: OfflineAccount,
     private val sessions: SessionTransitions,
     private val oauthBrowserLauncher: OAuthBrowserLauncher = NoopOAuthBrowserLauncher,
 ) : ViewModel() {
@@ -99,10 +95,19 @@ class AuthViewModel(
                 return@launch
             }
             val epoch = sessions.epoch()
-            repository
-                .getSession()
-                .onSuccess { user -> signIn(epoch, user) }
-                .onFailure { if (sessions.epoch() == epoch) _authState.value = AuthState.Unauthenticated }
+            val cached = offline.cachedUser()
+            if (cached == null) {
+                repository
+                    .getSession()
+                    .onSuccess { user -> signIn(epoch, user) }
+                    .onFailure { if (sessions.epoch() == epoch) _authState.value = AuthState.Unauthenticated }
+                return@launch
+            }
+            // The kept profile lets the user in without the network. Revalidating it opens no
+            // transition: a confirmed rejection signs out through the transport, anything else waits.
+            publishAuthenticated(cached)
+            val fresh = offline.freshUser({ sessions.epoch() == epoch }) { repository.getSession() }
+            fresh?.let { publishIfCurrent(epoch, it) }
         }
     }
 
@@ -387,7 +392,7 @@ class AuthViewModel(
                     // purge() sets purge_pending before it deletes anything, so a crash the other way
                     // round would leave a signed-in account whose next launch wipes its live queue.
                     scope?.let {
-                        runCatching { scopePurger.purge(it) }
+                        runCatching { offline.purge(it) }
                             .onFailure { failure -> if (failure is CancellationException) throw failure }
                     }
                 }
@@ -438,7 +443,7 @@ class AuthViewModel(
 
     // A profile edit changes no credential or scope, so it must not open a transition: burning
     // an epoch would fail every refresh in flight just to show a new display name.
-    private fun publishIfCurrent(
+    private suspend fun publishIfCurrent(
         epoch: Long,
         user: AuthUser,
     ): Boolean {
@@ -465,14 +470,10 @@ class AuthViewModel(
 
     private suspend fun registerSession(user: AuthUser) {
         tokenStorage.saveUserId(user.id)
-        // Sweeping stale scopes is housekeeping, so a failure must not strand the session on the
-        // splash: the scopes it could not clear keep purge_pending and are retried next launch.
-        runCatching { scopePurger.purgeInactive(tokenStorage.currentOfflineScope()) }
-            .onFailure { if (it is CancellationException) throw it }
-        outboxWorker.resumeAuth()
+        offline.register()
     }
 
-    private fun publishAuthenticated(user: AuthUser) {
+    private suspend fun publishAuthenticated(user: AuthUser) {
         val wasSetupRequired = _setupRequired.value
         _authState.value =
             when {
@@ -482,6 +483,7 @@ class AuthViewModel(
             }
         if (wasSetupRequired) loadOAuthProviders()
         fetchAvatarBytesIfNeeded(user.avatarUrl)
+        offline.remember(user)
     }
 
     private fun fetchAvatarBytesIfNeeded(avatarUrl: String?) {

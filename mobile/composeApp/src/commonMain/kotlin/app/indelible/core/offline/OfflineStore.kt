@@ -186,6 +186,15 @@ interface ScopeStore {
     /** Creates the client identity for scope if none exists; the only place that does. */
     suspend fun clientIdentity(scope: String): ClientIdentity
 
+    /** The profile last kept for [scope]'s account, as JSON; null when none was kept. */
+    suspend fun profile(scope: String): String?
+
+    /** Keeps [json] as [scope]'s profile; a scope without offline state keeps nothing. */
+    suspend fun keepProfile(
+        scope: String,
+        json: String,
+    )
+
     /** (scope, purgePending) for every known scope. */
     suspend fun scopesWithState(): List<Pair<String, Boolean>>
 

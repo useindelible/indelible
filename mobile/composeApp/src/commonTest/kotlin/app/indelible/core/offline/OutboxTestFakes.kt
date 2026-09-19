@@ -178,6 +178,13 @@ private object UnreachableOfflineStore : OfflineStore {
 
     override suspend fun clientIdentity(scope: String): ClientIdentity = unreachable()
 
+    override suspend fun profile(scope: String): String? = unreachable()
+
+    override suspend fun keepProfile(
+        scope: String,
+        json: String,
+    ): Unit = unreachable()
+
     override suspend fun scopesWithState(): List<Pair<String, Boolean>> = unreachable()
 
     override suspend fun setPurgePending(

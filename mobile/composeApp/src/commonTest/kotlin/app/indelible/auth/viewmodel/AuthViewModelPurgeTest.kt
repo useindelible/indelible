@@ -161,8 +161,11 @@ class AuthViewModelPurgeTest {
                 AuthViewModel(
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     tokenStorage,
-                    worker,
-                    ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
+                    testOfflineAccount(
+                        tokenStorage,
+                        worker = worker,
+                        purger = ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
+                    ),
                     testSessionTransitions(tokenStorage, worker = worker),
                 ).also(viewModels::add)
             viewModel.authState.first { it is AuthState.Unauthenticated }
@@ -286,8 +289,7 @@ class AuthViewModelPurgeTest {
         AuthViewModel(
             ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
             tokenStorage,
-            testOutboxWorker(),
-            scopePurger,
+            testOfflineAccount(tokenStorage, purger = scopePurger),
             testSessionTransitions(tokenStorage),
         ).also(viewModels::add)
 
