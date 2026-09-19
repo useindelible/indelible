@@ -259,6 +259,12 @@ UPDATE client_state SET next_origin_seq = ? WHERE scope = ?;
 setPurgePending:
 UPDATE client_state SET purge_pending = ? WHERE scope = ?;
 
+profileJson:
+SELECT profile_json FROM client_state WHERE scope = ?;
+
+setProfileJson:
+UPDATE client_state SET profile_json = ? WHERE scope = ?;
+
 scopesWithState:
 SELECT scope, purge_pending FROM client_state;
 

@@ -10,6 +10,7 @@ import app.indelible.auth.repository.AuthRepository
 import app.indelible.auth.server.HttpServerHealthChecker
 import app.indelible.auth.server.ServerHealthChecker
 import app.indelible.auth.viewmodel.AuthViewModel
+import app.indelible.auth.viewmodel.OfflineAccount
 import app.indelible.auth.viewmodel.ConnectServerViewModel
 import app.indelible.collections.repository.ApiCollectionsRepository
 import app.indelible.collections.repository.CollectionsRepository
@@ -261,7 +262,8 @@ fun rememberAppContainer(
                             val downloads = get<DownloadManager>()
                             ScopePurger(get()) { scope -> downloads.removeAllDownloads(scope) }
                         }
-                        single { AuthViewModel(get(), get(), get(), get(), get(), oauthBrowserLauncher) }
+                        single { OfflineAccount(get(), get(), get(), get(), connectivityObserver.online) }
+                        single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
                         single { LibraryViewModel(get()) }

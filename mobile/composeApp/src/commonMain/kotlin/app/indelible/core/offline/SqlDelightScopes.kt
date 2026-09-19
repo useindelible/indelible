@@ -21,6 +21,23 @@ internal class SqlDelightScopes(
             }
         }
 
+    override suspend fun profile(scope: String): String? =
+        context.read {
+            context.queries
+                .profileJson(scope)
+                .executeAsOneOrNull()
+                ?.profile_json
+        }
+
+    override suspend fun keepProfile(
+        scope: String,
+        json: String,
+    ) {
+        context.write {
+            context.queries.setProfileJson(json, scope)
+        }
+    }
+
     override suspend fun scopesWithState(): List<Pair<String, Boolean>> =
         context.read {
             context.queries
