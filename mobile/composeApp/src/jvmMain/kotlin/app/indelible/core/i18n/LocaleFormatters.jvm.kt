@@ -24,6 +24,9 @@ actual object LocaleFormatters {
 
     actual fun number(value: Long): String = NumberFormat.getIntegerInstance().format(value)
 
+    actual fun decimal(value: Double): String =
+        NumberFormat.getNumberInstance().apply { maximumFractionDigits = 1 }.format(value)
+
     private fun monthDayPattern(): String =
         when (Locale.getDefault().language) {
             Locale.FRENCH.language -> "d MMMM"
