@@ -46,6 +46,10 @@ pub struct EpubMetadata {
     pub total_chapters: usize,
     pub total_words: u32,
     pub estimated_pages: u32,
+    /// Spine index of every stored chapter, ascending. Non-HTML spine items leave gaps, and the
+    /// navigation may omit chapters. None for books processed before this field existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chapter_indices: Option<Vec<usize>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
