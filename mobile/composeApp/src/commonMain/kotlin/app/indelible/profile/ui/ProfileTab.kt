@@ -39,6 +39,8 @@ import indelible.composeapp.generated.resources.profile_content_description
 import indelible.composeapp.generated.resources.profile_preferences
 import indelible.composeapp.generated.resources.profile_preferences_description
 import indelible.composeapp.generated.resources.profile_settings
+import indelible.composeapp.generated.resources.profile_storage
+import indelible.composeapp.generated.resources.profile_storage_description
 import indelible.composeapp.generated.resources.profile_title
 import indelible.composeapp.generated.resources.profile_user_fallback
 import org.jetbrains.compose.resources.stringResource
@@ -50,6 +52,7 @@ fun ProfileTab(
     onNavigateToPreferences: () -> Unit,
     onNavigateToAi: () -> Unit,
     onNavigateToIntegrations: () -> Unit,
+    onNavigateToStorage: () -> Unit,
     onNavigateToAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -98,6 +101,11 @@ fun ProfileTab(
                 label = stringResource(Res.string.profile_content),
                 sublabel = stringResource(Res.string.profile_content_description),
                 onClick = onNavigateToIntegrations,
+            )
+            SettingsRow(
+                label = stringResource(Res.string.profile_storage),
+                sublabel = stringResource(Res.string.profile_storage_description),
+                onClick = onNavigateToStorage,
             )
             SettingsRow(
                 label = stringResource(Res.string.profile_account),

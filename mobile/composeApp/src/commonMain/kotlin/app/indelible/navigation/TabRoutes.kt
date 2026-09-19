@@ -151,6 +151,7 @@ fun NavGraphBuilder.tabRoutes(
             onNavigateToPreferences = { navController.navigate(MainRoutes.PROFILE_PREFERENCES) },
             onNavigateToAi = { navController.navigate(MainRoutes.PROFILE_AI) },
             onNavigateToIntegrations = { navController.navigate(MainRoutes.PROFILE_INTEGRATIONS) },
+            onNavigateToStorage = { navController.navigate(MainRoutes.PROFILE_STORAGE) },
             onNavigateToAccount = { navController.navigate(MainRoutes.PROFILE_ACCOUNT) },
         )
     }

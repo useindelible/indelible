@@ -58,6 +58,7 @@ import app.indelible.library.repository.ApiLibraryRepository
 import app.indelible.library.repository.LibraryRepository
 import app.indelible.library.viewmodel.LibraryViewModel
 import app.indelible.mila.data.MilaRepository
+import app.indelible.offline.viewmodel.StorageViewModel
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.onboarding.repository.OnboardingRepository
 import app.indelible.onboarding.viewmodel.OnboardingViewModel
@@ -126,6 +127,7 @@ data class AppContainer(
     val scopePurger: ScopePurger,
     val connectivityObserver: ConnectivityObserver,
     val downloads: DownloadManager,
+    val storageViewModel: StorageViewModel,
 )
 
 @Composable
@@ -275,6 +277,9 @@ fun rememberAppContainer(
                         single { AiSettingsViewModel(get()) }
                         single { SearchViewModel(get()) }
                         single { SidebarViewModel(get()) }
+                        single {
+                            StorageViewModel(get(), get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
+                        }
                     },
                 )
             }
@@ -329,6 +334,7 @@ fun rememberAppContainer(
             scopePurger = koin.get(),
             connectivityObserver = connectivityObserver,
             downloads = koin.get(),
+            storageViewModel = koin.get(),
         )
     }
 }
