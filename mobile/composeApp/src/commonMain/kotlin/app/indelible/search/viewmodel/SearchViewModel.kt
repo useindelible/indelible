@@ -3,6 +3,7 @@ package app.indelible.search.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
+import app.indelible.search.model.SearchResult
 import app.indelible.search.repository.SearchRepository
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.search_error_load_more
@@ -114,7 +115,7 @@ class SearchViewModel(
                     nextCursor = paginated.nextCursor
                     _state.update {
                         it.copy(
-                            results = it.results + paginated.results,
+                            results = (it.results + paginated.results).distinctByRow(),
                             hasMore = paginated.hasMore,
                             isLoadingMore = false,
                         )
@@ -141,7 +142,7 @@ class SearchViewModel(
                     nextCursor = paginated.nextCursor
                     _state.update {
                         it.copy(
-                            results = paginated.results,
+                            results = paginated.results.distinctByRow(),
                             hasMore = paginated.hasMore,
                             isRefreshing = false,
                         )
@@ -220,7 +221,7 @@ class SearchViewModel(
                     nextCursor = paginated.nextCursor
                     _state.update {
                         it.copy(
-                            results = paginated.results,
+                            results = paginated.results.distinctByRow(),
                             hasMore = paginated.hasMore,
                             isSearching = false,
                         )
@@ -249,3 +250,7 @@ class SearchViewModel(
         private const val SUGGESTIONS_DEBOUNCE_MS = 200L
     }
 }
+
+// The list keys rows by this identity, and a repeated key crashes LazyColumn.
+private fun List<SearchResult>.distinctByRow(): List<SearchResult> =
+    distinctBy { it.documentId ?: it.deliveryId ?: it.title }
