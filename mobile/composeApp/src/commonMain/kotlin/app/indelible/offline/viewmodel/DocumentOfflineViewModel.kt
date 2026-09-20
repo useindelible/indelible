@@ -32,8 +32,8 @@ class DocumentOfflineViewModel(
     }
 
     fun removeFromDevice() {
-        val scope = registry.current.value.session?.scope ?: return
-        viewModelScope.launch { downloads.removeFromDevice(scope, documentId) }
+        val session = registry.current.value.session ?: return
+        viewModelScope.launch { downloads.removeFromDevice(session.scope, documentId) }
     }
 
     private companion object {

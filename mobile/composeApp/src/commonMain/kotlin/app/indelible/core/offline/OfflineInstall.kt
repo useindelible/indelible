@@ -1,6 +1,5 @@
 package app.indelible.core.offline
 
-/** The server's parts of one document, as fetched: the store merges the local view over them. */
 data class ServerDocument(
     val title: String,
     val readerJson: String,
@@ -27,7 +26,6 @@ data class InstallRequest(
     val at: Long,
 )
 
-/** One part of a document as the server returned it. */
 sealed interface ServerPart {
     /** The title and reader JSON always apply; the progress is a position part. */
     data class Reader(
@@ -45,11 +43,11 @@ sealed interface ServerPart {
     ) : ServerPart
 }
 
-/** A server part for a document that already has a copy; [revision] is the one read before the fetch. */
 data class RefreshRequest(
     val documentId: String,
     val revision: DocumentRevision,
     val part: ServerPart,
+    val at: Long,
 )
 
 /** Which parts of a server response predate a local change: content is highlights and note. */
@@ -77,7 +75,6 @@ sealed interface RefreshResult {
     data object Stale : RefreshResult
 }
 
-/** A cached document as lists show it, without its reader JSON. */
 data class CatalogEntry(
     val documentId: String,
     val documentType: String,

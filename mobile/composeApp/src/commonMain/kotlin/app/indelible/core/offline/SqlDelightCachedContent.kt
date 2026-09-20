@@ -90,6 +90,22 @@ internal class SqlDelightCachedContent(
         }
     }
 
+    override suspend fun evictCachedDocument(
+        scope: String,
+        documentId: String,
+    ): Boolean =
+        context.write {
+            context.database.transactionWithResult {
+                queries.deleteUnpinnedCachedDocument(scope, documentId)
+                val evicted = queries.changedRows().executeAsOne() > 0
+                if (evicted) {
+                    queries.deleteAssetsForDocument(scope, documentId)
+                    queries.deleteHighlightsWithoutLiveRows(scope = scope, document_id = documentId)
+                }
+                evicted
+            }
+        }
+
     override suspend fun dropOrphanHighlights(scope: String) {
         context.write {
             queries.deleteOrphanHighlights(scope)
@@ -112,7 +128,7 @@ internal class SqlDelightCachedContent(
             reader_json = server.readerJson,
             pinned = (existing?.pinned == 1L || request.pin).toLong(),
             last_opened_at = request.at,
-            last_synced_at = existing?.last_synced_at,
+            last_synced_at = request.at,
             bytes = request.bytes,
             generation = request.generation,
             note_body = changes.note(server.note?.body),
@@ -134,36 +150,39 @@ internal class SqlDelightCachedContent(
         val documentId = request.documentId
         val stale = queries.staleness(scope, documentId, request.revision)
         val changes = queries.localChanges(scope, documentId)
-        return when (val part = request.part) {
-            is ServerPart.Reader -> {
-                queries.refreshDocumentMeta(part.title, part.readerJson, scope, documentId)
-                if (!stale.position) {
-                    val progress = changes.progress(part.progress)
-                    queries.setCachedProgress(
-                        progress_percent = progress.percent?.toLong(),
-                        max_progress_percent = progress.maxPercent?.toLong(),
-                        scope = scope,
-                        document_id = documentId,
-                    )
+        val result =
+            when (val part = request.part) {
+                is ServerPart.Reader -> {
+                    queries.refreshDocumentMeta(part.title, part.readerJson, scope, documentId)
+                    if (!stale.position) {
+                        val progress = changes.progress(part.progress)
+                        queries.setCachedProgress(
+                            progress_percent = progress.percent?.toLong(),
+                            max_progress_percent = progress.maxPercent?.toLong(),
+                            scope = scope,
+                            document_id = documentId,
+                        )
+                    }
+                    if (stale.position) RefreshResult.Stale else RefreshResult.Applied
                 }
-                if (stale.position) RefreshResult.Stale else RefreshResult.Applied
+                is ServerPart.Highlights ->
+                    if (stale.content) {
+                        RefreshResult.Stale
+                    } else {
+                        replaceHighlights(scope, documentId, changes.highlights(part.highlights))
+                        RefreshResult.Applied
+                    }
+                is ServerPart.Note ->
+                    if (stale.content) {
+                        RefreshResult.Stale
+                    } else {
+                        val note = changes.note(part.note?.body)
+                        queries.setCachedServerNote(note, part.note?.updatedAtEpochMs, scope, documentId)
+                        RefreshResult.Applied
+                    }
             }
-            is ServerPart.Highlights ->
-                if (stale.content) {
-                    RefreshResult.Stale
-                } else {
-                    replaceHighlights(scope, documentId, changes.highlights(part.highlights))
-                    RefreshResult.Applied
-                }
-            is ServerPart.Note ->
-                if (stale.content) {
-                    RefreshResult.Stale
-                } else {
-                    val note = changes.note(part.note?.body)
-                    queries.setCachedServerNote(note, part.note?.updatedAtEpochMs, scope, documentId)
-                    RefreshResult.Applied
-                }
-        }
+        if (result == RefreshResult.Applied) queries.setDocumentSyncedAt(request.at, scope, documentId)
+        return result
     }
 
     private fun replaceHighlights(

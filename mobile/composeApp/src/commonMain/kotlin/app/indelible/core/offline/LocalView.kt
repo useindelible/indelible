@@ -26,10 +26,7 @@ data class Progress(
     val maxPercent: Int?,
 )
 
-/**
- * Moves whenever a document's live outbox rows change (on enqueue and on acknowledgement), so a
- * server response fetched before the move may predate a change the live rows no longer show.
- */
+/** Moves on every enqueue and acknowledgement, so a response fetched across a move may be stale. */
 data class DocumentRevision(
     val content: Long,
     val position: Long,
@@ -59,29 +56,23 @@ data class LocalChanges(
             ?.let { (it.payload as OutboxPayload.DocumentNote).body }
             ?: server
 
-    /**
-     * The newest queued progress this device has not yet had acknowledged, else the server's.
-     * An acknowledged event is already in the server's projection, and an older one never wins it.
-     */
+    /** The newest unacknowledged queued position and the highest one reached, else the server's. */
     fun progress(server: Progress): Progress {
-        val basisPoints =
+        val queued =
             live()
                 .mapNotNull { it.payload as? OutboxPayload.ReadingEvent }
-                .lastOrNull { it.progressBasisPoints != null && it.originSeq > revision.ackedProgressSeq }
-                ?.progressBasisPoints
-                ?: return server
-        val percent = basisPoints / BASIS_POINTS_PER_PERCENT
-        return Progress(percent = percent, maxPercent = maxOf(server.maxPercent ?: percent, percent))
+                .filter { it.originSeq > revision.ackedProgressSeq }
+                .mapNotNull { it.progressBasisPoints }
+        val latest = queued.lastOrNull() ?: return server
+        val percent = latest / BASIS_POINTS_PER_PERCENT
+        val reached = queued.max() / BASIS_POINTS_PER_PERCENT
+        return Progress(percent = percent, maxPercent = maxOf(server.maxPercent ?: percent, reached))
     }
 
     private fun live(): List<OutboxRow> = rows.filterNot { it.superseded }
 }
 
-/**
- * One highlight change applied to its cached value; null means the highlight does not exist.
- * A create over an existing highlight keeps it, since the server already has the create and
- * possibly later changes to it; an edit of an unknown highlight has nothing to change.
- */
+/** Null when the highlight does not exist; a create keeps an existing one, which may carry later edits. */
 fun applyPayload(
     cached: CachedHighlight?,
     payload: OutboxPayload,
@@ -103,10 +94,7 @@ fun applyPayload(
         is OutboxPayload.ReadingEvent, is OutboxPayload.DocumentNote -> cached
     }
 
-/**
- * Applies [payload] to the cached highlight it targets, inside the enqueue transaction, and returns
- * the result, so the cache always matches what replaying the queue over the server would show.
- */
+/** Applies [payload] inside the enqueue transaction, so the cache always matches the replayed view. */
 fun EnqueueTx.applyToCachedHighlight(
     highlightId: String,
     documentId: String,

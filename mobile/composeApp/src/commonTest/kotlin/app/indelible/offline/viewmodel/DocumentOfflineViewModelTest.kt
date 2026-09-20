@@ -108,4 +108,53 @@ class DocumentOfflineViewModelTest {
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
             assertEquals(SyncBadge.Pending(1), offline.status.value.sync)
         }
+
+    @Test
+    fun removingACopyLeavesTheSheetShowingNothingOnTheDevice() =
+        runTest {
+            val h = downloadHarness()
+            h.seed(DL_DOC, bytes = 6_500_000, pinned = true)
+            val offline = offline(h)
+            advanceUntilIdle()
+            assertEquals(Availability.KEPT, offline.status.value.availability)
+
+            offline.removeFromDevice()
+            advanceUntilIdle()
+
+            assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
+            assertNull(offline.status.value.bytes)
+        }
+
+    @Test
+    fun removingDuringADownloadLeavesTheSheetShowingNothingOnTheDevice() =
+        runTest {
+            val h = downloadHarness()
+            val offline = offline(h)
+            offline.setKeepOffline(true)
+            advanceUntilIdle()
+            assertEquals(Availability.KEPT, offline.status.value.availability)
+
+            offline.removeFromDevice()
+            advanceUntilIdle()
+
+            assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
+            assertNull(offline.status.value.bytes)
+        }
+
+    @Test
+    fun aRemovedCopyStaysGoneWhileTheSheetIsOpen() =
+        runTest {
+            val h = downloadHarness()
+            val offline = offline(h)
+            offline.setKeepOffline(true)
+            advanceUntilIdle()
+
+            offline.removeFromDevice()
+            advanceUntilIdle()
+            advanceUntilIdle()
+
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
+            assertNull(offline.status.value.bytes)
+        }
 }

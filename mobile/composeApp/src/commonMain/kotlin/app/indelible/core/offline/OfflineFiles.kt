@@ -13,10 +13,7 @@ class NoSpaceException(
     cause: Throwable,
 ) : IOException("No space left on device", cause)
 
-/**
- * Downloaded document files under one root. Writes stream straight into their final path: each
- * download owns a fresh generation directory, so there is nothing to stage or move.
- */
+/** Downloaded document files under one root; each download owns a fresh generation directory. */
 class OfflineFiles(
     val root: Path,
     private val fs: FileSystem,
@@ -74,8 +71,7 @@ class OfflineFiles(
     }
 }
 
-// Android reports ENOSPC through ErrnoException text, the JVM and Okio's native file system
-// through strerror, and either may be wrapped by the stream that hit it.
+// ENOSPC surfaces as ErrnoException text on Android or a strerror message elsewhere, possibly wrapped.
 internal fun Throwable.isNoSpace(): Boolean =
     generateSequence(this) { it.cause }.any { error ->
         val message = error.message.orEmpty()

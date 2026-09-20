@@ -41,11 +41,13 @@ internal class SqlDelightCachedDocuments(
         scope: String,
         documentId: String,
         pinned: Boolean,
-    ) {
+    ): Boolean =
         context.write {
-            context.queries.setPinned(pinned.toLong(), scope, documentId)
+            context.database.transactionWithResult {
+                context.queries.setPinned(pinned.toLong(), scope, documentId)
+                context.queries.changedRows().executeAsOne() > 0
+            }
         }
-    }
 
     override suspend fun setDocumentBytes(
         scope: String,

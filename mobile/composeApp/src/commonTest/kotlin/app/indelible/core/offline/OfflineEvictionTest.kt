@@ -1,6 +1,8 @@
 package app.indelible.core.offline
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okio.fakefilesystem.FakeFileSystem
@@ -14,6 +16,36 @@ private const val HTML = "/api/v1/assets/documents/$DL_DOC/readable_html"
 private const val FOREIGN = "http://b.test|u2"
 
 class OfflineEvictionTest {
+    @Test
+    fun keepOfflineDuringEvictionKeepsTheCopy() =
+        runTest {
+            val listed = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            val h =
+                downloadHarness(
+                    store = { real ->
+                        object : OfflineStore by real {
+                            override suspend fun unpinnedLru(scope: String) =
+                                real.unpinnedLru(scope).also {
+                                    listed.complete(Unit)
+                                    resume.await()
+                                }
+                        }
+                    },
+                )
+            h.seed("doc", bytes = 100, openedAt = 1)
+            h.capBytes = 50
+            val eviction = launch { h.copies.enforceCap(DL_SCOPE, keep = null) }
+            listed.await()
+
+            h.manager.keepOffline(h.session, "doc")
+            resume.complete(Unit)
+            eviction.join()
+
+            assertEquals(setOf("doc"), h.copyIds())
+            assertTrue(h.fs.exists(h.files.documentDir(DL_SCOPE, "doc")))
+        }
+
     @Test
     fun evictsUnpinnedLruAndStopsAtPinned() =
         runTest {

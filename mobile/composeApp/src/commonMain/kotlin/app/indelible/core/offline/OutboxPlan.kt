@@ -5,11 +5,7 @@ data class OutboxPlan(
     val earliestWaitingDeadline: Long?,
 )
 
-/**
- * Rows for one entity run strictly in seq order, so a not-due row closes its entity for the
- * pass: later rows for it are neither admitted nor counted toward the deadline, because none of
- * them can run before the one that closed it.
- */
+/** A not-due row closes its entity for the rest of the pass, since a later row for it can't run first. */
 fun eligibleRows(
     rows: List<OutboxRow>,
     now: Long,

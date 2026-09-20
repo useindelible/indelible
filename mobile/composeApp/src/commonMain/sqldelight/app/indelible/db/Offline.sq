@@ -156,9 +156,14 @@ SELECT * FROM outbox WHERE scope = ? AND id = ?;
 setDocumentSyncedAt:
 UPDATE cached_document SET last_synced_at = ? WHERE scope = ? AND document_id = ?;
 
-upsertCachedDocument:
-INSERT OR REPLACE INTO cached_document(scope, document_id, document_type, title, reader_json, pinned, last_opened_at, last_synced_at, bytes)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+upsertCachedDocument {
+  INSERT OR IGNORE INTO cached_document(scope, document_id, document_type, title, reader_json, pinned, last_opened_at, last_synced_at, bytes)
+  VALUES (:scope, :document_id, :document_type, :title, :reader_json, :pinned, :last_opened_at, :last_synced_at, :bytes);
+  UPDATE cached_document
+  SET document_type = :document_type, title = :title, reader_json = :reader_json, pinned = :pinned,
+      last_opened_at = :last_opened_at, last_synced_at = :last_synced_at, bytes = :bytes
+  WHERE scope = :scope AND document_id = :document_id;
+}
 
 touchDocumentOpened:
 UPDATE cached_document SET last_opened_at = ? WHERE scope = ? AND document_id = ?;
@@ -270,6 +275,12 @@ SELECT scope, purge_pending FROM client_state;
 
 deleteCachedDocument:
 DELETE FROM cached_document WHERE scope = ? AND document_id = ?;
+
+deleteUnpinnedCachedDocument:
+DELETE FROM cached_document WHERE scope = ? AND document_id = ? AND pinned = 0;
+
+changedRows:
+SELECT changes();
 
 purgeRows {
   DELETE FROM cached_document WHERE scope = :scope;

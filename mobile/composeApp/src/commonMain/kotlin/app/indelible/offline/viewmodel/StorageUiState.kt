@@ -29,7 +29,6 @@ data class StorageUiState(
     /** Eviction only removes cached copies, so kept ones alone over the cap need the user. */
     val keptOverCap: Boolean get() = kept.sumOf { it.bytes } > capBytes
 
-    /** Changes that will still send, which removing the downloads leaves in place. */
     val queuedChanges: Int
         get() = changes.flatMap { listOf(it) + it.blocked }.count { it.status != ChangeStatus.SUPERSEDED }
 }

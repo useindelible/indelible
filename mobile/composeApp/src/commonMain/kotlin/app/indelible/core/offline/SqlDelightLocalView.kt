@@ -31,10 +31,7 @@ internal fun OfflineQueries.staleness(
     return Staleness(content = now.content != fetchedAt.content, position = now.position != fetchedAt.position)
 }
 
-/**
- * Moves the revision a change to the document's live rows affects. Reading events without
- * progress never change what the reader shows, so they move nothing.
- */
+/** Moves the revision the change affects; reading events without progress change nothing. */
 internal fun OfflineQueries.moveRevision(
     scope: String,
     documentId: String,
@@ -46,11 +43,7 @@ internal fun OfflineQueries.moveRevision(
     if (event != null) bumpPositionRevision(scope, documentId) else bumpContentRevision(scope, documentId)
 }
 
-/**
- * The acknowledgement transaction's body. Per-entity send order means an older row that sets the
- * same field can only still be here because it failed, or was retried after this one was sent, so
- * it is superseded rather than ever replayed or sent over the value the server now holds.
- */
+// An older same-field row here failed or was retried after, so it is superseded, never replayed over the server value.
 internal fun OfflineQueries.acknowledge(row: OutboxRow) {
     deleteOutboxRow(row.scope, row.id)
     when (row.kind) {

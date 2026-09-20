@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
@@ -18,13 +19,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/**
- * Acquires offline copies one at a time. Every request is bound to the session that made it and
- * is dropped once that session is gone; duplicate requests for a document merge, and a pin wins
- * over an auto-cache. Removal and purge cancel and join the document's acquisition before any
- * row or file is deleted, so nothing an acquisition writes can outlive them. An install evicts
- * unpinned copies down to the cap, never the copy it just installed.
- */
+/** Acquires offline copies one at a time, each bound to the session that asked; duplicates merge. */
 class DownloadManager(
     private val registry: SessionRegistry,
     private val fetcher: OfflineSetFetcher,
@@ -50,14 +45,19 @@ class DownloadManager(
 
     private val lock = Mutex()
 
-    // Held for the whole of each acquisition, so the launch sweep never sees a generation that is
-    // still being written.
+    // Held for each acquisition and eviction, so nothing deletes a generation still being written.
     private val acquiring = Mutex()
     private val queue = LinkedHashMap<DocumentKey, Request>()
 
     // Requests parked until connectivity returns or a new request for the same document arrives.
     private val parked = LinkedHashMap<DocumentKey, Request>()
+
+    // Scopes a full disk paused; lifted wherever space is known to be free again.
     private val autoCachePaused = mutableSetOf<String>()
+
+    // One entry per removal in progress, so a request waits for every overlapping removal to end.
+    private val removing = mutableListOf<DocumentKey>()
+    private val removingScopes = mutableListOf<String>()
     private var active: Active? = null
     private var isOnline = true
     private val wake = Channel<Unit>(Channel.CONFLATED)
@@ -67,7 +67,23 @@ class DownloadManager(
         if (scope != null) return
         val owned = CoroutineScope(SupervisorJob() + dispatcher)
         scope = owned
-        owned.launch { online.collect { onConnectivity(it) } }
+        owned.launch {
+            online.collect { nowOnline ->
+                val resumed =
+                    lock.withLock {
+                        isOnline = nowOnline
+                        if (!nowOnline || parked.isEmpty()) return@withLock false
+                        val live = registry.current.value.session
+                        parked.values.filter { it.session === live }.forEach { request ->
+                            queue[request.key] = request
+                            acquisitions.set(request.key, Acquisition.Waiting)
+                        }
+                        parked.clear()
+                        true
+                    }
+                if (resumed) wake.trySend(Unit)
+            }
+        }
         owned.launch { wake.consumeEach { drain(owned) } }
     }
 
@@ -81,11 +97,13 @@ class DownloadManager(
         session: Session,
         documentId: String,
     ) {
-        if (store.cachedDocument(session.scope, documentId) != null) {
-            store.setPinned(session.scope, documentId, pinned = true)
-        } else {
-            request(session, documentId, pin = true)
-        }
+        val key = DocumentKey(session.scope, documentId)
+        val pinned =
+            lock.withLock {
+                val beingRemoved = key in removing || key.scope in removingScopes
+                !beingRemoved && store.setPinned(key.scope, documentId, pinned = true)
+            }
+        if (!pinned) request(session, documentId, pin = true)
     }
 
     /** An unpinned copy of a document opened online, unless a full disk paused auto-caching. */
@@ -96,6 +114,7 @@ class DownloadManager(
         request(session, documentId, pin = false)
     }
 
+    /** A request for the document made while this runs waits until the copy is gone, then acquires anew. */
     suspend fun removeFromDevice(
         scope: String,
         documentId: String,
@@ -103,13 +122,24 @@ class DownloadManager(
         val key = DocumentKey(scope, documentId)
         val job =
             lock.withLock {
+                removing += key
                 queue.remove(key)
                 parked.remove(key)
                 active?.takeIf { it.request.key == key }?.job
             }
-        job?.cancelAndJoin()
-        acquisitions.clear(key)
-        copies.remove(scope, documentId)
+        try {
+            job?.cancelAndJoin()
+            acquisitions.clear(key)
+            copies.remove(scope, documentId)
+        } finally {
+            withContext(NonCancellable) {
+                lock.withLock {
+                    removing -= key
+                    autoCachePaused -= scope
+                }
+            }
+            wake.trySend(Unit)
+        }
     }
 
     /** Unpins a copy, which stays until it is evicted; without a copy, withdraws the request. */
@@ -117,29 +147,38 @@ class DownloadManager(
         scope: String,
         documentId: String,
     ) {
-        if (store.cachedDocument(scope, documentId) != null) {
-            store.setPinned(scope, documentId, pinned = false)
-        } else {
-            removeFromDevice(scope, documentId)
-        }
+        if (!store.setPinned(scope, documentId, pinned = false)) removeFromDevice(scope, documentId)
     }
 
-    /**
-     * Deletes every copy of [scope] and is the scope purge's file step: no acquisition of [scope]
-     * can write once this returns. Queued outbox rows are untouched.
-     */
+    /** The purge's file step: once it returns, nothing of [scope] is written. Leaves the outbox alone. */
     suspend fun removeAllDownloads(scope: String) =
         withContext(dispatcher) {
             val job =
                 lock.withLock {
+                    removingScopes += scope
                     queue.keys.removeAll { it.scope == scope }
                     parked.keys.removeAll { it.scope == scope }
                     active?.takeIf { it.request.key.scope == scope }?.job
                 }
-            job?.cancelAndJoin()
-            acquisitions.clearScope(scope)
-            copies.removeAll(scope)
-            lock.withLock { autoCachePaused -= scope }
+            try {
+                job?.cancelAndJoin()
+                acquisitions.clearScope(scope)
+                copies.removeAll(scope)
+            } finally {
+                withContext(NonCancellable) {
+                    lock.withLock {
+                        removingScopes -= scope
+                        autoCachePaused -= scope
+                    }
+                }
+                wake.trySend(Unit)
+            }
+        }
+
+    /** Evicts [scope] down to the cap between acquisitions; room it frees lets auto-caching resume. */
+    suspend fun enforceCap(scope: String) =
+        withContext(dispatcher) {
+            if (acquiring.withLock { copies.enforceCap(scope, keep = null) }) lock.withLock { autoCachePaused -= scope }
         }
 
     /** The launch sweep; it waits for the running acquisition, and the next one waits for it. */
@@ -165,7 +204,9 @@ class DownloadManager(
             acquiring.withLock {
                 val job =
                     lock.withLock {
-                        val request = queue.values.firstOrNull() ?: return
+                        val request =
+                            queue.values.firstOrNull { it.key !in removing && it.key.scope !in removingScopes }
+                                ?: return
                         queue.remove(request.key)
                         val job = owned.launch(start = CoroutineStart.LAZY) { acquire(request) }
                         active = Active(request, job)
@@ -200,7 +241,15 @@ class DownloadManager(
                     acquisitions.set(key, Acquisition.Downloading(fraction))
                 }.also { if (it == FetchResult.Installed) copies.enforceCap(key.scope, keep = request.documentId) }
         }.onSuccess { outcome ->
-            if (outcome == FetchResult.Stale) park(request, Acquisition.Waiting) else acquisitions.clear(key)
+            when {
+                outcome == FetchResult.Installed -> {
+                    lock.withLock { autoCachePaused -= key.scope }
+                    acquisitions.clear(key)
+                }
+                // A pin waits for a readable render rather than claiming a copy the reader cannot open.
+                outcome == FetchResult.Stale || request.pin -> park(request, Acquisition.Waiting)
+                else -> acquisitions.clear(key)
+            }
         }.onFailure { error ->
             if (error is CancellationException) throw error
             if (error is NoSpaceException) lock.withLock { autoCachePaused += key.scope }
@@ -220,29 +269,9 @@ class DownloadManager(
         lock.withLock { parked[request.key] = request }
         acquisitions.set(request.key, acquisition)
     }
-
-    private suspend fun onConnectivity(nowOnline: Boolean) {
-        val resumed =
-            lock.withLock {
-                isOnline = nowOnline
-                if (!nowOnline || parked.isEmpty()) return@withLock false
-                val live = registry.current.value.session
-                parked.values.filter { it.session === live }.forEach { request ->
-                    queue[request.key] = request
-                    acquisitions.set(request.key, Acquisition.Waiting)
-                }
-                parked.clear()
-                true
-            }
-        if (resumed) wake.trySend(Unit)
-    }
 }
 
-/**
- * What a failed acquisition shows, or null when it simply ends: a withdrawn session or scope was
- * not a failure of the download, and an auto-cache that lost the network just waits for the next
- * open. A pin that lost the network waits for connectivity.
- */
+/** What a failed acquisition shows, or null when it simply ends. */
 private fun failureState(
     error: Throwable,
     pin: Boolean,

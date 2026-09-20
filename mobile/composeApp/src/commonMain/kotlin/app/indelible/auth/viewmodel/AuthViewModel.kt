@@ -96,6 +96,7 @@ class AuthViewModel(
             }
             val epoch = sessions.epoch()
             val cached = offline.cachedUser()
+            if (sessions.epoch() != epoch) return@launch
             if (cached == null) {
                 repository
                     .getSession()

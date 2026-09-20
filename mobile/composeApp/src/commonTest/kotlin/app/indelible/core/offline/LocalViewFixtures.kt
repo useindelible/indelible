@@ -3,6 +3,8 @@ package app.indelible.core.offline
 import kotlinx.coroutines.flow.first
 
 internal const val VIEW_DOC = "doc_1"
+internal const val INSTALL_AT = 5_000L
+internal const val REFRESH_AT = 9_000L
 
 internal fun serverDocument(
     highlights: List<CachedHighlight> = emptyList(),
@@ -34,7 +36,7 @@ internal fun installRequest(
         assets = assets,
         bytes = assets.sumOf { it.bytes },
         pin = pin,
-        at = 5_000L,
+        at = INSTALL_AT,
     )
 
 internal suspend fun SignedIn.revision(documentId: String = VIEW_DOC): DocumentRevision =
@@ -53,14 +55,22 @@ internal suspend fun SignedIn.installNow(
 internal suspend fun SignedIn.enqueue(payload: OutboxPayload): String {
     val row = outboxRow(0, payload)
     store.enqueue(session, row.kind, row.entityId, VIEW_DOC) { payload to Unit }
-    return store.observeOutbox(scope).first().last().id
+    return store
+        .observeOutbox(scope)
+        .first()
+        .last()
+        .id
 }
 
 internal suspend fun SignedIn.enqueueProgress(basisPoints: Int?): String {
     store.enqueue(session, OutboxKind.READING_EVENT, VIEW_DOC, VIEW_DOC) {
         progressEvent(allocateOriginSeq(), basisPoints) to Unit
     }
-    return store.observeOutbox(scope).first().last().id
+    return store
+        .observeOutbox(scope)
+        .first()
+        .last()
+        .id
 }
 
 internal suspend fun SignedIn.row(id: String): OutboxRow = store.observeOutbox(scope).first().single { it.id == id }

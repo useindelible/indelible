@@ -117,7 +117,7 @@ private object UnreachableOfflineStore : OfflineStore {
         scope: String,
         documentId: String,
         pinned: Boolean,
-    ): Unit = unreachable()
+    ): Boolean = unreachable()
 
     override suspend fun setDocumentBytes(
         scope: String,
@@ -173,6 +173,11 @@ private object UnreachableOfflineStore : OfflineStore {
         scope: String,
         documentId: String,
     ): Unit = unreachable()
+
+    override suspend fun evictCachedDocument(
+        scope: String,
+        documentId: String,
+    ): Boolean = unreachable()
 
     override suspend fun dropOrphanHighlights(scope: String): Unit = unreachable()
 

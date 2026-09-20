@@ -3,12 +3,7 @@ package app.indelible.core.offline
 import app.indelible.db.Cached_highlight
 import app.indelible.db.OfflineQueries
 
-/**
- * The [EnqueueTx] receiver only makes sense while its backing transaction is open; a caller
- * that stashes it and calls it later would otherwise run queries outside any transaction
- * boundary. [close] is called once [SqlDelightOutbox.enqueue]'s transaction finishes
- * (success or failure), after which every method throws.
- */
+/** Invalid once its enqueue() transaction finishes; every method throws after [close]. */
 internal class EnqueueTxImpl(
     private val scope: String,
     private val queries: OfflineQueries,

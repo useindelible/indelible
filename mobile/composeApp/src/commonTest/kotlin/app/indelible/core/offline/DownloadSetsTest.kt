@@ -104,12 +104,10 @@ class DownloadSetsTest {
             val h = downloadHarness { available = emptyList() }
 
             assertEquals(FetchResult.Skipped, h.fetcher.download(h.session, DL_DOC, pin = false))
-            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
-            assertEquals(FetchResult.Installed, h.fetcher.download(h.session, DL_DOC, pin = true))
+            assertEquals(FetchResult.Skipped, h.fetcher.download(h.session, DL_DOC, pin = true))
 
-            assertEquals(emptyList(), h.store.assetsForDocument(DL_SCOPE, DL_DOC))
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertEquals(0, h.server.count("/api/v1/assets/documents/$DL_DOC/readable_html"))
-            assertEquals("server note", h.store.cachedDocument(DL_SCOPE, DL_DOC)?.noteBody)
         }
 
     @Test
@@ -178,6 +176,42 @@ class DownloadSetsTest {
             assertTrue(copy.pinned)
             assertTrue(fs.exists(h.generationDir(2)))
         }
+
+    @Test
+    fun bookInstallsEverySpineChapterIncludingOnesTheOutlineSkips() =
+        runTest {
+            val h =
+                downloadHarness {
+                    documentType = "book"
+                    available = listOf("epub")
+                    route("/api/v1/documents/$DL_DOC/epub/toc") { json(outline(totalChapters = 3, 0, 3)) }
+                    routes.remove("/api/v1/documents/$DL_DOC/epub/chapters/1")
+                    route("/api/v1/documents/$DL_DOC/epub/chapters/3") { respond("<h1>3</h1>", HttpStatusCode.OK) }
+                }
+
+            h.fetcher.download(h.session, DL_DOC, pin = true)
+
+            val chapters = h.store.assetsForDocument(DL_SCOPE, DL_DOC).filter { it.kind == "epub_chapter" }
+            assertEquals(listOf(0, 2, 3), chapters.map { it.idx }.sorted())
+        }
+
+    @Test
+    fun bookInstallsNamedChaptersSeparatedByAWideGap() =
+        runTest {
+            val h =
+                downloadHarness {
+                    documentType = "book"
+                    available = listOf("epub")
+                    route("/api/v1/documents/$DL_DOC/epub/toc") { json(outline(totalChapters = 2, 0, 66)) }
+                    routes.keys.removeAll { it.endsWith("/chapters/1") || it.endsWith("/chapters/2") }
+                    route("/api/v1/documents/$DL_DOC/epub/chapters/66") { respond("<h1>66</h1>", HttpStatusCode.OK) }
+                }
+
+            h.fetcher.download(h.session, DL_DOC, pin = true)
+
+            val chapters = h.store.assetsForDocument(DL_SCOPE, DL_DOC).filter { it.kind == "epub_chapter" }
+            assertEquals(listOf(0, 66), chapters.map { it.idx }.sorted())
+        }
 }
 
 /** Refuses to delete anything under [failUnder], the way a locked or read-only file would. */
@@ -197,3 +231,11 @@ internal class FailingDeleteFileSystem(
         super.delete(path, mustExist)
     }
 }
+
+private fun outline(
+    totalChapters: Int,
+    vararg named: Int,
+) = """{"metadata":{"estimated_pages":3,"total_chapters":$totalChapters,"total_words":30},"toc":[""" +
+    named.joinToString(",") {
+        """{"id":"e$it","title":"T$it","depth":0,"spine_index":$it,"start_page":1,"word_count":10}"""
+    } + "]}"
