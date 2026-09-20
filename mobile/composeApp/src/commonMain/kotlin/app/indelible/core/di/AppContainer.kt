@@ -10,8 +10,8 @@ import app.indelible.auth.repository.AuthRepository
 import app.indelible.auth.server.HttpServerHealthChecker
 import app.indelible.auth.server.ServerHealthChecker
 import app.indelible.auth.viewmodel.AuthViewModel
-import app.indelible.auth.viewmodel.OfflineAccount
 import app.indelible.auth.viewmodel.ConnectServerViewModel
+import app.indelible.auth.viewmodel.OfflineAccount
 import app.indelible.collections.repository.ApiCollectionsRepository
 import app.indelible.collections.repository.CollectionsRepository
 import app.indelible.core.config.ServerBuildConfig
@@ -282,7 +282,7 @@ fun rememberAppContainer(
                         single { SearchViewModel(get()) }
                         single { SidebarViewModel(get()) }
                         single {
-                            StorageViewModel(get(), get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
+                            StorageViewModel(get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
                         }
                     },
                 )

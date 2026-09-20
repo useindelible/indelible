@@ -1,10 +1,6 @@
 package app.indelible.core.offline
 
-/**
- * Reconciles the files with the catalog after a crash, a failed delete or an interrupted download.
- * It must run while no acquisition does: every generation on disk is then either the one its row
- * references or garbage. A purge-pending scope is left to its purge, which owns its files.
- */
+/** Must run while no acquisition does; every generation on disk is then either referenced or garbage. */
 internal suspend fun OfflineCopies.sweep() {
     val scopes = store.scopesWithState()
     val known = scopes.map { (scope, _) -> scopeDirName(scope) }.toSet()

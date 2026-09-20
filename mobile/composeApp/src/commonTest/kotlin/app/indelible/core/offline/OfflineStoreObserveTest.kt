@@ -76,7 +76,7 @@ class OfflineStoreObserveTest {
             val pinned = emissions.receive().single()
             s.store.removeCachedDocument(s.scope, VIEW_DOC)
 
-            assertEquals(CatalogEntry(VIEW_DOC, "article", "Title", false, 5_000L, null, 10L, 1L), installed)
+            assertEquals(CatalogEntry(VIEW_DOC, "article", "Title", false, INSTALL_AT, INSTALL_AT, 10L, 1L), installed)
             assertTrue(pinned.pinned)
             assertTrue(emissions.receive().isEmpty())
         }

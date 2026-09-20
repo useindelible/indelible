@@ -109,11 +109,12 @@ internal class DownloadHarness(
     scheduler: TestCoroutineScheduler,
 ) {
     var capBytes = DEFAULT_OFFLINE_CAP_BYTES
+    var capSource: suspend () -> Long = { capBytes }
     val files = OfflineFiles(OFFLINE_ROOT.toPath(), fs)
     val online = MutableStateFlow(true)
-    val copies = OfflineCopies(backing, files) { capBytes }
+    val copies = OfflineCopies(backing, files) { capSource() }
     val fetcher =
-        OfflineSetFetcher(transport, backing, files, clock = { scheduler.currentTime }, capBytes = { capBytes })
+        OfflineSetFetcher(transport, backing, files, clock = { scheduler.currentTime }, capBytes = { capSource() })
     val manager =
         DownloadManager(signedIn.registry, fetcher, backing, copies, online, StandardTestDispatcher(scheduler))
     val store: SqlDelightOfflineStore get() = signedIn.store

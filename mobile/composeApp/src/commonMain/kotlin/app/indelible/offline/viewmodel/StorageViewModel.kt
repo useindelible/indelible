@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.offline.CatalogEntry
 import app.indelible.core.offline.DownloadManager
-import app.indelible.core.offline.OfflineCopies
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxRow
@@ -30,7 +29,6 @@ import okio.IOException
 class StorageViewModel(
     private val registry: SessionRegistry,
     private val store: OfflineStore,
-    private val copies: OfflineCopies,
     private val downloads: DownloadManager,
     private val preferences: UserPreferencesStorage,
     private val requestDrain: () -> Unit,
@@ -53,7 +51,7 @@ class StorageViewModel(
         capBytes.value = bytes
         viewModelScope.launch {
             preferences.saveOfflineCapBytes(bytes)
-            currentScope()?.let { copies.enforceCap(it, keep = null) }
+            currentScope()?.let { downloads.enforceCap(it) }
         }
     }
 
@@ -78,7 +76,10 @@ class StorageViewModel(
         }
     }
 
-    private fun currentScope(): String? = registry.current.value.session?.scope
+    private fun currentScope(): String? {
+        val session = registry.current.value.session
+        return session?.scope
+    }
 
     private fun stateOf(scope: String): Flow<StorageUiState> =
         combine(

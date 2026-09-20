@@ -70,7 +70,17 @@ class OfflineStoreInstallTest {
         }
 
     @Test
-    fun reinstallKeepsPinnedAndLastSyncedAt() =
+    fun installStampsLastSyncedSoAFreshCopyIsNotShownUnsynced() =
+        runTest {
+            val s = signedInStore()
+
+            s.installNow()
+
+            assertEquals(INSTALL_AT, s.store.cachedDocument(s.scope, VIEW_DOC)?.lastSyncedAt)
+        }
+
+    @Test
+    fun reinstallKeepsPinnedAndRestampsLastSynced() =
         runTest {
             val s = signedInStore()
             s.installNow(pin = true)
@@ -80,7 +90,7 @@ class OfflineStoreInstallTest {
 
             val copy = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
             assertTrue(copy.pinned)
-            assertEquals(77L, copy.lastSyncedAt)
+            assertEquals(INSTALL_AT, copy.lastSyncedAt)
             assertEquals(2L, copy.generation)
         }
 
@@ -91,7 +101,13 @@ class OfflineStoreInstallTest {
             s.installNow(serverDocument(note = "old"))
 
             s.writes().upsertDocumentNote(s.session, VIEW_DOC, "mine")
-            s.store.remove(s.scope, s.store.pendingOrdered(s.scope).single().id)
+            s.store.remove(
+                s.scope,
+                s.store
+                    .pendingOrdered(s.scope)
+                    .single()
+                    .id,
+            )
 
             assertEquals("mine", s.store.cachedDocument(s.scope, VIEW_DOC)?.noteBody)
         }
@@ -126,5 +142,34 @@ class OfflineStoreInstallTest {
             assertEquals(emptyList(), s.store.assetsForDocument(s.scope, VIEW_DOC))
             assertEquals(listOf("hlt_queued"), s.store.cachedHighlights(s.scope, VIEW_DOC).map { it.id })
             assertEquals(1, s.store.pendingOrdered(s.scope).size)
+        }
+
+    @Test
+    fun queuedProgressKeepsTheHighestPositionReached() =
+        runTest {
+            val s = signedInStore()
+            s.enqueueProgress(7_000)
+            s.enqueueProgress(6_000)
+
+            s.installNow(serverDocument(progress = Progress(percent = 20, maxPercent = 20)))
+
+            val copy = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
+            assertEquals(60, copy.progressPercent)
+            assertEquals(70, copy.maxProgressPercent)
+        }
+
+    @Test
+    fun catalogUpsertLeavesTheInstalledCopyIntact() =
+        runTest {
+            val s = signedInStore()
+            val server = serverDocument(note = "kept", progress = Progress(percent = 30, maxPercent = 40))
+            s.installNow(server, generation = 9)
+            val installed = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
+
+            s.store.upsertCachedDocument(s.scope, installed.copy(title = "Renamed"))
+
+            val copy = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
+            assertEquals("Renamed", copy.title)
+            assertEquals(installed.copy(title = "Renamed"), copy)
         }
 }

@@ -57,7 +57,7 @@ class OfflineSetFetcher(
         onProgress: (Float) -> Unit = {},
     ): FetchResult {
         val first = readerDocument(session, documentId)
-        if (!pin && !first.model.fitsAutoCache(capBytes())) return FetchResult.Skipped
+        if (!first.model.worthCaching(pin, capBytes())) return FetchResult.Skipped
         val scope = session.scope
         val previous = store.cachedDocument(scope, documentId)?.generation
         val generation = (previous ?: 0L) + 1
@@ -152,14 +152,47 @@ class OfflineSetFetcher(
         val tocFetch = AssetFetch(EPUB_TOC, 0, "/api/v1/documents/$documentId/epub/toc", EPUB_TOC_FILE)
         val toc = fetchAsset(session, documentId, tocFetch, dir)
         val tocJson = checkNotNull(files.readText(dir / toc.path))
-        val entries = json.decodeFromString(EpubTocResponse.serializer(), tocJson).toc
-        val chapters = entries.map { it.spineIndex }.distinct().sorted()
-        return listOf(toc) +
-            chapters.mapIndexed { done, index ->
-                val route = "/api/v1/documents/$documentId/epub/chapters/$index"
-                fetchAsset(session, documentId, AssetFetch(EPUB_CHAPTER, index, route, "chapters/$index.html"), dir)
-                    .also { onProgress((done + 1f) / chapters.size) }
+        val outline = json.decodeFromString(EpubTocResponse.serializer(), tocJson)
+        val total = outline.metadata.totalChapters
+        // Spine items that are not HTML leave gaps in the numbering, and the outline need not name every
+        // chapter, so the named ones come first and the rest are walked for by spine index.
+        val named = outline.toc.map { it.spineIndex }.toSet()
+        val chapters = mutableListOf<CachedAssetRow>()
+        val found = { chapter: CachedAssetRow ->
+            chapters += chapter
+            onProgress(chapters.size.toFloat() / total)
+        }
+        named.forEach { spine -> chapterAt(session, documentId, spine, dir)?.let(found) }
+        var index = 0
+        var gap = 0
+        while (chapters.size < total) {
+            check(gap <= MAX_SPINE_GAP) { "found ${chapters.size} of $total chapters" }
+            val current = index++
+            val chapter = if (current in named) null else chapterAt(session, documentId, current, dir)
+            when {
+                current in named -> gap = 0
+                chapter == null -> gap++
+                else -> {
+                    gap = 0
+                    found(chapter)
+                }
             }
+        }
+        return listOf(toc) + chapters
+    }
+
+    private suspend fun chapterAt(
+        session: Session,
+        documentId: String,
+        index: Int,
+        dir: Path,
+    ): CachedAssetRow? {
+        val route = "/api/v1/documents/$documentId/epub/chapters/$index"
+        return try {
+            fetchAsset(session, documentId, AssetFetch(EPUB_CHAPTER, index, route, "chapters/$index.html"), dir)
+        } catch (error: ApiException) {
+            if (error.statusCode == NOT_FOUND) null else throw error
+        }
     }
 
     private suspend fun fetchAsset(
@@ -234,6 +267,7 @@ class OfflineSetFetcher(
 
     private companion object {
         const val INSTALL_ATTEMPTS = 3
+        const val MAX_SPINE_GAP = 64
         const val NOT_FOUND = 404
         const val ERROR_PREVIEW_CHARS = 200
         const val TYPE_PDF = "pdf"
@@ -265,13 +299,16 @@ class OfflineSetFetcher(
                 else -> READABLE_HTML
             }
 
-        // The announced size is the stored asset's; a book's chapters can unpack to more than its
-        // EPUB, so the downloaded total is checked again before an auto-cache installs.
-        fun DocumentReaderResponse.fitsAutoCache(cap: Long): Boolean {
-            val kind = readableKind()
-            return kind != null &&
-                kind in availableAssets &&
-                assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
+        // A document the server has nothing readable for yet would install as a copy the reader
+        // cannot open, so it is never one, pinned or not. The announced size is the stored asset's;
+        // a book's chapters can unpack to more than its EPUB, so the downloaded total is checked
+        // again before an auto-cache installs.
+        fun DocumentReaderResponse.worthCaching(
+            pin: Boolean,
+            cap: Long,
+        ): Boolean {
+            val kind = readableKind()?.takeIf { it in availableAssets } ?: return false
+            return pin || assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
         }
 
         fun HttpRequestBuilder.bearer(token: String) {

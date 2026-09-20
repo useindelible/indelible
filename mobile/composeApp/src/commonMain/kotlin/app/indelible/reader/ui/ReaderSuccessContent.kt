@@ -202,7 +202,8 @@ internal fun ReaderSuccessContent(
                         activePanel = activePanel,
                         onPanelSelected = { viewModel.openPanel(it) },
                     )
-                    PendingSyncDot(itemOffline?.status?.sync, Modifier.align(Alignment.TopEnd))
+                    val openPending = itemOffline?.onOpenStorage ?: {}
+                    PendingSyncDot(itemOffline?.status?.sync, openPending, Modifier.align(Alignment.TopEnd))
                 }
             }
 

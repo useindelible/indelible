@@ -25,10 +25,12 @@ internal class FailingWriteFileSystem(
     delegate: FileSystem,
     private val failure: () -> IOException,
 ) : ForwardingFileSystem(delegate) {
+    var failing = true
+
     override fun sink(
         file: Path,
         mustCreate: Boolean,
-    ): Sink = throw failure()
+    ): Sink = if (failing) throw failure() else super.sink(file, mustCreate)
 }
 
 class OfflineFilesTest {

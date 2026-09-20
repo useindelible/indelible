@@ -3,6 +3,7 @@ package app.indelible.core.offline
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -25,6 +26,24 @@ class DownloadRaceTest {
                 respond("<p>late</p>", HttpStatusCode.OK)
             }
         }
+
+    /** A harness whose row removals each wait for the next gate before deleting. */
+    private suspend fun TestScope.removalHeld(vararg gates: CompletableDeferred<Unit>): DownloadHarness {
+        val pending = ArrayDeque(gates.toList())
+        return downloadHarness(
+            store = { real ->
+                object : OfflineStore by real {
+                    override suspend fun removeCachedDocument(
+                        scope: String,
+                        documentId: String,
+                    ) {
+                        pending.removeFirst().await()
+                        real.removeCachedDocument(scope, documentId)
+                    }
+                }
+            },
+        )
+    }
 
     @Test
     fun sessionChangeMidDownloadLeavesNoRowsOrFiles() =
@@ -165,5 +184,134 @@ class DownloadRaceTest {
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertFalse(h.fs.exists(h.generationDir(1)))
             assertEquals(Acquisition.Waiting, h.acquisition())
+        }
+
+    @Test
+    fun pinOfADocumentWithoutReadableContentWaitsInsteadOfClaimingACopy() =
+        runTest {
+            val h = downloadHarness { available = emptyList() }
+
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertEquals(Acquisition.Waiting, h.acquisition())
+            assertEquals(0, h.server.count(HTML))
+        }
+
+    @Test
+    fun freeingSpaceResumesAutoCaching() =
+        runTest {
+            val full = FailingWriteFileSystem(FakeFileSystem()) { IOException("write failed: ENOSPC") }
+            val h = downloadHarness(fs = full)
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+            assertEquals(1, h.server.count(HTML))
+
+            h.manager.removeFromDevice(DL_SCOPE, DL_DOC)
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+
+            assertEquals(2, h.server.count(HTML))
+        }
+
+    @Test
+    fun aPinThatInstallsResumesAutoCaching() =
+        runTest {
+            val full = FailingWriteFileSystem(FakeFileSystem()) { IOException("write failed: ENOSPC") }
+            val h = downloadHarness(fs = full)
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+            h.manager.cacheOnOpen(h.session, "doc_2")
+            runCurrent()
+            assertEquals(0, h.server.count("/api/v1/documents/doc_2"))
+
+            full.failing = false
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+            h.manager.cacheOnOpen(h.session, "doc_2")
+            runCurrent()
+
+            assertEquals(1, h.server.count("/api/v1/documents/doc_2"))
+        }
+
+    @Test
+    fun aDownloadDuringRemovalNeverLeavesARowWithoutItsFiles() =
+        runTest {
+            val removed = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            val h =
+                downloadHarness(
+                    store = { real ->
+                        object : OfflineStore by real {
+                            override suspend fun removeCachedDocument(
+                                scope: String,
+                                documentId: String,
+                            ) {
+                                real.removeCachedDocument(scope, documentId)
+                                removed.complete(Unit)
+                                resume.await()
+                            }
+                        }
+                    },
+                )
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+            val removal = launch { h.manager.removeFromDevice(DL_SCOPE, DL_DOC) }
+            removed.await()
+
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+            resume.complete(Unit)
+            removal.join()
+            runCurrent()
+
+            val copy = checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertTrue(h.fs.exists(h.files.generationDir(DL_SCOPE, DL_DOC, copy.generation)))
+        }
+
+    @Test
+    fun aRequestWaitsForTheLastOfOverlappingRemovals() =
+        runTest {
+            val first = CompletableDeferred<Unit>()
+            val second = CompletableDeferred<Unit>()
+            val h = removalHeld(first, second)
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+            val removals = List(2) { launch { h.manager.removeFromDevice(DL_SCOPE, DL_DOC) } }
+            runCurrent()
+
+            first.complete(Unit)
+            runCurrent()
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+            second.complete(Unit)
+            removals.forEach { it.join() }
+            runCurrent()
+
+            val copy = checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertTrue(h.fs.exists(h.files.generationDir(DL_SCOPE, DL_DOC, copy.generation)))
+        }
+
+    @Test
+    fun keepOfflineDuringRemovalLeavesAPinnedCopy() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val h = removalHeld(gate)
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+            val removal = launch { h.manager.removeFromDevice(DL_SCOPE, DL_DOC) }
+            runCurrent()
+
+            h.manager.keepOffline(h.session, DL_DOC)
+            gate.complete(Unit)
+            removal.join()
+            runCurrent()
+
+            val copy = checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertTrue(copy.pinned)
+            assertTrue(h.fs.exists(h.files.generationDir(DL_SCOPE, DL_DOC, copy.generation)))
         }
 }

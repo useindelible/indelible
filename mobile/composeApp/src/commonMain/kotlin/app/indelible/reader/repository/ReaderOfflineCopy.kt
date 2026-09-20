@@ -33,10 +33,8 @@ import okio.IOException
 class StaleReadException : Exception("The document changed while it was being read")
 
 /**
- * Reader reads as the local view: the server's parts with the user's live changes replayed on
- * top, online or offline, cached or not. A read captures the document's revision before its fetch
- * and never applies a server part that a local change overtook during it. With a copy, a server
- * that cannot answer within [budgetMs] is answered by the copy.
+ * The local view: server parts with local changes replayed on top; a part a local change
+ * overtook during its fetch is never applied, and a server slower than [budgetMs] falls back to the copy.
  */
 class ReaderOfflineCopy(
     private val store: OfflineStore,
@@ -66,8 +64,7 @@ class ReaderOfflineCopy(
                     .toReaderDocument()
                     .withProgress(Progress(copy.progressPercent, copy.maxProgressPercent))
             }
-        // Progress is an append-only log the server never lets an older event win, so a view
-        // replayed over a response a change overtook is still the best answer and is not withheld.
+        // Progress is append-only; the server never lets an older event win, so an overtaken view still stands.
         return fromCopy ?: steady(session.scope, documentId, { it.position }, fetch)
             .map { it.server.toReaderDocument().withProgress(it.changes.progress(it.server.progress())) }
             .onSuccess { requestCache(session, documentId) }
@@ -113,10 +110,7 @@ class ReaderOfflineCopy(
             json.decodeFromString(ArticleToc.serializer(), it)
         }
 
-    /**
-     * The copy's view after refreshing it with the fetched part, or null when there is no copy.
-     * A part fetched across a local change is not applied, so the copy's own view stands.
-     */
+    // Copy's view after refreshing with the fetched part, or null without a copy; an overtaken part is dropped.
     private suspend fun <S, V> fromCopy(
         session: Session,
         documentId: String,
@@ -128,7 +122,7 @@ class ReaderOfflineCopy(
         val revision = store.localChanges(scope, documentId).revision
         if (store.cachedDocument(scope, documentId) == null) return null
         val fetched = attempt(fetch)
-        fetched.onSuccess { refresh(session, RefreshRequest(documentId, revision, part(it))) }
+        fetched.onSuccess { refresh(session, RefreshRequest(documentId, revision, part(it), clock())) }
         val refused = fetched.exceptionOrNull()?.takeUnless { it.fallsBack() }
         val copy = store.cachedDocument(scope, documentId)
         return when {
@@ -151,10 +145,7 @@ class ReaderOfflineCopy(
         }
     }
 
-    /**
-     * Fetches until the revision [part] reads held still across the fetch, at most
-     * [READ_ATTEMPTS] times; the last attempt is returned either way, marked by [Steady.held].
-     */
+    /** Retries until [part]'s revision holds across the fetch, up to [READ_ATTEMPTS] tries; last attempt returned. */
     private suspend fun <S> steady(
         scope: String,
         documentId: String,
@@ -175,8 +166,7 @@ class ReaderOfflineCopy(
         return result
     }
 
-    // The note and highlights are saved whole, so showing a value a local change overtook would
-    // let an edit of it overwrite that change.
+    // Note and highlights save whole, so showing an overtaken value would let an edit overwrite that change.
     private fun <S, V> Result<Steady<S>>.whenHeld(view: (Steady<S>) -> V): Result<V> =
         fold(
             onSuccess = { if (it.held) Result.success(view(it)) else Result.failure(StaleReadException()) },
@@ -237,8 +227,7 @@ class ReaderOfflineCopy(
         val json = Json { ignoreUnknownKeys = true }
         val NO_TOC = ArticleToc(entries = emptyList(), status = ArticleTocStatus.NONE, truncated = false)
 
-        // A 4xx is the server's answer about the document or the session, which a copy must not
-        // paper over; 408 and 429 are the server being unable to answer now.
+        // A 4xx is the server's real answer, which a copy must not hide; 408 and 429 mean it just can't answer now.
         fun Throwable.fallsBack(): Boolean =
             this !is ApiException ||
                 statusCode !in CLIENT_ERROR_MIN..CLIENT_ERROR_MAX ||

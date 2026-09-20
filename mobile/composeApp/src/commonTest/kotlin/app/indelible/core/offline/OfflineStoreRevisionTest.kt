@@ -97,7 +97,7 @@ class OfflineStoreRevisionTest {
             val fetchedAt = s.revision()
             s.store.remove(s.scope, s.enqueue(OutboxPayload.DocumentNote("kept", null)))
             val refresh: suspend (String, ServerPart) -> RefreshResult = { documentId, part ->
-                s.store.refreshCachedCopy(s.session, RefreshRequest(documentId, fetchedAt, part))
+                s.store.refreshCachedCopy(s.session, RefreshRequest(documentId, fetchedAt, part, at = REFRESH_AT))
             }
 
             val highlights = listOf(serverHighlight("hlt_1"), serverHighlight("hlt_2"))
@@ -113,5 +113,25 @@ class OfflineStoreRevisionTest {
             assertEquals("kept", copy.noteBody)
             assertEquals(listOf("hlt_1"), s.store.cachedHighlights(s.scope, VIEW_DOC).map { it.id })
             assertEquals(RefreshResult.NoCopy, refresh("doc_other", reader))
+        }
+
+    @Test
+    fun refreshStampsLastSyncedOnlyWhenAPartApplies() =
+        runTest {
+            val s = signedInStore()
+            s.installNow(serverDocument(note = "kept"))
+            val fetchedAt = s.revision()
+            s.store.remove(s.scope, s.enqueue(OutboxPayload.DocumentNote("kept", null)))
+            val overtaken = ServerPart.Note(ServerNote("stale", 2_000L))
+
+            val stale = RefreshRequest(VIEW_DOC, fetchedAt, overtaken, at = REFRESH_AT)
+            assertEquals(RefreshResult.Stale, s.store.refreshCachedCopy(s.session, stale))
+            assertEquals(INSTALL_AT, s.store.cachedDocument(s.scope, VIEW_DOC)?.lastSyncedAt)
+
+            val reader = ServerPart.Reader("Renamed", "{}", Progress(percent = 45, maxPercent = 50))
+            val applied = RefreshRequest(VIEW_DOC, s.revision(), reader, at = REFRESH_AT)
+            assertEquals(RefreshResult.Applied, s.store.refreshCachedCopy(s.session, applied))
+
+            assertEquals(REFRESH_AT, s.store.cachedDocument(s.scope, VIEW_DOC)?.lastSyncedAt)
         }
 }

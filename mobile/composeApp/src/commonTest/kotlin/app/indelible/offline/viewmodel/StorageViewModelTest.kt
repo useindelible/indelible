@@ -3,7 +3,6 @@ package app.indelible.offline.viewmodel
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.DownloadHarness
-import app.indelible.core.offline.OfflineCopies
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.downloadHarness
@@ -35,11 +34,15 @@ private class Storage(
     val preferences: InMemoryUserPreferencesStorage,
 ) {
     var drains = 0
+
+    init {
+        h.capSource = { preferences.getOfflineCapBytes() }
+    }
+
     val viewModel =
         StorageViewModel(
             registry = h.signedIn.registry,
             store = h.store,
-            copies = OfflineCopies(h.store, h.files) { preferences.getOfflineCapBytes() },
             downloads = h.manager,
             preferences = preferences,
             requestDrain = { drains++ },
@@ -94,7 +97,12 @@ class StorageViewModelTest {
             s.viewModel.retry(id)
             advanceUntilIdle()
 
-            assertEquals(OutboxState.PENDING, s.h.signedIn.row(id).state)
+            assertEquals(
+                OutboxState.PENDING,
+                s.h.signedIn
+                    .row(id)
+                    .state,
+            )
             assertEquals(1, s.drains)
             assertEquals(ChangeStatus.PENDING, s.change(id).status)
         }
@@ -116,7 +124,13 @@ class StorageViewModelTest {
             assertEquals(emptyList(), s.state.kept + s.state.cached)
             assertEquals(0L, s.state.usedBytes)
             assertEquals(2, s.state.queuedChanges)
-            assertEquals(2, s.h.store.observeOutbox(DL_SCOPE).first().size)
+            assertEquals(
+                2,
+                s.h.store
+                    .observeOutbox(DL_SCOPE)
+                    .first()
+                    .size,
+            )
         }
 
     @Test
@@ -165,7 +179,12 @@ class StorageViewModelTest {
             assertEquals(ChangeStatus.FAILED, s.change(failed).status)
             assertEquals("Note too long", s.change(failed).error)
             assertEquals("Title", s.change(failed).documentTitle)
-            assertEquals(listOf(failed), s.state.changes.filter { it.canRetry }.map { it.id })
+            assertEquals(
+                listOf(failed),
+                s.state.changes
+                    .filter { it.canRetry }
+                    .map { it.id },
+            )
         }
 
     @Test
@@ -186,7 +205,12 @@ class StorageViewModelTest {
             advanceUntilIdle()
 
             assertEquals(0, s.drains)
-            assertEquals(OutboxState.FAILED, s.h.signedIn.row(older).state)
+            assertEquals(
+                OutboxState.FAILED,
+                s.h.signedIn
+                    .row(older)
+                    .state,
+            )
         }
 
     @Test

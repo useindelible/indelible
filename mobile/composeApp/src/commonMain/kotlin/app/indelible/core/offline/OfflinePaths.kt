@@ -3,8 +3,7 @@ package app.indelible.core.offline
 import app.indelible.auth.oauth.sha256
 import okio.Path
 
-// The scope holds a server URL and a user id; hashing keeps both out of the file system and
-// gives every scope a fixed-length, path-safe directory name.
+// Hashing keeps the scope's server URL and user id out of the file system and fixes the directory name's length.
 fun scopeDirName(scope: String): String = sha256(scope.encodeToByteArray()).toHexString()
 
 fun OfflineFiles.scopeDir(scope: String): Path = root / scopeDirName(scope)

@@ -80,7 +80,13 @@ class OfflineStoreSupersessionTest {
             assertTrue(s.row(tags).superseded)
             assertFalse(s.row(unrelated).superseded)
             assertFalse(s.store.retryRow(s.scope, colour))
-            assertEquals(listOf("hlt_2"), s.store.localChanges(s.scope, VIEW_DOC).rows.map { it.entityId })
+            assertEquals(
+                listOf("hlt_2"),
+                s.store
+                    .localChanges(s.scope, VIEW_DOC)
+                    .rows
+                    .map { it.entityId },
+            )
         }
 
     @Test
