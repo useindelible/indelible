@@ -206,7 +206,7 @@
     <string name="home_nothing_in_progress">Nothing in progress</string>
     <string name="home_open_menu_cd">Open menu</string>
     <string name="home_pick_up">Pick up where you left off</string>
-    <string name="home_progress_percent">%1$d%%</string>
+    <string name="home_progress_percent">%1$d%</string>
     <plurals name="home_reading_minutes">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
@@ -300,10 +300,10 @@
     <string name="library_pipeline_title">Pipeline status</string>
     <string name="library_pipeline_unknown">Unknown</string>
     <plurals name="library_progress_minutes_left">
-        <item quantity="one">%1$d%% · %2$d minute left</item>
-        <item quantity="other">%1$d%% · %2$d minutes left</item>
+        <item quantity="one">%1$d% · %2$d minute left</item>
+        <item quantity="other">%1$d% · %2$d minutes left</item>
     </plurals>
-    <string name="library_progress_percent">%1$d%%</string>
+    <string name="library_progress_percent">%1$d%</string>
     <plurals name="library_reading_count">
         <item quantity="one">%1$d reading</item>
         <item quantity="other">%1$d reading</item>
@@ -580,7 +580,7 @@
     <string name="reader_contents_building_title">Building the outline</string>
     <string name="reader_contents_empty_body">This article doesn’t have enough sections for a table of contents.</string>
     <string name="reader_contents_empty_title">No outline here</string>
-    <string name="reader_contents_progress">Contents · %1$d%% read</string>
+    <string name="reader_contents_progress">Contents · %1$d% read</string>
     <string name="reader_copied_clipboard">Copied to clipboard</string>
     <string name="reader_create_tag">Create “%1$s”</string>
     <string name="reader_display">Display</string>
@@ -652,7 +652,7 @@
         <item quantity="other">Retry available in %1$d seconds.</item>
     </plurals>
     <string name="reader_preparing_title">Still preparing this article</string>
-    <string name="reader_progress_percent">%1$d%%</string>
+    <string name="reader_progress_percent">%1$d%</string>
     <string name="reader_reading">Reading</string>
     <string name="reader_saved_library">Saved to Library</string>
     <string name="reader_sleep">Sleep</string>

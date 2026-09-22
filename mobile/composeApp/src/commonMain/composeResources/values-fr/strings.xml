@@ -206,7 +206,7 @@
     <string name="home_nothing_in_progress">Aucune lecture en cours</string>
     <string name="home_open_menu_cd">Ouvrir le menu</string>
     <string name="home_pick_up">Reprenez là où vous vous êtes arrêté</string>
-    <string name="home_progress_percent">%1$d %%</string>
+    <string name="home_progress_percent">%1$d %</string>
     <plurals name="home_reading_minutes">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
@@ -300,10 +300,10 @@
     <string name="library_pipeline_title">État du traitement</string>
     <string name="library_pipeline_unknown">Inconnu</string>
     <plurals name="library_progress_minutes_left">
-        <item quantity="one">%1$d %% · encore %2$d minute</item>
-        <item quantity="other">%1$d %% · encore %2$d minutes</item>
+        <item quantity="one">%1$d % · encore %2$d minute</item>
+        <item quantity="other">%1$d % · encore %2$d minutes</item>
     </plurals>
-    <string name="library_progress_percent">%1$d %%</string>
+    <string name="library_progress_percent">%1$d %</string>
     <plurals name="library_reading_count">
         <item quantity="one">%1$d en cours</item>
         <item quantity="other">%1$d en cours</item>
@@ -580,7 +580,7 @@
     <string name="reader_contents_building_title">Création du sommaire</string>
     <string name="reader_contents_empty_body">Cet article ne contient pas assez de sections pour créer un sommaire.</string>
     <string name="reader_contents_empty_title">Aucun sommaire</string>
-    <string name="reader_contents_progress">Sommaire · %1$d %% lu</string>
+    <string name="reader_contents_progress">Sommaire · %1$d % lu</string>
     <string name="reader_copied_clipboard">Copié dans le presse-papiers</string>
     <string name="reader_create_tag">Créer « %1$s »</string>
     <string name="reader_display">Affichage</string>
@@ -652,7 +652,7 @@
         <item quantity="other">Nouvelle tentative disponible dans %1$d secondes.</item>
     </plurals>
     <string name="reader_preparing_title">Préparation de cet article en cours</string>
-    <string name="reader_progress_percent">%1$d %%</string>
+    <string name="reader_progress_percent">%1$d %</string>
     <string name="reader_reading">Lecture</string>
     <string name="reader_saved_library">Enregistré dans la bibliothèque</string>
     <string name="reader_sleep">Minuteur</string>
