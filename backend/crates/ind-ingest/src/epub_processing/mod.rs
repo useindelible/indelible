@@ -217,6 +217,7 @@ pub fn process_epub(data: &[u8]) -> Result<ProcessedEpub, EpubError> {
         total_chapters: chapters.len(),
         total_words,
         estimated_pages,
+        chapter_indices: Some(chapters.iter().map(|chapter| chapter.spine_index).collect()),
     };
 
     Ok(ProcessedEpub {

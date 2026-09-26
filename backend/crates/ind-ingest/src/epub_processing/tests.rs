@@ -4,7 +4,18 @@ use super::text::count_words;
 use super::*;
 use std::io::Write;
 
+enum Spine<'a> {
+    Listed(&'a str, &'a str),
+    Unlisted(&'a str),
+    Image,
+}
+
 fn create_epub_with_chapters(title: &str, author: &str, chapters: &[(&str, &str)]) -> Vec<u8> {
+    let items: Vec<Spine> = chapters.iter().map(|(t, b)| Spine::Listed(t, b)).collect();
+    create_epub(title, author, &items)
+}
+
+fn create_epub(title: &str, author: &str, items: &[Spine]) -> Vec<u8> {
     let mut buf = Vec::new();
     {
         let cursor = Cursor::new(&mut buf);
@@ -30,17 +41,20 @@ fn create_epub_with_chapters(title: &str, author: &str, chapters: &[(&str, &str)
         let mut spine_items = String::new();
         let mut ncx_points = String::new();
 
-        for (i, (ch_title, _)) in chapters.iter().enumerate() {
-            manifest_items.push_str(&format!(
-                r#"    <item id="ch{i}" href="ch{i}.xhtml" media-type="application/xhtml+xml"/>"#
-            ));
+        for (i, item) in items.iter().enumerate() {
+            manifest_items.push_str(&match item {
+                Spine::Image => format!(r#"    <item id="ch{i}" href="ch{i}.png" media-type="image/png"/>"#),
+                _ => format!(r#"    <item id="ch{i}" href="ch{i}.xhtml" media-type="application/xhtml+xml"/>"#),
+            });
             manifest_items.push('\n');
             spine_items.push_str(&format!(r#"    <itemref idref="ch{i}"/>"#));
             spine_items.push('\n');
-            ncx_points.push_str(&format!(
+            if let Spine::Listed(ch_title, _) = item {
+                ncx_points.push_str(&format!(
                     r#"    <navPoint id="navpoint-{i}"><navLabel><text>{ch_title}</text></navLabel><content src="ch{i}.xhtml"/></navPoint>"#
                 ));
-            ncx_points.push('\n');
+                ncx_points.push('\n');
+            }
         }
 
         let opf = format!(
@@ -73,7 +87,15 @@ fn create_epub_with_chapters(title: &str, author: &str, chapters: &[(&str, &str)
         zip.start_file("OEBPS/toc.ncx", options).unwrap();
         zip.write_all(ncx.as_bytes()).unwrap();
 
-        for (i, (_, body)) in chapters.iter().enumerate() {
+        for (i, item) in items.iter().enumerate() {
+            let body = match item {
+                Spine::Listed(_, body) | Spine::Unlisted(body) => body,
+                Spine::Image => {
+                    zip.start_file(format!("OEBPS/ch{i}.png"), options).unwrap();
+                    zip.write_all(b"png").unwrap();
+                    continue;
+                }
+            };
             let xhtml = format!(
                 r#"<?xml version="1.0"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -121,6 +143,20 @@ fn process_minimal_epub() {
     assert_eq!(result.chapters.len(), 2);
     assert_eq!(result.toc.len(), 2);
     assert_eq!(result.toc[0].start_page, 1);
+}
+
+#[test]
+fn chapter_indices_name_every_stored_chapter_including_unlisted_ones_past_gaps() {
+    let items = [
+        Spine::Listed("One", "First chapter."),
+        Spine::Image,
+        Spine::Unlisted("A chapter the navigation leaves out."),
+        Spine::Listed("Three", "Third chapter."),
+    ];
+    let result = process_epub(&create_epub("Test", "Author", &items)).unwrap();
+
+    assert_eq!(result.metadata.chapter_indices, Some(vec![0, 2, 3]));
+    assert_eq!(result.metadata.total_chapters, 3);
 }
 
 #[test]
