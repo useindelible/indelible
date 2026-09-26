@@ -86,6 +86,26 @@ class MobileI18nCheckerTest {
         assertTrue(error.message.orEmpty().contains("DOCTYPE", ignoreCase = true))
     }
 
+    @Test
+    fun xmlCatalogReaderRejectsEscapedPercentThatComposeRendersLiterally() {
+        val catalog =
+            Files.createTempFile("strings", ".xml").apply {
+                writeText(
+                    """
+                    <resources>
+                    <string name="common_done">Done</string>
+                    <string name="common_percent">%1${'$'}d%%</string>
+                    </resources>
+                    """.trimIndent(),
+                )
+            }
+
+        val errors = XmlCatalogReader(ALLOWED_PREFIXES).read(catalog.toFile()).errors
+
+        assertEquals(1, errors.size)
+        assertContains(errors.single(), "common_percent")
+    }
+
     private companion object {
         val ALLOWED_PREFIXES = setOf("common_")
     }

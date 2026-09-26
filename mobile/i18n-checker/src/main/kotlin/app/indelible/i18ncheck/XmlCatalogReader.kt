@@ -37,6 +37,9 @@ class XmlCatalogReader(
             if (values.isEmpty() || values.values.any(String::isBlank)) {
                 errors += "${file.path}: $name must not contain empty values"
             }
+            if (values.values.any { "%%" in it }) {
+                errors += "${file.path}: $name uses %%, which Compose resources render literally; write a single %"
+            }
             resources[name] = CatalogResource(element.tagName, values)
         }
 
