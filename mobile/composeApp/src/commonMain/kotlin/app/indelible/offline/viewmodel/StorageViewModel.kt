@@ -6,6 +6,7 @@ import app.indelible.core.offline.CatalogEntry
 import app.indelible.core.offline.DownloadManager
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
+import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.SessionRegistry
@@ -58,6 +59,12 @@ class StorageViewModel(
     fun retry(changeId: String) {
         val scope = currentScope() ?: return
         viewModelScope.launch { if (store.retryRow(scope, changeId)) requestDrain() }
+    }
+
+    /** Leaves the copy in place; only the mark that protects it from eviction goes. */
+    fun unpin(documentId: String) {
+        val scope = currentScope() ?: return
+        viewModelScope.launch { downloads.unpin(scope, documentId) }
     }
 
     fun removeCopy(documentId: String) {
@@ -118,6 +125,8 @@ internal fun pendingChanges(
         documentTitle = titles[row.documentId],
         status = row.status(),
         error = row.lastError,
+        createdAt = row.createdAt,
+        detail = row.payload.detail(),
         blocked = dependants,
     )
     return rows.mapNotNull { row ->
@@ -138,4 +147,12 @@ private fun OutboxRow.status(): ChangeStatus =
         state == OutboxState.BLOCKED -> ChangeStatus.BLOCKED
         attempts > 0 -> ChangeStatus.RETRYING
         else -> ChangeStatus.PENDING
+    }
+
+private fun OutboxPayload.detail(): String? =
+    when (this) {
+        is OutboxPayload.HighlightCreate -> textContent
+        is OutboxPayload.HighlightNote -> body
+        is OutboxPayload.DocumentNote -> body
+        else -> null
     }

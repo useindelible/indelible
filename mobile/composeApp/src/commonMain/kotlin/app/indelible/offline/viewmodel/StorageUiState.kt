@@ -13,6 +13,9 @@ data class PendingChange(
     val documentTitle: String?,
     val status: ChangeStatus,
     val error: String?,
+    val createdAt: Long,
+    /** The words the change carries: a highlight's quote, or a note's body. */
+    val detail: String? = null,
     val blocked: List<PendingChange> = emptyList(),
 ) {
     val canRetry: Boolean get() = status == ChangeStatus.FAILED
@@ -24,10 +27,16 @@ data class StorageUiState(
     val cached: List<CatalogEntry> = emptyList(),
     val changes: List<PendingChange> = emptyList(),
 ) {
-    val usedBytes: Long get() = kept.sumOf { it.bytes } + cached.sumOf { it.bytes }
+    val keptBytes: Long get() = kept.sumOf { it.bytes }
+
+    val cachedBytes: Long get() = cached.sumOf { it.bytes }
+
+    val usedBytes: Long get() = keptBytes + cachedBytes
+
+    val itemCount: Int get() = kept.size + cached.size
 
     /** Eviction only removes cached copies, so kept ones alone over the cap need the user. */
-    val keptOverCap: Boolean get() = kept.sumOf { it.bytes } > capBytes
+    val keptOverCap: Boolean get() = keptBytes > capBytes
 
     val queuedChanges: Int
         get() = changes.flatMap { listOf(it) + it.blocked }.count { it.status != ChangeStatus.SUPERSEDED }

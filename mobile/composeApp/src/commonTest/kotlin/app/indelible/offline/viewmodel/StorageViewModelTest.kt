@@ -245,4 +245,49 @@ class StorageViewModelTest {
             assertEquals(emptyList(), s.state.cached)
             assertEquals(emptyList(), s.state.changes)
         }
+
+    @Test
+    fun theMeterSplitsKeptFromCachedAndCountsEveryCopy() =
+        runTest {
+            val s = storage()
+            s.h.seed("doc_a", bytes = 300, pinned = true)
+            s.h.seed("doc_b", bytes = 120)
+            s.h.seed("doc_c", bytes = 80)
+            advanceUntilIdle()
+
+            assertEquals(300L, s.state.keptBytes)
+            assertEquals(200L, s.state.cachedBytes)
+            assertEquals(500L, s.state.usedBytes)
+            assertEquals(3, s.state.itemCount)
+        }
+
+    @Test
+    fun aQueuedChangeCarriesItsQuoteAndWhenItWasMade() =
+        runTest {
+            val s = storage()
+            s.h.seed(DL_DOC, bytes = 10)
+            val quote = "Attention is not a resource."
+            val id = s.h.signedIn.enqueue(OutboxPayload.HighlightCreate("hlt_1", "yellow", quote, null, null))
+            advanceUntilIdle()
+
+            val change = s.change(id)
+            assertEquals(quote, change.detail)
+            assertEquals("Title", change.documentTitle)
+            assertTrue(change.createdAt > 0)
+        }
+
+    @Test
+    fun unpinningKeepsTheCopyAndClearsTheMark() =
+        runTest {
+            val s = storage()
+            s.h.seed(DL_DOC, bytes = 10, pinned = true)
+            advanceUntilIdle()
+
+            s.viewModel.unpin(DL_DOC)
+            advanceUntilIdle()
+
+            assertFalse(checkNotNull(s.h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
+            assertEquals(1, s.state.cached.size)
+            assertTrue(s.state.kept.isEmpty())
+        }
 }
