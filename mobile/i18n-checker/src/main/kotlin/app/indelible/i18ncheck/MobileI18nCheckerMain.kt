@@ -182,6 +182,7 @@ class MobileI18nChecker(
                 "library_",
                 "mila_",
                 "nav_",
+                "offline_",
                 "onboarding_",
                 "prefs_",
                 "profile_",

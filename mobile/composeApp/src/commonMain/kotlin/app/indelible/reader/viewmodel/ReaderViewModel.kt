@@ -293,7 +293,7 @@ class ReaderViewModel(
         viewModelScope.launch {
             repository
                 .getItemNote(documentId)
-                .onSuccess { note -> updateSuccessState { it.copy(itemNote = note) } }
+                .onSuccess { note -> updateSuccessState { it.copy(itemNote = note, itemNoteLoaded = true) } }
         }
         val libraryEntryId = (_uiState.value as? ReaderUiState.Success)?.item?.libraryEntryId ?: return
         viewModelScope.launch {
@@ -435,6 +435,7 @@ class ReaderViewModel(
     fun loadTagsForPicker(onResult: (List<TagData>) -> Unit) = highlightActions.loadTagsForPicker(onResult)
 
     fun saveItemNote(body: String) {
+        if ((_uiState.value as? ReaderUiState.Success)?.itemNoteLoaded != true) return
         updateSuccessState { it.copy(itemNote = body) }
         viewModelScope.launch {
             repository

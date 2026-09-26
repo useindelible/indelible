@@ -1,10 +1,12 @@
 package app.indelible.library.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.runComposeUiTest
@@ -14,9 +16,13 @@ import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.fakeLibra
 import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.paginatedItems
 import app.indelible.library.viewmodel.LibraryScope
 import app.indelible.library.viewmodel.LibraryViewModel
+import app.indelible.offline.viewmodel.Availability
+import app.indelible.offline.viewmodel.DocumentOfflineStatus
+import app.indelible.offline.viewmodel.SyncBadge
 import app.indelible.profile.repository.AddLibraryRepository
 import app.indelible.profile.viewmodel.AddLibraryViewModel
 import app.indelible.ui.theme.AppTheme
+import kotlinx.coroutines.flow.flowOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -29,12 +35,7 @@ class LibraryScreenTest {
             val originalItems = (0..11).map { fakeLibraryItem("item$it") }
             repository.listItemsResult = Result.success(paginatedItems(originalItems))
             val viewModel = LibraryViewModel(repository)
-            val addLibraryViewModel =
-                AddLibraryViewModel(
-                    object : AddLibraryRepository {
-                        override suspend fun save(url: String): Result<Unit> = Result.success(Unit)
-                    },
-                )
+            val addLibraryViewModel = addLibraryViewModel()
             viewModel.refresh()
 
             setContent {
@@ -64,6 +65,35 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun offline_badges_show_on_rows_the_device_knows() =
+        runComposeUiTest {
+            val repository = FakeLibraryRepository()
+            repository.listItemsResult =
+                Result.success(paginatedItems(listOf(fakeLibraryItem("kept"), fakeLibraryItem("other"))))
+            val statuses = mapOf("doc_kept" to DocumentOfflineStatus(Availability.KEPT, SyncBadge.Pending(2)))
+            val viewModel = LibraryViewModel(repository, flowOf(statuses))
+            viewModel.refresh()
+
+            setContent {
+                AppTheme {
+                    LibraryScreen(
+                        viewModel = viewModel,
+                        addLibraryViewModel = addLibraryViewModel(),
+                        onNavigateToItem = {},
+                        onMenuClick = {},
+                        onProfileClick = {},
+                        collections = emptyList(),
+                        smartLists = emptyList(),
+                    )
+                }
+            }
+
+            onNodeWithText("Test Article other").assertIsDisplayed()
+            onAllNodesWithText("Kept").assertCountEquals(1)
+            onNodeWithText("2 pending").assertIsDisplayed()
+        }
+
+    @Test
     fun triage_scope_keeps_its_zero_count_visible() {
         val emptyCounts = counts(total = 0)
 
@@ -84,5 +114,12 @@ class LibraryScreenTest {
             reading = 0,
             done = 0,
             byItemType = emptyMap(),
+        )
+
+    private fun addLibraryViewModel() =
+        AddLibraryViewModel(
+            object : AddLibraryRepository {
+                override suspend fun save(url: String): Result<Unit> = Result.success(Unit)
+            },
         )
 }

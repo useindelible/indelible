@@ -8,20 +8,12 @@ import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderPreferences
 
-/**
- * Readable-content lifecycle for the HTML reader. The render is async (especially for
- * just-prepared feed documents), so the reader polls while [LOADING] and falls back to a
- * retryable [UNAVAILABLE] state once the poll budget is exhausted.
- */
+/** Async render: polls while [LOADING], falls back to retryable [UNAVAILABLE] once the poll budget runs out. */
 enum class ReaderContentStatus { LOADING, READY, UNAVAILABLE }
 
 enum class ReaderRetryStatus { IDLE, QUEUING, QUEUED, COOLDOWN }
 
-/**
- * Contents-outline lifecycle. PENDING mirrors the backend's backfill contract
- * (the outline is being derived); NONE is terminal (too few headings) and
- * hides the Contents affordance entirely.
- */
+/** PENDING mirrors the backend backfill; NONE is terminal (too few headings) and hides the Contents affordance. */
 enum class TocStatus { LOADING, PENDING, READY, NONE, UNAVAILABLE }
 
 data class TocPanelState(
@@ -42,6 +34,8 @@ sealed class ReaderUiState {
         val progress: Float,
         val preferences: ReaderPreferences,
         val itemNote: String? = null,
+        /** The note came from the server or a complete copy; until then it cannot be edited. */
+        val itemNoteLoaded: Boolean = false,
         val itemTags: List<String> = emptyList(),
         val entities: List<DocumentEntity> = emptyList(),
         val contentStatus: ReaderContentStatus = ReaderContentStatus.LOADING,

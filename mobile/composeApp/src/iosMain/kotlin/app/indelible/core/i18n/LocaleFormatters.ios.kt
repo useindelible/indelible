@@ -7,6 +7,7 @@ import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterShortStyle
 import platform.Foundation.NSNumber
 import platform.Foundation.NSNumberFormatter
+import platform.Foundation.NSNumberFormatterDecimalStyle
 
 actual object LocaleFormatters {
     actual fun date(
@@ -24,6 +25,15 @@ actual object LocaleFormatters {
     }
 
     actual fun number(value: Long): String = NSNumberFormatter().stringFromNumber(NSNumber(longLong = value)) ?: value.toString()
+
+    actual fun decimal(value: Double): String {
+        val formatter =
+            NSNumberFormatter().apply {
+                numberStyle = NSNumberFormatterDecimalStyle
+                maximumFractionDigits = 1u
+            }
+        return formatter.stringFromNumber(NSNumber(double = value)) ?: value.toString()
+    }
 }
 
 private fun Instant.toNSDate(): NSDate =

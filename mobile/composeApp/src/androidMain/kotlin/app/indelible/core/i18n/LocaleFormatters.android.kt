@@ -32,6 +32,9 @@ actual object LocaleFormatters {
 
     actual fun number(value: Long): String = NumberFormat.getIntegerInstance(currentLocale()).format(value)
 
+    actual fun decimal(value: Double): String =
+        NumberFormat.getNumberInstance(currentLocale()).apply { maximumFractionDigits = 1 }.format(value)
+
     private fun formatSkeleton(
         date: Date,
         skeleton: String,

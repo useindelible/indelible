@@ -3,45 +3,65 @@ package app.indelible.core.offline
 internal class SqlDelightCachedContent(
     private val context: SqlDelightStoreContext,
 ) : CachedContentStore {
+    private val queries get() = context.queries
+
     override suspend fun installCachedDocument(
-        scope: String,
-        row: CachedDocumentRow,
-        assets: List<CachedAssetRow>,
-    ) {
+        session: Session,
+        request: InstallRequest,
+    ): InstallResult =
         context.write {
-            context.database.transaction {
-                context.queries.upsertCachedDocument(
-                    scope = scope,
-                    document_id = row.documentId,
-                    document_type = row.documentType,
-                    title = row.title,
-                    reader_json = row.readerJson,
-                    pinned = row.pinned.toLong(),
-                    last_opened_at = row.lastOpenedAt,
-                    last_synced_at = row.lastSyncedAt,
-                    bytes = row.bytes,
-                )
-                context.queries.deleteAssetsForDocument(scope, row.documentId)
-                assets.forEach { asset ->
-                    context.queries.insertCachedAsset(
-                        scope,
-                        asset.documentId,
-                        asset.kind,
-                        asset.idx.toLong(),
-                        asset.path,
-                        asset.bytes,
-                    )
+            context.database.transactionWithResult {
+                context.requireLive(session)
+                val stale = queries.staleness(session.scope, request.documentId, request.revision)
+                if (stale.content || stale.position) {
+                    InstallResult.Stale(content = stale.content, position = stale.position)
+                } else {
+                    install(session.scope, request)
+                    InstallResult.Installed
                 }
             }
         }
-    }
+
+    override suspend fun refreshCachedCopy(
+        session: Session,
+        request: RefreshRequest,
+    ): RefreshResult =
+        context.write {
+            context.database.transactionWithResult {
+                context.requireLive(session)
+                if (queries.cachedDocument(session.scope, request.documentId).executeAsOneOrNull() == null) {
+                    RefreshResult.NoCopy
+                } else {
+                    refresh(session.scope, request)
+                }
+            }
+        }
+
+    override suspend fun localChanges(
+        scope: String,
+        documentId: String,
+    ): LocalChanges =
+        context.read {
+            context.database.transactionWithResult { queries.localChanges(scope, documentId) }
+        }
+
+    override suspend fun cachedHighlights(
+        scope: String,
+        documentId: String,
+    ): List<CachedHighlight> =
+        context.read {
+            queries
+                .highlightsForDocument(scope, documentId)
+                .executeAsList()
+                .map { offlineJson.decodeFromString(CachedHighlight.serializer(), it.payload_json) }
+        }
 
     override suspend fun assetsForDocument(
         scope: String,
         documentId: String,
     ): List<CachedAssetRow> =
         context.read {
-            context.queries
+            queries
                 .assetsForDocument(scope, documentId)
                 .executeAsList()
                 .map(::cachedAssetRowFrom)
@@ -53,19 +73,7 @@ internal class SqlDelightCachedContent(
         at: Long,
     ) {
         context.write {
-            context.queries.setDocumentSyncedAt(at, scope, documentId)
-        }
-    }
-
-    override suspend fun upsertCachedHighlight(
-        scope: String,
-        id: String,
-        documentId: String,
-        payloadJson: String,
-        updatedAt: Long,
-    ) {
-        context.write {
-            context.queries.upsertCachedHighlight(scope, id, documentId, payloadJson, updatedAt)
+            queries.setDocumentSyncedAt(at, scope, documentId)
         }
     }
 
@@ -75,10 +83,122 @@ internal class SqlDelightCachedContent(
     ) {
         context.write {
             context.database.transaction {
-                context.queries.deleteCachedDocument(scope, documentId)
-                context.queries.deleteAssetsForDocument(scope, documentId)
-                context.queries.deleteHighlightsForDocument(scope, documentId)
+                queries.deleteCachedDocument(scope, documentId)
+                queries.deleteAssetsForDocument(scope, documentId)
+                queries.deleteHighlightsWithoutLiveRows(scope = scope, document_id = documentId)
             }
+        }
+    }
+
+    override suspend fun evictCachedDocument(
+        scope: String,
+        documentId: String,
+    ): Boolean =
+        context.write {
+            context.database.transactionWithResult {
+                queries.deleteUnpinnedCachedDocument(scope, documentId)
+                val evicted = queries.changedRows().executeAsOne() > 0
+                if (evicted) {
+                    queries.deleteAssetsForDocument(scope, documentId)
+                    queries.deleteHighlightsWithoutLiveRows(scope = scope, document_id = documentId)
+                }
+                evicted
+            }
+        }
+
+    override suspend fun dropOrphanHighlights(scope: String) {
+        context.write {
+            queries.deleteOrphanHighlights(scope)
+        }
+    }
+
+    private fun install(
+        scope: String,
+        request: InstallRequest,
+    ) {
+        val changes = queries.localChanges(scope, request.documentId)
+        val existing = queries.cachedDocument(scope, request.documentId).executeAsOneOrNull()
+        val server = request.server
+        val progress = changes.progress(server.progress)
+        queries.installDocument(
+            scope = scope,
+            document_id = request.documentId,
+            document_type = request.documentType,
+            title = server.title,
+            reader_json = server.readerJson,
+            pinned = (existing?.pinned == 1L || request.pin).toLong(),
+            last_opened_at = request.at,
+            last_synced_at = request.at,
+            bytes = request.bytes,
+            generation = request.generation,
+            note_body = changes.note(server.note?.body),
+            note_server_updated_at = server.note?.updatedAtEpochMs,
+            progress_percent = progress.percent?.toLong(),
+            max_progress_percent = progress.maxPercent?.toLong(),
+        )
+        queries.deleteAssetsForDocument(scope, request.documentId)
+        request.assets.forEach { asset ->
+            queries.insertCachedAsset(scope, asset.documentId, asset.kind, asset.idx.toLong(), asset.path, asset.bytes)
+        }
+        replaceHighlights(scope, request.documentId, changes.highlights(server.highlights))
+    }
+
+    private fun refresh(
+        scope: String,
+        request: RefreshRequest,
+    ): RefreshResult {
+        val documentId = request.documentId
+        val stale = queries.staleness(scope, documentId, request.revision)
+        val changes = queries.localChanges(scope, documentId)
+        val result =
+            when (val part = request.part) {
+                is ServerPart.Reader -> {
+                    queries.refreshDocumentMeta(part.title, part.readerJson, scope, documentId)
+                    if (!stale.position) {
+                        val progress = changes.progress(part.progress)
+                        queries.setCachedProgress(
+                            progress_percent = progress.percent?.toLong(),
+                            max_progress_percent = progress.maxPercent?.toLong(),
+                            scope = scope,
+                            document_id = documentId,
+                        )
+                    }
+                    if (stale.position) RefreshResult.Stale else RefreshResult.Applied
+                }
+                is ServerPart.Highlights ->
+                    if (stale.content) {
+                        RefreshResult.Stale
+                    } else {
+                        replaceHighlights(scope, documentId, changes.highlights(part.highlights))
+                        RefreshResult.Applied
+                    }
+                is ServerPart.Note ->
+                    if (stale.content) {
+                        RefreshResult.Stale
+                    } else {
+                        val note = changes.note(part.note?.body)
+                        queries.setCachedServerNote(note, part.note?.updatedAtEpochMs, scope, documentId)
+                        RefreshResult.Applied
+                    }
+            }
+        if (result == RefreshResult.Applied) queries.setDocumentSyncedAt(request.at, scope, documentId)
+        return result
+    }
+
+    private fun replaceHighlights(
+        scope: String,
+        documentId: String,
+        highlights: List<CachedHighlight>,
+    ) {
+        queries.deleteHighlightsForDocument(scope, documentId)
+        highlights.forEach { highlight ->
+            queries.upsertCachedHighlight(
+                scope,
+                highlight.id,
+                documentId,
+                offlineJson.encodeToString(CachedHighlight.serializer(), highlight),
+                highlight.updatedAtEpochMs ?: 0L,
+            )
         }
     }
 }

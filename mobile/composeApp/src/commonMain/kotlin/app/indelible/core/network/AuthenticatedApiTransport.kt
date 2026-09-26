@@ -35,10 +35,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 
-/**
- * A response the caller inspects by status instead of by thrown failure. [bodyText] is empty on
- * success so a caller that only needs the status never pays for the body.
- */
+/** [bodyText] is empty on success; a caller that only needs the status pays nothing for the body. */
 data class RawApiResponse(
     val status: Int,
     val retryAfterSeconds: Long?,
@@ -63,9 +60,7 @@ class AuthenticatedApiTransport(
             install(ContentNegotiation) {
                 json(jsonConfig)
             }
-            // No default values: ordinary requests keep the engine's timeouts.
-            // Installed so long-lived calls (the Mila SSE stream) can widen
-            // their own budget per request.
+            // No default timeout, so long-lived calls (the Mila SSE stream) can widen their own budget.
             install(HttpTimeout)
             defaultRequest {
                 contentType(ContentType.Application.Json)
@@ -94,7 +89,7 @@ class AuthenticatedApiTransport(
     ): Result<T> =
         runCatching {
             val origin = baseUrl()
-            authenticatedValue(retryOn401, origin) { token ->
+            authenticatedValue(retryOn401, origin, registry.current.value.epoch) { token ->
                 block(httpClient, configuration(origin, token)).getOrThrow()
             }
         }.onSuccess { requestSucceededState.tryEmit(Unit) }
@@ -105,30 +100,31 @@ class AuthenticatedApiTransport(
     ): Result<T> =
         runCatching {
             val origin = baseUrl()
-            authenticatedValue(retryOn401, origin) { token ->
+            authenticatedValue(retryOn401, origin, registry.current.value.epoch) { token ->
                 block(httpClient, origin, token)
             }
         }.onSuccess { requestSucceededState.tryEmit(Unit) }
 
-    /**
-     * Surfaces the status instead of throwing on it, for callers that must classify 429/5xx
-     * themselves. A block that simply returned a 401 would bypass [authenticatedValue]'s refresh,
-     * so the 401 is rethrown inside the block to engage it; a 401 that reaches the caller here has
-     * therefore already survived a refresh and means the session, not the request, is rejected.
-     * The request is bound to [session]: it and any refresh it needs go to that session's origin,
-     * and it is refused with [StaleSessionException] if the session was withdrawn before the first
-     * send or before the retry that follows a refresh. A request already on the wire returns its
-     * real outcome.
-     */
+    /** On a 401 from [block], refreshes once and retries; throws [StaleSessionException] if withdrawn. */
+    internal suspend fun <T> sessionRequest(
+        session: Session,
+        block: suspend (client: HttpClient, baseUrl: String, token: String) -> T,
+    ): T {
+        requireSession(session)
+        return authenticatedValue(retryOn401 = true, session.origin, session.epoch) { token ->
+            requireSession(session)
+            block(httpClient, session.origin, token)
+        }
+    }
+
+    /** Rethrows a 401 inside [block] to trigger the refresh; one reaching the caller already survived a refresh. */
     suspend fun rawAuthenticatedRequest(
         session: Session,
         block: suspend (client: HttpClient, baseUrl: String, token: String) -> HttpResponse,
     ): RawApiResponse =
         try {
-            if (registry.current.value.session !== session) throw StaleSessionException()
-            authenticatedValue(retryOn401 = true, session.origin) { token ->
-                if (registry.current.value.session !== session) throw StaleSessionException()
-                val response = block(httpClient, session.origin, token)
+            sessionRequest(session) { client, baseUrl, token ->
+                val response = block(client, baseUrl, token)
                 if (response.status.value == UNAUTHORIZED_STATUS) {
                     throw ApiException(UNAUTHORIZED_STATUS, response.bodyAsText())
                 }
@@ -141,6 +137,10 @@ class AuthenticatedApiTransport(
         } catch (error: ApiException) {
             RawApiResponse(error.statusCode, retryAfterSeconds = null, bodyText = error.message)
         }
+
+    private fun requireSession(session: Session) {
+        if (registry.current.value.session !== session) throw StaleSessionException()
+    }
 
     internal suspend fun bearerToken(): String = ensureValidToken(baseUrl(), registry.current.value.epoch)
 
@@ -177,11 +177,10 @@ class AuthenticatedApiTransport(
     private suspend fun <T> authenticatedValue(
         retryOn401: Boolean,
         origin: String,
+        epoch: Long,
         block: suspend (token: String) -> T,
     ): T {
-        // The retry may only use a token minted under the epoch the request started in: after a
-        // transition the stored token belongs to another account and must not reach this origin.
-        val epoch = registry.current.value.epoch
+        // The retry only uses a token minted under this epoch; a stored token after a transition is another account's.
         val token = ensureValidToken(origin, epoch)
         if (!retryOn401) return block(token)
         return try {
@@ -221,8 +220,7 @@ class AuthenticatedApiTransport(
         return refreshUnderLock(origin, epoch)
     }
 
-    // The epoch is the caller's, checked again once the lock is held: a request that queued behind
-    // another refresh across a transition must not read, send or accept the next account's tokens.
+    // Rechecked after the lock, so a request queued behind another refresh never uses the next account's tokens.
     private suspend fun refreshUnderLock(
         origin: String,
         epoch: Long,
@@ -252,10 +250,7 @@ class AuthenticatedApiTransport(
                 ?: throw ApiException(UNAUTHORIZED_STATUS, "Token missing after refresh")
         }
 
-    // The refresh binds to the epoch it started under and to the caller's origin: a result that
-    // lands after or during a transition is discarded rather than written over the newer session's
-    // credentials, and a refresh never starts while one is open, so the refresh token is never
-    // posted to a server URL the transition is in the middle of replacing.
+    // Bound to the epoch and origin it started under, so a result landing after a transition is discarded, not applied.
     private suspend fun refreshTokens(
         origin: String,
         epoch: Long,

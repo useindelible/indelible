@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,12 +31,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.em
 import app.indelible.core.model.LibraryItem
 import app.indelible.core.model.ThumbnailColor
 import app.indelible.core.model.readingMinutesLeft
-import app.indelible.ui.theme.AppTheme
+import app.indelible.offline.ui.OfflineBadges
+import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
@@ -53,7 +52,6 @@ import indelible.composeapp.generated.resources.library_new
 import indelible.composeapp.generated.resources.library_progress_minutes_left
 import indelible.composeapp.generated.resources.library_progress_percent
 import indelible.composeapp.generated.resources.library_reading_time
-import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -76,6 +74,7 @@ fun LibraryItemRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
+    offlineStatus: DocumentOfflineStatus? = null,
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
         Row(
@@ -118,6 +117,7 @@ fun LibraryItemRow(
                     Spacer(Modifier.height(IndelibleSpacing.step8))
                     LibraryProgress(progress = progress, minutesLeft = item.readingMinutesLeft())
                 }
+                OfflineBadges(offlineStatus, Modifier.padding(top = IndelibleSpacing.step8))
             }
         }
         if (showDivider) {
@@ -421,78 +421,3 @@ private fun formatDuration(totalSeconds: Int): String {
         "$minutes:${seconds.toString().padStart(2, '0')}"
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-private fun LibraryItemRowPreviewLight() {
-    AppTheme(darkTheme = false) {
-        Surface {
-            Column {
-                LibraryItemRow(item = previewItem(id = "a1"), onClick = {})
-                LibraryItemRow(
-                    item =
-                        previewItem(
-                            id = "b2",
-                            itemType = "video",
-                            title = "Apple Vision Pro 2: The Spatial Computing Reset",
-                            domain = "youtube.com",
-                        ),
-                    onClick = {},
-                )
-                LibraryItemRow(
-                    item = previewItem(id = "c3"),
-                    onClick = {},
-                    showDivider = false,
-                )
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, uiMode = 0x20)
-@Composable
-private fun LibraryItemRowPreviewDark() {
-    AppTheme(darkTheme = true) {
-        Surface {
-            Column {
-                LibraryItemRow(
-                    item = previewItem(id = "d4"),
-                    onClick = {},
-                )
-                LibraryItemRow(
-                    item =
-                        previewItem(
-                            id = "e5",
-                            itemType = "pdf",
-                            title = "Attention Is All You Need — Annotated Edition",
-                            domain = "arxiv.org",
-                        ),
-                    onClick = {},
-                    showDivider = false,
-                )
-            }
-        }
-    }
-}
-
-private fun previewItem(
-    id: String,
-    itemType: String = "article",
-    title: String = "The Future of Open-Source AI Models",
-    domain: String? = "techcrunch.com",
-) = LibraryItem(
-    id = id,
-    documentId = "doc_$id",
-    itemType = itemType,
-    triageState = "inbox",
-    isFavorite = false,
-    isShortlisted = false,
-    title = title,
-    excerpt = "A deep dive into what the next generation of open models will look like and who they serve.",
-    domain = domain,
-    author = "Sarah Chen",
-    savedAt = Instant.parse("2024-01-15T12:00:00Z"),
-    source = "url",
-    createdAt = Instant.parse("2024-01-15T12:00:00Z"),
-    updatedAt = Instant.parse("2024-01-15T12:00:00Z"),
-)

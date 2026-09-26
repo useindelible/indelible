@@ -21,13 +21,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -37,22 +38,23 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelPurgeTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-    @BeforeTest
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-    }
 
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
     }
 
+    /** Main shares the test's scheduler; two schedulers make the unconfined dispatcher throw at random. */
+    private fun purgeTest(body: suspend TestScope.() -> Unit): TestResult =
+        runTest {
+            Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+            body()
+        }
+
     @Test
     fun forceLogoutDoesNotPurgeTheScope() =
-        runTest {
+        purgeTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveServerUrl("https://example.com")
             tokenStorage.saveUserId("usr_ABC")
@@ -75,7 +77,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun logoutSignsOutEvenWhenThePurgeThrows() =
-        runTest {
+        purgeTest {
             val tokenStorage = signedInTokenStorage()
             val store = SqlDelightOfflineStore(testOfflineDatabase())
             val apiClient = ApiClient(tokenStorage, engine = sessionEngine())
@@ -96,7 +98,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun logoutPurgesTheActiveScopeAfterClearingTokens() =
-        runTest {
+        purgeTest {
             val tokenStorage = signedInTokenStorage()
             val store = SqlDelightOfflineStore(testOfflineDatabase())
             val apiClient = ApiClient(tokenStorage, engine = sessionEngine())
@@ -128,7 +130,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun loginReachesAuthenticatedEvenWhenTheInactiveSweepThrows() =
-        runTest {
+        purgeTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveServerUrl("https://example.com")
 
@@ -146,8 +148,11 @@ class AuthViewModelPurgeTest {
                 AuthViewModel(
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     tokenStorage,
-                    worker,
-                    ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
+                    testOfflineAccount(
+                        tokenStorage,
+                        worker = worker,
+                        purger = ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
+                    ),
                     testSessionTransitions(tokenStorage, worker = worker),
                 )
             viewModel.authState.first { it is AuthState.Unauthenticated }
@@ -162,7 +167,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun loginPurgesInactiveScopesButKeepsTheActiveOne() =
-        runTest {
+        purgeTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveServerUrl("https://example.com")
 
@@ -271,8 +276,7 @@ class AuthViewModelPurgeTest {
         AuthViewModel(
             ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
             tokenStorage,
-            testOutboxWorker(),
-            scopePurger,
+            testOfflineAccount(tokenStorage, purger = scopePurger),
             testSessionTransitions(tokenStorage),
         )
 
