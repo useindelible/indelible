@@ -26,7 +26,6 @@ class FakeReaderRepository : ReaderRepository {
     /** When set, successive getArticleToc calls return these in order, repeating the last entry. */
     var getArticleTocResults: List<Result<ArticleToc>>? = null
     var getArticleTocCallCount = 0
-    var updateProgressResult: Result<Unit> = Result.success(Unit)
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
@@ -48,11 +47,10 @@ class FakeReaderRepository : ReaderRepository {
     var getItemTagsResult: Result<List<String>> = Result.success(emptyList())
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
-    var lastProgressItemId: String? = null
-    var lastProgressPercent: Float? = null
     var createHighlightCallCount = 0
     var deleteHighlightCallCount = 0
     var lastDeletedHighlightId: String? = null
+    var lastHighlightMutationItemId: String? = null
     var lastUpsertedNote: String? = null
     var lastSetItemTags: List<String>? = null
     var lastTriagedState: String? = null
@@ -111,15 +109,6 @@ class FakeReaderRepository : ReaderRepository {
         return saveToLibraryResult
     }
 
-    override suspend fun updateProgress(
-        itemId: String,
-        percent: Float,
-    ): Result<Unit> {
-        lastProgressItemId = itemId
-        lastProgressPercent = percent
-        return updateProgressResult
-    }
-
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> = listHighlightsResult
 
     override suspend fun listDocumentEntities(itemId: String): Result<List<DocumentEntity>> = listDocumentEntitiesResult
@@ -135,28 +124,50 @@ class FakeReaderRepository : ReaderRepository {
         return createHighlightResult
     }
 
-    override suspend fun deleteHighlight(highlightId: String): Result<Unit> {
+    override suspend fun deleteHighlight(
+        itemId: String,
+        highlightId: String,
+    ): Result<Unit> {
         deleteHighlightCallCount++
         lastDeletedHighlightId = highlightId
+        lastHighlightMutationItemId = itemId
         return deleteHighlightResult
     }
 
     override suspend fun updateHighlightColor(
+        itemId: String,
         highlightId: String,
         color: String,
-    ): Result<HighlightData> = updateHighlightColorResult
+    ): Result<HighlightData> {
+        lastHighlightMutationItemId = itemId
+        return updateHighlightColorResult
+    }
 
     override suspend fun upsertHighlightNote(
+        itemId: String,
         highlightId: String,
         body: String,
-    ): Result<HighlightNoteData> = upsertNoteResult
+    ): Result<HighlightNoteData> {
+        lastHighlightMutationItemId = itemId
+        return upsertNoteResult
+    }
 
-    override suspend fun deleteHighlightNote(highlightId: String): Result<Unit> = deleteNoteResult
+    override suspend fun deleteHighlightNote(
+        itemId: String,
+        highlightId: String,
+    ): Result<Unit> {
+        lastHighlightMutationItemId = itemId
+        return deleteNoteResult
+    }
 
     override suspend fun setHighlightTags(
+        itemId: String,
         highlightId: String,
         tags: List<String>,
-    ): Result<List<String>> = setHighlightTagsResult
+    ): Result<List<String>> {
+        lastHighlightMutationItemId = itemId
+        return setHighlightTagsResult
+    }
 
     override suspend fun listTags(): Result<List<TagData>> = listTagsResult
 

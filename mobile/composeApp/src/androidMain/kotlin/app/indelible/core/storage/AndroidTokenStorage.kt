@@ -37,6 +37,16 @@ class AndroidTokenStorage(
 
     override suspend fun getServerUrl(): String? = prefs.getString(KEY_SERVER_URL, null)
 
+    override suspend fun saveUserId(userId: String) {
+        prefs.edit().putString(KEY_USER_ID, userId).commit()
+    }
+
+    override suspend fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
+
+    override suspend fun clearUserId() {
+        prefs.edit().remove(KEY_USER_ID).commit()
+    }
+
     override suspend fun saveRefreshToken(token: String) {
         prefs.edit().putString(KEY_REFRESH_TOKEN, token).commit()
     }
@@ -69,6 +79,7 @@ class AndroidTokenStorage(
             .remove(KEY_TOKEN)
             .remove(KEY_REFRESH_TOKEN)
             .remove(KEY_EXPIRES_AT)
+            .remove(KEY_USER_ID)
             .remove(KEY_PENDING_OAUTH)
             .remove(KEY_PENDING_ITEMS)
             .commit()
@@ -80,6 +91,7 @@ class AndroidTokenStorage(
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_EXPIRES_AT = "expires_at"
         private const val KEY_SERVER_URL = "server_url"
+        private const val KEY_USER_ID = "user_id"
         private const val KEY_PENDING_OAUTH = "pending_oauth_flow"
         private const val KEY_PENDING_ITEMS = "pending_items"
     }

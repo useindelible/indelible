@@ -7,6 +7,7 @@ class InMemoryTokenStorage : TokenStorage {
     private var refreshToken: String? = null
     private var expiresAt: Long? = null
     private var serverUrl: String? = null
+    private var userId: String? = null
     private var pendingOAuthFlow: PendingOAuthFlow? = null
     private var pendingItems: String? = null
 
@@ -25,6 +26,16 @@ class InMemoryTokenStorage : TokenStorage {
     }
 
     override suspend fun getServerUrl(): String? = serverUrl
+
+    override suspend fun saveUserId(userId: String) {
+        this.userId = userId
+    }
+
+    override suspend fun getUserId(): String? = userId
+
+    override suspend fun clearUserId() {
+        userId = null
+    }
 
     override suspend fun saveRefreshToken(token: String) {
         refreshToken = token
@@ -52,6 +63,7 @@ class InMemoryTokenStorage : TokenStorage {
         token = null
         refreshToken = null
         expiresAt = null
+        userId = null
         pendingOAuthFlow = null
         pendingItems = null
     }

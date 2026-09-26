@@ -55,6 +55,7 @@ import app.indelible.core.model.AuthUser
 import app.indelible.core.model.OnboardingStatusResponse
 import app.indelible.core.model.SaveItemRequest
 import app.indelible.core.model.StepData
+import app.indelible.core.offline.SessionRegistry
 import app.indelible.core.storage.TokenStorage
 import app.indelible.feed.model.UpdateSubscriptionRequest
 import app.indelible.reader.model.AssetWithUrlResponse
@@ -67,10 +68,11 @@ import io.ktor.client.engine.HttpClientEngine
 /** Test-only compatibility surface that exercises the production domain services. */
 class ApiClient(
     tokenStorage: TokenStorage,
-    onUnauthorized: suspend () -> Unit = {},
+    onUnauthorized: suspend (Long) -> Unit = {},
     engine: HttpClientEngine? = null,
+    registry: SessionRegistry = SessionRegistry(),
 ) {
-    val transport = AuthenticatedApiTransport(tokenStorage, onUnauthorized, engine)
+    val transport = AuthenticatedApiTransport(tokenStorage, onUnauthorized, engine, registry)
     val authApiService = AuthApiService(transport)
     val accountApiService = AccountApiService(transport)
     val onboardingApiService = OnboardingApiService(transport)

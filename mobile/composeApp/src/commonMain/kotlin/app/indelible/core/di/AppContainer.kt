@@ -2,7 +2,6 @@ package app.indelible.core.di
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import app.indelible.auth.oauth.rememberOAuthBrowserLauncher
@@ -30,8 +29,19 @@ import app.indelible.core.network.SearchApiService
 import app.indelible.core.network.SettingsApiService
 import app.indelible.core.network.TagsApiService
 import app.indelible.core.network.TrashApiService
+import app.indelible.core.offline.ApiOutboxSender
+import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.OfflineStore
+import app.indelible.core.offline.OutboxSender
+import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.ScopePurger
+import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.SessionTransitions
+import app.indelible.core.offline.SqlDelightOfflineStore
 import app.indelible.core.storage.TokenStorage
 import app.indelible.core.storage.UserPreferencesStorage
+import app.indelible.db.DatabaseDriverFactory
+import app.indelible.db.OfflineDatabase
 import app.indelible.feed.repository.ApiFeedRepository
 import app.indelible.feed.repository.FeedRepository
 import app.indelible.feed.viewmodel.AddFeedViewModel
@@ -60,6 +70,7 @@ import app.indelible.profile.viewmodel.AiSettingsViewModel
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import app.indelible.reader.repository.ApiReaderRepository
 import app.indelible.reader.repository.ReaderRepository
+import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.search.repository.ApiSearchRepository
 import app.indelible.search.repository.SearchRepository
 import app.indelible.search.viewmodel.SearchViewModel
@@ -72,6 +83,7 @@ import app.indelible.tags.repository.ApiTagsRepository
 import app.indelible.tags.repository.TagsRepository
 import app.indelible.trash.repository.ApiTrashRepository
 import app.indelible.trash.repository.TrashRepository
+import io.ktor.util.date.getTimeMillis
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 
@@ -85,6 +97,7 @@ data class AppContainer(
     val libraryRepository: LibraryRepository,
     val feedRepository: FeedRepository,
     val readerRepository: ReaderRepository,
+    val readingEventWriter: ReadingEventWriter,
     val milaRepository: MilaRepository,
     val searchRepository: SearchRepository,
     val sidebarRepository: SidebarRepository,
@@ -102,6 +115,10 @@ data class AppContainer(
     val aiSettingsViewModel: AiSettingsViewModel,
     val searchViewModel: SearchViewModel,
     val sidebarViewModel: SidebarViewModel,
+    val outboxWorker: OutboxWorker,
+    val sessionTransitions: SessionTransitions,
+    val scopePurger: ScopePurger,
+    val connectivityObserver: ConnectivityObserver,
 )
 
 @Composable
@@ -109,23 +126,30 @@ fun rememberAppContainer(
     tokenStorage: TokenStorage,
     userPreferencesStorage: UserPreferencesStorage,
     pendingSaveRepository: PendingSaveRepository,
+    databaseDriverFactory: DatabaseDriverFactory,
+    connectivityObserver: ConnectivityObserver,
 ): AppContainer {
     val oauthBrowserLauncher = rememberOAuthBrowserLauncher()
     val authViewModelRef = remember { mutableStateOf<AuthViewModel?>(null) }
     val koinApplication =
-        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher) {
+        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher, databaseDriverFactory) {
             koinApplication {
                 modules(
                     module {
                         single<TokenStorage> { tokenStorage }
                         single<UserPreferencesStorage> { userPreferencesStorage }
                         single<PendingSaveRepository> { pendingSaveRepository }
+                        single { connectivityObserver }
+                        single { OfflineDatabase(databaseDriverFactory.createDriver()) }
+                        single { SessionRegistry() }
+                        single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get()) }
                         single {
                             AuthenticatedApiTransport(
                                 tokenStorage = get(),
-                                onUnauthorized = {
-                                    authViewModelRef.value?.forceLogout()
+                                onUnauthorized = { epoch ->
+                                    authViewModelRef.value?.forceLogout(epoch)
                                 },
+                                registry = get(),
                             )
                         }
                         single { LibraryApiService(get()) }
@@ -147,7 +171,18 @@ fun rememberAppContainer(
                         single<HomeRepository> { ApiHomeRepository(get()) }
                         single<LibraryRepository> { ApiLibraryRepository(get()) }
                         single<FeedRepository> { ApiFeedRepository(get()) }
-                        single<ReaderRepository> { ApiReaderRepository(get(), get()) }
+                        single {
+                            val registry = get<SessionRegistry>()
+                            ApiReaderRepository(
+                                readerApiService = get(),
+                                libraryApiService = get(),
+                                offlineStore = get(),
+                                worker = get(),
+                                sessionProvider = { registry.current.value.session },
+                            )
+                        }
+                        single<ReaderRepository> { get<ApiReaderRepository>() }
+                        single<ReadingEventWriter> { get<ApiReaderRepository>() }
                         single { MilaRepository(get()) }
                         single<OnboardingRepository> { ApiOnboardingRepository(get()) }
                         single<SearchRepository> { ApiSearchRepository(get()) }
@@ -164,11 +199,23 @@ fun rememberAppContainer(
                             ConnectServerViewModel(
                                 tokenStorage = get(),
                                 healthChecker = get(),
+                                sessions = get(),
                                 bakedDefaultUrl = ServerBuildConfig.SERVER_URL_DEFAULT,
                                 devPrefillUrl = ServerBuildConfig.DEV_SERVER_PREFILL,
                             )
                         }
-                        single { AuthViewModel(get(), get(), oauthBrowserLauncher) }
+                        single<OutboxSender> { ApiOutboxSender(get()) }
+                        single {
+                            OutboxWorker(
+                                store = get(),
+                                registry = get(),
+                                sender = get(),
+                                clock = { getTimeMillis() },
+                            )
+                        }
+                        single { SessionTransitions(get(), get(), get(), get()) }
+                        single { ScopePurger(get()) }
+                        single { AuthViewModel(get(), get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
                         single { LibraryViewModel(get()) }
@@ -185,17 +232,17 @@ fun rememberAppContainer(
             }
         }
     val koin = koinApplication.koin
-    val authViewModel = remember(koin) { koin.get<AuthViewModel>() }
+    // Assigned during the first composition, not from an effect: a 401 resolved before the first
+    // frame's effects ran would otherwise withdraw the session without ever signing the user out.
+    val authViewModel = remember(koin) { koin.get<AuthViewModel>().also { authViewModelRef.value = it } }
 
     DisposableEffect(koinApplication) {
+        koin.get<OutboxWorker>().start()
         onDispose {
+            koin.get<OutboxWorker>().stop()
             koin.get<AuthenticatedApiTransport>().close()
             koinApplication.close()
         }
-    }
-
-    LaunchedEffect(authViewModel) {
-        authViewModelRef.value = authViewModel
     }
 
     return remember(koin, authViewModel) {
@@ -209,6 +256,7 @@ fun rememberAppContainer(
             libraryRepository = koin.get(),
             feedRepository = koin.get(),
             readerRepository = koin.get(),
+            readingEventWriter = koin.get(),
             milaRepository = koin.get(),
             searchRepository = koin.get(),
             sidebarRepository = koin.get(),
@@ -226,6 +274,10 @@ fun rememberAppContainer(
             aiSettingsViewModel = koin.get(),
             searchViewModel = koin.get(),
             sidebarViewModel = koin.get(),
+            outboxWorker = koin.get(),
+            sessionTransitions = koin.get(),
+            scopePurger = koin.get(),
+            connectivityObserver = connectivityObserver,
         )
     }
 }

@@ -13,6 +13,12 @@ interface TokenStorage {
 
     suspend fun getServerUrl(): String?
 
+    suspend fun saveUserId(userId: String)
+
+    suspend fun getUserId(): String?
+
+    suspend fun clearUserId()
+
     suspend fun saveRefreshToken(token: String)
 
     suspend fun getRefreshToken(): String?

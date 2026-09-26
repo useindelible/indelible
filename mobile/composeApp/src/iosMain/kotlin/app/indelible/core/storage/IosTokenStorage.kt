@@ -60,6 +60,16 @@ class IosTokenStorage : TokenStorage {
 
     override suspend fun getServerUrl(): String? = appGroupDefaults?.stringForKey(KEY_SERVER_URL)
 
+    override suspend fun saveUserId(userId: String) {
+        appGroupDefaults?.setObject(userId, KEY_USER_ID)
+    }
+
+    override suspend fun getUserId(): String? = appGroupDefaults?.stringForKey(KEY_USER_ID)
+
+    override suspend fun clearUserId() {
+        appGroupDefaults?.removeObjectForKey(KEY_USER_ID)
+    }
+
     override suspend fun saveRefreshToken(token: String) {
         saveToKeychain(KEY_REFRESH_TOKEN, token)
     }
@@ -90,6 +100,7 @@ class IosTokenStorage : TokenStorage {
         deleteFromKeychain(KEY_REFRESH_TOKEN)
         deleteFromKeychain(KEY_EXPIRES_AT)
         deleteFromKeychain(KEY_PENDING_OAUTH)
+        appGroupDefaults?.removeObjectForKey(KEY_USER_ID)
         appGroupDefaults?.removeObjectForKey(KEY_PENDING_ITEMS)
     }
 
@@ -183,6 +194,7 @@ class IosTokenStorage : TokenStorage {
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_EXPIRES_AT = "expires_at"
         private const val KEY_SERVER_URL = "server_url"
+        private const val KEY_USER_ID = "user_id"
         private const val KEY_PENDING_OAUTH = "pending_oauth_flow"
         private const val KEY_PENDING_ITEMS = "pending_items"
     }
