@@ -392,7 +392,6 @@
     <string name="nav_profile">Profile</string>
     <string name="nav_review">Review</string>
     <string name="nav_search">Search</string>
-    <string name="offline_all_synced">Every change is synced.</string>
     <string name="offline_badge_cached">Cached</string>
     <string name="offline_badge_downloading">Downloading</string>
     <string name="offline_badge_kept">Kept</string>
@@ -401,6 +400,7 @@
         <item quantity="other">%1$d pending</item>
     </plurals>
     <string name="offline_cached">Cached</string>
+    <string name="offline_cap_title">Cap on this device</string>
     <string name="offline_change_highlight_color">Highlight colour</string>
     <string name="offline_change_highlight_create">New highlight</string>
     <string name="offline_change_highlight_delete">Deleted highlight</string>
@@ -409,23 +409,40 @@
     <string name="offline_change_note">Document note</string>
     <string name="offline_change_progress">Reading progress</string>
     <string name="offline_download_failed">Download failed</string>
+    <string name="offline_downloads">Downloads</string>
+    <string name="offline_filter_all">All</string>
+    <string name="offline_filter_cached">Cached</string>
+    <string name="offline_filter_kept">Kept</string>
+    <string name="offline_inventory_count">%1$s · %2$s</string>
+    <plurals name="offline_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="offline_keep">Keep offline</string>
     <string name="offline_kept">Kept</string>
+    <string name="offline_key_cached">Cached %1$s</string>
+    <string name="offline_key_free">Free %1$s</string>
+    <string name="offline_key_kept">Kept %1$s</string>
     <string name="offline_limit">Storage limit</string>
-    <string name="offline_limit_hint">Copies you haven’t kept are removed, least recently opened first, to stay under the limit.</string>
     <string name="offline_manage_kept">Manage kept items</string>
     <string name="offline_manage_kept_body">Kept items alone use more than the limit. Remove some to free space.</string>
     <string name="offline_manage_storage">Manage storage</string>
     <string name="offline_no_space">Not enough space</string>
     <string name="offline_not_on_device">Not on this device</string>
     <string name="offline_not_synced">%1$s · not synced yet</string>
+    <string name="offline_note_all">Kept items are pinned and never evicted. Cached items were taken automatically when you opened them.</string>
+    <string name="offline_note_cached">Cached automatically from what you open. Oldest first when the cap needs room; anything kept is skipped.</string>
+    <string name="offline_note_kept">Unpinning leaves the copy cached. It deletes nothing.</string>
     <string name="offline_nothing_downloaded">Nothing is downloaded on this device yet.</string>
-    <string name="offline_pending">Waiting to sync</string>
+    <string name="offline_pending">Pending sync</string>
     <plurals name="offline_pending_changes">
         <item quantity="one">%1$d change waiting to sync</item>
         <item quantity="other">%1$d changes waiting to sync</item>
     </plurals>
+    <string name="offline_pending_footnote">Sync history lives here. Nothing is dropped because a banner was missed.</string>
+    <string name="offline_queue_failed">Needs attention</string>
     <string name="offline_remove">Remove</string>
+    <string name="offline_remove_all">Remove all offline data on this server</string>
     <string name="offline_remove_copy">Remove from device</string>
     <string name="offline_remove_downloads">Remove downloads</string>
     <plurals name="offline_remove_downloads_body">
@@ -433,7 +450,7 @@
         <item quantity="other">Every downloaded copy is deleted from this device. %1$d queued changes stay and will still sync.</item>
     </plurals>
     <string name="offline_remove_downloads_none_queued">Every downloaded copy is deleted from this device.</string>
-    <string name="offline_remove_downloads_title">Remove all downloads?</string>
+    <string name="offline_remove_downloads_title">Remove %1$s of downloads from this phone?</string>
     <string name="offline_section">Offline</string>
     <string name="offline_size_gb">%1$s GB</string>
     <string name="offline_size_kb">%1$s KB</string>
@@ -441,12 +458,16 @@
     <string name="offline_status_blocked">Waiting on the highlight it belongs to</string>
     <string name="offline_status_failed">Sync failed</string>
     <string name="offline_status_failed_reason">Sync failed: %1$s</string>
-    <string name="offline_status_pending">Waiting to send</string>
+    <string name="offline_status_pending">Queued</string>
     <string name="offline_status_retrying">Retrying</string>
     <string name="offline_status_superseded">Replaced by a later change</string>
     <string name="offline_synced">%1$s · synced %2$s</string>
     <string name="offline_title">Storage &amp; downloads</string>
+    <string name="offline_unpin">Unpin</string>
     <string name="offline_used">%1$s of %2$s used</string>
+    <string name="offline_used_line">%1$s of %2$s · %3$s</string>
+    <string name="offline_used_of">of %1$s · %2$s</string>
+    <string name="offline_view_empty">Nothing in this view.</string>
     <string name="offline_waiting">Waiting to download</string>
     <string name="offline_waiting_connection">Waiting for a connection</string>
     <string name="onboarding_account_display_name">Display name</string>
