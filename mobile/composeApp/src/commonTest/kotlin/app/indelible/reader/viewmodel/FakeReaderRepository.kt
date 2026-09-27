@@ -6,6 +6,7 @@ import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
+import app.indelible.reader.model.HighlightRange
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
@@ -48,6 +49,7 @@ class FakeReaderRepository : ReaderRepository {
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
     var createHighlightCallCount = 0
+    val createdRanges = mutableListOf<HighlightRange>()
     var deleteHighlightCallCount = 0
     var lastDeletedHighlightId: String? = null
     var lastHighlightMutationItemId: String? = null
@@ -117,10 +119,10 @@ class FakeReaderRepository : ReaderRepository {
         itemId: String,
         color: String,
         textContent: String,
-        startOffset: Long,
-        endOffset: Long,
+        range: HighlightRange,
     ): Result<HighlightData> {
         createHighlightCallCount++
+        createdRanges += range
         return createHighlightResult
     }
 

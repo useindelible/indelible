@@ -51,6 +51,14 @@ data class HighlightLocator(
     val type: String,
     val startOffset: Long? = null,
     val endOffset: Long? = null,
+    val chapter: String? = null,
+)
+
+/** A selection's character offsets; [chapter] is the book chapter's key, null in an article. */
+data class HighlightRange(
+    val startOffset: Long,
+    val endOffset: Long,
+    val chapter: String? = null,
 )
 
 @Serializable
@@ -121,6 +129,7 @@ fun LocatorSchemaFlat.toHighlightLocator(): HighlightLocator =
         type = type,
         startOffset = startOffset,
         endOffset = endOffset,
+        chapter = chapter,
     )
 
 fun HighlightLocator.toLocatorSchemaFlat(): LocatorSchemaFlat =
@@ -128,6 +137,7 @@ fun HighlightLocator.toLocatorSchemaFlat(): LocatorSchemaFlat =
         type = type,
         startOffset = startOffset,
         endOffset = endOffset,
+        chapter = chapter,
     )
 
 fun DocumentAssetResponse.toAssetWithUrlResponse(): AssetWithUrlResponse =
