@@ -1,5 +1,6 @@
 package app.indelible.core.offline
 
+import app.indelible.reader.repository.EventProgress
 import app.indelible.reader.repository.ReaderOutboxWrites
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -119,10 +120,10 @@ class OfflineStoreInstallTest {
             s.installNow(serverDocument(progress = Progress(percent = 20, maxPercent = 20)))
             val writes = s.writes()
 
-            writes.readingEvent(s.session, VIEW_DOC, "progress", sessionId = null, progressBasisPoints = 6_000)
+            writes.readingEvent(s.session, VIEW_DOC, "progress", sessionId = null, progress = EventProgress(6_000))
             val afterForward = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
-            writes.readingEvent(s.session, VIEW_DOC, "progress", sessionId = null, progressBasisPoints = 4_000)
-            writes.readingEvent(s.session, VIEW_DOC, "opened", sessionId = null, progressBasisPoints = null)
+            writes.readingEvent(s.session, VIEW_DOC, "progress", sessionId = null, progress = EventProgress(4_000))
+            writes.readingEvent(s.session, VIEW_DOC, "opened", sessionId = null, progress = null)
             val afterBack = checkNotNull(s.store.cachedDocument(s.scope, VIEW_DOC))
 
             assertEquals(60 to 60, afterForward.progressPercent to afterForward.maxProgressPercent)

@@ -17,6 +17,7 @@ import app.indelible.core.offline.ServerPart
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.StaleWriteException
 import app.indelible.core.offline.generationDir
+import app.indelible.core.offline.progress
 import app.indelible.core.offline.toCachedHighlight
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.ArticleTocStatus
@@ -62,7 +63,7 @@ class ReaderOfflineCopy(
                 json
                     .decodeFromString(DocumentReaderResponse.serializer(), copy.readerJson)
                     .toReaderDocument()
-                    .withProgress(Progress(copy.progressPercent, copy.maxProgressPercent))
+                    .withProgress(Progress(copy.progressPercent, copy.maxProgressPercent, copy.position))
             }
         // Progress is append-only; the server never lets an older event win, so an overtaken view still stands.
         return fromCopy ?: steady(session.scope, documentId, { it.position }, fetch)
@@ -234,13 +235,16 @@ class ReaderOfflineCopy(
                 statusCode == REQUEST_TIMEOUT ||
                 statusCode == TOO_MANY_REQUESTS
 
-        fun DocumentReaderResponse.progress(): Progress = Progress(progressPercent, maxProgressPercent)
-
         fun DocumentReaderResponse.readerPart(): ServerPart =
             ServerPart.Reader(title, json.encodeToString(DocumentReaderResponse.serializer(), this), progress())
 
         fun ReaderDocument.withProgress(progress: Progress): ReaderDocument =
-            copy(progressPercent = progress.percent, maxProgressPercent = progress.maxPercent)
+            copy(
+                progressPercent = progress.percent,
+                maxProgressPercent = progress.maxPercent,
+                chapterLocator = progress.position?.chapter,
+                chapterOffset = progress.position?.offset,
+            )
 
         fun HighlightListResponse.toCached(documentId: String) = highlights.map { it.toCachedHighlight(documentId) }
 
