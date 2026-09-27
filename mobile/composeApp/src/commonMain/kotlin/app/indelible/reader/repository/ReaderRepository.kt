@@ -13,6 +13,7 @@ import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
+import app.indelible.reader.model.HighlightRange
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
@@ -47,8 +48,7 @@ interface ReaderRepository {
         itemId: String,
         color: String,
         textContent: String,
-        startOffset: Long,
-        endOffset: Long,
+        range: HighlightRange,
     ): Result<HighlightData>
 
     suspend fun deleteHighlight(
@@ -98,6 +98,8 @@ interface ReaderRepository {
 
 private const val KIND_OPENED = "opened"
 private const val KIND_PROGRESS = "progress"
+private const val LOCATOR_HTML = "html"
+private const val LOCATOR_EPUB = "epub"
 
 class ApiReaderRepository(
     private val readerApiService: ReaderApiService,
@@ -178,10 +180,15 @@ class ApiReaderRepository(
         itemId: String,
         color: String,
         textContent: String,
-        startOffset: Long,
-        endOffset: Long,
+        range: HighlightRange,
     ): Result<HighlightData> {
-        val locator = HighlightLocator(type = "html", startOffset = startOffset, endOffset = endOffset)
+        val locator =
+            HighlightLocator(
+                type = if (range.chapter == null) LOCATOR_HTML else LOCATOR_EPUB,
+                startOffset = range.startOffset,
+                endOffset = range.endOffset,
+                chapter = range.chapter,
+            )
         val session = sessionProvider() ?: return Result.failure(NoSessionException())
         return offlineResult { outbox.createHighlight(session, itemId, color, textContent, locator) }
     }
