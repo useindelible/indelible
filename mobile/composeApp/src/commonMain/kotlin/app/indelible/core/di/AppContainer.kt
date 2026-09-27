@@ -27,6 +27,7 @@ import app.indelible.core.network.MilaApiService
 import app.indelible.core.network.OnboardingApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.SearchApiService
+import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.network.SettingsApiService
 import app.indelible.core.network.TagsApiService
 import app.indelible.core.network.TrashApiService
@@ -165,6 +166,7 @@ fun rememberAppContainer(
                                 registry = get(),
                             )
                         }
+                        single { ServerCapabilities(get(), clock = { getTimeMillis() }) }
                         single { LibraryApiService(get()) }
                         single { FeedApiService(get()) }
                         single { ReaderApiService(get()) }
