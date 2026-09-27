@@ -256,7 +256,7 @@ class DownloadManager(
             val shown = failureState(error, request.pin, isOnline)
             when {
                 shown == null -> acquisitions.clear(key)
-                isNetworkException(error) -> park(request, shown)
+                isConnectionFailure(error) -> park(request, shown)
                 else -> acquisitions.set(key, shown)
             }
         }
@@ -280,8 +280,10 @@ private fun failureState(
     when {
         error is StaleSessionException || error is StaleWriteException || error is ScopeNotLiveException -> null
         error is NoSpaceException -> Acquisition.Failed(DownloadFailure.NO_SPACE)
-        isNetworkException(error) && !pin -> null
-        isNetworkException(error) && online -> Acquisition.Failed(DownloadFailure.NETWORK)
-        isNetworkException(error) -> Acquisition.WaitingForConnection
+        (isConnectionFailure(error) || error is ChapterListUnavailableException) && !pin -> null
+        isConnectionFailure(error) && online -> Acquisition.Failed(DownloadFailure.NETWORK)
+        isConnectionFailure(error) -> Acquisition.WaitingForConnection
         else -> Acquisition.Failed(DownloadFailure.SERVER)
     }
+
+private fun isConnectionFailure(error: Throwable) = error is CapabilitiesUnknownException || isNetworkException(error)
