@@ -213,7 +213,7 @@ class OfflineSetFetcher(
         return ServerDocument(
             title = reader.model.title,
             readerJson = reader.raw,
-            progress = Progress(reader.model.progressPercent, reader.model.maxProgressPercent),
+            progress = reader.model.progress(),
             highlights = highlights.highlights.map { it.toCachedHighlight(documentId) },
             note = note?.let { ServerNote(it.body, it.updatedAt.toEpochMilliseconds()) },
         )

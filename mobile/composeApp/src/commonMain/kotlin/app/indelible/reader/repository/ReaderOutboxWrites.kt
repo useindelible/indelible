@@ -2,12 +2,14 @@ package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.LocatorSchemaFlat
 import app.indelible.core.offline.CachedHighlight
+import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.applyToCachedHighlight
+import app.indelible.core.offline.readingPositionJson
 import app.indelible.core.util.highlightClientId
 import app.indelible.core.util.readingEventId
 import app.indelible.reader.model.HighlightData
@@ -21,8 +23,16 @@ import kotlinx.serialization.json.Json
 import kotlin.math.roundToInt
 
 private const val BASIS_POINTS_PER_PERCENT = 100
+private const val BASIS_POINTS_PER_UNIT = 10_000.0
 private const val MAX_BASIS_POINTS = 10_000
 private const val EVENT_CAUSE = "reader"
+
+internal data class EventProgress(
+    val basisPoints: Int,
+    val position: ChapterPosition? = null,
+) {
+    val fraction: Double get() = basisPoints / BASIS_POINTS_PER_UNIT
+}
 
 private data class HighlightTarget(
     val session: Session,
@@ -165,21 +175,23 @@ internal class ReaderOutboxWrites(
         documentId: String,
         kind: String,
         sessionId: String?,
-        progressBasisPoints: Int?,
+        progress: EventProgress?,
     ) {
         val recordedAt = now()
         val eventId = readingEventId()
+        val positionJson = progress?.position?.let { readingPositionJson(it, progress.fraction) }
         store.enqueue(session, OutboxKind.READING_EVENT, documentId, documentId) {
-            progressBasisPoints?.let { patchCachedProgress(documentId, it / BASIS_POINTS_PER_PERCENT) }
+            progress?.let { patchCachedProgress(documentId, it.basisPoints / BASIS_POINTS_PER_PERCENT) }
+            progress?.position?.let { patchCachedPosition(documentId, it) }
             OutboxPayload.ReadingEvent(
                 eventId = eventId,
                 originSeq = allocateOriginSeq(),
                 kind = kind,
-                progressBasisPoints = progressBasisPoints,
+                progressBasisPoints = progress?.basisPoints,
                 cause = EVENT_CAUSE,
                 sessionId = sessionId,
                 attempt = null,
-                positionJson = null,
+                positionJson = positionJson,
                 assetKind = null,
                 activeMs = null,
                 recordedAtEpochMs = recordedAt,

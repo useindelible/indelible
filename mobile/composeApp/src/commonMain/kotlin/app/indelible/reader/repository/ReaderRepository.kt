@@ -3,6 +3,7 @@ package app.indelible.reader.repository
 import app.indelible.core.model.SaveItemRequest
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
+import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.NoSessionException
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxWorker
@@ -145,15 +146,16 @@ class ApiReaderRepository(
         documentId: String,
         sessionId: String,
     ) {
-        recordEvent(documentId, KIND_OPENED, sessionId, progressBasisPoints = null)
+        recordEvent(documentId, KIND_OPENED, sessionId, progress = null)
     }
 
     override suspend fun recordProgress(
         documentId: String,
         percent: Float,
         sessionId: String,
+        position: ChapterPosition?,
     ) {
-        recordEvent(documentId, KIND_PROGRESS, sessionId, basisPoints(percent))
+        recordEvent(documentId, KIND_PROGRESS, sessionId, EventProgress(basisPoints(percent), position))
     }
 
     /** Recording is best-effort: a reader must keep reading when its event cannot be written. */
@@ -161,10 +163,10 @@ class ApiReaderRepository(
         documentId: String,
         kind: String,
         sessionId: String,
-        progressBasisPoints: Int?,
+        progress: EventProgress?,
     ) {
         val session = sessionProvider() ?: return
-        offlineResult { outbox.readingEvent(session, documentId, kind, sessionId, progressBasisPoints) }
+        offlineResult { outbox.readingEvent(session, documentId, kind, sessionId, progress) }
     }
 
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> =

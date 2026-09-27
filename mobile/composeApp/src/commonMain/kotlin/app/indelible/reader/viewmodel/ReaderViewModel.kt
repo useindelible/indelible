@@ -63,8 +63,8 @@ class ReaderViewModel(
         ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects)
 
     private val progressSync =
-        ReaderProgressSync(viewModelScope) { percent ->
-            readingEvents.recordProgress(documentId, percent, sessionId)
+        ReaderProgressSync(viewModelScope) { percent, position ->
+            readingEvents.recordProgress(documentId, percent, sessionId, position)
         }
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
