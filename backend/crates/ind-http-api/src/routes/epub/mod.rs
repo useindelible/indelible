@@ -7,9 +7,11 @@ use axum::routing::get;
 use axum::{Json, Router};
 use futures::TryStreamExt;
 use http::{HeaderValue, StatusCode};
+use ind_application::repos::epub_format::EpubChapterListState;
 use ind_domain::ArchiveAssetKind;
 
-pub use dto::{EpubMetadata, EpubStoredChapter, EpubTocEntry, EpubTocResponse};
+use dto::StoredEpubToc;
+pub use dto::{EpubChapterList, EpubMetadata, EpubStoredChapter, EpubTocEntry, EpubTocResponse};
 
 use crate::error::ApiError;
 use crate::middleware::RequireLibraryRead;
@@ -58,13 +60,13 @@ pub async fn get_epub_toc(
 
     let parsed_document_id = parse_document_id(&document_id)?;
 
-    let asset = ops
-        .get_completed_asset(auth.user_id, parsed_document_id, ArchiveAssetKind::Epub)
+    let toc_asset = ops
+        .get_epub_toc_asset(auth.user_id, parsed_document_id)
         .await
         .map_err(ApiError::from)?;
 
     let object_data = storage
-        .get_object(&asset.s3_key)
+        .get_object(&toc_asset.asset.s3_key)
         .await
         .map_err(ApiError::from)?;
 
@@ -78,15 +80,20 @@ pub async fn get_epub_toc(
         .map_err(|err| ApiError::Internal {
             message: format!("failed to read EPUB TOC object: {err}"),
         })?;
-    let toc =
-        serde_json::from_slice::<EpubTocResponse>(&bytes).map_err(|err| ApiError::Internal {
+    let stored =
+        serde_json::from_slice::<StoredEpubToc>(&bytes).map_err(|err| ApiError::Internal {
             message: format!("malformed EPUB TOC JSON: {err}"),
         })?;
+    let cache_control = match toc_asset.chapter_list {
+        EpubChapterListState::Ready => "private, max-age=3600",
+        _ => "private, no-store",
+    };
+    let toc = EpubTocResponse::from_stored(stored, toc_asset.chapter_list);
 
     let mut response = Json(toc).into_response();
     response.headers_mut().insert(
         http::header::CACHE_CONTROL,
-        HeaderValue::from_static("private, max-age=3600"),
+        HeaderValue::from_static(cache_control),
     );
     Ok(response)
 }

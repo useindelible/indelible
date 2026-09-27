@@ -50,6 +50,7 @@ pub struct ProcessedUploadAsset {
     pub bytes: Bytes,
     pub status: ArchiveAssetStatus,
     pub failed_reason: Option<String>,
+    pub format_version: i32,
 }
 
 #[derive(Debug, Clone)]

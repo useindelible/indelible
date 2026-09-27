@@ -142,6 +142,11 @@ pub trait ObjectStorage: Send + Sync {
 /// Download an object and collect it into a UTF-8 string. Shared by content
 /// handlers and worker jobs that post-process stored HTML/JSON payloads.
 pub async fn get_object_string(storage: &dyn ObjectStorage, key: &str) -> Result<String, AppError> {
+    let bytes = get_object_bytes(storage, key).await?;
+    String::from_utf8(bytes).map_err(|err| AppError::Repository(Box::new(err)))
+}
+
+pub async fn get_object_bytes(storage: &dyn ObjectStorage, key: &str) -> Result<Vec<u8>, AppError> {
     use futures::StreamExt;
 
     let object = storage.get_object(key).await?;
@@ -151,5 +156,5 @@ pub async fn get_object_string(storage: &dyn ObjectStorage, key: &str) -> Result
         let chunk = chunk.map_err(|err| AppError::Repository(Box::new(err)))?;
         bytes.extend_from_slice(&chunk);
     }
-    String::from_utf8(bytes).map_err(|err| AppError::Repository(Box::new(err)))
+    Ok(bytes)
 }

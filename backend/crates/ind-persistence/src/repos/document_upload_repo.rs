@@ -125,12 +125,13 @@ pub(crate) async fn upsert_staged_asset_tx(
     sqlx::query!(
         "INSERT INTO archive_assets \
             (id, document_id, asset_kind, s3_key, s3_bucket, content_type, size_bytes, \
-             status, failed_reason, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now()) \
+             status, failed_reason, format_version, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()) \
          ON CONFLICT (document_id, asset_kind) WHERE document_id IS NOT NULL DO UPDATE SET \
              s3_key = EXCLUDED.s3_key, s3_bucket = EXCLUDED.s3_bucket, \
              content_type = EXCLUDED.content_type, size_bytes = EXCLUDED.size_bytes, \
-             status = EXCLUDED.status, failed_reason = EXCLUDED.failed_reason, created_at = now()",
+             status = EXCLUDED.status, failed_reason = EXCLUDED.failed_reason, \
+             format_version = EXCLUDED.format_version, format_issue = NULL, created_at = now()",
         ArchiveAssetId::new().into_uuid(),
         document_id.into_uuid(),
         asset.asset_kind.to_string(),
@@ -140,6 +141,7 @@ pub(crate) async fn upsert_staged_asset_tx(
         asset.size_bytes,
         asset_status_to_str(asset.status),
         asset.failed_reason,
+        asset.format_version,
     )
     .execute(&mut **tx)
     .await

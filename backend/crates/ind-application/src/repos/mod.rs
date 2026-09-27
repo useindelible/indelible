@@ -27,6 +27,7 @@ pub mod email_unsubscribe_target;
 pub mod email_verification;
 pub mod embedding_backfill;
 pub mod entity;
+pub mod epub_format;
 pub mod event;
 pub mod export_cursor;
 pub mod export_subject;

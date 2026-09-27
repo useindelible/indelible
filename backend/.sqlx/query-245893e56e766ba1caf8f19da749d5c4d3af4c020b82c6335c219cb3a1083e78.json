@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT toc.id, toc.document_id, toc.s3_key AS toc_key,\n                   original.s3_key AS \"original_key?\",\n                   original.content_type AS \"original_content_type?\"\n            FROM archive_assets toc\n            LEFT JOIN archive_assets original\n              ON original.document_id = toc.document_id\n             AND original.asset_kind = 'original_upload'\n             AND original.status = 'completed'\n            WHERE toc.asset_kind = 'epub' AND toc.format_version < 2\n              AND toc.status = 'completed' AND toc.format_issue IS NULL\n              AND toc.document_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "toc_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "original_key?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "original_content_type?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "245893e56e766ba1caf8f19da749d5c4d3af4c020b82c6335c219cb3a1083e78"
+}

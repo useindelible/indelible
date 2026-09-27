@@ -845,3 +845,11 @@ owner_layer = "persistence"
 path = "crates/ind-persistence/tests/user_document_state_tests.rs"
 test = "clear_read_state_resets_read_status_and_keeps_the_chapter_position"
 rationale = "Marking a document unread must reset every read-status column, including the furthest progress that finished_at and the library counts derive from, while keeping the chapter position so the reader can resume."
+
+[[invariants]]
+id = "epub-chapter-list-backfill"
+risk = "data-integrity"
+owner_layer = "worker"
+path = "apps/ind-worker/tests/epub_chapter_backfill_tests.rs"
+test = "backfill_adds_only_the_chapter_list"
+rationale = "Backfilling an EPUB processed before the chapter list existed must add metadata.chapters from the stored original and leave every other TOC field and every chapter object exactly as stored."

@@ -94,6 +94,7 @@ impl LibraryUploadService {
                     size_bytes,
                     status: object.status,
                     failed_reason: object.failed_reason,
+                    format_version: object.format_version,
                 });
             }
         }

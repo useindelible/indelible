@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT format_version, format_issue FROM archive_assets WHERE document_id = $1 AND asset_kind = 'epub'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "format_version",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "format_issue",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "3a91cf4f4925ff28caa85b4801d5ab63f0f2c5ee3555e1474f59c7e57f134cc6"
+}

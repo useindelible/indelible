@@ -1,10 +1,14 @@
 pub mod db;
+pub mod epub;
+pub mod epub_format;
 pub mod factories;
 pub mod mock_renderer;
 pub mod test_app;
 pub mod worker_harness;
 
 pub use db::{TEST_S3_BUCKET, TestDb};
+pub use epub::build_epub;
+pub use epub_format::{document_asset, epub_format, set_epub_format};
 pub use factories::*;
 pub use mock_renderer::StorageBackedMockRenderer;
 pub use test_app::{
