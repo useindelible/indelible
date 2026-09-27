@@ -46,6 +46,7 @@ mod api {
     mod resource_route_permission_support;
     mod save_pipeline_tests;
     mod search_api_journey_tests;
+    mod server_capabilities_tests;
     mod upload_import_journey_tests;
     mod webhook_route_permission_tests;
     mod youtube_identity_journey_tests;
