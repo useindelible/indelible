@@ -250,6 +250,7 @@ fun rememberAppContainer(
                             val preferences = get<UserPreferencesStorage>()
                             OfflineSetFetcher(
                                 transport = get(),
+                                capabilities = get(),
                                 store = get(),
                                 files = get(),
                                 clock = { getTimeMillis() },

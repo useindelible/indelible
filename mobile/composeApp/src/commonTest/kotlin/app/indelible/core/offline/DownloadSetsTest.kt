@@ -7,6 +7,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import okio.Path
@@ -61,11 +63,7 @@ class DownloadSetsTest {
     @Test
     fun bookInstallsTocAndEveryChapter() =
         runTest {
-            val h =
-                downloadHarness {
-                    documentType = "book"
-                    available = listOf("epub")
-                }
+            val h = book()
 
             h.fetcher.download(h.session, DL_DOC, pin = true)
 
@@ -73,7 +71,7 @@ class DownloadSetsTest {
             assertEquals(listOf("epub_toc"), assets.filter { it.kind == "epub_toc" }.map { it.kind })
             assertEquals(listOf(0, 1, 2), assets.filter { it.kind == "epub_chapter" }.map { it.idx }.sorted())
             for (index in 0..2) {
-                assertEquals(1, h.server.count("/api/v1/documents/$DL_DOC/epub/chapters/$index"))
+                assertEquals(1, h.server.count(chapterPath(index)))
                 val chapter = assets.single { it.kind == "epub_chapter" && it.idx == index }
                 assertEquals("<h1>$index</h1>", h.files.readText(h.generationDir(1) / chapter.path))
             }
@@ -82,14 +80,7 @@ class DownloadSetsTest {
     @Test
     fun failedChapterInstallsNothingAndDeletesGeneration() =
         runTest {
-            val h =
-                downloadHarness {
-                    documentType = "book"
-                    available = listOf("epub")
-                    route("/api/v1/documents/$DL_DOC/epub/chapters/1") {
-                        respond("boom", HttpStatusCode.InternalServerError)
-                    }
-                }
+            val h = book { route(chapterPath(1)) { respond("boom", HttpStatusCode.InternalServerError) } }
 
             val failure = assertFailsWith<ApiException> { h.fetcher.download(h.session, DL_DOC, pin = true) }
 
@@ -178,39 +169,114 @@ class DownloadSetsTest {
         }
 
     @Test
-    fun bookInstallsEverySpineChapterIncludingOnesTheOutlineSkips() =
+    fun bookFetchesExactlyTheListedChapters() =
         runTest {
             val h =
-                downloadHarness {
-                    documentType = "book"
-                    available = listOf("epub")
-                    route("/api/v1/documents/$DL_DOC/epub/toc") { json(outline(totalChapters = 3, 0, 3)) }
-                    routes.remove("/api/v1/documents/$DL_DOC/epub/chapters/1")
-                    route("/api/v1/documents/$DL_DOC/epub/chapters/3") { respond("<h1>3</h1>", HttpStatusCode.OK) }
+                book {
+                    route(EPUB_TOC_PATH) { json(epubToc(listOf(0, 2, 66))) }
+                    route(chapterPath(66)) { respond("<h1>66</h1>", HttpStatusCode.OK) }
                 }
 
-            h.fetcher.download(h.session, DL_DOC, pin = true)
+            assertEquals(FetchResult.Installed, h.fetcher.download(h.session, DL_DOC, pin = true))
 
             val chapters = h.store.assetsForDocument(DL_SCOPE, DL_DOC).filter { it.kind == "epub_chapter" }
-            assertEquals(listOf(0, 2, 3), chapters.map { it.idx }.sorted())
+            assertEquals(listOf(0, 2, 66), chapters.map { it.idx }.sorted())
+            val epubCalls =
+                h.server.calls
+                    .map { it.path }
+                    .filter { "/epub/" in it }
+            assertEquals(listOf(EPUB_TOC_PATH, chapterPath(0), chapterPath(2), chapterPath(66)), epubCalls)
         }
 
     @Test
-    fun bookInstallsNamedChaptersSeparatedByAWideGap() =
+    fun missingListedChapterInstallsNothing() =
         runTest {
-            val h =
-                downloadHarness {
-                    documentType = "book"
-                    available = listOf("epub")
-                    route("/api/v1/documents/$DL_DOC/epub/toc") { json(outline(totalChapters = 2, 0, 66)) }
-                    routes.keys.removeAll { it.endsWith("/chapters/1") || it.endsWith("/chapters/2") }
-                    route("/api/v1/documents/$DL_DOC/epub/chapters/66") { respond("<h1>66</h1>", HttpStatusCode.OK) }
-                }
+            val h = book { routes.remove(chapterPath(1)) }
 
-            h.fetcher.download(h.session, DL_DOC, pin = true)
+            val failure = assertFailsWith<ApiException> { h.fetcher.download(h.session, DL_DOC, pin = true) }
 
-            val chapters = h.store.assetsForDocument(DL_SCOPE, DL_DOC).filter { it.kind == "epub_chapter" }
-            assertEquals(listOf(0, 66), chapters.map { it.idx }.sorted())
+            assertEquals(404, failure.statusCode)
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertFalse(h.fs.exists(h.generationDir(1)))
+        }
+
+    @Test
+    fun emptyChapterListInstallsTheTocOnly() =
+        runTest {
+            val h = book { route(EPUB_TOC_PATH) { json(epubToc(emptyList())) } }
+
+            assertEquals(FetchResult.Installed, h.fetcher.download(h.session, DL_DOC, pin = true))
+
+            assertEquals(listOf("epub_toc"), h.store.assetsForDocument(DL_SCOPE, DL_DOC).map { it.kind })
+            assertTrue(h.server.calls.none { "/epub/chapters/" in it.path })
+        }
+
+    @Test
+    fun notReadyChapterListInstallsNothing() =
+        runTest {
+            val h = book { route(EPUB_TOC_PATH) { json(epubToc(chapterList = "pending")) } }
+
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER), h.acquisition())
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertFalse(h.fs.exists(h.generationDir(1)))
+            assertTrue(h.server.calls.none { "/epub/chapters/" in it.path })
+        }
+
+    @Test
+    fun serverWithoutCapabilityInstallsNoBook() =
+        runTest {
+            val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
+
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER), h.acquisition())
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertTrue(h.server.calls.none { "/epub/" in it.path })
+        }
+
+    @Test
+    fun autoCacheOfABookWithoutAChapterListEndsSilently() =
+        runTest {
+            val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
+
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+
+            assertNull(h.acquisition())
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+        }
+
+    @Test
+    fun unknownCapabilityInstallsNoBookAndRetriesLater() =
+        runTest {
+            val h = book { route(CAPABILITIES) { respond("", HttpStatusCode.ServiceUnavailable) } }
+
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+
+            assertEquals(Acquisition.Failed(DownloadFailure.NETWORK), h.acquisition())
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertTrue(h.server.calls.none { "/epub/" in it.path })
+
+            h.server.route(CAPABILITIES) { json(CHAPTER_LIST_SUPPORTED) }
+            h.online.value = false
+            runCurrent()
+            h.online.value = true
+            runCurrent()
+
+            assertTrue(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
+            assertNull(h.acquisition())
+        }
+
+    private suspend fun TestScope.book(configure: FakeServer.() -> Unit = {}) =
+        downloadHarness {
+            documentType = "book"
+            available = listOf("epub")
+            configure()
         }
 }
 
@@ -231,11 +297,3 @@ internal class FailingDeleteFileSystem(
         super.delete(path, mustExist)
     }
 }
-
-private fun outline(
-    totalChapters: Int,
-    vararg named: Int,
-) = """{"metadata":{"estimated_pages":3,"total_chapters":$totalChapters,"total_words":30},"toc":[""" +
-    named.joinToString(",") {
-        """{"id":"e$it","title":"T$it","depth":0,"spine_index":$it,"start_page":1,"word_count":10}"""
-    } + "]}"
