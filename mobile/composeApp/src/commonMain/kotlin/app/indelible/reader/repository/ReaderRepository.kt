@@ -10,6 +10,7 @@ import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.Session
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
+import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
@@ -31,6 +32,13 @@ interface ReaderRepository {
     suspend fun fetchReadableHtml(itemId: String): Result<String>
 
     suspend fun getArticleToc(itemId: String): Result<ArticleToc>
+
+    suspend fun getEpubToc(itemId: String): Result<EpubToc>
+
+    suspend fun getEpubChapter(
+        itemId: String,
+        spineIndex: Int,
+    ): Result<String>
 
     suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult>
 
@@ -125,6 +133,13 @@ class ApiReaderRepository(
 
     override suspend fun getArticleToc(itemId: String): Result<ArticleToc> =
         offlineCopy.articleToc(itemId) { readerApiService.getArticleToc(itemId) }
+
+    override suspend fun getEpubToc(itemId: String) = offlineCopy.epubToc(itemId, readerApiService::getEpubToc)
+
+    override suspend fun getEpubChapter(
+        itemId: String,
+        spineIndex: Int,
+    ) = offlineCopy.epubChapter(itemId, spineIndex) { readerApiService.fetchEpubChapter(itemId, spineIndex) }
 
     override suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult> =
         readerApiService.reprocessDocument(itemId).map { response ->

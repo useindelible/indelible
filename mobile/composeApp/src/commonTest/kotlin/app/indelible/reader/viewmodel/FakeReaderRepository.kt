@@ -3,6 +3,7 @@ package app.indelible.reader.viewmodel
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.ArticleTocStatus
 import app.indelible.reader.model.DocumentEntity
+import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
@@ -27,6 +28,8 @@ class FakeReaderRepository : ReaderRepository {
     /** When set, successive getArticleToc calls return these in order, repeating the last entry. */
     var getArticleTocResults: List<Result<ArticleToc>>? = null
     var getArticleTocCallCount = 0
+    var epubTocResult: Result<EpubToc> = Result.failure(IllegalStateException("not a book"))
+    var epubChapterResult: (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
@@ -84,6 +87,13 @@ class FakeReaderRepository : ReaderRepository {
         contentCallLog.add("fetchReadableHtml:$itemId")
         return fetchHtmlResult
     }
+
+    override suspend fun getEpubToc(itemId: String): Result<EpubToc> = epubTocResult
+
+    override suspend fun getEpubChapter(
+        itemId: String,
+        spineIndex: Int,
+    ): Result<String> = epubChapterResult(spineIndex)
 
     override suspend fun getArticleToc(itemId: String): Result<ArticleToc> {
         val results = getArticleTocResults
