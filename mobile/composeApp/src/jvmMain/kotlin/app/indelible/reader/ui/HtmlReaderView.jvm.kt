@@ -21,7 +21,7 @@ actual fun HtmlReaderView(
     isDarkMode: Boolean,
     scrollToPercent: Float?,
     anchorScroll: AnchorScrollRequest?,
-    onScrollProgress: (Float, Float) -> Unit,
+    onScrollProgress: (ScrollSample) -> Unit,
     onTextSelected: (text: String, startOffset: Int, endOffset: Int, selectionRect: SelectionRect) -> Unit,
     onSelectionCleared: () -> Unit,
     onHighlightTapped: (highlightId: String, rect: SelectionRect) -> Unit,
@@ -40,6 +40,11 @@ actual fun HtmlReaderView(
     immersive: Boolean,
     topContentPaddingPx: Int,
     artwork: LoadedReaderArtwork?,
+    scrollToCharOffset: CharOffsetRequest?,
+    captureRequest: Long?,
+    onPositioned: () -> Unit,
+    holdUntilPositioned: Boolean,
+    onBookLink: (String) -> Unit,
     modifier: Modifier,
 ) {
     Box(

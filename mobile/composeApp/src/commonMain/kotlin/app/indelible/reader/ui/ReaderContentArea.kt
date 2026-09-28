@@ -217,7 +217,7 @@ private fun ReaderArticleWebView(
         isDarkMode = isDarkMode,
         scrollToPercent = scrollToPercent,
         anchorScroll = anchorScroll,
-        onScrollProgress = handleScrollProgress,
+        onScrollProgress = { handleScrollProgress(it.percent, it.scrollTopDp) },
         onTextSelected = { text, start, end, rect ->
             onSelectedTextChanged(
                 SelectedTextInfo(text = text, startOffset = start, endOffset = end, rect = rect),

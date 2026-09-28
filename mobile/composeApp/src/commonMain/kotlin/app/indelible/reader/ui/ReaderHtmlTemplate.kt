@@ -42,8 +42,10 @@ object ReaderHtmlTemplate {
         summaryPoints: List<String> = emptyList(),
         topContentPaddingPx: Int = 0,
         artwork: LoadedReaderArtwork? = null,
+        holdUntilPositioned: Boolean = false,
     ): String {
         val css = buildCss(preferences, isDarkMode)
+        val scrollerClass = if (holdUntilPositioned) "rscroll hold" else "rscroll"
         val veilRange = artwork?.artwork?.veilRange ?: DEFAULT_VEIL_RANGE
         val cspNonce = randomNonce()
         val colorScheme = colorSchemeFor(preferences, isDarkMode)
@@ -76,12 +78,13 @@ $css
 </head>
 <body style="--veil-range: $veilRange">
 ${auraMarkup(artwork)}<div class="chrome-veil"></div><div class="grain"></div>
-<div class="rscroll" style="padding-top: ${topContentPaddingPx + READER_MASTHEAD_TOP_GAP_PX}px">
+<div class="$scrollerClass" style="padding-top: ${topContentPaddingPx + READER_MASTHEAD_TOP_GAP_PX}px">
 $mastheadHtml$summaryBlockHtml<div class="article-body" id="article-body">$articleHtml</div>
 </div>
 <script nonce="$cspNonce">
 $READER_BRIDGE_JS
 $TRANSCRIPT_TAP_JS
+$READER_BOOK_JS
 var _highlights = $highlightJson;
 applyHighlights(_highlights);
 </script>
@@ -146,6 +149,7 @@ applyHighlights(_highlights);
             READER_MASTHEAD_CSS,
             buildReaderHighlightCss(palette, preferences.highlightStyle),
             buildReaderChromeCss(isDarkBg),
+            READER_BOOK_CSS,
         ).joinToString("\n")
     }
 }
