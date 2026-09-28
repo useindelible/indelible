@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
-import app.indelible.reader.model.ArticleTocStatus
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderContentMode
@@ -26,7 +25,6 @@ import indelible.composeapp.generated.resources.reader_error_save_note
 import indelible.composeapp.generated.resources.reader_error_save_tags
 import indelible.composeapp.generated.resources.reader_saved_library
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -61,6 +59,8 @@ class ReaderViewModel(
 
     private val highlightActions =
         ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects)
+
+    private val htmlLoader = ReaderHtmlLoader(documentId, repository, viewModelScope, _uiState)
 
     private val progressSync =
         ReaderProgressSync(viewModelScope) { percent, position ->
@@ -109,8 +109,8 @@ class ReaderViewModel(
                     recordOpened()
 
                     if (contentMode == ReaderContentMode.HTML) {
-                        loadHtmlContent()
-                        loadArticleToc()
+                        htmlLoader.loadHtmlContent()
+                        htmlLoader.loadArticleToc()
                     }
                     loadHighlights()
                     loadItemNoteAndTags()
@@ -118,91 +118,6 @@ class ReaderViewModel(
                 }.onFailure {
                     _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
                 }
-        }
-    }
-
-    /**
-     * Resolves the readable HTML, polling the document while its render is still in flight (the
-     * common case for a just-prepared feed document). Gives up after [MAX_CONTENT_POLLS] attempts
-     * and surfaces a retryable [ReaderContentStatus.UNAVAILABLE] state rather than spinning forever.
-     */
-    private fun loadHtmlContent() {
-        viewModelScope.launch {
-            repeat(MAX_CONTENT_POLLS) { attempt ->
-                if (attempt > 0) {
-                    delay(CONTENT_POLL_INTERVAL_MS)
-                    repository
-                        .getItem(documentId)
-                        .onSuccess { refreshed -> updateSuccessState { it.copy(item = refreshed) } }
-                }
-                val current = _uiState.value as? ReaderUiState.Success ?: return@launch
-                if (current.item.readableReady) {
-                    val fetched = repository.fetchReadableHtml(documentId)
-                    if (fetched.isSuccess) {
-                        val html = fetched.getOrThrow()
-                        updateSuccessState {
-                            it.copy(
-                                htmlContent = maybeHideVideoEmbed(html),
-                                contentStatus = ReaderContentStatus.READY,
-                                retryStatus = ReaderRetryStatus.IDLE,
-                                retryAfterSeconds = null,
-                            )
-                        }
-                        return@launch
-                    }
-                }
-            }
-            updateSuccessState {
-                it.copy(
-                    contentStatus = ReaderContentStatus.UNAVAILABLE,
-                    retryStatus = ReaderRetryStatus.IDLE,
-                    retryAfterSeconds = null,
-                )
-            }
-        }
-    }
-
-    /**
-     * Resolves the Contents outline with its own poll: the backend answers `pending`
-     * while a backfill derives the outline, and the readable-content poll above stops
-     * as soon as HTML lands, so this budget is independent. `none` is terminal.
-     */
-    private fun loadArticleToc() {
-        viewModelScope.launch {
-            repeat(MAX_CONTENT_POLLS) { attempt ->
-                if (attempt > 0) delay(CONTENT_POLL_INTERVAL_MS)
-                val fetched = repository.getArticleToc(documentId)
-                val toc = fetched.getOrNull()
-                when (toc?.status) {
-                    ArticleTocStatus.READY -> {
-                        updateSuccessState {
-                            it.copy(
-                                toc =
-                                    TocPanelState(
-                                        status = TocStatus.READY,
-                                        entries = toc.entries,
-                                        truncated = toc.truncated,
-                                        activeIndex =
-                                            TocSections.activeSectionIndex(
-                                                it.progress,
-                                                toc.entries,
-                                            ),
-                                    ),
-                            )
-                        }
-                        return@launch
-                    }
-                    ArticleTocStatus.NONE -> {
-                        updateSuccessState { it.copy(toc = TocPanelState(status = TocStatus.NONE)) }
-                        return@launch
-                    }
-                    ArticleTocStatus.PENDING -> {
-                        updateSuccessState { it.copy(toc = it.toc.copy(status = TocStatus.PENDING)) }
-                    }
-                    null -> Unit
-                }
-            }
-            updateSuccessState { it.copy(toc = it.toc.copy(status = TocStatus.UNAVAILABLE)) }
         }
     }
 
@@ -233,7 +148,7 @@ class ReaderViewModel(
                             retryAfterSeconds = result.retryAfterSeconds,
                         )
                     }
-                    loadHtmlContent()
+                    htmlLoader.loadHtmlContent()
                 }.onFailure {
                     updateSuccessState {
                         it.copy(
@@ -246,27 +161,6 @@ class ReaderViewModel(
                         ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_retry_content)),
                     )
                 }
-        }
-    }
-
-    /**
-     * Video bodies are transcripts. The provider's own embed is redundant beside the native
-     * poster; the masthead aura is too, because the poster is real cover art sitting where the
-     * aura would paint; and transcript paragraphs are short and frequent, so the article's
-     * paragraph rhythm reads as disjointed. All scoped to video, and the spacing stays relative
-     * to the reader's own preference rather than overriding it.
-     */
-    private fun maybeHideVideoEmbed(html: String): String {
-        val state = _uiState.value as? ReaderUiState.Success ?: return html
-        if (state.item.itemType != "video") return html
-        val videoStyle =
-            "<style>.yt-embed{display:none!important}" +
-                ".r-aura{display:none!important}" +
-                ".article-body p{margin-bottom:calc(var(--paragraph-spacing) * 0.65)}</style>"
-        return if (html.contains("</head>", ignoreCase = true)) {
-            html.replace("</head>", "$videoStyle</head>", ignoreCase = true)
-        } else {
-            "$videoStyle$html"
         }
     }
 
@@ -490,8 +384,6 @@ class ReaderViewModel(
     }
 
     companion object {
-        private const val MAX_CONTENT_POLLS = 15
-        private const val CONTENT_POLL_INTERVAL_MS = 2000L
         private const val PERCENT_MAX = 100f
     }
 }
