@@ -1,7 +1,7 @@
 package app.indelible.reader.viewmodel
 
-import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ServerTooOldException
 import app.indelible.reader.model.EpubTocEntry
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.ui.AnchorScrollRequest
@@ -82,7 +82,7 @@ class EpubReaderSession internal constructor(
                     if (failure is CancellationException) throw failure
                     val status =
                         when (failure) {
-                            is ChapterListUnavailableException -> EpubStatus.SERVER_TOO_OLD
+                            is ServerTooOldException -> EpubStatus.SERVER_TOO_OLD
                             else -> EpubStatus.CONNECTION_FAILED
                         }
                     _state.update { it.copy(status = status) }

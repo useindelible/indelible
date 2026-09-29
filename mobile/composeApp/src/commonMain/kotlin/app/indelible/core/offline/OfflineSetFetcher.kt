@@ -36,9 +36,12 @@ sealed interface FetchResult {
 }
 
 /** The server keeps no chapter list for a book, so no copy of it could be known complete. */
-class ChapterListUnavailableException(
+open class ChapterListUnavailableException(
     message: String,
 ) : IllegalStateException(message)
+
+/** The server predates the chapter list, so it can serve no book offline until it is updated. */
+class ServerTooOldException : ChapterListUnavailableException("the server does not list book chapters")
 
 /** The server could not say whether it lists book chapters; the download retries like a dropped connection. */
 class CapabilitiesUnknownException : Exception("server capabilities could not be read")
@@ -182,7 +185,7 @@ class OfflineSetFetcher(
     private suspend fun requireChapterListSupport(session: Session) {
         when (capabilities.supports(session, EPUB_CHAPTER_LIST)) {
             true -> Unit
-            false -> throw ChapterListUnavailableException("the server does not list book chapters")
+            false -> throw ServerTooOldException()
             null -> throw CapabilitiesUnknownException()
         }
     }

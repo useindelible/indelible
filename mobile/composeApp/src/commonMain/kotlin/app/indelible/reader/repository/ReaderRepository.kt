@@ -6,9 +6,9 @@ import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.offline.CapabilitiesUnknownException
-import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.NoSessionException
+import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
@@ -140,7 +140,7 @@ class ApiReaderRepository internal constructor(
             val session = sessionProvider() ?: return@epubToc Result.failure(NoSessionException())
             when (capabilities.supports(session, EPUB_CHAPTER_LIST)) {
                 true -> readerApiService.getEpubToc(id)
-                false -> Result.failure(ChapterListUnavailableException("the server does not list book chapters"))
+                false -> Result.failure(ServerTooOldException())
                 null -> Result.failure(CapabilitiesUnknownException())
             }
         }

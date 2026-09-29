@@ -452,6 +452,7 @@
     <string name="offline_remove_downloads_none_queued">Every downloaded copy is deleted from this device.</string>
     <string name="offline_remove_downloads_title">Remove %1$s of downloads from this phone?</string>
     <string name="offline_section">Offline</string>
+    <string name="offline_server_too_old">Update your server to keep books on this device</string>
     <string name="offline_size_gb">%1$s GB</string>
     <string name="offline_size_kb">%1$s KB</string>
     <string name="offline_size_mb">%1$s MB</string>

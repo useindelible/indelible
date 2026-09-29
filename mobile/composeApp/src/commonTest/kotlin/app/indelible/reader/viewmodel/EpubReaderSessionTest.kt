@@ -2,8 +2,8 @@ package app.indelible.reader.viewmodel
 
 import app.indelible.api.generated.models.EpubStoredChapter
 import app.indelible.core.offline.CapabilitiesUnknownException
-import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ServerTooOldException
 import app.indelible.reader.model.EpubChapterList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -210,7 +210,7 @@ class EpubReaderSessionTest {
     @Test
     fun oldServerIsTooOld() =
         runTest {
-            val h = epubHarness(toc = Result.failure(ChapterListUnavailableException("old")))
+            val h = epubHarness(toc = Result.failure(ServerTooOldException()))
 
             h.session.open()
             advanceUntilIdle()
