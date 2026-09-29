@@ -3,11 +3,13 @@ package app.indelible.reader.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
+import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderContentMode
+import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderPreferences
 import app.indelible.reader.model.TagData
 import app.indelible.reader.playback.PlaybackState
@@ -57,8 +59,19 @@ class ReaderViewModel(
     val playbackState: StateFlow<PlaybackState> = playbackController.state
     val voices: List<ReaderVoice> get() = playbackController.voices
 
+    /** The open book's reading session; null for anything else. */
+    var epubSession: EpubReaderSession? = null
+        private set
+
+    private var leaving = false
+
+    private val bookChapterMissing: Boolean
+        get() = epubSession?.let { it.currentChapterKey() == null } == true
+
     private val highlightActions =
-        ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects)
+        ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects) {
+            epubSession?.currentChapterKey()
+        }
 
     private val htmlLoader = ReaderHtmlLoader(documentId, repository, viewModelScope, _uiState)
 
@@ -82,7 +95,7 @@ class ReaderViewModel(
                     val contentMode =
                         when (item.itemType) {
                             "pdf" -> ReaderContentMode.PDF_COMING_SOON
-                            "book" -> ReaderContentMode.EPUB_COMING_SOON
+                            "book" -> ReaderContentMode.EPUB
                             else -> ReaderContentMode.HTML
                         }
                     val currentProgress = item.progressPercent?.toFloat() ?: 0f
@@ -108,9 +121,13 @@ class ReaderViewModel(
 
                     recordOpened()
 
-                    if (contentMode == ReaderContentMode.HTML) {
-                        htmlLoader.loadHtmlContent()
-                        htmlLoader.loadArticleToc()
+                    when (contentMode) {
+                        ReaderContentMode.HTML -> {
+                            htmlLoader.loadHtmlContent()
+                            htmlLoader.loadArticleToc()
+                        }
+                        ReaderContentMode.EPUB -> openBook(item)
+                        ReaderContentMode.PDF_COMING_SOON -> Unit
                     }
                     loadHighlights()
                     loadItemNoteAndTags()
@@ -119,6 +136,18 @@ class ReaderViewModel(
                     _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
                 }
         }
+    }
+
+    private fun openBook(item: ReaderDocument) {
+        val resumeAt = item.chapterLocator?.let { ChapterPosition(it, item.chapterOffset ?: 0) }
+        val session = EpubReaderSession(documentId, repository, viewModelScope, progressSync, resumeAt)
+        epubSession = session
+        viewModelScope.launch {
+            session.state.collect { epub ->
+                updateSuccessState { it.copy(epub = epub, progress = epub.percent ?: it.progress) }
+            }
+        }
+        session.open()
     }
 
     fun onTocEntryTapped(entry: ArticleTocEntry) {
@@ -276,7 +305,8 @@ class ReaderViewModel(
 
     fun onContentLoaded() {
         if (initialScrollRequested) return
-        val state = (_uiState.value as? ReaderUiState.Success) ?: return
+        val state =
+            (_uiState.value as? ReaderUiState.Success)?.takeIf { it.contentMode == ReaderContentMode.HTML } ?: return
         initialScrollRequested = true
         viewModelScope.launch {
             _effects.emit(ReaderEffect.ScrollToPercent(state.progress))
@@ -287,9 +317,17 @@ class ReaderViewModel(
         progressTrackingEnabled = true
     }
 
+    /** Leaves once the newest position is written; a book first asks its chapter where the reader is. */
     fun navigateBack() {
-        progressSync.flush()
-        viewModelScope.launch { _effects.emit(ReaderEffect.NavigateBack) }
+        if (leaving) return
+        leaving = true
+        val book = epubSession
+        if (book == null) progressSync.flush()
+        viewModelScope.launch {
+            book?.captureAndFlush()
+            _effects.emit(ReaderEffect.NavigateBack)
+            leaving = false
+        }
     }
 
     fun createHighlight(
@@ -297,7 +335,9 @@ class ReaderViewModel(
         textContent: String,
         startOffset: Long,
         endOffset: Long,
-    ) = highlightActions.createHighlight(color, textContent, startOffset, endOffset)
+    ) {
+        if (!bookChapterMissing) highlightActions.createHighlight(color, textContent, startOffset, endOffset)
+    }
 
     fun createHighlightForTag(
         color: HighlightColor,
@@ -305,7 +345,9 @@ class ReaderViewModel(
         startOffset: Long,
         endOffset: Long,
         onCreated: (String) -> Unit,
-    ) = highlightActions.createHighlight(color, textContent, startOffset, endOffset, onCreated)
+    ) {
+        if (!bookChapterMissing) highlightActions.createHighlight(color, textContent, startOffset, endOffset, onCreated)
+    }
 
     fun deleteHighlight(highlightId: String) = highlightActions.deleteHighlight(highlightId)
 

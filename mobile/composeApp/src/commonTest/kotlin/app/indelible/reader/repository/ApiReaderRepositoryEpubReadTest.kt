@@ -1,5 +1,8 @@
 package app.indelible.reader.repository
 
+import app.indelible.core.offline.CAPABILITIES
+import app.indelible.core.offline.CapabilitiesUnknownException
+import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.EPUB_TOC_PATH
 import app.indelible.core.offline.FakeServer
@@ -12,6 +15,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ApiReaderRepositoryEpubReadTest {
@@ -106,6 +110,34 @@ class ApiReaderRepositoryEpubReadTest {
             h.goOffline()
 
             assertTrue(h.repository.getEpubChapter(DL_DOC, 1).isFailure)
+        }
+
+    @Test
+    fun copyOpensWithoutAskingTheServer() =
+        runTest {
+            val h = book()
+            h.keepCopy()
+            val asked = h.server.count(CAPABILITIES)
+
+            assertTrue(h.repository.getEpubToc(DL_DOC).isSuccess)
+            assertEquals(asked, h.server.count(CAPABILITIES))
+        }
+
+    @Test
+    fun oldServerRefusesTheBook() =
+        runTest {
+            val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
+
+            assertIs<ChapterListUnavailableException>(h.repository.getEpubToc(DL_DOC).exceptionOrNull())
+            assertEquals(0, h.server.count(EPUB_TOC_PATH))
+        }
+
+    @Test
+    fun unknownCapabilityIsAConnectionFailure() =
+        runTest {
+            val h = book { route(CAPABILITIES) { respond("", HttpStatusCode.ServiceUnavailable) } }
+
+            assertIs<CapabilitiesUnknownException>(h.repository.getEpubToc(DL_DOC).exceptionOrNull())
         }
 
     private suspend fun TestScope.book(configure: FakeServer.() -> Unit = {}) =

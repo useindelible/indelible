@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
  * items and EPUB books (item type `book`) show a coming-soon placeholder until
  * their dedicated readers ship.
  */
-enum class ReaderContentMode { HTML, PDF_COMING_SOON, EPUB_COMING_SOON }
+enum class ReaderContentMode { HTML, PDF_COMING_SOON, EPUB }
 
 enum class ReaderTheme { LIGHT, DARK, SEPIA, AUTO }
 

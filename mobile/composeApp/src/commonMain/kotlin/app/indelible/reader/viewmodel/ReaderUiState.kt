@@ -42,6 +42,7 @@ sealed class ReaderUiState {
         val retryStatus: ReaderRetryStatus = ReaderRetryStatus.IDLE,
         val retryAfterSeconds: Long? = null,
         val toc: TocPanelState = TocPanelState(),
+        val epub: EpubReaderState? = null,
     ) : ReaderUiState()
 
     data class Error(

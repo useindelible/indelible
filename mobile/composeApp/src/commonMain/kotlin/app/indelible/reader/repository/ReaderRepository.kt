@@ -1,12 +1,14 @@
 package app.indelible.reader.repository
 
 import app.indelible.core.model.SaveItemRequest
+import app.indelible.core.network.EPUB_CHAPTER_LIST
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
+import app.indelible.core.network.ServerCapabilities
+import app.indelible.core.offline.CapabilitiesUnknownException
+import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.NoSessionException
-import app.indelible.core.offline.OfflineStore
-import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.Session
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
@@ -109,17 +111,15 @@ private const val KIND_PROGRESS = "progress"
 private const val LOCATOR_HTML = "html"
 private const val LOCATOR_EPUB = "epub"
 
-class ApiReaderRepository(
+class ApiReaderRepository internal constructor(
     private val readerApiService: ReaderApiService,
     private val libraryApiService: LibraryApiService,
-    offlineStore: OfflineStore,
-    worker: OutboxWorker,
+    private val outbox: ReaderOutboxWrites,
     private val sessionProvider: () -> Session?,
     private val offlineCopy: ReaderOfflineCopy,
+    private val capabilities: ServerCapabilities,
 ) : ReaderRepository,
     ReadingEventWriter {
-    private val outbox = ReaderOutboxWrites(offlineStore, worker)
-
     override suspend fun getItem(itemId: String): Result<ReaderDocument> =
         offlineCopy.document(itemId) { readerApiService.getDocumentReader(itemId) }
 
@@ -134,7 +134,16 @@ class ApiReaderRepository(
     override suspend fun getArticleToc(itemId: String): Result<ArticleToc> =
         offlineCopy.articleToc(itemId) { readerApiService.getArticleToc(itemId) }
 
-    override suspend fun getEpubToc(itemId: String) = offlineCopy.epubToc(itemId, readerApiService::getEpubToc)
+    /** Without a readable copy, only a server that lists book chapters is asked for the contents. */
+    override suspend fun getEpubToc(itemId: String) =
+        offlineCopy.epubToc(itemId) { id ->
+            val session = sessionProvider() ?: return@epubToc Result.failure(NoSessionException())
+            when (capabilities.supports(session, EPUB_CHAPTER_LIST)) {
+                true -> readerApiService.getEpubToc(id)
+                false -> Result.failure(ChapterListUnavailableException("the server does not list book chapters"))
+                null -> Result.failure(CapabilitiesUnknownException())
+            }
+        }
 
     override suspend fun getEpubChapter(
         itemId: String,

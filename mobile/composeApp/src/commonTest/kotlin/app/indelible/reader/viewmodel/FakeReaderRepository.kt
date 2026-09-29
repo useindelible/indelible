@@ -29,7 +29,8 @@ class FakeReaderRepository : ReaderRepository {
     var getArticleTocResults: List<Result<ArticleToc>>? = null
     var getArticleTocCallCount = 0
     var epubTocResult: Result<EpubToc> = Result.failure(IllegalStateException("not a book"))
-    var epubChapterResult: (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
+    var epubChapterResult: suspend (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
+    val epubChapterCalls = mutableListOf<Int>()
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
@@ -93,7 +94,10 @@ class FakeReaderRepository : ReaderRepository {
     override suspend fun getEpubChapter(
         itemId: String,
         spineIndex: Int,
-    ): Result<String> = epubChapterResult(spineIndex)
+    ): Result<String> {
+        epubChapterCalls += spineIndex
+        return epubChapterResult(spineIndex)
+    }
 
     override suspend fun getArticleToc(itemId: String): Result<ArticleToc> {
         val results = getArticleTocResults
