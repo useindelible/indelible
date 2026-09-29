@@ -51,6 +51,9 @@ data class EpubReaderState(
 
 internal const val CAPTURE_WAIT_MS = 300L
 
+// A chapter that fits reports 0 percent, having no scroll range; its end is its whole.
+private const val FULL_CHAPTER = 100f
+
 /**
  * One book, one chapter at a time, in the order of the server's chapter list. It restores the saved
  * character, turns complete samples into progress with a position, and loads one chapter at a time:
@@ -149,7 +152,8 @@ class EpubReaderSession internal constructor(
     ) {
         if (!tracking || !_state.value.shows(spine)) return
         val current = _state.value
-        val percent = bookPercent(current.current, sample.percent, current.chapters.size)
+        val chapterPercent = if (sample.atEnd) FULL_CHAPTER else sample.percent
+        val percent = bookPercent(current.current, chapterPercent, current.chapters.size)
         _state.update { it.copy(percent = percent, atChapterEnd = sample.atEnd) }
         if (sample.firstVisibleOffset < 0) return
         val key = current.chapters[current.current].key
