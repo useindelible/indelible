@@ -233,7 +233,8 @@ private fun EpubReaderState.aimedAt(
         copy(restore = CharOffsetRequest(offset, nonce))
     }
 
-private fun EpubReaderState.shows(spine: Int): Boolean {
+/** Whether the chapter stored at [spine] is the one on screen. */
+internal fun EpubReaderState.shows(spine: Int): Boolean {
     val shown = chapters.getOrNull(current)?.spine
     return status == EpubStatus.READY && shown == spine
 }

@@ -24,6 +24,7 @@ import app.indelible.reader.viewmodel.EpubStatus
 import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.ReaderViewModel
 import app.indelible.reader.viewmodel.highlightsFor
+import app.indelible.reader.viewmodel.shows
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.reader_ask_follow_up
@@ -153,6 +154,7 @@ private fun EpubChapterView(
 ) {
     val spine = chapter.spine
     val highlights = epub.highlightsFor(state.highlights)
+    val onScreen = { session.state.value.shows(spine) }
     HtmlReaderView(
         htmlContent = html,
         highlights = highlights,
@@ -165,10 +167,12 @@ private fun EpubChapterView(
             session.onSample(spine, it)
         },
         onTextSelected = { text, start, end, rect ->
-            onSelectedTextChanged(SelectedTextInfo(text = text, startOffset = start, endOffset = end, rect = rect))
+            if (onScreen()) {
+                onSelectedTextChanged(SelectedTextInfo(text = text, startOffset = start, endOffset = end, rect = rect))
+            }
         },
         onSelectionCleared = { onSelectedTextChanged(null) },
-        onHighlightTapped = { id, _ -> onTappedHighlightChanged(highlights.find { it.id == id }) },
+        onHighlightTapped = { id, _ -> if (onScreen()) onTappedHighlightChanged(highlights.find { it.id == id }) },
         onContentLoaded = {},
         onScrollRestored = {},
         onAnchorScrolled = {},
@@ -194,7 +198,7 @@ private fun EpubChapterView(
         captureRequest = epub.capture,
         onPositioned = { session.onPositioned(spine) },
         holdUntilPositioned = true,
-        onBookLink = session::onBookLink,
+        onBookLink = { if (onScreen()) session.onBookLink(it) },
         modifier = modifier,
     )
 }
