@@ -20,12 +20,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import app.indelible.core.i18n.resolve
 import app.indelible.core.i18n.resolveString
 import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
+import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.TagData
 import app.indelible.reader.ui.components.rememberItemOffline
 import app.indelible.reader.viewmodel.ReaderEffect
@@ -83,6 +89,8 @@ fun ReaderScreen(
     // furniture and giving up the screen are separate ideas; tying them together made
     // the page resize under the reader every time the controls came and went.
     ImmersiveSystemBars(hidden = true)
+
+    ReaderExitEffects(viewModel, isBook = (uiState as? ReaderUiState.Success)?.contentMode == ReaderContentMode.EPUB)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -190,4 +198,18 @@ private fun ReaderErrorState(
             color = MaterialTheme.colorScheme.error,
         )
     }
+}
+
+/** A book writes where its reader is before system Back leaves and when the app stops. */
+@Composable
+private fun ReaderExitEffects(
+    viewModel: ReaderViewModel,
+    isBook: Boolean,
+) {
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = isBook,
+        onBackCompleted = { viewModel.navigateBack() },
+    )
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onStop() }
 }

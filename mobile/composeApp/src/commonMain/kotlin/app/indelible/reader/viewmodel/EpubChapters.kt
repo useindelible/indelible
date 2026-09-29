@@ -1,9 +1,11 @@
 package app.indelible.reader.viewmodel
 
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.EpubChapterList
 import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.EpubTocEntry
+import app.indelible.reader.model.HighlightData
 
 /** [key] is the id of the chapter's first contents entry, as web keys it, else `spine:<n>`. */
 data class EpubChapter(
@@ -63,6 +65,36 @@ internal fun resumeTarget(
         chapters.indexOfFirst { it.key == saved?.chapter }.takeIf { it >= 0 }
             ?: chapters.indexOfFirst { spineKey(it.spine) == saved?.chapter || it.spine == spine }
     return if (saved != null && index >= 0) ChapterTarget(index, saved.offset, null) else ChapterTarget(0, 0, null)
+}
+
+/** The book's contents in the shape the Contents panel shows, with the chapter on screen active. */
+internal fun EpubReaderState.contentsPanel(): TocPanelState {
+    val spine = chapters.getOrNull(current)?.spine
+    val status =
+        when {
+            chapters.isNotEmpty() && contents.isNotEmpty() -> TocStatus.READY
+            status == EpubStatus.LOADING -> TocStatus.LOADING
+            else -> TocStatus.NONE
+        }
+    return TocPanelState(
+        status = status,
+        entries =
+            contents.map {
+                ArticleTocEntry(it.depth, it.id, sourceHeadingIndex = -1, title = it.title, wordCount = it.wordCount)
+            },
+        activeIndex = contents.indexOfFirst { it.spineIndex == spine },
+    )
+}
+
+/** The key of the chapter on screen; null while none is. */
+fun EpubReaderState.chapterKey(): String? {
+    if (status != EpubStatus.READY) return null
+    return chapters.getOrNull(current)?.key
+}
+
+fun EpubReaderState.highlightsFor(all: List<HighlightData>): List<HighlightData> {
+    val key = chapterKey() ?: return emptyList()
+    return all.filter { it.locator?.chapter == key }
 }
 
 private const val PERCENT_MAX = 100f

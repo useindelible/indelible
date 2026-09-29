@@ -144,7 +144,9 @@ class ReaderViewModel(
         epubSession = session
         viewModelScope.launch {
             session.state.collect { epub ->
-                updateSuccessState { it.copy(epub = epub, progress = epub.percent ?: it.progress) }
+                updateSuccessState {
+                    it.copy(epub = epub, progress = epub.percent ?: it.progress, toc = epub.contentsPanel())
+                }
             }
         }
         session.open()
@@ -152,8 +154,24 @@ class ReaderViewModel(
 
     fun onTocEntryTapped(entry: ArticleTocEntry) {
         closePanel()
+        epubSession?.let { book ->
+            book.onTocEntry(entry.id)
+            return
+        }
         viewModelScope.launch {
             _effects.emit(ReaderEffect.ScrollToAnchor(entry.id, entry.sourceHeadingIndex))
+        }
+    }
+
+    fun reprocessBook() {
+        val book = epubSession ?: return
+        viewModelScope.launch {
+            repository
+                .reprocessDocument(documentId)
+                .onSuccess { book.onReprocessQueued() }
+                .onFailure {
+                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_retry_content)))
+                }
         }
     }
 
@@ -315,6 +333,12 @@ class ReaderViewModel(
 
     fun onScrollRestored() {
         progressTrackingEnabled = true
+    }
+
+    /** The app leaves the screen: a book writes where its reader is. */
+    fun onStop() {
+        val book = epubSession ?: return
+        viewModelScope.launch { book.captureAndFlush() }
     }
 
     /** Leaves once the newest position is written; a book first asks its chapter where the reader is. */
