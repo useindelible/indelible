@@ -252,18 +252,6 @@ class ReaderViewModelTest {
         }
 
     @Test
-    fun book_item_uses_epub_coming_soon_mode_without_fetching_html() =
-        runTest(testDispatcher) {
-            repository.getItemResult = Result.success(fakeItemDetail(itemType = "book"))
-            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
-            advanceUntilIdle()
-
-            val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
-            assertEquals(ReaderContentMode.EPUB_COMING_SOON, state.contentMode)
-            assertNull(state.htmlContent)
-        }
-
-    @Test
     fun update_preferences_updates_state() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())

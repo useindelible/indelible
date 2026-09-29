@@ -75,7 +75,7 @@ internal fun ReaderContentArea(
                 modifier = Modifier.fillMaxSize(),
             )
 
-        ReaderContentMode.EPUB_COMING_SOON ->
+        ReaderContentMode.EPUB ->
             ReaderComingSoonContent(
                 format = ReaderComingSoonFormat.EPUB,
                 modifier = Modifier.fillMaxSize(),

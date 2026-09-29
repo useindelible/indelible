@@ -79,6 +79,7 @@ import app.indelible.profile.viewmodel.AiSettingsViewModel
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import app.indelible.reader.repository.ApiReaderRepository
 import app.indelible.reader.repository.ReaderOfflineCopy
+import app.indelible.reader.repository.ReaderOutboxWrites
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.search.repository.ApiSearchRepository
@@ -202,10 +203,10 @@ fun rememberAppContainer(
                             ApiReaderRepository(
                                 readerApiService = get(),
                                 libraryApiService = get(),
-                                offlineStore = get(),
-                                worker = get(),
+                                outbox = ReaderOutboxWrites(get(), get()),
                                 sessionProvider = { registry.current.value.session },
                                 offlineCopy = get(),
+                                capabilities = get(),
                             )
                         }
                         single<ReaderRepository> { get<ApiReaderRepository>() }
