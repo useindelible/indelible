@@ -2,6 +2,8 @@ package app.indelible.reader.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
@@ -245,30 +247,29 @@ private class ReaderJsInterface(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    // WebView calls these on its own bridge thread; the reader's state is only touched on the main thread.
+    private val main = Handler(Looper.getMainLooper())
+
+    private fun onMain(block: () -> Unit) {
+        main.post(block)
+    }
+
     @JavascriptInterface
     fun onScroll(
         percent: Double,
         scrollTop: Double,
         offset: Double,
         atEnd: Boolean,
-    ) {
-        callbacks.onScroll(ScrollSample(percent.toFloat(), scrollTop.toFloat(), offset.toInt(), atEnd))
-    }
+    ) = onMain { callbacks.onScroll(ScrollSample(percent.toFloat(), scrollTop.toFloat(), offset.toInt(), atEnd)) }
 
     @JavascriptInterface
-    fun onPositioned() {
-        callbacks.onPositioned()
-    }
+    fun onPositioned() = onMain { callbacks.onPositioned() }
 
     @JavascriptInterface
-    fun onBookLink(href: String) {
-        callbacks.onBookLink(href)
-    }
+    fun onBookLink(href: String) = onMain { callbacks.onBookLink(href) }
 
     @JavascriptInterface
-    fun onSummaryAction(action: String) {
-        callbacks.onSummaryAction(action)
-    }
+    fun onSummaryAction(action: String) = onMain { callbacks.onSummaryAction(action) }
 
     @JavascriptInterface
     fun onTextSelected(
@@ -278,18 +279,14 @@ private class ReaderJsInterface(
         rectJson: String,
     ) {
         val rect = parseRect(rectJson)
-        callbacks.onTextSelected(text, startOffset, endOffset, rect)
+        onMain { callbacks.onTextSelected(text, startOffset, endOffset, rect) }
     }
 
     @JavascriptInterface
-    fun onSelectionCleared() {
-        callbacks.onSelectionCleared()
-    }
+    fun onSelectionCleared() = onMain { callbacks.onSelectionCleared() }
 
     @JavascriptInterface
-    fun onReaderTap() {
-        callbacks.onReaderTap()
-    }
+    fun onReaderTap() = onMain { callbacks.onReaderTap() }
 
     @JavascriptInterface
     fun onHighlightTapped(
@@ -297,7 +294,7 @@ private class ReaderJsInterface(
         rectJson: String,
     ) {
         val rect = parseRect(rectJson)
-        callbacks.onHighlightTapped(highlightId, rect)
+        onMain { callbacks.onHighlightTapped(highlightId, rect) }
     }
 
     private fun parseRect(rectJson: String): SelectionRect =
