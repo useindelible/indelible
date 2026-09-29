@@ -3,7 +3,6 @@ package app.indelible.reader.viewmodel
 import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.ChapterPosition
 import app.indelible.reader.model.EpubTocEntry
-import app.indelible.reader.model.HighlightData
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.ui.AnchorScrollRequest
 import app.indelible.reader.ui.CharOffsetRequest
@@ -167,15 +166,11 @@ class EpubReaderSession internal constructor(
         }
     }
 
-    /** The key of the chapter on screen; null while none is. */
-    fun currentChapterKey(): String? {
-        val state = _state.value.takeIf { it.status == EpubStatus.READY }
-        return state?.chapters?.getOrNull(state.current)?.key
-    }
+    fun currentChapterKey(): String? = _state.value.chapterKey()
 
-    fun highlightsFor(all: List<HighlightData>): List<HighlightData> {
-        val key = currentChapterKey() ?: return emptyList()
-        return all.filter { it.locator?.chapter == key }
+    /** The server rebuilds the chapter list only when its reprocess job has run, so the book waits for it. */
+    fun onReprocessQueued() {
+        _state.update { it.copy(status = EpubStatus.LIST_PENDING) }
     }
 
     /** Asks the chapter for a sample, waits at most [CAPTURE_WAIT_MS] for it, then writes the newest one. */

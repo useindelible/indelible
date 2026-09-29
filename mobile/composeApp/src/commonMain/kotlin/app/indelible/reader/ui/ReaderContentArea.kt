@@ -75,11 +75,25 @@ internal fun ReaderContentArea(
                 modifier = Modifier.fillMaxSize(),
             )
 
-        ReaderContentMode.EPUB ->
-            ReaderComingSoonContent(
-                format = ReaderComingSoonFormat.EPUB,
-                modifier = Modifier.fillMaxSize(),
-            )
+        ReaderContentMode.EPUB -> {
+            val epub = state.epub
+            val session = viewModel.epubSession
+            if (epub != null && session != null) {
+                ReaderEpubBody(
+                    state = state,
+                    epub = epub,
+                    session = session,
+                    isDarkMode = isDarkMode,
+                    topChromeInsetPx = topChromeInsetPx,
+                    onSelectedTextChanged = onSelectedTextChanged,
+                    onTappedHighlightChanged = onTappedHighlightChanged,
+                    onReaderTap = onReaderTap,
+                    handleScrollProgress = handleScrollProgress,
+                    immersive = immersive,
+                    viewModel = viewModel,
+                )
+            }
+        }
     }
 }
 

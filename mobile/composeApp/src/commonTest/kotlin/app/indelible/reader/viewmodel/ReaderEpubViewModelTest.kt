@@ -1,6 +1,7 @@
 package app.indelible.reader.viewmodel
 
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.reader.model.EpubChapterList
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeItemDetail
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
@@ -92,6 +94,63 @@ class ReaderEpubViewModelTest {
             advanceUntilIdle()
 
             assertEquals(0, repository.createHighlightCallCount)
+        }
+
+    @Test
+    fun contents_list_the_book_and_open_its_entries() =
+        runTest(testDispatcher) {
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+            val toc = assertIs<ReaderUiState.Success>(viewModel.uiState.value).toc
+            assertEquals(listOf("e0", "e5", "e5b"), toc.entries.map { it.id })
+            assertEquals(1, toc.activeIndex)
+
+            viewModel.onTocEntryTapped(toc.entries.first())
+            advanceUntilIdle()
+
+            assertEquals(0, assertIs<ReaderUiState.Success>(viewModel.uiState.value).epub?.current)
+        }
+
+    @Test
+    fun reprocessing_a_book_shows_it_is_being_prepared() =
+        runTest(testDispatcher) {
+            repository.epubTocResult = Result.success(bookToc(chapterList = EpubChapterList.NEEDS_REPROCESS))
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+            assertEquals(TocStatus.NONE, assertIs<ReaderUiState.Success>(viewModel.uiState.value).toc.status)
+
+            viewModel.reprocessBook()
+            advanceUntilIdle()
+
+            assertEquals(EpubStatus.LIST_PENDING, assertIs<ReaderUiState.Success>(viewModel.uiState.value).epub?.status)
+        }
+
+    @Test
+    fun stopping_a_book_writes_its_position() =
+        runTest(testDispatcher) {
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+            val session = requireNotNull(viewModel.epubSession)
+            session.onPositioned(5)
+            session.onSample(5, sample(percent = 10f, offset = 1))
+
+            viewModel.onStop()
+            session.onSample(5, sample(percent = 20f, offset = 3))
+            runCurrent()
+
+            assertEquals(listOf<ChapterPosition?>(ChapterPosition("e5", 1), ChapterPosition("e5", 3)), events.positions)
+        }
+
+    @Test
+    fun book_ignores_article_scroll_progress() =
+        runTest(testDispatcher) {
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+
+            viewModel.onScrollProgress(60f)
+            advanceUntilIdle()
+
+            assertTrue(events.progressPercents.isEmpty())
         }
 
     @Test
