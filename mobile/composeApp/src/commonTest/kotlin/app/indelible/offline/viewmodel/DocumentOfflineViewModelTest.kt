@@ -1,12 +1,20 @@
 package app.indelible.offline.viewmodel
 
+import app.indelible.core.offline.Acquisition
+import app.indelible.core.offline.CAPABILITIES
+import app.indelible.core.offline.CHAPTER_LIST_SUPPORTED
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.DL_SCOPE
+import app.indelible.core.offline.DownloadFailure
 import app.indelible.core.offline.DownloadHarness
+import app.indelible.core.offline.FakeServer
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.downloadHarness
 import app.indelible.core.offline.enqueue
+import app.indelible.core.offline.json
 import app.indelible.core.offline.seed
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -156,5 +164,40 @@ class DocumentOfflineViewModelTest {
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
             assertNull(offline.status.value.bytes)
+        }
+
+    @Test
+    fun keepOfflineForABookOnAnOldServerExplainsTheUpdate() =
+        runTest {
+            val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
+            val offline = offline(h)
+
+            offline.setKeepOffline(true)
+            advanceUntilIdle()
+
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD), offline.status.value.acquisition)
+        }
+
+    @Test
+    fun keepOfflineWithoutConnectionOffersRetry() =
+        runTest {
+            val h = book { route(CAPABILITIES) { respond("", HttpStatusCode.ServiceUnavailable) } }
+            val offline = offline(h)
+            offline.setKeepOffline(true)
+            advanceUntilIdle()
+            assertEquals(Acquisition.Failed(DownloadFailure.NETWORK), offline.status.value.acquisition)
+
+            h.server.route(CAPABILITIES) { json(CHAPTER_LIST_SUPPORTED) }
+            offline.setKeepOffline(true)
+            advanceUntilIdle()
+
+            assertEquals(Availability.KEPT, offline.status.value.availability)
+        }
+
+    private suspend fun TestScope.book(configure: FakeServer.() -> Unit) =
+        downloadHarness {
+            documentType = "book"
+            available = listOf("epub")
+            configure()
         }
 }

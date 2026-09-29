@@ -452,6 +452,7 @@
     <string name="offline_remove_downloads_none_queued">Toutes les copies téléchargées sont supprimées de cet appareil.</string>
     <string name="offline_remove_downloads_title">Supprimer %1$s de téléchargements de ce téléphone ?</string>
     <string name="offline_section">Hors ligne</string>
+    <string name="offline_server_too_old">Mettez à jour votre serveur pour garder les livres sur cet appareil</string>
     <string name="offline_size_gb">%1$s Go</string>
     <string name="offline_size_kb">%1$s Ko</string>
     <string name="offline_size_mb">%1$s Mo</string>

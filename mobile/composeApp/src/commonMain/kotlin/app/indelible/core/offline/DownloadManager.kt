@@ -283,6 +283,7 @@ private fun failureState(
         (isConnectionFailure(error) || error is ChapterListUnavailableException) && !pin -> null
         isConnectionFailure(error) && online -> Acquisition.Failed(DownloadFailure.NETWORK)
         isConnectionFailure(error) -> Acquisition.WaitingForConnection
+        error is ServerTooOldException -> Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD)
         else -> Acquisition.Failed(DownloadFailure.SERVER)
     }
 

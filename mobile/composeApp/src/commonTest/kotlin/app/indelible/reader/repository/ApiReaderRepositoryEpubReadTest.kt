@@ -2,10 +2,10 @@ package app.indelible.reader.repository
 
 import app.indelible.core.offline.CAPABILITIES
 import app.indelible.core.offline.CapabilitiesUnknownException
-import app.indelible.core.offline.ChapterListUnavailableException
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.EPUB_TOC_PATH
 import app.indelible.core.offline.FakeServer
+import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.chapterPath
 import app.indelible.core.offline.epubToc
 import app.indelible.core.offline.json
@@ -128,7 +128,7 @@ class ApiReaderRepositoryEpubReadTest {
         runTest {
             val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
 
-            assertIs<ChapterListUnavailableException>(h.repository.getEpubToc(DL_DOC).exceptionOrNull())
+            assertIs<ServerTooOldException>(h.repository.getEpubToc(DL_DOC).exceptionOrNull())
             assertEquals(0, h.server.count(EPUB_TOC_PATH))
         }
 

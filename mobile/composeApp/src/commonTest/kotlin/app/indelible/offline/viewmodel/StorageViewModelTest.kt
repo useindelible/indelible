@@ -1,5 +1,6 @@
 package app.indelible.offline.viewmodel
 
+import app.indelible.core.offline.CAPABILITIES
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.DownloadHarness
@@ -8,6 +9,7 @@ import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.downloadHarness
 import app.indelible.core.offline.enqueue
 import app.indelible.core.offline.enqueueProgress
+import app.indelible.core.offline.json
 import app.indelible.core.offline.row
 import app.indelible.core.offline.seed
 import app.indelible.core.storage.DEFAULT_OFFLINE_CAP_BYTES
@@ -289,5 +291,32 @@ class StorageViewModelTest {
             assertFalse(checkNotNull(s.h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
             assertEquals(1, s.state.cached.size)
             assertTrue(s.state.kept.isEmpty())
+        }
+
+    @Test
+    fun storageShowsBooksCopiedBeforeAsReadable() =
+        runTest {
+            val preferences = InMemoryUserPreferencesStorage().apply { saveOfflineCapBytes(DEFAULT_OFFLINE_CAP_BYTES) }
+            val h =
+                downloadHarness {
+                    documentType = "book"
+                    available = listOf("epub")
+                }
+            val s = Storage(h, preferences)
+            backgroundScope.launch { s.viewModel.state.collect {} }
+            h.manager.keepOffline(h.session, DL_DOC)
+            advanceUntilIdle()
+
+            val generation = h.store.cachedDocument(DL_SCOPE, DL_DOC)?.generation
+            h.server.route(CAPABILITIES) { json("""{"capabilities":[]}""") }
+            val asked = h.server.count(CAPABILITIES)
+            h.manager.keepOffline(h.session, DL_DOC)
+            advanceUntilIdle()
+
+            assertEquals(asked, h.server.count(CAPABILITIES))
+            assertEquals(generation, h.store.cachedDocument(DL_SCOPE, DL_DOC)?.generation)
+            val kept = s.state.kept
+            assertEquals(listOf(DL_DOC), kept.map { it.documentId })
+            assertEquals(listOf("book"), kept.map { it.documentType })
         }
 }

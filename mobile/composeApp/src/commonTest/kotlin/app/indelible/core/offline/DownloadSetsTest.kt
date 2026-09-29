@@ -233,7 +233,7 @@ class DownloadSetsTest {
             h.manager.keepOffline(h.session, DL_DOC)
             runCurrent()
 
-            assertEquals(Acquisition.Failed(DownloadFailure.SERVER), h.acquisition())
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD), h.acquisition())
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertTrue(h.server.calls.none { "/epub/" in it.path })
         }
