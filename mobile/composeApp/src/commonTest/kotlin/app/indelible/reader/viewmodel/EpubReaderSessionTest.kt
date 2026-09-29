@@ -140,6 +140,18 @@ class EpubReaderSessionTest {
         }
 
     @Test
+    fun lastChapterThatFitsFinishesTheBook() =
+        runTest {
+            val h = epubHarness(resumeAt = ChapterPosition("e5", 0))
+            openedAndPositioned(h)
+
+            h.onSample(sample(percent = 0f, offset = 0, atEnd = true))
+            advanceUntilIdle()
+
+            assertEquals(100f, h.written.last().first)
+        }
+
+    @Test
     fun chapterThatFitsIsAtItsEnd() =
         runTest {
             val h = epubHarness()
