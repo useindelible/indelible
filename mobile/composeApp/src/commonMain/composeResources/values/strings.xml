@@ -407,7 +407,10 @@
     <string name="offline_change_highlight_note">Highlight note</string>
     <string name="offline_change_highlight_tags">Highlight tags</string>
     <string name="offline_change_note">Document note</string>
-    <string name="offline_change_progress">Reading progress</string>
+    <plurals name="offline_change_progress_updates">
+        <item quantity="one">Reading progress</item>
+        <item quantity="other">Reading progress · %1$d updates</item>
+    </plurals>
     <string name="offline_download_failed">Download failed</string>
     <string name="offline_downloads">Downloads</string>
     <string name="offline_filter_all">All</string>

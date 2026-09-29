@@ -136,6 +136,31 @@ class StorageViewModelTest {
         }
 
     @Test
+    fun readingEventsOfADocumentShowAsOneRetryableChange() =
+        runTest {
+            val s = storage()
+            val first = s.h.signedIn.enqueueProgress(1_000)
+            s.h.signedIn.enqueue(OutboxPayload.DocumentNote("mine", null))
+            val failed = s.h.signedIn.enqueueProgress(2_000)
+            s.h.signedIn.enqueueProgress(3_000)
+            s.h.store.markFailed(DL_SCOPE, failed, "rejected")
+            advanceUntilIdle()
+            assertEquals(2, s.state.queuedChanges)
+            assertEquals(3, s.change(first).rowIds.size)
+            assertEquals(ChangeStatus.FAILED, s.change(first).status)
+
+            s.viewModel.retry(first)
+            advanceUntilIdle()
+
+            assertEquals(
+                OutboxState.PENDING,
+                s.h.signedIn
+                    .row(failed)
+                    .state,
+            )
+        }
+
+    @Test
     fun removeCopyDeletesOnlyThatDocument() =
         runTest {
             val s = storage()
@@ -170,7 +195,7 @@ class StorageViewModelTest {
             val s = storage()
             s.h.seed(DL_DOC, bytes = 10)
             val waiting = s.h.signedIn.enqueueProgress(5_000)
-            val retrying = s.h.signedIn.enqueueProgress(6_000)
+            val retrying = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("draft", null))
             s.h.store.markAttempt(DL_SCOPE, retrying, now = 1, nextAttemptAt = 2, error = "timeout")
             val failed = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("mine", null))
             s.h.store.markFailed(DL_SCOPE, failed, "Note too long")
