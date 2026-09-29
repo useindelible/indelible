@@ -6,6 +6,7 @@
 	import { sanitizeReaderHtml } from '$lib/utils/sanitize-html';
 	import { applyHighlights, type HighlightRange } from '../highlight-utils';
 	import { hasScrollableOverflow, scrollProgressPercent } from '../progress-geometry';
+	import { textPositionAt } from './restore-position';
 
 	interface Props {
 		source: BookSource;
@@ -104,25 +105,16 @@
 
 			if (initialCharOffset > 0) {
 				const bodyEl = chapterBodyEls.get(initialChapterIndex);
-				if (bodyEl) {
-					const walker = document.createTreeWalker(bodyEl, NodeFilter.SHOW_TEXT);
-					let charCount = 0;
-					let node = walker.nextNode();
-					while (node) {
-						const len = node.textContent?.length ?? 0;
-						if (charCount + len >= initialCharOffset) {
-							const range = document.createRange();
-							range.setStart(node, Math.min(initialCharOffset - charCount, len));
-							range.collapse(true);
-							const rect = range.getBoundingClientRect();
-							const scrollRect = containerEl!.getBoundingClientRect();
-							containerEl!.scrollTop += rect.top - scrollRect.top - 100;
-							hasScrolledToInitial = true;
-							return;
-						}
-						charCount += len;
-						node = walker.nextNode();
-					}
+				const position = bodyEl ? textPositionAt(bodyEl, initialCharOffset) : null;
+				if (position) {
+					const range = document.createRange();
+					range.setStart(position.node, position.offset);
+					range.collapse(true);
+					const rect = range.getBoundingClientRect();
+					const scrollRect = containerEl.getBoundingClientRect();
+					containerEl.scrollTop += rect.top - scrollRect.top - 100;
+					hasScrolledToInitial = true;
+					return;
 				}
 			}
 
