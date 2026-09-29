@@ -407,7 +407,10 @@
     <string name="offline_change_highlight_note">Note du surlignage</string>
     <string name="offline_change_highlight_tags">Étiquettes du surlignage</string>
     <string name="offline_change_note">Note du document</string>
-    <string name="offline_change_progress">Progression de lecture</string>
+    <plurals name="offline_change_progress_updates">
+        <item quantity="one">Progression de lecture</item>
+        <item quantity="other">Progression de lecture · %1$d mises à jour</item>
+    </plurals>
     <string name="offline_download_failed">Échec du téléchargement</string>
     <string name="offline_downloads">Téléchargements</string>
     <string name="offline_filter_all">Tout</string>

@@ -56,9 +56,15 @@ class StorageViewModel(
         }
     }
 
+    /** Retries every failed row of the change, so a document's grouped reading events retry together. */
     fun retry(changeId: String) {
         val scope = currentScope() ?: return
-        viewModelScope.launch { if (store.retryRow(scope, changeId)) requestDrain() }
+        val change = state.value.changes.firstOrNull { it.id == changeId }
+        val rowIds = change?.rowIds ?: listOf(changeId)
+        viewModelScope.launch {
+            val retried = rowIds.map { store.retryRow(scope, it) }
+            if (retried.any { it }) requestDrain()
+        }
     }
 
     /** Leaves the copy in place; only the mark that protects it from eviction goes. */
@@ -107,7 +113,11 @@ class StorageViewModel(
     }
 }
 
-/** The queue in send order, with each failed highlight create carrying the changes it blocks. */
+/**
+ * The queue in send order, with each failed highlight create carrying the changes it blocks. A document's
+ * reading events are one change at the place of the first, newest time and worst status, since a long
+ * offline read queues thousands of them.
+ */
 internal fun pendingChanges(
     rows: List<OutboxRow>,
     catalog: List<CatalogEntry>,
@@ -129,14 +139,33 @@ internal fun pendingChanges(
         detail = row.payload.detail(),
         blocked = dependants,
     )
+    val progress = rows.filter { it.isLiveProgress() }.groupBy { it.documentId }
     return rows.mapNotNull { row ->
         when {
             row.state == OutboxState.BLOCKED && row.entityId in failedCreates -> null
             row.isFailedCreate() -> change(row, blocked[row.entityId].orEmpty().map { change(it) })
+            row.isLiveProgress() ->
+                progress.getValue(row.documentId).takeIf { it.first() === row }?.progressChange(titles)
             else -> change(row)
         }
     }
 }
+
+private fun OutboxRow.isLiveProgress(): Boolean = kind == OutboxKind.READING_EVENT && !superseded
+
+private fun List<OutboxRow>.progressChange(titles: Map<String, String?>): PendingChange =
+    PendingChange(
+        id = first().id,
+        kind = OutboxKind.READING_EVENT,
+        documentTitle = titles[first().documentId],
+        status = map { it.status() }.minBy { STATUS_WEIGHT.indexOf(it) },
+        error = lastOrNull { it.lastError != null }?.lastError,
+        createdAt = maxOf { it.createdAt },
+        rowIds = map { it.id },
+    )
+
+private val STATUS_WEIGHT =
+    listOf(ChangeStatus.FAILED, ChangeStatus.BLOCKED, ChangeStatus.RETRYING, ChangeStatus.PENDING)
 
 private fun OutboxRow.isFailedCreate(): Boolean = kind == OutboxKind.HIGHLIGHT_CREATE && state == OutboxState.FAILED
 
