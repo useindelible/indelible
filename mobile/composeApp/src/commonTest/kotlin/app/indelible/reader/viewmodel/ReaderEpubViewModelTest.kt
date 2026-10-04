@@ -57,6 +57,37 @@ class ReaderEpubViewModelTest {
         }
 
     @Test
+    fun a_finished_book_opens_at_its_first_chapter() =
+        runTest(testDispatcher) {
+            repository.getItemResult =
+                Result.success(
+                    fakeItemDetail(itemType = "book", progressPercent = 100f)
+                        .copy(chapterLocator = "e5", chapterOffset = 7),
+                )
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+
+            val epub = assertIs<ReaderUiState.Success>(viewModel.uiState.value).epub
+            assertEquals(0, epub?.current)
+            assertEquals(0, epub?.restore?.offset ?: 0)
+        }
+
+    @Test
+    fun a_book_that_could_not_be_opened_can_be_tried_again() =
+        runTest(testDispatcher) {
+            repository.getItemResults =
+                listOf(Result.failure(IllegalStateException("no answer")), repository.getItemResult)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+            assertIs<ReaderUiState.Error>(viewModel.uiState.value)
+
+            viewModel.retryOpen()
+            advanceUntilIdle()
+
+            assertEquals(EpubStatus.READY, assertIs<ReaderUiState.Success>(viewModel.uiState.value).epub?.status)
+        }
+
+    @Test
     fun epub_open_emits_no_scroll_to_percent() =
         runTest(testDispatcher) {
             val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)

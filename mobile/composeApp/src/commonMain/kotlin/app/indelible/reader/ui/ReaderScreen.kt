@@ -5,11 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,6 +31,7 @@ import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.TagData
+import app.indelible.reader.ui.components.ReaderOpenFailed
 import app.indelible.reader.ui.components.rememberItemOffline
 import app.indelible.reader.viewmodel.ReaderEffect
 import app.indelible.reader.viewmodel.ReaderUiState
@@ -124,7 +123,10 @@ fun ReaderScreen(
     ) { paddingValues ->
         when (val state = uiState) {
             is ReaderUiState.Loading -> ReaderLoadingState(Modifier.padding(paddingValues))
-            is ReaderUiState.Error -> ReaderErrorState(state.message.resolve(), Modifier.padding(paddingValues))
+            is ReaderUiState.Error -> {
+                val failedModifier = Modifier.padding(paddingValues)
+                ReaderOpenFailed(state.message.resolve(), viewModel::retryOpen, onNavigateBack, failedModifier)
+            }
             is ReaderUiState.Success -> {
                 ReaderSuccessContent(
                     state = state,
@@ -180,23 +182,6 @@ private fun ReaderLoadingState(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ReaderErrorState(
-    message: String,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
-        )
     }
 }
 

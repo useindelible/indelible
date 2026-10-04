@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 class ReaderViewModel(
     private val documentId: String,
     private val repository: ReaderRepository,
-    initialPreferences: ReaderPreferences = ReaderPreferences(),
+    private val initialPreferences: ReaderPreferences = ReaderPreferences(),
     private val readingEvents: ReadingEventWriter,
 ) : ViewModel() {
     /** One sitting: every event this reader records is grouped under it. */
@@ -87,6 +87,12 @@ class ReaderViewModel(
         load(initialPreferences)
     }
 
+    fun retryOpen() {
+        if (_uiState.value !is ReaderUiState.Error) return
+        _uiState.value = ReaderUiState.Loading
+        load(initialPreferences)
+    }
+
     private fun load(preferences: ReaderPreferences) {
         viewModelScope.launch {
             repository
@@ -98,16 +104,8 @@ class ReaderViewModel(
                             "book" -> ReaderContentMode.EPUB
                             else -> ReaderContentMode.HTML
                         }
-                    val currentProgress = item.progressPercent?.toFloat() ?: 0f
-                    val savedProgress =
-                        if (item.finishedAt != null ||
-                            currentProgress >= PERCENT_MAX ||
-                            (item.maxProgressPercent?.toFloat() ?: 0f) >= PERCENT_MAX
-                        ) {
-                            0f
-                        } else {
-                            currentProgress
-                        }
+                    val finished = item.isFinished()
+                    val savedProgress = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
 
                     _uiState.value =
                         ReaderUiState.Success(
@@ -126,7 +124,7 @@ class ReaderViewModel(
                             htmlLoader.loadHtmlContent()
                             htmlLoader.loadArticleToc()
                         }
-                        ReaderContentMode.EPUB -> openBook(item)
+                        ReaderContentMode.EPUB -> openBook(item, finished)
                         ReaderContentMode.PDF_COMING_SOON -> Unit
                     }
                     loadHighlights()
@@ -138,8 +136,12 @@ class ReaderViewModel(
         }
     }
 
-    private fun openBook(item: ReaderDocument) {
-        val resumeAt = item.chapterLocator?.let { ChapterPosition(it, item.chapterOffset ?: 0) }
+    private fun openBook(
+        item: ReaderDocument,
+        finished: Boolean,
+    ) {
+        val locator = item.chapterLocator?.takeUnless { finished }
+        val resumeAt = locator?.let { ChapterPosition(it, item.chapterOffset ?: 0) }
         val session = EpubReaderSession(documentId, repository, viewModelScope, progressSync, resumeAt)
         epubSession = session
         viewModelScope.launch {
@@ -448,8 +450,12 @@ class ReaderViewModel(
         playbackController.release()
         super.onCleared()
     }
-
-    companion object {
-        private const val PERCENT_MAX = 100f
-    }
 }
+
+private const val PERCENT_MAX = 100f
+
+/** A finished item opens at its start, so a reread does not begin on the last page. */
+private fun ReaderDocument.isFinished(): Boolean =
+    finishedAt != null ||
+        (progressPercent?.toFloat() ?: 0f) >= PERCENT_MAX ||
+        (maxProgressPercent?.toFloat() ?: 0f) >= PERCENT_MAX
