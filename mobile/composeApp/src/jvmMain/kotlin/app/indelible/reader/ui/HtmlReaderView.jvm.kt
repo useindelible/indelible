@@ -39,7 +39,7 @@ actual fun HtmlReaderView(
     speakingSentenceIndex: Int,
     immersive: Boolean,
     topContentPaddingPx: Int,
-    artwork: LoadedReaderArtwork?,
+    assets: ReaderAssets,
     scrollToCharOffset: CharOffsetRequest?,
     captureRequest: Long?,
     onPositioned: () -> Unit,

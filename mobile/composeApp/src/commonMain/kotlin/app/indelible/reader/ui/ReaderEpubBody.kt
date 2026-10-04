@@ -100,12 +100,14 @@ private fun ColumnScope.EpubBodyContent(
     immersive: Boolean,
     viewModel: ReaderViewModel,
 ) {
+    val fontFaceCss = rememberReaderFontCss()
     when {
-        chapter != null && html != null && epub.status == EpubStatus.READY ->
+        chapter != null && html != null && fontFaceCss != null && epub.status == EpubStatus.READY ->
             key(chapter.spine) {
                 EpubChapterView(
                     chapter = chapter,
                     html = html,
+                    fontFaceCss = fontFaceCss,
                     state = state,
                     epub = epub,
                     session = session,
@@ -140,6 +142,7 @@ private fun ColumnScope.EpubBodyContent(
 private fun EpubChapterView(
     chapter: EpubChapter,
     html: String,
+    fontFaceCss: String,
     state: ReaderUiState.Success,
     epub: EpubReaderState,
     session: EpubReaderSession,
@@ -193,7 +196,7 @@ private fun EpubChapterView(
         speakingSentenceIndex = -1,
         immersive = immersive,
         topContentPaddingPx = topChromeInsetPx,
-        artwork = null,
+        assets = ReaderAssets(artwork = null, fontFaceCss = fontFaceCss),
         scrollToCharOffset = epub.restore,
         captureRequest = epub.capture,
         onPositioned = { session.onPositioned(spine) },

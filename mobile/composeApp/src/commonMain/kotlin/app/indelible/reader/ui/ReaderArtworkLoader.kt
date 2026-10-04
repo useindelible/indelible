@@ -11,10 +11,21 @@ data class LoadedReaderArtwork(
     val svg: String,
 )
 
+/** What a reader page embeds besides its text: the drawing behind the masthead and the font faces. */
+data class ReaderAssets(
+    val artwork: LoadedReaderArtwork?,
+    val fontFaceCss: String,
+) {
+    companion object {
+        val NONE = ReaderAssets(artwork = null, fontFaceCss = "")
+    }
+}
+
 // Read once per drawing per process. There are only three, ~135KB total, and the
 // alternative is re-reading on every paper switch and typography change, each of
 // which rebuilds the document.
 private val artworkCache = mutableMapOf<ReaderArtwork, String>()
+private var fontCssCache: String? = null
 
 /**
  * Loads the drawing for [documentId]. Returns null until the read completes; the
@@ -34,3 +45,10 @@ internal fun rememberReaderArtwork(documentId: String): LoadedReaderArtwork? {
         value = LoadedReaderArtwork(artwork, svg)
     }.value
 }
+
+/** The bundled font faces, read once per process; null until read, under the same hold-back rule. */
+@Composable
+internal fun rememberReaderFontCss(): String? =
+    produceState(initialValue = fontCssCache) {
+        value = fontCssCache ?: loadReaderFontCss().also { fontCssCache = it }
+    }.value

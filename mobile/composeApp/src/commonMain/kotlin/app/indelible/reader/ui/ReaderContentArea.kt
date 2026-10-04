@@ -131,11 +131,12 @@ private fun ReaderHtmlBody(
             )
         }
         // A video carries a native poster instead of a drawing. For everything else the
-        // web view waits for the artwork: rendering without it and swapping later would
-        // rebuild the document and drop the reader's scroll position.
+        // web view waits for the artwork, and every page waits for the font faces: rendering
+        // without them and swapping later would rebuild the document and drop the scroll position.
         val artwork = if (isVideo) null else rememberReaderArtwork(state.item.documentId)
+        val assets = rememberReaderFontCss()?.takeIf { isVideo || artwork != null }?.let { ReaderAssets(artwork, it) }
         val html = state.htmlContent
-        if (html != null && (isVideo || artwork != null)) {
+        if (html != null && assets != null) {
             ReaderArticleWebView(
                 html = html,
                 state = state,
@@ -145,7 +146,7 @@ private fun ReaderHtmlBody(
                 anchorScroll = anchorScroll,
                 topContentPaddingPx = if (isVideo) 0 else topChromeInsetPx,
                 isVideo = isVideo,
-                artwork = artwork,
+                assets = assets,
                 handleScrollProgress = handleScrollProgress,
                 onSelectedTextChanged = onSelectedTextChanged,
                 onScrollToPercentConsumed = onScrollToPercentConsumed,
@@ -197,7 +198,7 @@ private fun ReaderArticleWebView(
     anchorScroll: AnchorScrollRequest?,
     topContentPaddingPx: Int,
     isVideo: Boolean,
-    artwork: LoadedReaderArtwork?,
+    assets: ReaderAssets,
     handleScrollProgress: (Float, Float) -> Unit,
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onScrollToPercentConsumed: () -> Unit,
@@ -262,7 +263,7 @@ private fun ReaderArticleWebView(
             if (playbackState.isPlaying) playbackState.currentSentenceIndex else -1,
         immersive = immersive,
         topContentPaddingPx = topContentPaddingPx,
-        artwork = artwork,
+        assets = assets,
         modifier = modifier,
     )
 }

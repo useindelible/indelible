@@ -32,7 +32,7 @@ expect fun HtmlReaderView(
     speakingSentenceIndex: Int = -1,
     immersive: Boolean = false,
     topContentPaddingPx: Int = 0,
-    artwork: LoadedReaderArtwork? = null,
+    assets: ReaderAssets = ReaderAssets.NONE,
     scrollToCharOffset: CharOffsetRequest? = null,
     captureRequest: Long? = null,
     onPositioned: () -> Unit = {},
