@@ -23,6 +23,14 @@ private fun html(
 
 class ReaderChromeCssTest {
     @Test
+    fun onlyRealLinksAreStyledAsLinks() {
+        val out = html()
+
+        assertContains(out, ".article-body a[href] {")
+        assertFalse(".article-body a {" in out)
+    }
+
+    @Test
     fun drawing_is_inlined_inside_the_aura_layer() {
         val out = html()
         assertContains(out, """<div class="aura">""")
