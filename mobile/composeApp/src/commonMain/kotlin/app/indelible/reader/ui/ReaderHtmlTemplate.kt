@@ -41,12 +41,12 @@ object ReaderHtmlTemplate {
         summaryHtml: String? = null,
         summaryPoints: List<String> = emptyList(),
         topContentPaddingPx: Int = 0,
-        artwork: LoadedReaderArtwork? = null,
+        assets: ReaderAssets = ReaderAssets.NONE,
         holdUntilPositioned: Boolean = false,
     ): String {
         val css = buildCss(preferences, isDarkMode)
         val scrollerClass = if (holdUntilPositioned) "rscroll hold" else "rscroll"
-        val veilRange = artwork?.artwork?.veilRange ?: DEFAULT_VEIL_RANGE
+        val veilRange = assets.artwork?.artwork?.veilRange ?: DEFAULT_VEIL_RANGE
         val cspNonce = randomNonce()
         val colorScheme = colorSchemeFor(preferences, isDarkMode)
         val highlightJson = buildHighlightJson(highlights)
@@ -66,18 +66,16 @@ object ReaderHtmlTemplate {
 <html>
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-$cspNonce'; style-src 'unsafe-inline' https:; font-src https: data:; img-src https: http: data:; media-src https: http: data:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-$cspNonce'; style-src 'unsafe-inline' https:; font-src data:; img-src https: http: data:; media-src https: http: data:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="color-scheme" content="$colorScheme">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400..500&display=swap" rel="stylesheet">
 <style>
+${assets.fontFaceCss}
 $css
 </style>
 </head>
 <body style="--veil-range: $veilRange">
-${auraMarkup(artwork)}<div class="chrome-veil"></div><div class="grain"></div>
+${auraMarkup(assets.artwork)}<div class="chrome-veil"></div><div class="grain"></div>
 <div class="$scrollerClass" style="padding-top: ${topContentPaddingPx + READER_MASTHEAD_TOP_GAP_PX}px">
 $mastheadHtml$summaryBlockHtml<div class="article-body" id="article-body">$articleHtml</div>
 </div>

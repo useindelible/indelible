@@ -18,7 +18,7 @@ private fun html(
         articleHtml = "<p>Test</p>",
         preferences = ReaderPreferences(background = background),
         highlights = emptyList(),
-        artwork = artwork,
+        assets = ReaderAssets(artwork, fontFaceCss = ""),
     )
 
 class ReaderChromeCssTest {

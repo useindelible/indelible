@@ -53,7 +53,7 @@ actual fun HtmlReaderView(
     speakingSentenceIndex: Int,
     immersive: Boolean,
     topContentPaddingPx: Int,
-    artwork: LoadedReaderArtwork?,
+    assets: ReaderAssets,
     scrollToCharOffset: CharOffsetRequest?,
     captureRequest: Long?,
     onPositioned: () -> Unit,
@@ -99,7 +99,7 @@ actual fun HtmlReaderView(
             summaryHtml,
             summaryPoints,
             topContentPaddingPx,
-            artwork,
+            assets,
             holdUntilPositioned,
         ) {
             ReaderHtmlTemplate.build(
@@ -114,7 +114,7 @@ actual fun HtmlReaderView(
                 summaryHtml = summaryHtml,
                 summaryPoints = summaryPoints,
                 topContentPaddingPx = topContentPaddingPx,
-                artwork = artwork,
+                assets = assets,
                 holdUntilPositioned = holdUntilPositioned,
             )
         }
