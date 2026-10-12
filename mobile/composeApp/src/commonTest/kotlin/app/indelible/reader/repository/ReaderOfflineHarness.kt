@@ -28,6 +28,7 @@ internal const val READ_BUDGET_MS = 3_000L
 internal class ReaderOfflineHarness(
     val download: DownloadHarness,
     val repository: ApiReaderRepository,
+    val offlineCopy: ReaderOfflineCopy,
 ) {
     val server: FakeServer get() = download.server
     val store get() = download.store
@@ -110,5 +111,5 @@ internal suspend fun TestScope.readerOfflineHarness(configure: FakeServer.() -> 
             offlineCopy = offlineCopy,
             capabilities = ServerCapabilities(download.transport, clock = { testScheduler.currentTime }),
         )
-    return ReaderOfflineHarness(download, repository)
+    return ReaderOfflineHarness(download, repository, offlineCopy)
 }

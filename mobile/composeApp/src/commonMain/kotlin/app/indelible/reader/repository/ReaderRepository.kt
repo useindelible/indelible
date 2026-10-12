@@ -259,11 +259,13 @@ class ApiReaderRepository internal constructor(
         val session = sessionProvider() ?: return Result.failure(NoSessionException())
         return offlineResult {
             outbox.setHighlightTags(session, itemId, highlightId, tags)
+            offlineCopy.tags.keep(session, tags)
             tags
         }
     }
 
-    override suspend fun listTags(): Result<List<TagData>> = readerApiService.listTags().map { tags -> tags.map { it.toTagData() } }
+    override suspend fun listTags(): Result<List<TagData>> =
+        offlineCopy.tags.list { readerApiService.listTags().map { tags -> tags.map { it.toTagData() } } }
 
     override suspend fun getItemNote(itemId: String): Result<String?> =
         offlineCopy.note(itemId) {

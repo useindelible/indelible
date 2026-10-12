@@ -3,7 +3,6 @@ package app.indelible.reader.repository
 import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentReaderResponse
 import app.indelible.api.generated.models.HighlightListResponse
-import app.indelible.core.network.ApiException
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.DocumentRevision
 import app.indelible.core.offline.LocalChanges
@@ -29,7 +28,6 @@ import app.indelible.reader.model.toReaderDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import okio.IOException
 
@@ -68,6 +66,8 @@ class ReaderOfflineCopy(
     private val budgetMs: Long = FALLBACK_BUDGET_MS,
     private val requestCache: suspend (Session, String) -> Unit,
 ) {
+    val tags = OfflineTags(files, store, sessionProvider, budgetMs)
+
     suspend fun document(
         documentId: String,
         fetch: suspend () -> Result<DocumentReaderResponse>,
@@ -154,7 +154,7 @@ class ReaderOfflineCopy(
         val scope = session.scope
         val revision = store.localChanges(scope, documentId).revision
         if (store.cachedDocument(scope, documentId) == null) return null
-        val fetched = attempt(fetch)
+        val fetched = attemptWithin(budgetMs, fetch)
         fetched.onSuccess { refresh(session, RefreshRequest(documentId, revision, part(it), clock())) }
         val refused = fetched.exceptionOrNull()?.takeUnless { it.fallsBack() }
         val copy = store.cachedDocument(scope, documentId)
@@ -210,7 +210,7 @@ class ReaderOfflineCopy(
         val session = sessionProvider()
         val copy = session?.let { store.cachedDocument(it.scope, documentId) }
         if (session == null || copy == null) return fetch()
-        val fetched = attempt(fetch)
+        val fetched = attemptWithin(budgetMs, fetch)
         val fallback =
             fetched
                 .exceptionOrNull()
@@ -256,14 +256,6 @@ class ReaderOfflineCopy(
         return text?.let { runCatching { decode(it) }.getOrNull() }
     }
 
-    private suspend fun <S> attempt(fetch: suspend () -> Result<S>): Result<S> {
-        val fetched =
-            withTimeoutOrNull(budgetMs) { fetch() }
-                ?: Result.failure(IOException("No answer in $budgetMs ms"))
-        fetched.exceptionOrNull()?.let { if (it is CancellationException) throw it }
-        return fetched
-    }
-
     private companion object {
         const val FALLBACK_BUDGET_MS = 3_000L
         const val READ_ATTEMPTS = 3
@@ -271,20 +263,9 @@ class ReaderOfflineCopy(
         const val ARTICLE_TOC = "article_toc"
         const val EPUB_TOC = "epub_toc"
         const val EPUB_CHAPTER = "epub_chapter"
-        const val CLIENT_ERROR_MIN = 400
-        const val CLIENT_ERROR_MAX = 499
-        const val REQUEST_TIMEOUT = 408
-        const val TOO_MANY_REQUESTS = 429
 
         val json = Json { ignoreUnknownKeys = true }
         val NO_TOC = ArticleToc(entries = emptyList(), status = ArticleTocStatus.NONE, truncated = false)
-
-        // A 4xx is the server's real answer, which a copy must not hide; 408 and 429 mean it just can't answer now.
-        fun Throwable.fallsBack(): Boolean =
-            this !is ApiException ||
-                statusCode !in CLIENT_ERROR_MIN..CLIENT_ERROR_MAX ||
-                statusCode == REQUEST_TIMEOUT ||
-                statusCode == TOO_MANY_REQUESTS
 
         fun DocumentReaderResponse.readerPart(): ServerPart =
             ServerPart.Reader(title, json.encodeToString(DocumentReaderResponse.serializer(), this), progress())

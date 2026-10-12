@@ -269,7 +269,11 @@ fun rememberAppContainer(
                         }
                         single {
                             val downloads = get<DownloadManager>()
-                            ScopePurger(get()) { scope -> downloads.removeAllDownloads(scope) }
+                            val tags = get<ReaderOfflineCopy>().tags
+                            ScopePurger(get()) { scope ->
+                                tags.quiesce()
+                                downloads.removeAllDownloads(scope)
+                            }
                         }
                         single { OfflineAccount(get(), get(), get(), get(), connectivityObserver.online) }
                         single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }

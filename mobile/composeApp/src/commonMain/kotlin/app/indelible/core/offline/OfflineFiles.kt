@@ -6,6 +6,7 @@ import okio.BufferedSink
 import okio.FileSystem
 import okio.IOException
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.buffer
 import okio.use
 
@@ -41,6 +42,21 @@ class OfflineFiles(
             if (read == -1) return total
             sink.write(buffer, 0, read)
             total += read
+        }
+    }
+
+    /** Replaces [path] whole, so a reader never sees half of it. */
+    fun writeText(
+        path: Path,
+        text: String,
+    ) {
+        val partial = "$path.partial".toPath()
+        try {
+            path.parent?.let(fs::createDirectories)
+            fs.write(partial) { writeUtf8(text) }
+            fs.atomicMove(partial, path)
+        } catch (error: IOException) {
+            throw if (error.isNoSpace()) NoSpaceException(error) else error
         }
     }
 
