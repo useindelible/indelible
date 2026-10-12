@@ -50,6 +50,15 @@ class ReaderBookBridgeTest {
     }
 
     @Test
+    fun highlightLabelsKeepTheReadingLineWhereItWas() {
+        val html = page()
+
+        assertContains(html, "var applyHighlights = window.applyHighlights;")
+        assertContains(html, "keepReadingLine(function() { applyHighlights(highlights); });")
+        assertContains(html, "scroller.scrollTop += moved.top - before.top;")
+    }
+
+    @Test
     fun captureSampleIsDefined() {
         assertContains(page(), "window.captureSample = function")
     }

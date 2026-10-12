@@ -141,6 +141,20 @@ internal val READER_BOOK_JS: String =
     positioned();
   }
 
+  // Tag labels arrive after the reveal and reflow the text; the character on the reading line stays put.
+  function keepReadingLine(change) {
+    var offset = scroller.classList.contains('hold') || scroller.scrollTop <= 0 ? 0 : firstVisibleOffset();
+    var before = offset > 0 ? boxAt(offset) : null;
+    change();
+    var moved = before ? boxAt(offset) : null;
+    if (moved) scroller.scrollTop += moved.top - before.top;
+  }
+
+  var applyHighlights = window.applyHighlights;
+  window.applyHighlights = function(highlights) {
+    keepReadingLine(function() { applyHighlights(highlights); });
+  };
+
   window.scrollToCharOffset = function(offset) {
     if (offset > 0) settled(function() { scrollToChar(offset); }); else scrollToChar(0);
   };
