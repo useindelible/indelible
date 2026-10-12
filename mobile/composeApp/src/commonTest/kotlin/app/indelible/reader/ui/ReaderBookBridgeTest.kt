@@ -9,11 +9,13 @@ class ReaderBookBridgeTest {
     private fun page(
         html: String = "<p>x</p>",
         hold: Boolean = false,
+        topInset: Int = 0,
     ) = ReaderHtmlTemplate.build(
         articleHtml = html,
         preferences = ReaderPreferences(),
         highlights = emptyList(),
         holdUntilPositioned = hold,
+        topContentPaddingPx = topInset,
     )
 
     @Test
@@ -36,6 +38,15 @@ class ReaderBookBridgeTest {
         assertContains(html, "NativeBridge.onScroll(s.percent, s.y, s.offset, s.atEnd)")
         assertContains(html, "offset: complete ? firstVisibleOffset() : -1")
         assertContains(html, "scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2")
+    }
+
+    @Test
+    fun theSavedLineIsReadAndRestoredBelowTheTopChrome() {
+        val html = page(topInset = 80)
+
+        assertContains(html, "data-reading-line=\"80\"")
+        assertContains(html, "var top = scroller.getBoundingClientRect().top + readingLine + 1;")
+        assertContains(html, "box.top - scroller.getBoundingClientRect().top - readingLine")
     }
 
     @Test

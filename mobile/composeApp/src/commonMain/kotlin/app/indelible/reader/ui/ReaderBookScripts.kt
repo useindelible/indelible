@@ -11,6 +11,8 @@ internal val READER_BOOK_JS: String =
 (function() {
   var scroller = document.querySelector('.rscroll') || document.scrollingElement;
   var body = document.getElementById('article-body');
+  // The line just below the top chrome, so a restored position is not hidden behind it.
+  var readingLine = parseFloat(scroller.getAttribute('data-reading-line')) || 0;
   var settleTimer = null;
 
   function reveal() { scroller.classList.remove('hold'); }
@@ -45,7 +47,7 @@ internal val READER_BOOK_JS: String =
 
   function firstVisibleOffset() {
     if (!body) return 0;
-    var top = scroller.getBoundingClientRect().top + 1;
+    var top = scroller.getBoundingClientRect().top + readingLine + 1;
     var box = body.getBoundingClientRect();
     if (box.top >= top) return 0;
     var caret = document.caretRangeFromPoint
@@ -134,7 +136,8 @@ internal val READER_BOOK_JS: String =
 
   function scrollToChar(offset) {
     var box = body && offset > 0 ? boxAt(offset) : null;
-    scroller.scrollTop = box ? Math.max(0, scroller.scrollTop + box.top - scroller.getBoundingClientRect().top) : 0;
+    var target = box ? scroller.scrollTop + box.top - scroller.getBoundingClientRect().top - readingLine : 0;
+    scroller.scrollTop = Math.max(0, target);
     positioned();
   }
 
