@@ -55,6 +55,7 @@ import app.indelible.feed.viewmodel.FeedManagementViewModel
 import app.indelible.feed.viewmodel.FeedViewModel
 import app.indelible.home.repository.ApiHomeRepository
 import app.indelible.home.repository.HomeRepository
+import app.indelible.home.viewmodel.OfflineShelfViewModel
 import app.indelible.library.repository.ApiLibraryRepository
 import app.indelible.library.repository.LibraryRepository
 import app.indelible.library.viewmodel.LibraryViewModel
@@ -132,6 +133,7 @@ data class AppContainer(
     val connectivityObserver: ConnectivityObserver,
     val downloads: DownloadManager,
     val storageViewModel: StorageViewModel,
+    val offlineShelf: OfflineShelfViewModel,
     val documentOffline: (String) -> DocumentOfflineViewModel,
 )
 
@@ -292,6 +294,11 @@ fun rememberAppContainer(
                         single {
                             StorageViewModel(get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
                         }
+                        single {
+                            val transport = get<AuthenticatedApiTransport>()
+                            val home = get<HomeRepository>()
+                            OfflineShelfViewModel(get(), get(), transport.reachable) { home.getDashboard() }
+                        }
                     },
                 )
             }
@@ -347,6 +354,7 @@ fun rememberAppContainer(
             connectivityObserver = connectivityObserver,
             downloads = koin.get(),
             storageViewModel = koin.get(),
+            offlineShelf = koin.get(),
             documentOffline = { id -> DocumentOfflineViewModel(id, koin.get(), koin.get(), koin.get()) },
         )
     }

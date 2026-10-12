@@ -204,9 +204,52 @@
         <item quantity="other">%1$d minutes left</item>
     </plurals>
     <string name="home_nothing_in_progress">Nothing in progress</string>
+    <string name="home_offline_body">Read, highlight and take notes as usual. Indelible sends your changes when you are back online.</string>
+    <string name="home_offline_cached">On this phone</string>
+    <string name="home_offline_chip_back">Reconnected</string>
+    <string name="home_offline_chip_offline">Offline</string>
+    <string name="home_offline_chip_synced">Online</string>
+    <string name="home_offline_empty_body">Nothing is saved on this phone yet. Items you open are kept for later, and you can keep any item offline on purpose.</string>
+    <string name="home_offline_empty_next">Next time you are online</string>
+    <string name="home_offline_empty_shelf">Your shelf will sit here</string>
+    <string name="home_offline_empty_step_keep">Tap Keep offline in its info sheet.</string>
+    <string name="home_offline_empty_step_open">Open an article or book to read it once.</string>
+    <string name="home_offline_empty_step_space">Set how much space Indelible may use in Profile › Storage.</string>
+    <string name="home_offline_empty_subtitle">The shelf is empty.</string>
+    <string name="home_offline_hint">Before a trip, open an item and turn on Keep offline. Kept items stay on this phone and are never removed to make space.</string>
+    <plurals name="home_offline_items_on_board">
+        <item quantity="one">item on board</item>
+        <item quantity="other">items on board</item>
+    </plurals>
+    <string name="home_offline_kept">Kept offline</string>
+    <plurals name="home_offline_on_phone">
+        <item quantity="one">%1$d on this phone</item>
+        <item quantity="other">%1$d on this phone</item>
+    </plurals>
+    <string name="home_offline_sending_body">Your highlights and reading position go to the server first, in the order you made them.</string>
+    <string name="home_offline_sending_progress">Sending %1$d of %2$d</string>
+    <string name="home_offline_sending_subtitle">Sending your changes.</string>
+    <string name="home_offline_sending_title">Back online.</string>
+    <string name="home_offline_shelf">On this phone</string>
+    <plurals name="home_offline_shelf_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="home_offline_subtitle">Your shelf came along.</string>
+    <plurals name="home_offline_synced_body">
+        <item quantity="one">%1$d change was sent.</item>
+        <item quantity="other">%1$d changes were sent.</item>
+    </plurals>
+    <string name="home_offline_synced_pill">Synced just now</string>
+    <string name="home_offline_synced_title">All caught up.</string>
+    <string name="home_offline_title">You’re offline.</string>
+    <plurals name="home_offline_to_send">
+        <item quantity="one">%1$d change to send</item>
+        <item quantity="other">%1$d changes to send</item>
+    </plurals>
     <string name="home_open_menu_cd">Open menu</string>
     <string name="home_pick_up">Pick up where you left off</string>
-    <string name="home_progress_percent">%1$d%%</string>
+    <string name="home_progress_percent">%1$d%</string>
     <plurals name="home_reading_minutes">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
@@ -300,10 +343,10 @@
     <string name="library_pipeline_title">Pipeline status</string>
     <string name="library_pipeline_unknown">Unknown</string>
     <plurals name="library_progress_minutes_left">
-        <item quantity="one">%1$d%% · %2$d minute left</item>
-        <item quantity="other">%1$d%% · %2$d minutes left</item>
+        <item quantity="one">%1$d% · %2$d minute left</item>
+        <item quantity="other">%1$d% · %2$d minutes left</item>
     </plurals>
-    <string name="library_progress_percent">%1$d%%</string>
+    <string name="library_progress_percent">%1$d%</string>
     <plurals name="library_reading_count">
         <item quantity="one">%1$d reading</item>
         <item quantity="other">%1$d reading</item>
@@ -662,7 +705,7 @@
     <string name="reader_contents_building_title">Building the outline</string>
     <string name="reader_contents_empty_body">This article doesn’t have enough sections for a table of contents.</string>
     <string name="reader_contents_empty_title">No outline here</string>
-    <string name="reader_contents_progress">Contents · %1$d%% read</string>
+    <string name="reader_contents_progress">Contents · %1$d% read</string>
     <string name="reader_copied_clipboard">Copied to clipboard</string>
     <string name="reader_create_tag">Create “%1$s”</string>
     <string name="reader_display">Display</string>
@@ -752,7 +795,7 @@
         <item quantity="other">Retry available in %1$d seconds.</item>
     </plurals>
     <string name="reader_preparing_title">Still preparing this article</string>
-    <string name="reader_progress_percent">%1$d%%</string>
+    <string name="reader_progress_percent">%1$d%</string>
     <string name="reader_reading">Reading</string>
     <string name="reader_saved_library">Saved to Library</string>
     <string name="reader_sleep">Sleep</string>
