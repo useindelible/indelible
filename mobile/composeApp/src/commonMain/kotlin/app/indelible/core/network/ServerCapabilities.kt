@@ -10,6 +10,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -76,7 +77,7 @@ class ServerCapabilities(
                         timeout { requestTimeoutMillis = REQUEST_TIMEOUT_MS }
                     }
                 when (response.status) {
-                    HttpStatusCode.OK -> listed(response.bodyAsText(), capability)
+                    HttpStatusCode.OK -> listed(session, response.bodyAsText(), capability)
                     HttpStatusCode.NotFound -> false
                     else -> null
                 }
@@ -85,19 +86,31 @@ class ServerCapabilities(
         return result.getOrNull()
     }
 
-    // A server that predates the route serves the web app's index.html for unknown paths with a 200,
-    // so any body that is not the capabilities object means the route is absent.
-    private fun listed(
+    // A server that predates the route answers it with the web app's index.html, and so does a Wi-Fi
+    // login page; only the server itself answers its health route with JSON.
+    private suspend fun listed(
+        session: Session,
         body: String,
         capability: String,
-    ): Boolean {
-        val element = runCatching { Json.parseToJsonElement(body) }.getOrNull()
+    ): Boolean? {
+        val element = parse(body) ?: return if (answersAsTheServer(session)) false else null
         val capabilities = (element as? JsonObject)?.get("capabilities") as? JsonArray
         return capabilities?.contains(JsonPrimitive(capability)) == true
     }
 
+    private suspend fun answersAsTheServer(session: Session): Boolean {
+        val response =
+            transport.httpClient.get(session.origin + HEALTH_PATH) {
+                timeout { requestTimeoutMillis = REQUEST_TIMEOUT_MS }
+            }
+        return response.status == HttpStatusCode.OK && parse(response.bodyAsText()) is JsonObject
+    }
+
+    private fun parse(body: String): JsonElement? = runCatching { Json.parseToJsonElement(body) }.getOrNull()
+
     private companion object {
         const val CAPABILITIES_PATH = "/api/v1/server/capabilities"
+        const val HEALTH_PATH = "/api/health"
         const val NEGATIVE_TTL_MS = 5 * 60 * 1000L
         const val REQUEST_TIMEOUT_MS = 10_000L
     }
