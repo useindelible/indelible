@@ -204,9 +204,52 @@
         <item quantity="other">Encore %1$d minutes</item>
     </plurals>
     <string name="home_nothing_in_progress">Aucune lecture en cours</string>
+    <string name="home_offline_body">Lisez, surlignez et prenez des notes comme d’habitude. Indelible envoie vos modifications quand vous êtes de nouveau en ligne.</string>
+    <string name="home_offline_cached">Sur ce téléphone</string>
+    <string name="home_offline_chip_back">Reconnecté</string>
+    <string name="home_offline_chip_offline">Hors ligne</string>
+    <string name="home_offline_chip_synced">En ligne</string>
+    <string name="home_offline_empty_body">Rien n’est encore enregistré sur ce téléphone. Les éléments que vous ouvrez sont gardés pour plus tard, et vous pouvez garder n’importe quel élément hors ligne.</string>
+    <string name="home_offline_empty_next">La prochaine fois que vous êtes en ligne</string>
+    <string name="home_offline_empty_shelf">Votre étagère sera ici</string>
+    <string name="home_offline_empty_step_keep">Touchez Garder hors ligne dans sa fiche.</string>
+    <string name="home_offline_empty_step_open">Ouvrez un article ou un livre pour le lire une fois.</string>
+    <string name="home_offline_empty_step_space">Choisissez l’espace qu’Indelible peut utiliser dans Profil › Stockage.</string>
+    <string name="home_offline_empty_subtitle">L’étagère est vide.</string>
+    <string name="home_offline_hint">Avant un voyage, ouvrez un élément et activez Garder hors ligne. Les éléments gardés restent sur ce téléphone et ne sont jamais supprimés pour libérer de l’espace.</string>
+    <plurals name="home_offline_items_on_board">
+        <item quantity="one">élément à bord</item>
+        <item quantity="other">éléments à bord</item>
+    </plurals>
+    <string name="home_offline_kept">Gardé hors ligne</string>
+    <plurals name="home_offline_on_phone">
+        <item quantity="one">%1$d sur ce téléphone</item>
+        <item quantity="other">%1$d sur ce téléphone</item>
+    </plurals>
+    <string name="home_offline_sending_body">Vos surlignages et votre position de lecture partent d’abord vers le serveur, dans l’ordre où vous les avez faits.</string>
+    <string name="home_offline_sending_progress">Envoi %1$d sur %2$d</string>
+    <string name="home_offline_sending_subtitle">Envoi de vos modifications.</string>
+    <string name="home_offline_sending_title">De nouveau en ligne.</string>
+    <string name="home_offline_shelf">Sur ce téléphone</string>
+    <plurals name="home_offline_shelf_count">
+        <item quantity="one">%1$d élément</item>
+        <item quantity="other">%1$d éléments</item>
+    </plurals>
+    <string name="home_offline_subtitle">Votre étagère vous a suivi.</string>
+    <plurals name="home_offline_synced_body">
+        <item quantity="one">%1$d modification a été envoyée.</item>
+        <item quantity="other">%1$d modifications ont été envoyées.</item>
+    </plurals>
+    <string name="home_offline_synced_pill">Synchronisé à l’instant</string>
+    <string name="home_offline_synced_title">Tout est à jour.</string>
+    <string name="home_offline_title">Vous êtes hors ligne.</string>
+    <plurals name="home_offline_to_send">
+        <item quantity="one">%1$d modification à envoyer</item>
+        <item quantity="other">%1$d modifications à envoyer</item>
+    </plurals>
     <string name="home_open_menu_cd">Ouvrir le menu</string>
     <string name="home_pick_up">Reprenez là où vous vous êtes arrêté</string>
-    <string name="home_progress_percent">%1$d %%</string>
+    <string name="home_progress_percent">%1$d %</string>
     <plurals name="home_reading_minutes">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
@@ -300,10 +343,10 @@
     <string name="library_pipeline_title">État du traitement</string>
     <string name="library_pipeline_unknown">Inconnu</string>
     <plurals name="library_progress_minutes_left">
-        <item quantity="one">%1$d %% · encore %2$d minute</item>
-        <item quantity="other">%1$d %% · encore %2$d minutes</item>
+        <item quantity="one">%1$d % · encore %2$d minute</item>
+        <item quantity="other">%1$d % · encore %2$d minutes</item>
     </plurals>
-    <string name="library_progress_percent">%1$d %%</string>
+    <string name="library_progress_percent">%1$d %</string>
     <plurals name="library_reading_count">
         <item quantity="one">%1$d en cours</item>
         <item quantity="other">%1$d en cours</item>
@@ -662,7 +705,7 @@
     <string name="reader_contents_building_title">Création du sommaire</string>
     <string name="reader_contents_empty_body">Cet article ne contient pas assez de sections pour créer un sommaire.</string>
     <string name="reader_contents_empty_title">Aucun sommaire</string>
-    <string name="reader_contents_progress">Sommaire · %1$d %% lu</string>
+    <string name="reader_contents_progress">Sommaire · %1$d % lu</string>
     <string name="reader_copied_clipboard">Copié dans le presse-papiers</string>
     <string name="reader_create_tag">Créer « %1$s »</string>
     <string name="reader_display">Affichage</string>
@@ -752,7 +795,7 @@
         <item quantity="other">Nouvelle tentative disponible dans %1$d secondes.</item>
     </plurals>
     <string name="reader_preparing_title">Préparation de cet article en cours</string>
-    <string name="reader_progress_percent">%1$d %%</string>
+    <string name="reader_progress_percent">%1$d %</string>
     <string name="reader_reading">Lecture</string>
     <string name="reader_saved_library">Enregistré dans la bibliothèque</string>
     <string name="reader_sleep">Minuteur</string>

@@ -223,7 +223,10 @@ fun AppTheme(
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
 
-    CompositionLocalProvider(LocalIndelibleColors provides extendedColors) {
+    CompositionLocalProvider(
+        LocalIndelibleColors provides extendedColors,
+        LocalMonochrome provides if (darkTheme) DarkMonochrome else LightMonochrome,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = indelibleTypography(),
@@ -241,4 +244,7 @@ fun AppTheme(
 object IndelibleTheme {
     val colors: IndelibleExtendedColors
         @Composable get() = LocalIndelibleColors.current
+
+    val monochrome: MonochromeColors
+        @Composable get() = LocalMonochrome.current
 }

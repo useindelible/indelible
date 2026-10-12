@@ -15,8 +15,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -29,8 +33,11 @@ import app.indelible.home.ui.components.HomeZeroedSection
 import app.indelible.home.ui.components.JumpBackRail
 import app.indelible.home.ui.components.RecentlySavedRow
 import app.indelible.home.ui.components.StatsRow
+import app.indelible.home.ui.offline.OfflineHome
 import app.indelible.home.viewmodel.HomeUiState
 import app.indelible.home.viewmodel.HomeViewModel
+import app.indelible.home.viewmodel.OfflineShelfViewModel
+import app.indelible.home.viewmodel.ShelfNet
 import app.indelible.home.viewmodel.StatIcon
 import app.indelible.home.viewmodel.StatTile
 import app.indelible.ui.components.IndelibleButton
@@ -55,6 +62,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    offlineShelf: OfflineShelfViewModel,
     userDisplayName: String?,
     onMenuClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -65,6 +73,8 @@ fun HomeScreen(
     avatarBytes: ByteArray? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val shelf by offlineShelf.state.collectAsState()
+    ReloadWhenBack(shelf.net, viewModel::load)
     val firstName = userDisplayName?.trim()?.takeIf { it.isNotBlank() }?.substringBefore(' ')
 
     Scaffold(
@@ -81,43 +91,81 @@ fun HomeScreen(
             )
         },
     ) { paddingValues ->
-        when (val state = uiState) {
-            is HomeUiState.Loading ->
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-
-            is HomeUiState.Error ->
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                            .padding(IndelibleSpacing.step24),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = state.message.resolve(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(IndelibleSpacing.step16))
-                    IndelibleButton(text = stringResource(Res.string.common_retry), onClick = viewModel::load)
-                }
-
-            is HomeUiState.Ready ->
-                HomeContent(
-                    state = state,
-                    firstName = firstName,
-                    onOpenItem = onOpenItem,
-                    contentPadding = paddingValues,
-                )
+        if (shelf.net != ShelfNet.ONLINE) {
+            OfflineHome(
+                shelf = shelf,
+                greeting = viewModel.greeting(),
+                firstName = firstName,
+                contentPadding = paddingValues,
+                onOpenItem = onOpenItem,
+            )
+            return@Scaffold
         }
+        OnlineHome(uiState, firstName, paddingValues, onOpenItem, viewModel::load)
+    }
+}
+
+/** Home was showing the copies on this phone; the dashboard it left behind is stale, so it is fetched again. */
+@Composable
+private fun ReloadWhenBack(
+    net: ShelfNet,
+    reload: () -> Unit,
+) {
+    var wasAway by remember { mutableStateOf(false) }
+    LaunchedEffect(net) {
+        if (net != ShelfNet.ONLINE) {
+            wasAway = true
+        } else if (wasAway) {
+            wasAway = false
+            reload()
+        }
+    }
+}
+
+@Composable
+private fun OnlineHome(
+    uiState: HomeUiState,
+    firstName: String?,
+    paddingValues: PaddingValues,
+    onOpenItem: (String) -> Unit,
+    retry: () -> Unit,
+) {
+    when (val state = uiState) {
+        is HomeUiState.Loading ->
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+
+        is HomeUiState.Error ->
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(IndelibleSpacing.step24),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = state.message.resolve(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(IndelibleSpacing.step16))
+                IndelibleButton(text = stringResource(Res.string.common_retry), onClick = retry)
+            }
+
+        is HomeUiState.Ready ->
+            HomeContent(
+                state = state,
+                firstName = firstName,
+                onOpenItem = onOpenItem,
+                contentPadding = paddingValues,
+            )
     }
 }
 
