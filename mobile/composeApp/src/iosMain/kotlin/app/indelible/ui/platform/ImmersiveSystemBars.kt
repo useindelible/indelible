@@ -1,6 +1,10 @@
 package app.indelible.ui.platform
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 
 // The iOS status bar is owned by the hosting UIViewController
 // (prefersStatusBarHidden); toggling it from shared Compose needs a Swift-side
@@ -16,3 +20,6 @@ actual fun ImmersiveSystemBars(hidden: Boolean) {
 @Composable
 actual fun StatusBarAppearance(lightStatusBars: Boolean) {
 }
+
+@Composable
+actual fun statusBarHeightIgnoringVisibility(): Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

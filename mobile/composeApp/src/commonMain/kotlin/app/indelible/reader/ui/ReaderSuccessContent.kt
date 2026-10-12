@@ -11,12 +11,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +43,7 @@ import app.indelible.reader.ui.components.TtsMiniBar
 import app.indelible.reader.ui.components.showContentsPill
 import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.ReaderViewModel
+import app.indelible.ui.platform.statusBarHeightIgnoringVisibility
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
@@ -106,12 +104,12 @@ internal fun ReaderSuccessContent(
         state.preferences.background == ReaderBackground.SLATE ||
             state.preferences.background == ReaderBackground.BLACK
 
-    // The article runs to the status bar so the drawing paints from the very top;
-    // only the prose is pushed clear of the floating controls that sit over it.
-    // step48 is the pill band: step8 of top padding plus a step40 pill.
+    // The drawing paints from the very top; only the prose clears the floating controls (step48 pill
+    // band). The status bar's full height is used because the reader hides it while the page is built,
+    // and the saved reading line must not move between opens.
     val topChromeInsetPx =
         (
-            WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+            statusBarHeightIgnoringVisibility() +
                 IndelibleSpacing.step48
         ).value.toInt()
 

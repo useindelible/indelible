@@ -76,7 +76,7 @@ $css
 </head>
 <body style="--veil-range: $veilRange">
 ${auraMarkup(assets.artwork)}<div class="chrome-veil"></div><div class="grain"></div>
-<div class="$scrollerClass" style="padding-top: ${topContentPaddingPx + READER_MASTHEAD_TOP_GAP_PX}px">
+<div class="$scrollerClass" data-reading-line="$topContentPaddingPx" style="padding-top: ${topContentPaddingPx + READER_MASTHEAD_TOP_GAP_PX}px">
 $mastheadHtml$summaryBlockHtml<div class="article-body" id="article-body">$articleHtml</div>
 </div>
 <script nonce="$cspNonce">
