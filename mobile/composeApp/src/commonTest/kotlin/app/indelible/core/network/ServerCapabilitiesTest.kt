@@ -18,10 +18,13 @@ import kotlin.test.assertNull
 
 private const val ORIGIN = "https://books.example"
 private const val CAPABILITIES = "/api/v1/server/capabilities"
+private const val HEALTH = "/api/health"
+private const val PAGE = "<!doctype html><html><body></body></html>"
 private const val FIVE_MINUTES_MS = 5 * 60 * 1000L
 
 class ServerCapabilitiesTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
+    private val htmlHeaders = headersOf(HttpHeaders.ContentType, "text/html")
     private val session = Session(epoch = 0, origin = ORIGIN, scope = "$ORIGIN|usr_1")
     private val listed = """{"capabilities":["epub_chapter_list"]}"""
 
@@ -72,12 +75,28 @@ class ServerCapabilitiesTest {
         }
 
     @Test
-    fun spaFallbackIsFalse() =
+    fun oldServerServingTheWebAppIsFalse() =
         runTest {
-            val html = headersOf(HttpHeaders.ContentType, "text/html")
-            val f = fixture { respond("<!doctype html><html><body></body></html>", HttpStatusCode.OK, html) }
+            val f =
+                fixture { request ->
+                    if (request.url.encodedPath == HEALTH) {
+                        respond("""{"status":"healthy"}""", HttpStatusCode.OK, jsonHeaders)
+                    } else {
+                        respond(PAGE, HttpStatusCode.OK, htmlHeaders)
+                    }
+                }
 
             assertEquals(false, f.capabilities.supports(session, EPUB_CHAPTER_LIST))
+        }
+
+    @Test
+    fun aLoginPageInFrontOfTheServerIsUnknown() =
+        runTest {
+            val f = fixture { respond(PAGE, HttpStatusCode.OK, htmlHeaders) }
+
+            assertNull(f.capabilities.supports(session, EPUB_CHAPTER_LIST))
+            assertNull(f.capabilities.supports(session, EPUB_CHAPTER_LIST))
+            assertEquals(listOf(CAPABILITIES, HEALTH, CAPABILITIES, HEALTH), f.sent.map { it.url.encodedPath })
         }
 
     @Test
