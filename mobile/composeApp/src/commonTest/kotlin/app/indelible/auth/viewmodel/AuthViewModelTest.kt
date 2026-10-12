@@ -1,15 +1,11 @@
 package app.indelible.auth.viewmodel
 
-import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiClient
-import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
-import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_email_required
 import indelible.composeapp.generated.resources.auth_login_invalid_credentials
-import indelible.composeapp.generated.resources.auth_logout_revoke_failed
 import indelible.composeapp.generated.resources.auth_password_required
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -29,9 +25,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
@@ -56,7 +50,7 @@ class AuthViewModelTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine = MockEngine { respond("", HttpStatusCode.Unauthorized) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
+            val viewModel = testAuthViewModel(apiClient, tokenStorage)
 
             assertIs<AuthState.Loading>(viewModel.authState.value)
         } finally {
@@ -70,7 +64,7 @@ class AuthViewModelTest {
         runTest {
             val tokenStorage = InMemoryTokenStorage()
             val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
-            val viewModel = authViewModel(apiClient, tokenStorage)
+            val viewModel = testAuthViewModel(apiClient, tokenStorage)
 
             // Await the terminal init state deterministically instead of pinning the
             // test to the shared Main dispatcher via runTest(testDispatcher), which
@@ -91,7 +85,7 @@ class AuthViewModelTest {
                         "/api/v1/auth/login" ->
                             respond(
                                 content =
-                                    authResponseJson(
+                                    signedInAuthJson(
                                         accessToken = "test-token-123",
                                         refreshToken = "test-refresh-123",
                                     ),
@@ -103,7 +97,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
+            val viewModel = testAuthViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -136,7 +130,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
+            val viewModel = testAuthViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -149,125 +143,6 @@ class AuthViewModelTest {
                 UiMessage(Res.string.auth_login_invalid_credentials),
                 viewModel.loginState.value.serverError,
             )
-        }
-
-    @Test
-    fun registerSuccessTransitionsToNeedsVerificationAndSavesTokens() =
-        runTest {
-            val tokenStorage = InMemoryTokenStorage()
-            val engine =
-                MockEngine { request ->
-                    when (request.url.encodedPath) {
-                        "/api/v1/auth/register" ->
-                            respond(
-                                content =
-                                    authResponseJson(
-                                        accessToken = "reg-token-456",
-                                        refreshToken = "reg-refresh-456",
-                                        displayName = "New User",
-                                        emailVerified = false,
-                                        onboardingCompleted = false,
-                                    ),
-                                status = HttpStatusCode.OK,
-                                headers = jsonHeaders,
-                            )
-                        else -> respond("", HttpStatusCode.Unauthorized)
-                    }
-                }
-
-            val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
-            viewModel.authState.first { it is AuthState.Unauthenticated }
-
-            viewModel.updateRegisterDisplayName("New User")
-            viewModel.updateRegisterEmail("new@example.com")
-            viewModel.updateRegisterPassword("password123")
-            viewModel.updateRegisterConfirmPassword("password123")
-            viewModel.register()
-            viewModel.authState.first { it is AuthState.NeedsVerification }
-
-            val user = (viewModel.authState.value as AuthState.NeedsVerification).user
-            assertEquals("New User", user.displayName)
-            assertEquals("reg-token-456", tokenStorage.getToken())
-            assertEquals("reg-refresh-456", tokenStorage.getRefreshToken())
-        }
-
-    @Test
-    fun oauthProviderFailureFailsClosedForSignupState() =
-        runTest {
-            val tokenStorage = InMemoryTokenStorage()
-            val engine =
-                MockEngine { request ->
-                    when (request.url.encodedPath) {
-                        "/api/v1/auth/providers" ->
-                            respond(
-                                content = """{"error":"server_error","message":"offline"}""",
-                                status = HttpStatusCode.InternalServerError,
-                                headers = jsonHeaders,
-                            )
-                        else -> respond("", HttpStatusCode.Unauthorized)
-                    }
-                }
-
-            val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
-            advanceUntilIdle()
-
-            assertFalse(viewModel.signupsEnabled.value)
-            assertFalse(viewModel.setupRequired.value)
-        }
-
-    @Test
-    fun registerSuccessRefreshesFirstRunSignupState() =
-        runTest {
-            val tokenStorage = InMemoryTokenStorage()
-            var providerRequests = 0
-            val engine =
-                MockEngine { request ->
-                    when (request.url.encodedPath) {
-                        "/api/v1/auth/providers" -> {
-                            providerRequests += 1
-                            respond(
-                                content =
-                                    oauthProvidersJson(
-                                        signupsEnabled = providerRequests == 1,
-                                        setupRequired = providerRequests == 1,
-                                    ),
-                                status = HttpStatusCode.OK,
-                                headers = jsonHeaders,
-                            )
-                        }
-                        "/api/v1/auth/register" ->
-                            respond(
-                                content =
-                                    authResponseJson(
-                                        accessToken = "reg-token-setup",
-                                        refreshToken = "reg-refresh-setup",
-                                        displayName = "First Owner",
-                                        emailVerified = false,
-                                        onboardingCompleted = false,
-                                    ),
-                                status = HttpStatusCode.OK,
-                                headers = jsonHeaders,
-                            )
-                        else -> respond("", HttpStatusCode.Unauthorized)
-                    }
-                }
-
-            val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
-            viewModel.setupRequired.first { it }
-
-            viewModel.updateRegisterDisplayName("First Owner")
-            viewModel.updateRegisterEmail("owner@example.com")
-            viewModel.updateRegisterPassword("password123")
-            viewModel.updateRegisterConfirmPassword("password123")
-            viewModel.register()
-            viewModel.authState.first { it is AuthState.NeedsVerification }
-            viewModel.setupRequired.first { !it }
-
-            assertFalse(viewModel.signupsEnabled.value)
-            assertFalse(viewModel.setupRequired.value)
         }
 
     @Test
@@ -291,7 +166,7 @@ class AuthViewModelTest {
                             )
                         "/api/v1/me" ->
                             respond(
-                                content = profileResponseJson(),
+                                content = signedInProfileJson(),
                                 status = HttpStatusCode.OK,
                                 headers = jsonHeaders,
                             )
@@ -300,110 +175,12 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
+            val viewModel = testAuthViewModel(apiClient, tokenStorage)
 
             viewModel.authState.first { it is AuthState.Authenticated }
 
             assertEquals("access-restored", tokenStorage.getToken())
             assertEquals("refresh-restored", tokenStorage.getRefreshToken())
-        }
-
-    @Test
-    fun logoutClearsAllStoredAuth() =
-        runTest {
-            val tokenStorage = InMemoryTokenStorage()
-            tokenStorage.saveToken("existing-token")
-            tokenStorage.saveRefreshToken("existing-refresh")
-            tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
-            tokenStorage.savePendingItems("""[{"id":"pending-1"}]""")
-
-            val engine =
-                MockEngine { request ->
-                    when (request.url.encodedPath) {
-                        "/api/v1/me" ->
-                            respond(
-                                content = profileResponseJson(),
-                                status = HttpStatusCode.OK,
-                                headers = jsonHeaders,
-                            )
-                        "/api/v1/auth/logout" -> respond("", HttpStatusCode.NoContent, jsonHeaders)
-                        else -> respond("", HttpStatusCode.OK)
-                    }
-                }
-
-            val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
-            viewModel.authState.first { it is AuthState.Authenticated }
-
-            viewModel.logout()
-            viewModel.authState.first { it is AuthState.Unauthenticated }
-
-            assertNull(tokenStorage.getToken())
-            assertNull(tokenStorage.getRefreshToken())
-            assertNull(tokenStorage.getExpiresAt())
-            assertNull(tokenStorage.getPendingItems())
-        }
-
-    @Test
-    fun logoutKeepsLocalWipeButReportsRevocationFailure() =
-        runTest {
-            val tokenStorage = InMemoryTokenStorage()
-            tokenStorage.saveToken("existing-token")
-            tokenStorage.saveRefreshToken("existing-refresh")
-            tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
-
-            val engine =
-                MockEngine { request ->
-                    when (request.url.encodedPath) {
-                        "/api/v1/me" ->
-                            respond(
-                                content = profileResponseJson(),
-                                status = HttpStatusCode.OK,
-                                headers = jsonHeaders,
-                            )
-                        "/api/v1/auth/logout" ->
-                            respond(
-                                content = """{"error":"server_error","message":"offline"}""",
-                                status = HttpStatusCode.InternalServerError,
-                                headers = jsonHeaders,
-                            )
-                        else -> respond("", HttpStatusCode.OK)
-                    }
-                }
-
-            val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
-            viewModel.authState.first { it is AuthState.Authenticated }
-
-            viewModel.logout()
-            viewModel.authState.first { it is AuthState.Unauthenticated }
-
-            assertNull(tokenStorage.getToken())
-            assertNull(tokenStorage.getRefreshToken())
-            assertNull(tokenStorage.getExpiresAt())
-            assertEquals(
-                UiMessage(Res.string.auth_logout_revoke_failed),
-                viewModel.loginState.first { it.serverError != null }.serverError,
-            )
-        }
-
-    @Test
-    fun forceLogoutClearsWithoutServerCall() =
-        runTest {
-            val tokenStorage = InMemoryTokenStorage()
-            tokenStorage.saveToken("existing-token")
-            tokenStorage.saveRefreshToken("existing-refresh")
-            tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
-
-            val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
-            val viewModel = authViewModel(apiClient, tokenStorage)
-
-            viewModel.forceLogout()
-            advanceUntilIdle()
-
-            assertIs<AuthState.Unauthenticated>(viewModel.authState.value)
-            assertNull(tokenStorage.getToken())
-            assertNull(tokenStorage.getRefreshToken())
         }
 
     @Test
@@ -418,7 +195,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = authViewModel(apiClient, tokenStorage)
+            val viewModel = testAuthViewModel(apiClient, tokenStorage)
             // Await init settling deterministically; counting only login-path requests
             // keeps this immune to the unconditional OAuth-providers fetch on construction.
             viewModel.authState.first { it is AuthState.Unauthenticated }
@@ -433,26 +210,6 @@ class AuthViewModelTest {
             assertEquals(UiMessage(Res.string.auth_password_required), viewModel.loginState.value.passwordError)
         }
 
-    private fun authResponseJson(
-        accessToken: String,
-        refreshToken: String,
-        displayName: String = "Test User",
-        emailVerified: Boolean = true,
-        onboardingCompleted: Boolean = true,
-    ) = """
-        {
-            "id": "usr_01ABCDEF",
-            "object": "user",
-            "email": "user@example.com",
-            "display_name": "$displayName",
-            "email_verified": $emailVerified,
-            "onboarding_completed": $onboardingCompleted,
-            "access_token": "$accessToken",
-            "refresh_token": "$refreshToken",
-            "expires_at": $FAR_FUTURE_EXPIRY
-        }
-        """.trimIndent()
-
     private fun refreshResponseJson(
         accessToken: String,
         refreshToken: String,
@@ -463,46 +220,6 @@ class AuthViewModelTest {
             "expires_at": $FAR_FUTURE_EXPIRY
         }
         """.trimIndent()
-
-    private fun profileResponseJson() =
-        """
-        {
-            "id": "usr_01ABCDEF",
-            "object": "user",
-            "email": "user@example.com",
-            "display_name": "Test User",
-            "email_verified": true,
-            "onboarding_completed": true,
-            "has_password": true,
-            "locale": "en",
-            "theme": "auto",
-            "timezone": "UTC",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-        """.trimIndent()
-
-    private fun oauthProvidersJson(
-        signupsEnabled: Boolean,
-        setupRequired: Boolean,
-    ) = """
-        {
-            "providers": [],
-            "signups_enabled": $signupsEnabled,
-            "setup_required": $setupRequired
-        }
-        """.trimIndent()
-
-    private fun authViewModel(
-        apiClient: ApiClient,
-        tokenStorage: TokenStorage,
-    ): AuthViewModel =
-        AuthViewModel(
-            ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-            tokenStorage,
-            testOfflineAccount(tokenStorage),
-            testSessionTransitions(tokenStorage),
-        )
 
     companion object {
         private const val FAR_FUTURE_EXPIRY = 4_102_444_800L
