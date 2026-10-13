@@ -2,6 +2,7 @@ package app.indelible.reader.viewmodel
 
 import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.HighlightColor
+import app.indelible.reader.model.HighlightRange
 import app.indelible.reader.model.TagData
 import app.indelible.reader.repository.ReaderRepository
 import indelible.composeapp.generated.resources.Res
@@ -23,6 +24,7 @@ internal class ReaderHighlightActions(
     private val scope: CoroutineScope,
     private val uiState: MutableStateFlow<ReaderUiState>,
     private val effects: MutableSharedFlow<ReaderEffect>,
+    private val chapterKey: () -> String? = { null },
 ) {
     fun createHighlight(
         color: HighlightColor,
@@ -31,14 +33,14 @@ internal class ReaderHighlightActions(
         endOffset: Long,
         onCreated: (String) -> Unit = {},
     ) {
+        val range = HighlightRange(startOffset, endOffset, chapterKey())
         scope.launch {
             repository
                 .createHighlight(
                     itemId = documentId,
                     color = color.apiValue,
                     textContent = textContent,
-                    startOffset = startOffset,
-                    endOffset = endOffset,
+                    range = range,
                 ).onSuccess { highlight ->
                     updateSuccessState { state ->
                         state.copy(highlights = state.highlights + highlight)

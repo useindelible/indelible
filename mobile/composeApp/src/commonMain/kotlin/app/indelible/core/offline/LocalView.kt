@@ -1,5 +1,8 @@
 package app.indelible.core.offline
 
+import app.indelible.api.generated.models.DocumentReaderResponse
+import app.indelible.api.generated.models.ReadingAnchorSchemaFlat
+import app.indelible.api.generated.models.ReadingPositionSchema
 import kotlinx.serialization.Serializable
 
 /** The locally held shape of a highlight: the server's, with this device's queued changes applied. */
@@ -21,10 +24,40 @@ data class CachedHighlightNote(
     val body: String,
 )
 
+/** Where a book was left: the chapter key and the character offset into that chapter's text. */
+data class ChapterPosition(
+    val chapter: String,
+    val offset: Int,
+)
+
 data class Progress(
     val percent: Int?,
     val maxPercent: Int?,
+    val position: ChapterPosition? = null,
 )
+
+internal fun DocumentReaderResponse.progress(): Progress =
+    Progress(progressPercent, maxProgressPercent, chapterLocator?.let { ChapterPosition(it, chapterOffset ?: 0) })
+
+/** The reading event position at [position], [fraction] `0..1` through the whole book. */
+internal fun readingPositionJson(
+    position: ChapterPosition,
+    fraction: Double,
+): String =
+    offlineJson.encodeToString(
+        ReadingPositionSchema.serializer(),
+        ReadingPositionSchema(
+            anchor = ReadingAnchorSchemaFlat(type = SPINE_ANCHOR, chapter = position.chapter),
+            offset = position.offset,
+            fraction = fraction,
+        ),
+    )
+
+internal fun chapterPositionOf(positionJson: String): ChapterPosition? {
+    val position = offlineJson.decodeFromString(ReadingPositionSchema.serializer(), positionJson)
+    val chapter = position.anchor?.takeIf { it.type == SPINE_ANCHOR }?.chapter ?: return null
+    return ChapterPosition(chapter, position.offset ?: 0)
+}
 
 /** Moves on every enqueue and acknowledgement, so a response fetched across a move may be stale. */
 data class DocumentRevision(
@@ -56,17 +89,22 @@ data class LocalChanges(
             ?.let { (it.payload as OutboxPayload.DocumentNote).body }
             ?: server
 
-    /** The newest unacknowledged queued position and the highest one reached, else the server's. */
+    /** The newest unacknowledged queued progress, chapter position and highest point reached, else the server's. */
     fun progress(server: Progress): Progress {
         val queued =
             live()
                 .mapNotNull { it.payload as? OutboxPayload.ReadingEvent }
                 .filter { it.originSeq > revision.ackedProgressSeq }
-                .mapNotNull { it.progressBasisPoints }
-        val latest = queued.lastOrNull() ?: return server
+        val points = queued.mapNotNull { it.progressBasisPoints }
+        val latest = points.lastOrNull() ?: return server
         val percent = latest / BASIS_POINTS_PER_PERCENT
-        val reached = queued.max() / BASIS_POINTS_PER_PERCENT
-        return Progress(percent = percent, maxPercent = maxOf(server.maxPercent ?: percent, reached))
+        val reached = points.max() / BASIS_POINTS_PER_PERCENT
+        val position = queued.lastOrNull { it.positionJson != null }?.positionJson?.let(::chapterPositionOf)
+        return Progress(
+            percent = percent,
+            maxPercent = maxOf(server.maxPercent ?: percent, reached),
+            position = position ?: server.position,
+        )
     }
 
     private fun live(): List<OutboxRow> = rows.filterNot { it.superseded }
@@ -123,3 +161,4 @@ internal fun OutboxKind.isHighlight(): Boolean =
     }
 
 private const val BASIS_POINTS_PER_PERCENT = 100
+private const val SPINE_ANCHOR = "spine"

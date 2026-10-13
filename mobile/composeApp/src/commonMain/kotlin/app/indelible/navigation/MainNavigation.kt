@@ -221,6 +221,7 @@ fun MainNavigation(
                     authViewModel = authViewModel,
                     authState = authState,
                     homeRepository = appContainer.homeRepository,
+                    offlineShelf = appContainer.offlineShelf,
                     libraryViewModel = appContainer.libraryViewModel,
                     addLibraryViewModel = appContainer.addLibraryViewModel,
                     sidebarViewModel = appContainer.sidebarViewModel,

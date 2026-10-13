@@ -43,6 +43,8 @@ class HomeViewModel(
         }
     }
 
+    fun greeting(): Greeting = greetingFor(nowHour())
+
     private fun greetingFor(hour: Int): Greeting =
         when (hour) {
             in 0..11 -> Greeting.MORNING

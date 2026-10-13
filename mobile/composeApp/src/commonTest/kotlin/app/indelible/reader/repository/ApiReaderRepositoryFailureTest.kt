@@ -1,5 +1,6 @@
 package app.indelible.reader.repository
 
+import app.indelible.reader.model.HighlightRange
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -13,7 +14,7 @@ class ApiReaderRepositoryFailureTest {
 
             val results =
                 listOf(
-                    harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted", 0, 5),
+                    harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted", HighlightRange(0, 5)),
                     harness.repository.deleteHighlight(OFFLINE_DOCUMENT_ID, "hlt_1"),
                     harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, "hlt_1", "Blue"),
                     harness.repository.upsertHighlightNote(OFFLINE_DOCUMENT_ID, "hlt_1", "note"),

@@ -14,6 +14,7 @@ import app.indelible.feed.viewmodel.FeedViewModel
 import app.indelible.home.repository.HomeRepository
 import app.indelible.home.ui.HomeScreen
 import app.indelible.home.viewmodel.HomeViewModel
+import app.indelible.home.viewmodel.OfflineShelfViewModel
 import app.indelible.library.ui.LibraryScreen
 import app.indelible.library.viewmodel.LibraryViewModel
 import app.indelible.profile.ui.ProfileTab
@@ -35,6 +36,7 @@ fun NavGraphBuilder.tabRoutes(
     authViewModel: AuthViewModel,
     authState: app.indelible.auth.viewmodel.AuthState,
     homeRepository: HomeRepository,
+    offlineShelf: OfflineShelfViewModel,
     libraryViewModel: LibraryViewModel,
     addLibraryViewModel: AddLibraryViewModel,
     sidebarViewModel: SidebarViewModel,
@@ -60,6 +62,7 @@ fun NavGraphBuilder.tabRoutes(
         val avatarBytes by authViewModel.avatarBytes.collectAsState()
         HomeScreen(
             viewModel = homeViewModel,
+            offlineShelf = offlineShelf,
             userDisplayName = authUser?.displayName?.takeIf { it.isNotBlank() } ?: authUser?.email,
             onMenuClick = openDrawer,
             onSearchClick = {

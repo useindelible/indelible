@@ -1,5 +1,7 @@
 package app.indelible.reader.repository
 
+import app.indelible.core.offline.ChapterPosition
+
 /**
  * Reading events carry the session that groups one continuous sitting, which only the open reader
  * knows. [ReaderRepository]'s writes are document-scoped and cannot express it, so a reader records
@@ -14,9 +16,11 @@ interface ReadingEventWriter {
         sessionId: String,
     )
 
+    /** [percent] is `0..100` through the document; [position] is where a book was left, when it is one. */
     suspend fun recordProgress(
         documentId: String,
         percent: Float,
         sessionId: String,
+        position: ChapterPosition? = null,
     )
 }

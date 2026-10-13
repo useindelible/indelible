@@ -25,6 +25,7 @@ import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_retry
 import indelible.composeapp.generated.resources.offline_badge_downloading
 import indelible.composeapp.generated.resources.offline_download_failed
 import indelible.composeapp.generated.resources.offline_keep
@@ -33,6 +34,7 @@ import indelible.composeapp.generated.resources.offline_no_space
 import indelible.composeapp.generated.resources.offline_not_on_device
 import indelible.composeapp.generated.resources.offline_not_synced
 import indelible.composeapp.generated.resources.offline_remove_copy
+import indelible.composeapp.generated.resources.offline_server_too_old
 import indelible.composeapp.generated.resources.offline_synced
 import indelible.composeapp.generated.resources.offline_waiting
 import indelible.composeapp.generated.resources.offline_waiting_connection
@@ -84,7 +86,7 @@ fun ItemOfflineSection(
             )
         }
         OfflineNote(copySummary(status))
-        AcquisitionLine(status.acquisition, offline.onOpenStorage)
+        AcquisitionLine(status.acquisition, offline)
         if (status.bytes != null) {
             IndelibleButton(
                 text = stringResource(Res.string.offline_remove_copy),
@@ -112,7 +114,7 @@ private fun copySummary(status: DocumentOfflineStatus): String {
 @Composable
 private fun AcquisitionLine(
     acquisition: Acquisition?,
-    onOpenStorage: () -> Unit,
+    offline: ItemOffline,
 ) {
     when (acquisition) {
         null -> Unit
@@ -122,20 +124,42 @@ private fun AcquisitionLine(
             OfflineNote(stringResource(Res.string.offline_badge_downloading))
             LinearProgressIndicator(progress = { acquisition.fraction }, modifier = Modifier.fillMaxWidth())
         }
-        is Acquisition.Failed ->
-            if (acquisition.reason == DownloadFailure.NO_SPACE) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OfflineNote(stringResource(Res.string.offline_no_space), isError = true)
-                    IndelibleButton(
-                        text = stringResource(Res.string.offline_manage_storage),
-                        onClick = onOpenStorage,
-                        style = IndelibleButtonStyle.Text,
-                        compact = true,
-                    )
-                }
-            } else {
-                OfflineNote(stringResource(Res.string.offline_download_failed), isError = true)
-            }
+        is Acquisition.Failed -> FailureLine(acquisition.reason, offline)
+    }
+}
+
+@Composable
+private fun FailureLine(
+    reason: DownloadFailure,
+    offline: ItemOffline,
+) {
+    when (reason) {
+        DownloadFailure.NO_SPACE ->
+            NoteWithAction(
+                note = stringResource(Res.string.offline_no_space),
+                action = stringResource(Res.string.offline_manage_storage),
+                onAction = offline.onOpenStorage,
+            )
+        DownloadFailure.NETWORK ->
+            NoteWithAction(
+                note = stringResource(Res.string.offline_download_failed),
+                action = stringResource(Res.string.common_retry),
+                onAction = { offline.onKeepOffline(true) },
+            )
+        DownloadFailure.SERVER_TOO_OLD -> OfflineNote(stringResource(Res.string.offline_server_too_old), isError = true)
+        DownloadFailure.SERVER -> OfflineNote(stringResource(Res.string.offline_download_failed), isError = true)
+    }
+}
+
+@Composable
+private fun NoteWithAction(
+    note: String,
+    action: String,
+    onAction: () -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OfflineNote(note, isError = true)
+        IndelibleButton(text = action, onClick = onAction, style = IndelibleButtonStyle.Text, compact = true)
     }
 }
 
