@@ -25,6 +25,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.indelible.core.i18n.resolve
+import app.indelible.search.model.rowKey
 import app.indelible.search.ui.components.SearchResultRow
 import app.indelible.search.viewmodel.SearchState
 import app.indelible.ui.theme.IndelibleSpacing
@@ -158,7 +159,7 @@ private fun ResultsList(
                     ),
             )
         }
-        items(items = state.results, key = { it.documentId ?: it.deliveryId ?: it.title }) { result ->
+        items(items = state.results, key = { it.rowKey }) { result ->
             SearchResultRow(
                 result = result,
                 onClick = { result.documentId?.let(onResultClick) },

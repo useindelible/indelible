@@ -3,6 +3,7 @@ package app.indelible.search.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
+import app.indelible.search.model.rowKey
 import app.indelible.search.repository.SearchRepository
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.search_error_load_more
@@ -114,7 +115,7 @@ class SearchViewModel(
                     nextCursor = paginated.nextCursor
                     _state.update {
                         it.copy(
-                            results = it.results + paginated.results,
+                            results = (it.results + paginated.results).distinctBy { it.rowKey },
                             hasMore = paginated.hasMore,
                             isLoadingMore = false,
                         )
@@ -141,7 +142,7 @@ class SearchViewModel(
                     nextCursor = paginated.nextCursor
                     _state.update {
                         it.copy(
-                            results = paginated.results,
+                            results = paginated.results.distinctBy { it.rowKey },
                             hasMore = paginated.hasMore,
                             isRefreshing = false,
                         )
@@ -220,7 +221,7 @@ class SearchViewModel(
                     nextCursor = paginated.nextCursor
                     _state.update {
                         it.copy(
-                            results = paginated.results,
+                            results = paginated.results.distinctBy { it.rowKey },
                             hasMore = paginated.hasMore,
                             isSearching = false,
                         )
