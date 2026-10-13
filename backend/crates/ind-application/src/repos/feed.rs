@@ -159,7 +159,7 @@ pub trait FeedRepository: Send + Sync {
         entry: FeedSourceEntry,
     ) -> Result<FeedSourceEntry, AppError>;
 
-    /// Targeted update of a single entry's `canonical_url` (TASK-239). Used by the poll-reuse
+    /// Targeted update of a single entry's `canonical_url`. Used by the poll-reuse
     /// recompute and the one-off backfill; never a full-row write.
     async fn set_source_entry_canonical_url(
         &self,
@@ -176,9 +176,8 @@ pub trait FeedRepository: Send + Sync {
     ) -> Result<bool, AppError>;
 
     /// Keyset page of `(id, url)` for entries with `url IS NOT NULL AND canonical_url IS NULL`,
-    /// ordered by `id` and starting after `after_id`, for the one-off canonical_url backfill
-    /// (TASK-239). Keyset paging guarantees the backfill terminates even when some urls never
-    /// canonicalize.
+    /// ordered by `id` and starting after `after_id`, for the one-off canonical_url backfill.
+    /// Keyset paging guarantees the backfill terminates even when some urls never canonicalize.
     async fn source_entries_missing_canonical_url_after(
         &self,
         after_id: uuid::Uuid,
