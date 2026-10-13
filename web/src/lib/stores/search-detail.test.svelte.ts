@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('$lib/api', () => mocks);
 
+import { rowKey } from './search-entry';
 import { getSearch } from './search.svelte';
 
 function hit(id: string, overrides: Partial<SearchResultResponse> = {}): SearchResultResponse {
@@ -107,9 +108,9 @@ describe('search detail entry loading', () => {
 		const search = await searched(hit('doc_1'), hit('doc_2'));
 		await vi.runAllTimersAsync();
 
-		search.setSelectedId('doc_2');
+		search.setSelectedId(rowKey(hit('doc_2')));
 		await vi.runAllTimersAsync();
-		search.setSelectedId('doc_1');
+		search.setSelectedId(rowKey(hit('doc_1')));
 		await vi.runAllTimersAsync();
 
 		expect(mocks.getDocumentEntry).toHaveBeenCalledTimes(2);
@@ -121,9 +122,9 @@ describe('search detail entry loading', () => {
 		await vi.runAllTimersAsync();
 		mocks.getDocumentEntry.mockClear();
 
-		search.setSelectedId('doc_2');
-		search.setSelectedId('doc_3');
-		search.setSelectedId('doc_4');
+		search.setSelectedId(rowKey(hit('doc_2')));
+		search.setSelectedId(rowKey(hit('doc_3')));
+		search.setSelectedId(rowKey(hit('doc_4')));
 		await vi.runAllTimersAsync();
 
 		expect(mocks.getDocumentEntry).toHaveBeenCalledTimes(1);
@@ -147,6 +148,18 @@ describe('search detail entry loading', () => {
 		await vi.runAllTimersAsync();
 
 		expect(mocks.getDocumentEntry).toHaveBeenCalledTimes(2);
+	});
+
+	it('selects the chosen section when one item matches in two', async () => {
+		const second = hit('doc_1', { section: { key: 'c2', kind: 'chapter' } });
+		const search = await searched(hit('doc_1', { section: { key: 'c1', kind: 'chapter' } }), second);
+		await vi.runAllTimersAsync();
+
+		search.setSelectedId(rowKey(second));
+		await vi.runAllTimersAsync();
+
+		expect(search.selectedResult?.section?.key).toBe('c2');
+		expect(search.selectedEntry?.id).toBe('doc_1');
 	});
 
 	it('keeps the placeholder when the entry fetch fails', async () => {
