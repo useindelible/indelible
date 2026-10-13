@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use bytes::Bytes;
-use futures::StreamExt;
 use ind_application::AppError;
-use ind_application::ports::{FileUploadProcessor, UploadFileProcessRequest};
+use ind_application::ports::{FileUploadProcessor, ProcessedUpload, UploadFileProcessRequest};
 use ind_application::repos::document_reprocess::CompleteUploadReprocess;
 use ind_application::repos::document_upload::StagedDocumentAsset;
+use ind_application::storage::{ObjectStorage, get_object_bytes};
 use ind_domain::{
-    ArchiveAssetKind, ArchiveAssetStatus, DomainError, NewDocumentAsset, PrepareDocumentJob,
-    ReprocessDocumentJob, YoutubeIngestDocumentJob,
+    ArchiveAssetKind, ArchiveAssetStatus, DocumentAsset, DocumentType, DomainError,
+    NewDocumentAsset, PrepareDocumentJob, ReprocessDocumentJob, YoutubeIngestDocumentJob,
 };
 use ind_ingest::DocumentFileUploadProcessor;
 
@@ -92,12 +92,7 @@ async fn reprocess_upload(
             service: "storage".into(),
             message: "object storage is not configured for document reprocessing".into(),
         })?;
-    let object = storage.get_object(&original.s3_key).await?;
-    let mut stream = object.body;
-    let mut data = Vec::new();
-    while let Some(chunk) = stream.next().await {
-        data.extend_from_slice(&chunk.map_err(|err| AppError::Repository(Box::new(err)))?);
-    }
+    let data = get_object_bytes(storage.as_ref(), &original.s3_key).await?;
 
     let processor = DocumentFileUploadProcessor;
     let processed = match processor
@@ -117,6 +112,25 @@ async fn reprocess_upload(
         }
     };
 
+    let is_book = processed.document_type == DocumentType::Book;
+    let commit = upload_and_commit(ctx, storage.as_ref(), &job, &original, filename, processed);
+    if is_book {
+        ctx.epub_format_repo
+            .with_document_lock(job.document_id, Box::pin(commit))
+            .await
+    } else {
+        commit.await
+    }
+}
+
+async fn upload_and_commit(
+    ctx: &CaptureJobDeps,
+    storage: &dyn ObjectStorage,
+    job: &ReprocessDocumentJob,
+    original: &DocumentAsset,
+    filename: &str,
+    processed: ProcessedUpload,
+) -> Result<(), AppError> {
     let prefix = original
         .s3_key
         .rsplit_once('/')
@@ -158,6 +172,7 @@ async fn reprocess_upload(
                 size_bytes,
                 status: asset.status,
                 failed_reason: asset.failed_reason,
+                format_version: asset.format_version,
             });
         }
     }

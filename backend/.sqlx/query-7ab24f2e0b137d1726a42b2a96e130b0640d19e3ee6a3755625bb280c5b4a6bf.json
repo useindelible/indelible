@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE archive_assets SET format_issue = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7ab24f2e0b137d1726a42b2a96e130b0640d19e3ee6a3755625bb280c5b4a6bf"
+}

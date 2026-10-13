@@ -14,6 +14,7 @@ use ind_application::repos::document_asset::DocumentAssetRepository;
 use ind_application::repos::document_lifecycle::DocumentLifecycle;
 use ind_application::repos::document_reprocess::DocumentReprocessRepository;
 use ind_application::repos::embedding_backfill::EmbeddingBackfillRepository;
+use ind_application::repos::epub_format::EpubFormatRepository;
 use ind_application::repos::event::EventRepository;
 use ind_application::repos::export_cursor::ExportCursorRepository;
 use ind_application::repos::feed::FeedRepository;
@@ -52,13 +53,13 @@ use ind_persistence::repos::{
     PgDeadLetterRepository, PgDocumentAssetRepository, PgDocumentLifecycle, PgDocumentRepository,
     PgDocumentReprocessRepository, PgEmailIngestLogRepository, PgEmailSenderRepository,
     PgEmailUnsubscribeTargetRepository, PgEmbeddingBackfillRepository, PgEntityRepository,
-    PgEventRepository, PgFeedDeliveryRepository, PgFeedRepository, PgHighlightRepository,
-    PgImportJobRepository, PgIntegrationConnectionRepository, PgIntegrationOAuthTokenRepository,
-    PgIntegrityStatsRepository, PgJobOutboxRepository, PgLibraryRepository,
-    PgMaintenanceTaskRepository, PgMilaConfigRepository, PgRetentionCleanupRepository,
-    PgSearchReindexRepository, PgSearchRepository, PgTagRepository, PgTtsAudioAssetRepository,
-    PgUserDocumentStateRepository, PgUserPreferencesRepository, PgUserRepository,
-    PgWebhookRepository,
+    PgEpubFormatRepository, PgEventRepository, PgFeedDeliveryRepository, PgFeedRepository,
+    PgHighlightRepository, PgImportJobRepository, PgIntegrationConnectionRepository,
+    PgIntegrationOAuthTokenRepository, PgIntegrityStatsRepository, PgJobOutboxRepository,
+    PgLibraryRepository, PgMaintenanceTaskRepository, PgMilaConfigRepository,
+    PgRetentionCleanupRepository, PgSearchReindexRepository, PgSearchRepository, PgTagRepository,
+    PgTtsAudioAssetRepository, PgUserDocumentStateRepository, PgUserPreferencesRepository,
+    PgUserRepository, PgWebhookRepository,
 };
 use ind_search::SearchIndexer;
 
@@ -130,6 +131,7 @@ pub struct WorkerContext {
     pub document_repo: Arc<dyn DocumentRepository>,
     pub document_asset_repo: Arc<dyn DocumentAssetRepository>,
     pub document_reprocess_repo: Arc<dyn DocumentReprocessRepository>,
+    pub epub_format_repo: Arc<dyn EpubFormatRepository>,
     pub lifecycle: Arc<dyn DocumentLifecycle>,
     pub user_document_state_repo: Arc<dyn UserDocumentStateRepository>,
     pub library_repo: Arc<dyn LibraryRepository>,
@@ -275,6 +277,7 @@ impl WorkerServicesBuilder {
                 document_repo,
                 document_asset_repo,
                 document_reprocess_repo: Arc::new(PgDocumentReprocessRepository::new(pool.clone())),
+                epub_format_repo: Arc::new(PgEpubFormatRepository::new(pool.clone())),
                 lifecycle: Arc::new(PgDocumentLifecycle::new(pool.clone())),
                 user_document_state_repo: Arc::new(PgUserDocumentStateRepository::new(
                     pool.clone(),

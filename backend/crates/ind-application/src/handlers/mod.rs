@@ -2,6 +2,7 @@ pub mod article_toc;
 pub mod collection;
 pub mod document_reader;
 pub mod entity;
+pub mod epub_chapter_backfill;
 pub mod extension_save;
 pub mod feed;
 pub mod feed_delivery;

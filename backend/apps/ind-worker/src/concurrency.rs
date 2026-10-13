@@ -24,6 +24,12 @@ impl ConcurrencyLimiter {
         semaphores.insert("document.ai.tags".into(), Arc::new(Semaphore::new(3)));
         semaphores.insert("document.ai.entities".into(), Arc::new(Semaphore::new(3)));
         semaphores.insert("webhook.deliver".into(), Arc::new(Semaphore::new(5)));
+        // An EPUB reprocess holds one pooled connection for its document lock while it
+        // uploads, then takes a second to commit; the pool has ten.
+        semaphores.insert(
+            ind_domain::job_types::DOCUMENT_REPROCESS.into(),
+            Arc::new(Semaphore::new(2)),
+        );
 
         Self {
             semaphores,
@@ -55,5 +61,30 @@ impl ConcurrencyLimiter {
         sem.acquire_owned()
             .await
             .expect("semaphore closed unexpectedly")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use ind_domain::job_types;
+
+    use super::ConcurrencyLimiter;
+
+    #[tokio::test]
+    async fn at_most_two_reprocesses_run_while_other_jobs_still_start() {
+        let limiter = ConcurrencyLimiter::new();
+        let _first = limiter.acquire(job_types::DOCUMENT_REPROCESS).await;
+        let _second = limiter.acquire(job_types::DOCUMENT_REPROCESS).await;
+
+        let third = tokio::time::timeout(
+            Duration::from_millis(50),
+            limiter.acquire(job_types::DOCUMENT_REPROCESS),
+        )
+        .await;
+
+        assert!(third.is_err());
+        let _other = limiter.acquire(job_types::FEED_PREPARE_DOCUMENT).await;
     }
 }

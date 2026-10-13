@@ -89,6 +89,7 @@ pub async fn run() -> anyhow::Result<()> {
     );
 
     spawn_feed_source_entry_canonical_url_backfill(ctx.clone());
+    spawn_epub_chapter_list_backfill(ctx.clone());
 
     let backend = PostgresStorage::<GenericJobEnvelope>::new_with_notify(&pool, &apalis_config);
     let handles = spawn_background_loops(ctx.clone(), &config, handoff);
@@ -235,8 +236,8 @@ fn build_notion_job_deps(
 }
 
 fn spawn_feed_source_entry_canonical_url_backfill(ctx: Arc<WorkerContext>) {
-    // TASK-239: the backfill keyset-paginates to termination internally, so it runs ONCE here --
-    // wrapping it in an until-zero loop would re-scan rows whose url never canonicalizes forever.
+    // The backfill keyset-paginates to termination internally, so it runs ONCE here -- wrapping
+    // it in an until-zero loop would re-scan rows whose url never canonicalizes forever.
     tokio::spawn(async move {
         match jobs::backfill::run_feed_source_entry_canonical_url_backfill(
             ctx.feed_repo.as_ref(),
@@ -252,6 +253,23 @@ fn spawn_feed_source_entry_canonical_url_backfill(ctx: Arc<WorkerContext>) {
             Err(err) => {
                 tracing::error!(error = %err, "feed canonical_url backfill failed")
             }
+        }
+    });
+}
+
+fn spawn_epub_chapter_list_backfill(ctx: Arc<WorkerContext>) {
+    let Some(storage) = ctx.object_storage.clone() else {
+        tracing::info!("object storage disabled; EPUB chapter list backfill skipped");
+        return;
+    };
+    let formats = ctx.epub_format_repo.clone();
+    tokio::spawn(async move {
+        match jobs::backfill::run_epub_chapter_list_backfill(formats, storage).await {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                tracing::info!("EPUB chapter list backfill is running on another worker")
+            }
+            Err(err) => tracing::error!(error = %err, "EPUB chapter list backfill failed"),
         }
     });
 }
