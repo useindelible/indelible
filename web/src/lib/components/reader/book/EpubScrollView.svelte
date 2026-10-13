@@ -660,9 +660,12 @@
 		border-radius: 3px;
 	}
 
-	/* Strip any background/color baked into EPUB HTML so themes always win */
-	.book-body :global(*) {
+	/* Strip any background/color baked into EPUB HTML so themes always win; highlights keep their colour */
+	.book-body :global(*:not(mark[data-highlight-id])) {
 		background-color: transparent !important;
+	}
+
+	.book-body :global(*) {
 		color: inherit;
 	}
 
