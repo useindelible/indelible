@@ -8,9 +8,9 @@ import type {
 	SearchSuggestionResponse,
 	RecentSearchResponse
 } from '$lib/api/generated/types.gen';
-import { resultKey, toPlaceholderEntry } from './search-entry';
+import { rowKey, toPlaceholderEntry } from './search-entry';
 
-export { resultKey };
+export { rowKey };
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_MS = 300;
@@ -39,7 +39,7 @@ let highlightedIndex = $state(-1);
 let recentSearches = $state<RecentSearchResponse[]>([]);
 let recentLoading = $state(false);
 
-const selectedResult = $derived(results.find((r) => resultKey(r) === selectedId) ?? null);
+const selectedResult = $derived(results.find((r) => rowKey(r) === selectedId) ?? null);
 const selectedEntry = $derived.by((): DocumentListEntry | null => {
 	if (!selectedResult) return null;
 	const loaded = selectedResult.document_id ? loadedEntries[selectedResult.document_id] : undefined;
@@ -63,7 +63,7 @@ async function loadEntry(documentId: string): Promise<void> {
 
 function scheduleEntryLoad(id: string | null, delayMs: number): void {
 	clearTimeout(entryLoadTimer);
-	const documentId = results.find((r) => resultKey(r) === id)?.document_id;
+	const documentId = results.find((r) => rowKey(r) === id)?.document_id;
 	if (!documentId) return;
 	entryLoadTimer = setTimeout(() => void loadEntry(documentId), delayMs);
 }
@@ -128,7 +128,7 @@ async function submitSearch(q?: string): Promise<void> {
 	await executeSearch(submittedQuery);
 
 	if (selectedId === null && results.length > 0) {
-		selectedId = resultKey(results[0]!);
+		selectedId = rowKey(results[0]!);
 		scheduleEntryLoad(selectedId, 0);
 	}
 	loading = false;
