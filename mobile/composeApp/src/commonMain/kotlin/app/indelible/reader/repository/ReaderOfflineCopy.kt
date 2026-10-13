@@ -26,6 +26,7 @@ import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.toHighlightData
 import app.indelible.reader.model.toReaderDocument
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -56,17 +57,17 @@ private fun <S, V> Result<Steady<S>>.whenHeld(view: (Steady<S>) -> V): Result<V>
 
 /**
  * The local view: server parts with local changes replayed on top; a part a local change
- * overtook during its fetch is never applied, and a server slower than [budgetMs] falls back to the copy.
+ * overtook during its fetch is never applied, and a server slower than [FALLBACK_BUDGET_MS] falls back to the copy.
  */
 class ReaderOfflineCopy(
     private val store: OfflineStore,
     private val files: OfflineFiles,
     private val sessionProvider: () -> Session?,
     private val clock: () -> Long,
-    private val budgetMs: Long = FALLBACK_BUDGET_MS,
     private val requestCache: suspend (Session, String) -> Unit,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    val tags = OfflineTags(files, store, sessionProvider, budgetMs)
+    val tags = OfflineTags(files, store, sessionProvider, FALLBACK_BUDGET_MS, dispatcher)
 
     suspend fun document(
         documentId: String,
@@ -154,7 +155,7 @@ class ReaderOfflineCopy(
         val scope = session.scope
         val revision = store.localChanges(scope, documentId).revision
         if (store.cachedDocument(scope, documentId) == null) return null
-        val fetched = attemptWithin(budgetMs, fetch)
+        val fetched = attemptWithin(FALLBACK_BUDGET_MS, fetch)
         fetched.onSuccess { refresh(session, RefreshRequest(documentId, revision, part(it), clock())) }
         val refused = fetched.exceptionOrNull()?.takeUnless { it.fallsBack() }
         val copy = store.cachedDocument(scope, documentId)
@@ -210,7 +211,7 @@ class ReaderOfflineCopy(
         val session = sessionProvider()
         val copy = session?.let { store.cachedDocument(it.scope, documentId) }
         if (session == null || copy == null) return fetch()
-        val fetched = attemptWithin(budgetMs, fetch)
+        val fetched = attemptWithin(FALLBACK_BUDGET_MS, fetch)
         val fallback =
             fetched
                 .exceptionOrNull()
@@ -246,7 +247,7 @@ class ReaderOfflineCopy(
                 ?: return whenAbsent
         val path = files.generationDir(scope, copy.documentId, copy.generation) / asset.path
         val text =
-            withContext(Dispatchers.Default) {
+            withContext(dispatcher) {
                 try {
                     files.readText(path)
                 } catch (ignored: IOException) {

@@ -14,6 +14,7 @@ import app.indelible.core.offline.startedWorker
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderDocument
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import okio.IOException
 
@@ -99,8 +100,8 @@ internal suspend fun TestScope.readerOfflineHarness(configure: FakeServer.() -> 
             files = download.files,
             sessionProvider = session,
             clock = { testScheduler.currentTime },
-            budgetMs = READ_BUDGET_MS,
             requestCache = { live, documentId -> download.manager.cacheOnOpen(live, documentId) },
+            dispatcher = StandardTestDispatcher(testScheduler),
         )
     val repository =
         ApiReaderRepository(

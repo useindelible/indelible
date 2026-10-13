@@ -128,6 +128,7 @@ internal suspend fun TestScope.readerOutboxHarness(
                         sessionProvider = { registry.current.value.session },
                         clock = { testScheduler.currentTime },
                         requestCache = { _, _ -> },
+                        dispatcher = StandardTestDispatcher(testScheduler),
                     ),
                 capabilities = ServerCapabilities(transport, clock = { testScheduler.currentTime }),
             ),

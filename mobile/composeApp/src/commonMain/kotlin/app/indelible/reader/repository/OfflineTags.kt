@@ -6,7 +6,7 @@ import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.scopeDir
 import app.indelible.reader.model.TagData
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -40,6 +40,7 @@ class OfflineTags internal constructor(
     private val store: OfflineStore,
     private val sessionProvider: () -> Session?,
     private val budgetMs: Long,
+    private val dispatcher: CoroutineDispatcher,
 ) {
     private val lock = Mutex()
 
@@ -90,7 +91,7 @@ class OfflineTags internal constructor(
             .flatMapTo(mutableSetOf()) { (it.payload as? OutboxPayload.HighlightTags)?.tags.orEmpty() }
 
     private suspend fun load(scope: String): List<KeptTag>? =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcher) {
             try {
                 files.readText(files.scopeDir(scope) / TAGS_FILE)?.let { json.decodeFromString(keptTagList, it) }
             } catch (ignored: IOException) {
@@ -103,7 +104,7 @@ class OfflineTags internal constructor(
     private suspend fun write(
         session: Session,
         tags: List<KeptTag>,
-    ) = withContext(Dispatchers.Default) {
+    ) = withContext(dispatcher) {
         if (sessionProvider() !== session) return@withContext
         try {
             files.writeText(files.scopeDir(session.scope) / TAGS_FILE, json.encodeToString(keptTagList, tags))
