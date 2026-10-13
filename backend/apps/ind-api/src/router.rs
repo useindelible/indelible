@@ -11,8 +11,9 @@ use ind_http_api::{
     document_routes, email_alias_routes, email_sender_routes, entity_routes, epub_routes,
     event_routes, export_routes, extension_routes, feed_delivery_routes, feed_routes,
     highlight_routes, home_routes, import_routes, integration_routes, library_routes, mila_routes,
-    onboarding_routes, rate_limited_auth_routes, scalar_ui, search_routes, settings_routes,
-    smart_list_routes, swagger_ui, tag_routes, token_routes, tts_routes, webhook_routes,
+    onboarding_routes, rate_limited_auth_routes, scalar_ui, search_routes, server_routes,
+    settings_routes, smart_list_routes, swagger_ui, tag_routes, token_routes, tts_routes,
+    webhook_routes,
 };
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::set_header::SetResponseHeaderLayer;
@@ -38,6 +39,7 @@ pub fn build(
         .route("/api/health", get(health::health_check))
         .merge(rate_limited_auth_routes(rate_limiters.clone()))
         .merge(auth_routes())
+        .merge(server_routes())
         .merge(account_routes())
         .merge(onboarding_routes())
         .merge(token_routes())
