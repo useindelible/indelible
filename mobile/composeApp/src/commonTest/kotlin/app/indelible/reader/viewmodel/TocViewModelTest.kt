@@ -24,11 +24,13 @@ import kotlin.test.assertTrue
 class TocViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeReaderRepository
+    private lateinit var events: RecordingReadingEventWriter
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeReaderRepository()
+        events = RecordingReadingEventWriter()
         repository.getItemResult = Result.success(fakeItemDetail())
     }
 
@@ -62,7 +64,7 @@ class TocViewModelTest {
                     Result.success(toc(ArticleTocStatus.PENDING)),
                     Result.success(toc(ArticleTocStatus.READY, listOf(entry(0), entry(1)))),
                 )
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -75,7 +77,7 @@ class TocViewModelTest {
     fun none_is_terminal_and_stops_polling() =
         runTest(testDispatcher) {
             repository.getArticleTocResults = listOf(Result.success(toc(ArticleTocStatus.NONE)))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -87,7 +89,7 @@ class TocViewModelTest {
     fun exhausted_poll_budget_reports_unavailable() =
         runTest(testDispatcher) {
             repository.getArticleTocResults = listOf(Result.success(toc(ArticleTocStatus.PENDING)))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -100,7 +102,7 @@ class TocViewModelTest {
         runTest(testDispatcher) {
             repository.getArticleTocResults =
                 listOf(Result.success(toc(ArticleTocStatus.READY, listOf(entry(3)))))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
             viewModel.openPanel(DataPanel.CONTENTS)
 
@@ -128,7 +130,7 @@ class TocViewModelTest {
                         ),
                     ),
                 )
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.onContentLoaded()
@@ -146,7 +148,7 @@ class TocViewModelTest {
     fun toc_fetch_failures_fall_back_to_unavailable() =
         runTest(testDispatcher) {
             repository.getArticleTocResults = listOf(Result.failure(RuntimeException("network")))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)

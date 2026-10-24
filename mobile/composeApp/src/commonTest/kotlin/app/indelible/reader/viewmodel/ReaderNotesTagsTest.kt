@@ -18,11 +18,13 @@ import kotlin.test.assertIs
 class ReaderNotesTagsTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeReaderRepository
+    private lateinit var events: RecordingReadingEventWriter
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeReaderRepository()
+        events = RecordingReadingEventWriter()
     }
 
     @AfterTest
@@ -36,7 +38,7 @@ class ReaderNotesTagsTest {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.getItemNoteResult = Result.success("My thoughts on this piece")
             repository.getItemTagsResult = Result.success(listOf("research", "ai"))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -48,7 +50,7 @@ class ReaderNotesTagsTest {
     fun save_item_note_calls_upsert_and_updates_state() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.saveItemNote("a fresh note")
@@ -64,7 +66,7 @@ class ReaderNotesTagsTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())
             repository.setItemTagsResult = Result.success(listOf("kotlin", "compose"))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             viewModel.setItemTags(listOf("kotlin", "compose"))
@@ -80,7 +82,7 @@ class ReaderNotesTagsTest {
         runTest(testDispatcher) {
             repository.getItemResult =
                 Result.success(fakeItemDetail(id = "lib_route", documentId = "doc_route"))
-            val viewModel = ReaderViewModel("doc_route", repository)
+            val viewModel = ReaderViewModel("doc_route", repository, readingEvents = events)
             advanceUntilIdle()
 
             assertEquals("lib_route", repository.lastGetItemTagsId)

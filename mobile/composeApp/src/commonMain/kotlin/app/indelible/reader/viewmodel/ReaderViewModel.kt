@@ -3,6 +3,7 @@ package app.indelible.reader.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
+import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.ArticleTocStatus
 import app.indelible.reader.model.DataPanel
@@ -15,18 +16,16 @@ import app.indelible.reader.playback.ReaderPlaybackController
 import app.indelible.reader.playback.ReaderVoice
 import app.indelible.reader.playback.StubPlaybackController
 import app.indelible.reader.repository.ReaderRepository
+import app.indelible.reader.repository.ReadingEventWriter
 import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.reader_error_create_highlight
-import indelible.composeapp.generated.resources.reader_error_delete_highlight
-import indelible.composeapp.generated.resources.reader_error_delete_note
 import indelible.composeapp.generated.resources.reader_error_load
 import indelible.composeapp.generated.resources.reader_error_move
 import indelible.composeapp.generated.resources.reader_error_retry_content
 import indelible.composeapp.generated.resources.reader_error_save_library
 import indelible.composeapp.generated.resources.reader_error_save_note
 import indelible.composeapp.generated.resources.reader_error_save_tags
-import indelible.composeapp.generated.resources.reader_error_update_highlight_color
 import indelible.composeapp.generated.resources.reader_saved_library
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +39,10 @@ class ReaderViewModel(
     private val documentId: String,
     private val repository: ReaderRepository,
     initialPreferences: ReaderPreferences = ReaderPreferences(),
+    private val readingEvents: ReadingEventWriter,
 ) : ViewModel() {
+    /** One sitting: every event this reader records is grouped under it. */
+    private val sessionId = uuidV7()
     private val _uiState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     val uiState: StateFlow<ReaderUiState> = _uiState.asStateFlow()
 
@@ -57,9 +59,12 @@ class ReaderViewModel(
     val playbackState: StateFlow<PlaybackState> = playbackController.state
     val voices: List<ReaderVoice> get() = playbackController.voices
 
+    private val highlightActions =
+        ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects)
+
     private val progressSync =
         ReaderProgressSync(viewModelScope) { percent ->
-            repository.updateProgress(documentId, percent)
+            readingEvents.recordProgress(documentId, percent, sessionId)
         }
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
@@ -100,6 +105,8 @@ class ReaderViewModel(
                             progress = savedProgress,
                             preferences = preferences,
                         )
+
+                    recordOpened()
 
                     if (contentMode == ReaderContentMode.HTML) {
                         loadHtmlContent()
@@ -396,24 +403,7 @@ class ReaderViewModel(
         textContent: String,
         startOffset: Long,
         endOffset: Long,
-    ) {
-        viewModelScope.launch {
-            repository
-                .createHighlight(
-                    itemId = documentId,
-                    color = color.apiValue,
-                    textContent = textContent,
-                    startOffset = startOffset,
-                    endOffset = endOffset,
-                ).onSuccess { highlight ->
-                    updateSuccessState { state ->
-                        state.copy(highlights = state.highlights + highlight)
-                    }
-                }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_create_highlight)))
-                }
-        }
-    }
+    ) = highlightActions.createHighlight(color, textContent, startOffset, endOffset)
 
     fun createHighlightForTag(
         color: HighlightColor,
@@ -421,141 +411,28 @@ class ReaderViewModel(
         startOffset: Long,
         endOffset: Long,
         onCreated: (String) -> Unit,
-    ) {
-        viewModelScope.launch {
-            repository
-                .createHighlight(
-                    itemId = documentId,
-                    color = color.apiValue,
-                    textContent = textContent,
-                    startOffset = startOffset,
-                    endOffset = endOffset,
-                ).onSuccess { highlight ->
-                    updateSuccessState { state ->
-                        state.copy(highlights = state.highlights + highlight)
-                    }
-                    onCreated(highlight.id)
-                }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_create_highlight)))
-                }
-        }
-    }
+    ) = highlightActions.createHighlight(color, textContent, startOffset, endOffset, onCreated)
 
-    fun deleteHighlight(highlightId: String) {
-        val state = (_uiState.value as? ReaderUiState.Success) ?: return
-        val removedHighlight = state.highlights.find { it.id == highlightId }
-        updateSuccessState { s ->
-            s.copy(highlights = s.highlights.filter { it.id != highlightId })
-        }
-        viewModelScope.launch {
-            repository
-                .deleteHighlight(highlightId)
-                .onFailure {
-                    if (removedHighlight != null) {
-                        updateSuccessState { s ->
-                            s.copy(highlights = s.highlights + removedHighlight)
-                        }
-                    }
-                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_delete_highlight)))
-                }
-        }
-    }
+    fun deleteHighlight(highlightId: String) = highlightActions.deleteHighlight(highlightId)
 
     fun updateHighlightColor(
         highlightId: String,
         color: HighlightColor,
-    ) {
-        viewModelScope.launch {
-            repository
-                .updateHighlightColor(highlightId, color.apiValue)
-                .onSuccess { updated ->
-                    updateSuccessState { state ->
-                        state.copy(
-                            highlights =
-                                state.highlights.map { h ->
-                                    // The PATCH response omits tags/note; keep the ones already in state.
-                                    if (h.id == highlightId) updated.copy(tags = h.tags, note = h.note) else h
-                                },
-                        )
-                    }
-                }.onFailure {
-                    _effects.emit(
-                        ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_update_highlight_color)),
-                    )
-                }
-        }
-    }
+    ) = highlightActions.updateHighlightColor(highlightId, color)
 
     fun upsertHighlightNote(
         highlightId: String,
         body: String,
-    ) {
-        viewModelScope.launch {
-            repository
-                .upsertHighlightNote(highlightId, body)
-                .onSuccess { note ->
-                    updateSuccessState { state ->
-                        state.copy(
-                            highlights =
-                                state.highlights.map { h ->
-                                    if (h.id == highlightId) h.copy(note = note) else h
-                                },
-                        )
-                    }
-                }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_note)))
-                }
-        }
-    }
+    ) = highlightActions.upsertHighlightNote(highlightId, body)
 
-    fun deleteHighlightNote(highlightId: String) {
-        viewModelScope.launch {
-            repository
-                .deleteHighlightNote(highlightId)
-                .onSuccess {
-                    updateSuccessState { state ->
-                        state.copy(
-                            highlights =
-                                state.highlights.map { h ->
-                                    if (h.id == highlightId) h.copy(note = null) else h
-                                },
-                        )
-                    }
-                }.onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_delete_note)))
-                }
-        }
-    }
+    fun deleteHighlightNote(highlightId: String) = highlightActions.deleteHighlightNote(highlightId)
 
     fun setHighlightTags(
         highlightId: String,
         tags: List<String>,
-    ) {
-        updateSuccessState { state ->
-            state.copy(
-                highlights =
-                    state.highlights.map { h ->
-                        if (h.id == highlightId) h.copy(tags = tags) else h
-                    },
-            )
-        }
-        viewModelScope.launch {
-            repository
-                .setHighlightTags(highlightId, tags)
-                .onFailure {
-                    _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_tags)))
-                }
-        }
-    }
+    ) = highlightActions.setHighlightTags(highlightId, tags)
 
-    fun loadTagsForPicker(onResult: (List<TagData>) -> Unit) {
-        viewModelScope.launch {
-            repository
-                .listTags()
-                .onSuccess { tags -> onResult(tags) }
-                .onFailure { onResult(emptyList()) }
-        }
-    }
+    fun loadTagsForPicker(onResult: (List<TagData>) -> Unit) = highlightActions.loadTagsForPicker(onResult)
 
     fun saveItemNote(body: String) {
         updateSuccessState { it.copy(itemNote = body) }
@@ -593,6 +470,12 @@ class ReaderViewModel(
                     _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_tags)))
                 }
         }
+    }
+
+    /** The open is worth recording, never worth losing the document over. */
+    private suspend fun recordOpened() {
+        val recorded = runCatching { readingEvents.recordOpened(documentId, sessionId) }
+        recorded.exceptionOrNull()?.let { if (it is CancellationException) throw it }
     }
 
     private fun updateSuccessState(transform: (ReaderUiState.Success) -> ReaderUiState.Success) {

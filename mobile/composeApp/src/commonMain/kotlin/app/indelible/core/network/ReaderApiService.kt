@@ -13,10 +13,10 @@ import app.indelible.api.generated.client.ApiV1HighlightsNoteClient
 import app.indelible.api.generated.client.ApiV1HighlightsTagsClient
 import app.indelible.api.generated.client.ApiV1LibraryTagsClient
 import app.indelible.api.generated.client.ApiV1TagsClient
+import app.indelible.api.generated.models.ArticleTocResponse
 import app.indelible.api.generated.models.CreateHighlightBody
 import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentReaderResponse
-import app.indelible.api.generated.models.ArticleTocResponse
 import app.indelible.api.generated.models.DocumentReprocessResponse
 import app.indelible.api.generated.models.DocumentUpsertNoteBody
 import app.indelible.api.generated.models.EntitySummaryResponse

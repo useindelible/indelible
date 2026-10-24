@@ -13,7 +13,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RefreshFailureTest {
@@ -99,10 +98,10 @@ class RefreshFailureTest {
         }
 
     @Test
-    fun refresh401ClearsTheSession() =
+    fun refresh401WithdrawsTheSessionAndReportsItsEpoch() =
         runTest {
             val tokenStorage = expiredTokenStorage()
-            var onUnauthorizedCalls = 0
+            val reportedEpochs = mutableListOf<Long>()
 
             val engine =
                 MockEngine { request ->
@@ -120,7 +119,7 @@ class RefreshFailureTest {
             val transport =
                 AuthenticatedApiTransport(
                     tokenStorage,
-                    onUnauthorized = { onUnauthorizedCalls++ },
+                    onUnauthorized = { reportedEpochs += it },
                     engine = engine,
                 )
 
@@ -130,7 +129,6 @@ class RefreshFailureTest {
             val exception = result.exceptionOrNull()
             assertIs<ApiException>(exception)
             assertEquals(401, exception.statusCode)
-            assertNull(tokenStorage.getToken())
-            assertEquals(1, onUnauthorizedCalls)
+            assertEquals(listOf(0L), reportedEpochs)
         }
 }

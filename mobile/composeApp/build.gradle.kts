@@ -10,6 +10,15 @@ plugins {
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.fabrikt)
+    alias(libs.plugins.sqldelight)
+}
+
+sqldelight {
+    databases {
+        create("OfflineDatabase") {
+            packageName.set("app.indelible.db")
+        }
+    }
 }
 
 fabrikt {
@@ -247,6 +256,7 @@ kotlin {
             implementation(libs.androidx.splashscreen)
             implementation(libs.androidx.browser)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.sqldelight.android)
         }
         androidInstrumentedTest.dependencies {
             implementation(libs.androidx.testExt.junit)
@@ -275,6 +285,8 @@ kotlin {
             implementation(libs.coil.network.ktor)
             implementation(libs.koin.core)
             implementation(libs.markdown.renderer.m3)
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -285,11 +297,13 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(libs.sqldelight.native)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.cio)
+            implementation(libs.sqldelight.jvm)
         }
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)

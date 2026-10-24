@@ -27,11 +27,13 @@ import kotlin.test.assertTrue
 class ReaderVideoContentTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeReaderRepository
+    private lateinit var events: RecordingReadingEventWriter
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeReaderRepository()
+        events = RecordingReadingEventWriter()
     }
 
     @AfterTest
@@ -60,7 +62,7 @@ class ReaderVideoContentTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(itemType = "video"))
             repository.fetchHtmlResult = Result.success("<p>Transcript line</p>")
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val html = assertIs<ReaderUiState.Success>(viewModel.uiState.value).htmlContent
@@ -80,7 +82,7 @@ class ReaderVideoContentTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(itemType = "article"))
             repository.fetchHtmlResult = Result.success("<p>Article content</p>")
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val html = assertIs<ReaderUiState.Success>(viewModel.uiState.value).htmlContent
@@ -100,7 +102,7 @@ class ReaderVideoContentTest {
                         entity("ent_2", "TED", "organization"),
                     ),
                 )
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
@@ -113,7 +115,7 @@ class ReaderVideoContentTest {
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(itemType = "video"))
             repository.listDocumentEntitiesResult = Result.failure(RuntimeException("boom"))
-            val viewModel = ReaderViewModel("doc_test1", repository)
+            val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
