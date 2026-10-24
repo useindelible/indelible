@@ -14,8 +14,7 @@ class ReaderBookBridgeTest {
         articleHtml = html,
         preferences = ReaderPreferences(),
         highlights = emptyList(),
-        holdUntilPositioned = hold,
-        topContentPaddingPx = topInset,
+        options = ReaderPageOptions(holdUntilPositioned = hold, topContentPaddingPx = topInset),
     )
 
     @Test

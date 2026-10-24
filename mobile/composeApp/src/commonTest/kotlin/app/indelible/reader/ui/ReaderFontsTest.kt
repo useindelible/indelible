@@ -14,7 +14,7 @@ class ReaderFontsTest {
             articleHtml = "<p>Test</p>",
             preferences = ReaderPreferences(),
             highlights = emptyList(),
-            assets = assets,
+            options = ReaderPageOptions(assets = assets),
         )
 
     @Test

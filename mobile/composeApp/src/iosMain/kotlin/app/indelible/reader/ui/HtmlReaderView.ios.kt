@@ -3,19 +3,16 @@
 package app.indelible.reader.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderPreferences
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import platform.UIKit.UIApplication
 import platform.UIKit.UIColor
@@ -68,63 +65,33 @@ actual fun HtmlReaderView(
     onBookLink: (String) -> Unit,
     modifier: Modifier,
 ) {
-    val fullHtml =
-        remember(
-            htmlContent,
-            preferences,
-            highlights,
-            isDarkMode,
+    val callbacks =
+        rememberReaderBridgeCallbacks(
+            onScrollProgress,
+            onTextSelected,
+            onSelectionCleared,
+            onHighlightTapped,
+            onSummaryAction,
+            onReaderTap,
+            onPositioned,
+            onBookLink,
+        )
+    val options =
+        ReaderPageOptions(
             localization,
-            summaryHtml,
-            summaryPoints,
+            ReaderArticleMeta(articleTitle, articleAuthor, articleDomain),
+            ReaderSummary(summaryHtml, summaryPoints),
             topContentPaddingPx,
             assets,
             holdUntilPositioned,
-        ) {
-            ReaderHtmlTemplate.build(
-                articleHtml = htmlContent,
-                preferences = preferences,
-                highlights = highlights,
-                localization = localization,
-                isDarkMode = isDarkMode,
-                articleTitle = articleTitle,
-                articleAuthor = articleAuthor,
-                articleDomain = articleDomain,
-                summaryHtml = summaryHtml,
-                summaryPoints = summaryPoints,
-                topContentPaddingPx = topContentPaddingPx,
-                assets = assets,
-                holdUntilPositioned = holdUntilPositioned,
-            )
+        )
+    val fullHtml =
+        remember(htmlContent, preferences, highlights, options) {
+            ReaderHtmlTemplate.build(htmlContent, preferences, highlights, options)
         }
-
-    val latestOnScrollProgress = rememberUpdatedState(onScrollProgress)
-    val latestOnTextSelected = rememberUpdatedState(onTextSelected)
-    val latestOnSelectionCleared = rememberUpdatedState(onSelectionCleared)
-    val latestOnHighlightTapped = rememberUpdatedState(onHighlightTapped)
-    val latestOnSummaryAction = rememberUpdatedState(onSummaryAction)
-    val latestOnReaderTap = rememberUpdatedState(onReaderTap)
-    val latestOnPositioned = rememberUpdatedState(onPositioned)
-    val latestOnBookLink = rememberUpdatedState(onBookLink)
     val latestOnContentLoaded = rememberUpdatedState(onContentLoaded)
     var pageLoaded by remember { mutableStateOf(false) }
-
-    val messageHandler =
-        remember {
-            IosMessageHandler(
-                ReaderBridgeCallbacks(
-                    onScroll = { latestOnScrollProgress.value(it) },
-                    onTextSelected = { t, s, e, r -> latestOnTextSelected.value(t, s, e, r) },
-                    onSelectionCleared = { latestOnSelectionCleared.value() },
-                    onHighlightTapped = { id, r -> latestOnHighlightTapped.value(id, r) },
-                    onSummaryAction = { latestOnSummaryAction.value(it) },
-                    onReaderTap = { latestOnReaderTap.value() },
-                    onPositioned = { latestOnPositioned.value() },
-                    onBookLink = { latestOnBookLink.value(it) },
-                ),
-            )
-        }
-
+    val messageHandler = remember { IosMessageHandler(callbacks) }
     val navigationDelegate =
         remember {
             IosNavigationDelegate {
@@ -132,141 +99,107 @@ actual fun HtmlReaderView(
                 latestOnContentLoaded.value()
             }
         }
-
     var webViewRef by remember { mutableStateOf<WKWebView?>(null) }
 
     UIKitView(
-        factory = {
-            val config = WKWebViewConfiguration()
-            val controller = config.userContentController
-
-            val bridgeScript =
-                """
-                window.NativeBridge = {
-                    onScroll: function(percent, scrollTop, offset, atEnd) {
-                        window.webkit.messageHandlers.onScroll.postMessage(
-                            JSON.stringify({percent: percent, scrollTop: scrollTop, offset: offset, atEnd: atEnd})
-                        );
-                    },
-                    onPositioned: function() {
-                        window.webkit.messageHandlers.onPositioned.postMessage("");
-                    },
-                    onBookLink: function(href) {
-                        window.webkit.messageHandlers.onBookLink.postMessage(href);
-                    },
-                    onTextSelected: function(text, startOffset, endOffset, rectJson) {
-                        window.webkit.messageHandlers.onTextSelected.postMessage(
-                            JSON.stringify({text: text, startOffset: startOffset, endOffset: endOffset, rect: rectJson})
-                        );
-                    },
-                    onSelectionCleared: function() {
-                        window.webkit.messageHandlers.onSelectionCleared.postMessage("");
-                    },
-                    onHighlightTapped: function(highlightId, rectJson) {
-                        window.webkit.messageHandlers.onHighlightTapped.postMessage(
-                            JSON.stringify({highlightId: highlightId, rect: rectJson})
-                        );
-                    },
-                    onSummaryAction: function(action) {
-                        window.webkit.messageHandlers.onSummaryAction.postMessage(action);
-                    },
-                    onReaderTap: function() {
-                        window.webkit.messageHandlers.onReaderTap.postMessage("");
-                    }
-                };
-                """.trimIndent()
-
-            controller.addScriptMessageHandler(messageHandler, "onScroll")
-            controller.addScriptMessageHandler(messageHandler, "onTextSelected")
-            controller.addScriptMessageHandler(messageHandler, "onSelectionCleared")
-            controller.addScriptMessageHandler(messageHandler, "onHighlightTapped")
-            controller.addScriptMessageHandler(messageHandler, "onSummaryAction")
-            controller.addScriptMessageHandler(messageHandler, "onReaderTap")
-            controller.addScriptMessageHandler(messageHandler, "onPositioned")
-            controller.addScriptMessageHandler(messageHandler, "onBookLink")
-
-            // Inject the native bridge as a document-start user script rather than a page
-            // <script>. User-script injection is not subject to the document CSP, so the reader's
-            // strict script-src can block injected inline scripts while the bridge still loads.
-            controller.addUserScript(
-                WKUserScript(
-                    source = bridgeScript,
-                    injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentStart,
-                    forMainFrameOnly = true,
-                ),
-            )
-
-            val webView = WKWebView(frame = kotlinx.cinterop.cValue { }, configuration = config)
-            webView.navigationDelegate = navigationDelegate
-            // Transparent so the native aura layer behind the WebView bleeds
-            // through the reader canvas (painted at < 1.0 alpha in the template).
-            webView.opaque = false
-            webView.backgroundColor = UIColor.clearColor()
-            webView.scrollView.opaque = false
-            webView.scrollView.backgroundColor = UIColor.clearColor()
-            // Disable WKWebView's automatic safe-area inset so the HTML's own
-            // padding-top (passed from Compose insets) is the single source of top
-            // spacing; the aura then paints from the true top behind the status bar.
-            webView.scrollView.contentInsetAdjustmentBehavior =
-                UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
-
-            webView.loadHTMLString(fullHtml, baseURL = null)
-            webViewRef = webView
-            webView
-        },
+        factory = { readerWebView(messageHandler, navigationDelegate, fullHtml).also { webViewRef = it } },
         modifier = modifier,
     )
 
-    LaunchedEffect(scrollToPercent) {
-        val percent = scrollToPercent ?: return@LaunchedEffect
-        webViewRef?.evaluateJavaScript("window.scrollToPercent($percent);", null)
-        onScrollRestored()
-    }
+    ReaderBridgeEffects(
+        ReaderBridgeInputs(
+            pageLoaded,
+            scrollToPercent,
+            anchorScroll,
+            preferences,
+            highlights,
+            speakingSentenceIndex,
+            immersive,
+            scrollToCharOffset,
+            captureRequest,
+        ),
+        onScrollRestored,
+        onAnchorScrolled,
+    ) { webViewRef?.evaluateJavaScript(it, null) }
+}
 
-    BookBridgeEffects(pageLoaded, scrollToCharOffset, captureRequest) { webViewRef?.evaluateJavaScript(it, null) }
+private val BRIDGE_MESSAGES =
+    listOf(
+        "onScroll",
+        "onTextSelected",
+        "onSelectionCleared",
+        "onHighlightTapped",
+        "onSummaryAction",
+        "onReaderTap",
+        "onPositioned",
+        "onBookLink",
+    )
 
-    LaunchedEffect(anchorScroll, pageLoaded) {
-        val anchor = anchorScroll ?: return@LaunchedEffect
-        if (!pageLoaded) return@LaunchedEffect
-        val escapedId = anchor.id.replace("\\", "\\\\").replace("'", "\\'")
-        webViewRef?.evaluateJavaScript(
-            "window.scrollToAnchor('$escapedId', ${anchor.fallbackIndex});",
-            null,
-        )
-        onAnchorScrolled()
-    }
+private val BRIDGE_SCRIPT =
+    """
+    window.NativeBridge = {
+        onScroll: function(percent, scrollTop, offset, atEnd) {
+            window.webkit.messageHandlers.onScroll.postMessage(
+                JSON.stringify({percent: percent, scrollTop: scrollTop, offset: offset, atEnd: atEnd})
+            );
+        },
+        onPositioned: function() {
+            window.webkit.messageHandlers.onPositioned.postMessage("");
+        },
+        onBookLink: function(href) {
+            window.webkit.messageHandlers.onBookLink.postMessage(href);
+        },
+        onTextSelected: function(text, startOffset, endOffset, rectJson) {
+            window.webkit.messageHandlers.onTextSelected.postMessage(
+                JSON.stringify({text: text, startOffset: startOffset, endOffset: endOffset, rect: rectJson})
+            );
+        },
+        onSelectionCleared: function() {
+            window.webkit.messageHandlers.onSelectionCleared.postMessage("");
+        },
+        onHighlightTapped: function(highlightId, rectJson) {
+            window.webkit.messageHandlers.onHighlightTapped.postMessage(
+                JSON.stringify({highlightId: highlightId, rect: rectJson})
+            );
+        },
+        onSummaryAction: function(action) {
+            window.webkit.messageHandlers.onSummaryAction.postMessage(action);
+        },
+        onReaderTap: function() {
+            window.webkit.messageHandlers.onReaderTap.postMessage("");
+        }
+    };
+    """.trimIndent()
 
-    LaunchedEffect(preferences, isDarkMode) {
-        snapshotFlow { preferences }
-            .distinctUntilChanged()
-            .collect { prefs ->
-                val css = ReaderHtmlTemplate.buildTypographyCss(prefs, isDarkMode)
-                val escaped =
-                    css
-                        .replace("\\", "\\\\")
-                        .replace("'", "\\'")
-                        .replace("\n", "\\n")
-                val colorScheme = ReaderHtmlTemplate.colorSchemeFor(prefs, isDarkMode)
-                webViewRef?.evaluateJavaScript("window.updateTypography('$escaped', '$colorScheme');", null)
-            }
-    }
-
-    LaunchedEffect(highlights) {
-        snapshotFlow { highlights }
-            .distinctUntilChanged()
-            .collect { hl ->
-                val json = ReaderHtmlTemplate.buildHighlightJson(hl)
-                webViewRef?.evaluateJavaScript("window.applyHighlights($json);", null)
-            }
-    }
-
-    LaunchedEffect(speakingSentenceIndex) {
-        webViewRef?.evaluateJavaScript("window.setSpeaking($speakingSentenceIndex);", null)
-    }
-
-    LaunchedEffect(immersive) {
-        webViewRef?.evaluateJavaScript("window.setReaderImmersive($immersive);", null)
-    }
+private fun readerWebView(
+    messageHandler: IosMessageHandler,
+    navigationDelegate: IosNavigationDelegate,
+    fullHtml: String,
+): WKWebView {
+    val config = WKWebViewConfiguration()
+    val controller = config.userContentController
+    BRIDGE_MESSAGES.forEach { controller.addScriptMessageHandler(messageHandler, it) }
+    // A document-start user script is not subject to the page's CSP, so the reader's strict
+    // script-src can block injected inline scripts while the bridge still loads.
+    controller.addUserScript(
+        WKUserScript(
+            source = BRIDGE_SCRIPT,
+            injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentStart,
+            forMainFrameOnly = true,
+        ),
+    )
+    val webView = WKWebView(frame = kotlinx.cinterop.cValue { }, configuration = config)
+    webView.navigationDelegate = navigationDelegate
+    // Transparent so the native aura layer behind the WebView shows through the reader canvas.
+    webView.opaque = false
+    webView.backgroundColor = UIColor.clearColor()
+    webView.scrollView.opaque = false
+    webView.scrollView.backgroundColor = UIColor.clearColor()
+    // The HTML's own padding-top (from the Compose insets) is the single source of top spacing.
+    webView.scrollView.contentInsetAdjustmentBehavior =
+        UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentNever
+    webView.loadHTMLString(fullHtml, baseURL = null)
+    return webView
 }
 
 private class IosMessageHandler(

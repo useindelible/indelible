@@ -30,19 +30,21 @@ class YouTubeReaderMarkupTest {
         </section>
         """.trimIndent()
 
-    private fun render(isDark: Boolean) =
+    private fun render() =
         ReaderHtmlTemplate.build(
             articleHtml = youtubeBody,
             preferences = ReaderPreferences(),
             highlights = emptyList(),
-            isDarkMode = isDark,
-            articleTitle = "How to Make Money",
-            summaryHtml = "A tour of get-rich-quick schemes and why they do not work.",
+            options =
+                ReaderPageOptions(
+                    article = ReaderArticleMeta(title = "How to Make Money"),
+                    summary = ReaderSummary(html = "A tour of get-rich-quick schemes and why they do not work."),
+                ),
         )
 
     @Test
     fun youtubeBodyIsStyledAndTimestampsAreTappable() {
-        val html = render(isDark = false)
+        val html = render()
 
         assertTrue(html.contains(".yt-channel-header"), "channel header must be styled")
         assertTrue(html.contains(".yt-stat-dot"), "the stats separator must be styled or views/duration run together")
