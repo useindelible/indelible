@@ -1,5 +1,6 @@
 package app.indelible.auth.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.network.ApiClient
 import app.indelible.core.offline.ScopePurger
@@ -21,16 +22,20 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -46,16 +51,25 @@ private const val FAILURE_SETTLE_MS = 200L
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelSessionTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-    @BeforeTest
-    fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
-    }
+    private val viewModels = mutableListOf<AuthViewModel>()
 
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    /** The store and the engine answer from their own threads; an unconfined Main refuses that resume. */
+    private fun sessionTest(body: suspend TestScope.() -> Unit): TestResult =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                body()
+            } finally {
+                withContext(NonCancellable) {
+                    viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
+                }
+            }
+        }
 
     /** Requests for user A wait on [gateA], whose value is the status A's profile fetch gets; B answers at once. */
     private class Gates(
@@ -113,7 +127,7 @@ class AuthViewModelSessionTest {
                 worker,
                 ScopePurger(store),
                 sessions,
-            )
+            ).also(viewModels::add)
         return Fixture(registry, tokenStorage, store, sessions, viewModel, Gates(gateA, profileGate))
     }
 
@@ -136,7 +150,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun delayedLoginResultForAAfterBSignedInIsRejectedAndBStaysSignedIn() =
-        runTest {
+        sessionTest {
             val f = fixture()
             f.viewModel.authState.first { it is AuthState.Unauthenticated }
 
@@ -153,7 +167,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun delayedSessionRefetchForAAfterBSignedInIsRejected() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             assertIs<AuthState.Loading>(f.viewModel.authState.value)
 
@@ -167,7 +181,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun delayedProfileResultForAAfterLogoutAndBSignInIsRejected() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             f.gateA.complete(HttpStatusCode.OK)
             f.viewModel.authState.first { it is AuthState.Authenticated }
@@ -188,7 +202,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun forcedLogoutForAThatRunsAfterBSignedInLeavesBSignedIn() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             f.gateA.complete(HttpStatusCode.OK)
             f.viewModel.authState.first { it is AuthState.Authenticated }
@@ -208,7 +222,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun startupFailureForAAfterBSignedInDoesNotSignBOut() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             f.viewModel.initialize()
             f.viewModel.loginAs("b@example.com")
@@ -225,7 +239,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun logoutStartedWhileAnotherTransitionIsOpenStillPurgesTheOutgoingScope() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             f.gateA.complete(HttpStatusCode.OK)
             f.viewModel.authState.first { it is AuthState.Authenticated }
@@ -254,7 +268,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun fullLoginChainOpensExactlyOneTransition() =
-        runTest {
+        sessionTest {
             val f = fixture()
             f.viewModel.authState.first { it is AuthState.Unauthenticated }
             val before = f.registry.current.value.epoch
@@ -267,7 +281,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun logoutPurgesInsideTheTransitionAndAWriterHoldingTheOldSessionFails() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             f.gateA.complete(HttpStatusCode.OK)
             f.viewModel.authState.first { it is AuthState.Authenticated }
@@ -286,7 +300,7 @@ class AuthViewModelSessionTest {
 
     @Test
     fun invalidatedSessionIsClearedByAForcedLogoutForThatEpoch() =
-        runTest {
+        sessionTest {
             val f = fixture(signedInAs = "A")
             f.gateA.complete(HttpStatusCode.OK)
             f.viewModel.authState.first { it is AuthState.Authenticated }

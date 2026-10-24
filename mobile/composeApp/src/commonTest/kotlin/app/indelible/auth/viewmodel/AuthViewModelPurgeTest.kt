@@ -1,5 +1,6 @@
 package app.indelible.auth.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.network.ApiClient
 import app.indelible.core.network.normalizedOrigin
@@ -20,14 +21,19 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.job
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -37,22 +43,30 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelPurgeTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-
-    @BeforeTest
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-    }
+    private val viewModels = mutableListOf<AuthViewModel>()
 
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
     }
 
+    /** The store answers from its own dispatcher; an unconfined Main refuses that resume. */
+    private fun purgeTest(body: suspend TestScope.() -> Unit): TestResult =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                body()
+            } finally {
+                withContext(NonCancellable) {
+                    viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
+                }
+            }
+        }
+
     @Test
     fun forceLogoutDoesNotPurgeTheScope() =
-        runTest {
+        purgeTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveServerUrl("https://example.com")
             tokenStorage.saveUserId("usr_ABC")
@@ -66,6 +80,7 @@ class AuthViewModelPurgeTest {
             val viewModel = authViewModel(apiClient, tokenStorage, ScopePurger(store))
 
             viewModel.forceLogout(0)
+            viewModel.authState.first { it is AuthState.Unauthenticated }
             advanceUntilIdle()
 
             assertIs<AuthState.Unauthenticated>(viewModel.authState.value)
@@ -75,7 +90,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun logoutSignsOutEvenWhenThePurgeThrows() =
-        runTest {
+        purgeTest {
             val tokenStorage = signedInTokenStorage()
             val store = SqlDelightOfflineStore(testOfflineDatabase())
             val apiClient = ApiClient(tokenStorage, engine = sessionEngine())
@@ -96,7 +111,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun logoutPurgesTheActiveScopeAfterClearingTokens() =
-        runTest {
+        purgeTest {
             val tokenStorage = signedInTokenStorage()
             val store = SqlDelightOfflineStore(testOfflineDatabase())
             val apiClient = ApiClient(tokenStorage, engine = sessionEngine())
@@ -128,7 +143,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun loginReachesAuthenticatedEvenWhenTheInactiveSweepThrows() =
-        runTest {
+        purgeTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveServerUrl("https://example.com")
 
@@ -149,7 +164,7 @@ class AuthViewModelPurgeTest {
                     worker,
                     ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
                     testSessionTransitions(tokenStorage, worker = worker),
-                )
+                ).also(viewModels::add)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -162,7 +177,7 @@ class AuthViewModelPurgeTest {
 
     @Test
     fun loginPurgesInactiveScopesButKeepsTheActiveOne() =
-        runTest {
+        purgeTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveServerUrl("https://example.com")
 
@@ -274,7 +289,7 @@ class AuthViewModelPurgeTest {
             testOutboxWorker(),
             scopePurger,
             testSessionTransitions(tokenStorage),
-        )
+        ).also(viewModels::add)
 
     /** Fails the first purge step that touches data, after purge_pending is already set. */
     private class ThrowingPurgeRowsStore(
