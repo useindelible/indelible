@@ -1,5 +1,6 @@
 package app.indelible.auth.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiClient
@@ -16,13 +17,18 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,8 +39,10 @@ import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
+    // Requests answer from the engine's own thread; an unconfined Main refuses that resume.
+    private val testDispatcher = StandardTestDispatcher()
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
+    private val viewModels = mutableListOf<AuthViewModel>()
 
     @BeforeTest
     fun setUp() {
@@ -46,29 +54,40 @@ class AuthViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun vmTest(body: suspend TestScope.() -> Unit): TestResult =
+        runTest {
+            try {
+                body()
+            } finally {
+                withContext(NonCancellable) {
+                    viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
+                }
+            }
+        }
+
+    private fun newViewModel(
+        apiClient: ApiClient,
+        tokenStorage: InMemoryTokenStorage,
+    ) = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+        .also(viewModels::add)
+
     @Test
-    fun initialStateIsLoading() {
-        val lazyDispatcher = StandardTestDispatcher()
-        Dispatchers.setMain(lazyDispatcher)
-        try {
+    fun initialStateIsLoading() =
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine = MockEngine { respond("", HttpStatusCode.Unauthorized) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             assertIs<AuthState.Loading>(viewModel.authState.value)
-        } finally {
-            Dispatchers.resetMain()
-            Dispatchers.setMain(testDispatcher)
         }
-    }
 
     @Test
     fun unauthenticatedWhenNoStoredAuth() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             // Await the terminal init state deterministically instead of pinning the
             // test to the shared Main dispatcher via runTest(testDispatcher), which
@@ -81,7 +100,7 @@ class AuthViewModelTest {
 
     @Test
     fun authenticatedAfterSuccessfulLoginSavesAllTokens() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -101,7 +120,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -118,7 +137,7 @@ class AuthViewModelTest {
 
     @Test
     fun loginErrorSetsServerError() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -134,7 +153,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -151,7 +170,7 @@ class AuthViewModelTest {
 
     @Test
     fun registerSuccessTransitionsToNeedsVerificationAndSavesTokens() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -174,7 +193,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateRegisterDisplayName("New User")
@@ -192,7 +211,7 @@ class AuthViewModelTest {
 
     @Test
     fun oauthProviderFailureFailsClosedForSignupState() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -208,7 +227,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             advanceUntilIdle()
 
             assertFalse(viewModel.signupsEnabled.value)
@@ -217,7 +236,7 @@ class AuthViewModelTest {
 
     @Test
     fun registerSuccessRefreshesFirstRunSignupState() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             var providerRequests = 0
             val engine =
@@ -253,7 +272,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             viewModel.setupRequired.first { it }
 
             viewModel.updateRegisterDisplayName("First Owner")
@@ -270,7 +289,7 @@ class AuthViewModelTest {
 
     @Test
     fun initializeWithRefreshTokenOnlyRestoresSession() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveRefreshToken("refresh-only")
 
@@ -298,7 +317,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.authState.first { it is AuthState.Authenticated }
 
@@ -308,7 +327,7 @@ class AuthViewModelTest {
 
     @Test
     fun logoutClearsAllStoredAuth() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("existing-token")
             tokenStorage.saveRefreshToken("existing-refresh")
@@ -330,7 +349,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Authenticated }
 
             viewModel.logout()
@@ -344,7 +363,7 @@ class AuthViewModelTest {
 
     @Test
     fun logoutKeepsLocalWipeButReportsRevocationFailure() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("existing-token")
             tokenStorage.saveRefreshToken("existing-refresh")
@@ -370,7 +389,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             viewModel.authState.first { it is AuthState.Authenticated }
 
             viewModel.logout()
@@ -387,14 +406,14 @@ class AuthViewModelTest {
 
     @Test
     fun forceLogoutClearsWithoutServerCall() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("existing-token")
             tokenStorage.saveRefreshToken("existing-refresh")
             tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
 
             val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.forceLogout()
             advanceUntilIdle()
@@ -406,7 +425,7 @@ class AuthViewModelTest {
 
     @Test
     fun loginValidationPreventsApiCall() =
-        runTest {
+        vmTest {
             val tokenStorage = InMemoryTokenStorage()
             var loginRequests = 0
             val engine =
@@ -416,7 +435,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = AuthViewModel(ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService), tokenStorage)
+            val viewModel = newViewModel(apiClient, tokenStorage)
             // Await init settling deterministically; counting only login-path requests
             // keeps this immune to the unconditional OAuth-providers fetch on construction.
             viewModel.authState.first { it is AuthState.Unauthenticated }

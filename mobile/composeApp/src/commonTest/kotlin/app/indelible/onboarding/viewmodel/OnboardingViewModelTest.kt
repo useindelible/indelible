@@ -1,5 +1,6 @@
 package app.indelible.onboarding.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.StepData
@@ -19,11 +20,18 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.job
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -34,7 +42,9 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
+    // Requests answer from the engine's own thread; an unconfined Main refuses that resume.
+    private val testDispatcher = StandardTestDispatcher()
+    private val viewModels = mutableListOf<OnboardingViewModel>()
 
     @BeforeTest
     fun setUp() {
@@ -44,6 +54,34 @@ class OnboardingViewModelTest {
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    private fun vmTest(body: suspend TestScope.() -> Unit): TestResult =
+        runTest {
+            try {
+                body()
+            } finally {
+                withContext(NonCancellable) {
+                    viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
+                }
+            }
+        }
+
+    private fun newViewModel(
+        apiClient: ApiClient,
+        tokenStorage: InMemoryTokenStorage,
+    ) = OnboardingViewModel(
+        ApiOnboardingRepository(apiClient.onboardingApiService),
+        ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
+        SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
+    ).also(viewModels::add)
+
+    private suspend fun TestScope.settled(
+        viewModel: OnboardingViewModel,
+        predicate: (OnboardingState) -> Boolean,
+    ): OnboardingState {
+        runCurrent()
+        return viewModel.state.first(predicate)
     }
 
     private fun createTokenStorageWithToken(): InMemoryTokenStorage {
@@ -86,7 +124,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeFetchesOnboardingStatus() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine { request ->
@@ -102,15 +140,10 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             val state = viewModel.state.value
             assertEquals(5, state.steps.size)
@@ -121,7 +154,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeResumesAtFirstIncompleteStep() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine { request ->
@@ -137,15 +170,10 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             val state = viewModel.state.value
             assertEquals(4, state.currentPage)
@@ -187,7 +215,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun completeStepCallsApiAndUpdatesState() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             var completedStepUrl: String? = null
 
@@ -214,18 +242,13 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             viewModel.completeStep(1)
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             assertEquals("/api/v1/onboarding/steps/1/complete", completedStepUrl)
             assertTrue(
@@ -237,7 +260,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun completingAlreadyCompletedStepIsNoOp() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             var apiCallCount = 0
 
@@ -263,15 +286,10 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             viewModel.completeStep(1)
 
@@ -280,7 +298,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun skipAllCallsApiAndMarksAllComplete() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             var skipCalled = false
 
@@ -307,18 +325,13 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             viewModel.skipAll()
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             assertTrue(skipCalled)
             assertTrue(viewModel.state.value.isCompleted)
@@ -330,7 +343,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeHandlesApiFailure() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine {
@@ -342,15 +355,10 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             val state = viewModel.state.value
             assertTrue(state.error != null)
@@ -359,7 +367,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun completeStepHandlesApiFailure() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine { request ->
@@ -380,18 +388,13 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             viewModel.completeStep(1)
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             assertFalse(
                 viewModel.state.value.steps[0]
@@ -402,16 +405,11 @@ class OnboardingViewModelTest {
 
     @Test
     fun updateDisplayNameUpdatesState() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.updateDisplayName("Test User")
 
@@ -420,16 +418,11 @@ class OnboardingViewModelTest {
 
     @Test
     fun updateSelectedThemeUpdatesState() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.updateSelectedTheme(ThemeChoice.DARK)
 
@@ -438,16 +431,11 @@ class OnboardingViewModelTest {
 
     @Test
     fun toggleFeedAddsAndRemoves() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             val feedUrl = "https://example.com/feed"
 
@@ -466,16 +454,11 @@ class OnboardingViewModelTest {
 
     @Test
     fun updateAiProviderUpdatesState() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.updateSelectedAiProvider(AiProvider.OLLAMA)
 
@@ -484,7 +467,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun clearErrorResetsError() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine {
@@ -496,15 +479,10 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
             assertTrue(viewModel.state.value.error != null)
 
             viewModel.clearError()
@@ -523,16 +501,11 @@ class OnboardingViewModelTest {
 
     @Test
     fun updateCurrentPageUpdatesState() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.updateCurrentPage(3)
 
@@ -541,7 +514,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun skipAllHandlesApiFailure() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine { request ->
@@ -562,18 +535,13 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             viewModel.skipAll()
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             assertFalse(viewModel.state.value.isCompleted)
             assertTrue(viewModel.state.value.error != null)
@@ -581,7 +549,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun completeStepWithDataSendsData() =
-        runTest {
+        vmTest {
             val tokenStorage = createTokenStorageWithToken()
             var requestBody: String? = null
 
@@ -607,18 +575,13 @@ class OnboardingViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel =
-                OnboardingViewModel(
-                    ApiOnboardingRepository(apiClient.onboardingApiService),
-                    ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                    SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+            val viewModel = newViewModel(apiClient, tokenStorage)
 
             viewModel.initialize()
-            viewModel.state.first { !it.isLoading }
+            settled(viewModel) { !it.isLoading }
 
             viewModel.completeStep(2, StepData(displayName = "Test", theme = "dark"))
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             assertTrue(requestBody != null)
             assertTrue(requestBody!!.contains("display_name"))
@@ -698,26 +661,21 @@ class OnboardingViewModelTest {
         }
     }
 
-    private suspend fun buildViewModel(engine: MockEngine): OnboardingViewModel {
+    private suspend fun TestScope.buildViewModel(engine: MockEngine): OnboardingViewModel {
         // A token with no recorded expiry sends the transport down the refresh
         // path before any request lands, so pin one far in the future.
         val tokenStorage = createTokenStorageWithToken()
         tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
         val apiClient = ApiClient(tokenStorage, engine = engine)
-        val viewModel =
-            OnboardingViewModel(
-                ApiOnboardingRepository(apiClient.onboardingApiService),
-                ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
-                SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-            )
+        val viewModel = newViewModel(apiClient, tokenStorage)
         viewModel.initialize()
-        viewModel.state.first { !it.isLoading }
+        settled(viewModel) { !it.isLoading }
         return viewModel
     }
 
     @Test
     fun accountStepPersistsDisplayNameAndThemeBeforeAdvancing() =
-        runTest {
+        vmTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateDisplayName("Momo")
@@ -725,7 +683,7 @@ class OnboardingViewModelTest {
             var advanced = false
 
             viewModel.completeAccountStep { advanced = true }
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             val recorded = log.snapshot()
             val profile =
@@ -747,13 +705,13 @@ class OnboardingViewModelTest {
 
     @Test
     fun accountStepMapsAutoThemeToSystem() =
-        runTest {
+        vmTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateSelectedTheme(ThemeChoice.AUTO)
 
             viewModel.completeAccountStep()
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             val profile =
                 log.snapshot().first { it.method == HttpMethod.Patch && it.path == "/api/v1/me" }
@@ -762,7 +720,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun accountStepFailureStaysVisibleAndDoesNotAdvance() =
-        runTest {
+        vmTest {
             val log = RequestLog()
             val viewModel =
                 buildViewModel(routedEngine(log, profileStatus = HttpStatusCode.InternalServerError))
@@ -770,7 +728,7 @@ class OnboardingViewModelTest {
             var advanced = false
 
             viewModel.completeAccountStep { advanced = true }
-            val state = viewModel.state.first { !it.isStepLoading && it.error != null }
+            val state = settled(viewModel) { !it.isStepLoading && it.error != null }
 
             assertTrue(state.error != null, "a failed profile save must stay visible")
             assertFalse(advanced)
@@ -779,14 +737,14 @@ class OnboardingViewModelTest {
 
     @Test
     fun addContentStepSavesTheUrlBeforeAdvancing() =
-        runTest {
+        vmTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateUrlInput("https://example.com/article")
             var advanced = false
 
             viewModel.completeAddContentStep { advanced = true }
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             val recorded = log.snapshot()
             val save =
@@ -803,13 +761,13 @@ class OnboardingViewModelTest {
 
     @Test
     fun addContentStepWithBlankUrlJustAdvances() =
-        runTest {
+        vmTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             var advanced = false
 
             viewModel.completeAddContentStep { advanced = true }
-            viewModel.state.first { !it.isStepLoading }
+            settled(viewModel) { !it.isStepLoading }
 
             val recorded = log.snapshot()
             assertTrue(recorded.none { it.path == "/api/v1/library" })
@@ -819,14 +777,14 @@ class OnboardingViewModelTest {
 
     @Test
     fun addContentStepWithInvalidUrlStaysVisibleAndDoesNotAdvance() =
-        runTest {
+        vmTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateUrlInput("not a url")
             var advanced = false
 
             viewModel.completeAddContentStep { advanced = true }
-            val state = viewModel.state.first { !it.isStepLoading && it.error != null }
+            val state = settled(viewModel) { !it.isStepLoading && it.error != null }
 
             assertEquals(
                 UiMessage(Res.string.onboarding_add_content_invalid_url),
