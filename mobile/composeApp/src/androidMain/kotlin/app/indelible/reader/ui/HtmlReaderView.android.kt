@@ -2,6 +2,8 @@ package app.indelible.reader.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
@@ -33,7 +35,7 @@ actual fun HtmlReaderView(
     isDarkMode: Boolean,
     scrollToPercent: Float?,
     anchorScroll: AnchorScrollRequest?,
-    onScrollProgress: (Float, Float) -> Unit,
+    onScrollProgress: (ScrollSample) -> Unit,
     onTextSelected: (text: String, startOffset: Int, endOffset: Int, selectionRect: SelectionRect) -> Unit,
     onSelectionCleared: () -> Unit,
     onHighlightTapped: (highlightId: String, rect: SelectionRect) -> Unit,
@@ -51,7 +53,12 @@ actual fun HtmlReaderView(
     speakingSentenceIndex: Int,
     immersive: Boolean,
     topContentPaddingPx: Int,
-    artwork: LoadedReaderArtwork?,
+    assets: ReaderAssets,
+    scrollToCharOffset: CharOffsetRequest?,
+    captureRequest: Long?,
+    onPositioned: () -> Unit,
+    holdUntilPositioned: Boolean,
+    onBookLink: (String) -> Unit,
     modifier: Modifier,
 ) {
     // rememberUpdatedState ensures the JS interface always invokes the latest lambdas
@@ -62,16 +69,23 @@ actual fun HtmlReaderView(
     val latestOnHighlightTapped = rememberUpdatedState(onHighlightTapped)
     val latestOnSummaryAction = rememberUpdatedState(onSummaryAction)
     val latestOnReaderTap = rememberUpdatedState(onReaderTap)
+    val latestOnPositioned = rememberUpdatedState(onPositioned)
+    val latestOnBookLink = rememberUpdatedState(onBookLink)
+    val latestOnContentLoaded = rememberUpdatedState(onContentLoaded)
 
     val jsInterface =
         remember {
             ReaderJsInterface(
-                onScroll = { p, s -> latestOnScrollProgress.value(p, s) },
-                onTextSelected = { t, s, e, r -> latestOnTextSelected.value(t, s, e, r) },
-                onSelectionCleared = { latestOnSelectionCleared.value() },
-                onHighlightTapped = { id, r -> latestOnHighlightTapped.value(id, r) },
-                onSummaryAction = { latestOnSummaryAction.value(it) },
-                onReaderTap = { latestOnReaderTap.value() },
+                ReaderBridgeCallbacks(
+                    onScroll = { latestOnScrollProgress.value(it) },
+                    onTextSelected = { t, s, e, r -> latestOnTextSelected.value(t, s, e, r) },
+                    onSelectionCleared = { latestOnSelectionCleared.value() },
+                    onHighlightTapped = { id, r -> latestOnHighlightTapped.value(id, r) },
+                    onSummaryAction = { latestOnSummaryAction.value(it) },
+                    onReaderTap = { latestOnReaderTap.value() },
+                    onPositioned = { latestOnPositioned.value() },
+                    onBookLink = { latestOnBookLink.value(it) },
+                ),
             )
         }
 
@@ -85,7 +99,8 @@ actual fun HtmlReaderView(
             summaryHtml,
             summaryPoints,
             topContentPaddingPx,
-            artwork,
+            assets,
+            holdUntilPositioned,
         ) {
             ReaderHtmlTemplate.build(
                 articleHtml = htmlContent,
@@ -99,11 +114,13 @@ actual fun HtmlReaderView(
                 summaryHtml = summaryHtml,
                 summaryPoints = summaryPoints,
                 topContentPaddingPx = topContentPaddingPx,
-                artwork = artwork,
+                assets = assets,
+                holdUntilPositioned = holdUntilPositioned,
             )
         }
 
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var pageLoaded by remember { mutableStateOf(false) }
 
     AndroidView(
         factory = { context ->
@@ -134,17 +151,18 @@ actual fun HtmlReaderView(
                             request: WebResourceRequest?,
                         ): Boolean {
                             val req = request ?: return false
-                            // Subframe loads (the YouTube embed iframe) proceed; only top-level
-                            // navigation is intercepted so injected content cannot redirect the
-                            // reader in-app. Real web links open in the system browser instead.
-                            if (!req.isForMainFrame) return false
-                            val target = req.url
-                            if (target?.scheme == "http" || target?.scheme == "https") {
-                                runCatching {
-                                    view?.context?.startActivity(Intent(Intent.ACTION_VIEW, target))
-                                }
+                            // Subframe loads (the YouTube embed iframe) proceed; top-level navigation
+                            // never replaces the reader, and web and mail links leave the app.
+                            val decision =
+                                ReaderNavigationPolicy.decide(
+                                    isMainFrame = req.isForMainFrame,
+                                    scheme = req.url?.scheme,
+                                    initialReaderDocumentPending = false,
+                                )
+                            if (decision == ReaderNavigationDecision.OpenExternally) {
+                                runCatching { view?.context?.startActivity(Intent(Intent.ACTION_VIEW, req.url)) }
                             }
-                            return true
+                            return decision != ReaderNavigationDecision.Allow
                         }
 
                         override fun onPageFinished(
@@ -152,7 +170,8 @@ actual fun HtmlReaderView(
                             url: String?,
                         ) {
                             super.onPageFinished(view, url)
-                            onContentLoaded()
+                            pageLoaded = true
+                            latestOnContentLoaded.value()
                         }
                     }
                 loadDataWithBaseURL(null, fullHtml, "text/html", "utf-8", null)
@@ -171,8 +190,11 @@ actual fun HtmlReaderView(
         onScrollRestored()
     }
 
-    LaunchedEffect(anchorScroll) {
+    BookBridgeEffects(pageLoaded, scrollToCharOffset, captureRequest) { webViewRef?.evaluateJavascript(it, null) }
+
+    LaunchedEffect(anchorScroll, pageLoaded) {
         val anchor = anchorScroll ?: return@LaunchedEffect
+        if (!pageLoaded) return@LaunchedEffect
         val escapedId = anchor.id.replace("\\", "\\\\").replace("'", "\\'")
         webViewRef?.evaluateJavascript(
             "window.scrollToAnchor('$escapedId', ${anchor.fallbackIndex});",
@@ -221,28 +243,33 @@ actual fun HtmlReaderView(
 }
 
 private class ReaderJsInterface(
-    private val onScroll: (Float, Float) -> Unit,
-    private val onTextSelected: (String, Int, Int, SelectionRect) -> Unit,
-    private val onSelectionCleared: () -> Unit,
-    private val onHighlightTapped: (String, SelectionRect) -> Unit,
-    private val onSummaryAction: (String) -> Unit,
-    private val onReaderTap: () -> Unit,
+    private val callbacks: ReaderBridgeCallbacks,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+
+    // WebView calls these on its own bridge thread; the reader's state is only touched on the main thread.
+    private val main = Handler(Looper.getMainLooper())
+
+    private fun onMain(block: () -> Unit) {
+        main.post(block)
+    }
 
     @JavascriptInterface
     fun onScroll(
         percent: Double,
         scrollTop: Double,
-    ) {
-        onScroll(percent.toFloat(), scrollTop.toFloat())
-    }
+        offset: Double,
+        atEnd: Boolean,
+    ) = onMain { callbacks.onScroll(ScrollSample(percent.toFloat(), scrollTop.toFloat(), offset.toInt(), atEnd)) }
 
     @JavascriptInterface
-    fun onSummaryAction(action: String) {
-        // .invoke() targets the constructor property, not this same-named method.
-        onSummaryAction.invoke(action)
-    }
+    fun onPositioned() = onMain { callbacks.onPositioned() }
+
+    @JavascriptInterface
+    fun onBookLink(href: String) = onMain { callbacks.onBookLink(href) }
+
+    @JavascriptInterface
+    fun onSummaryAction(action: String) = onMain { callbacks.onSummaryAction(action) }
 
     @JavascriptInterface
     fun onTextSelected(
@@ -252,18 +279,14 @@ private class ReaderJsInterface(
         rectJson: String,
     ) {
         val rect = parseRect(rectJson)
-        onTextSelected(text, startOffset, endOffset, rect)
+        onMain { callbacks.onTextSelected(text, startOffset, endOffset, rect) }
     }
 
     @JavascriptInterface
-    fun onSelectionCleared() {
-        onSelectionCleared.invoke()
-    }
+    fun onSelectionCleared() = onMain { callbacks.onSelectionCleared() }
 
     @JavascriptInterface
-    fun onReaderTap() {
-        onReaderTap.invoke()
-    }
+    fun onReaderTap() = onMain { callbacks.onReaderTap() }
 
     @JavascriptInterface
     fun onHighlightTapped(
@@ -271,7 +294,7 @@ private class ReaderJsInterface(
         rectJson: String,
     ) {
         val rect = parseRect(rectJson)
-        onHighlightTapped(highlightId, rect)
+        onMain { callbacks.onHighlightTapped(highlightId, rect) }
     }
 
     private fun parseRect(rectJson: String): SelectionRect =

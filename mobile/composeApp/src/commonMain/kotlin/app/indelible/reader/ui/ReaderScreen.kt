@@ -5,11 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,13 +18,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import app.indelible.core.i18n.resolve
 import app.indelible.core.i18n.resolveString
 import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
+import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.TagData
+import app.indelible.reader.ui.components.ReaderOpenFailed
 import app.indelible.reader.ui.components.rememberItemOffline
 import app.indelible.reader.viewmodel.ReaderEffect
 import app.indelible.reader.viewmodel.ReaderUiState
@@ -84,6 +89,8 @@ fun ReaderScreen(
     // the page resize under the reader every time the controls came and went.
     ImmersiveSystemBars(hidden = true)
 
+    ReaderExitEffects(viewModel, isBook = (uiState as? ReaderUiState.Success)?.contentMode == ReaderContentMode.EPUB)
+
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -116,7 +123,10 @@ fun ReaderScreen(
     ) { paddingValues ->
         when (val state = uiState) {
             is ReaderUiState.Loading -> ReaderLoadingState(Modifier.padding(paddingValues))
-            is ReaderUiState.Error -> ReaderErrorState(state.message.resolve(), Modifier.padding(paddingValues))
+            is ReaderUiState.Error -> {
+                val failedModifier = Modifier.padding(paddingValues)
+                ReaderOpenFailed(state.message.resolve(), viewModel::retryOpen, onNavigateBack, failedModifier)
+            }
             is ReaderUiState.Success -> {
                 ReaderSuccessContent(
                     state = state,
@@ -175,19 +185,16 @@ private fun ReaderLoadingState(modifier: Modifier = Modifier) {
     }
 }
 
+/** A book writes where its reader is before system Back leaves and when the app stops. */
 @Composable
-private fun ReaderErrorState(
-    message: String,
-    modifier: Modifier = Modifier,
+private fun ReaderExitEffects(
+    viewModel: ReaderViewModel,
+    isBook: Boolean,
 ) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
-        )
-    }
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = isBook,
+        onBackCompleted = { viewModel.navigateBack() },
+    )
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onStop() }
 }

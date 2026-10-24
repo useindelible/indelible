@@ -21,7 +21,7 @@ internal object ReaderNavigationPolicy {
         }
 
         return when (normalizedScheme) {
-            "http", "https" -> ReaderNavigationDecision.OpenExternally
+            "http", "https", "mailto" -> ReaderNavigationDecision.OpenExternally
             else -> ReaderNavigationDecision.Cancel
         }
     }

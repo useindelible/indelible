@@ -3,9 +3,11 @@ package app.indelible.reader.viewmodel
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.ArticleTocStatus
 import app.indelible.reader.model.DocumentEntity
+import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
+import app.indelible.reader.model.HighlightRange
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
@@ -26,6 +28,9 @@ class FakeReaderRepository : ReaderRepository {
     /** When set, successive getArticleToc calls return these in order, repeating the last entry. */
     var getArticleTocResults: List<Result<ArticleToc>>? = null
     var getArticleTocCallCount = 0
+    var epubTocResult: Result<EpubToc> = Result.failure(IllegalStateException("not a book"))
+    var epubChapterResult: suspend (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
+    val epubChapterCalls = mutableListOf<Int>()
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
@@ -48,6 +53,7 @@ class FakeReaderRepository : ReaderRepository {
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
     var createHighlightCallCount = 0
+    val createdRanges = mutableListOf<HighlightRange>()
     var deleteHighlightCallCount = 0
     var lastDeletedHighlightId: String? = null
     var lastHighlightMutationItemId: String? = null
@@ -81,6 +87,16 @@ class FakeReaderRepository : ReaderRepository {
     override suspend fun fetchReadableHtml(itemId: String): Result<String> {
         contentCallLog.add("fetchReadableHtml:$itemId")
         return fetchHtmlResult
+    }
+
+    override suspend fun getEpubToc(itemId: String): Result<EpubToc> = epubTocResult
+
+    override suspend fun getEpubChapter(
+        itemId: String,
+        spineIndex: Int,
+    ): Result<String> {
+        epubChapterCalls += spineIndex
+        return epubChapterResult(spineIndex)
     }
 
     override suspend fun getArticleToc(itemId: String): Result<ArticleToc> {
@@ -117,10 +133,10 @@ class FakeReaderRepository : ReaderRepository {
         itemId: String,
         color: String,
         textContent: String,
-        startOffset: Long,
-        endOffset: Long,
+        range: HighlightRange,
     ): Result<HighlightData> {
         createHighlightCallCount++
+        createdRanges += range
         return createHighlightResult
     }
 

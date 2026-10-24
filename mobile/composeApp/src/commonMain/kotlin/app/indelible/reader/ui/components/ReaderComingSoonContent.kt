@@ -22,15 +22,13 @@ import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.reader_coming_contents_body
 import indelible.composeapp.generated.resources.reader_coming_contents_title
-import indelible.composeapp.generated.resources.reader_coming_epub_body
-import indelible.composeapp.generated.resources.reader_coming_epub_title
 import indelible.composeapp.generated.resources.reader_coming_pdf_body
 import indelible.composeapp.generated.resources.reader_coming_pdf_title
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 /** Which not-yet-supported surface the reader is standing in for. */
-enum class ReaderComingSoonFormat { PDF, EPUB, CONTENTS }
+enum class ReaderComingSoonFormat { PDF, CONTENTS }
 
 private data class ComingSoonCopy(
     val icon: ImageVector,
@@ -47,13 +45,6 @@ private fun copyFor(format: ReaderComingSoonFormat): ComingSoonCopy =
                 bodyRes = Res.string.reader_coming_pdf_body,
             )
 
-        ReaderComingSoonFormat.EPUB ->
-            ComingSoonCopy(
-                icon = IndelibleIcons.Book,
-                titleRes = Res.string.reader_coming_epub_title,
-                bodyRes = Res.string.reader_coming_epub_body,
-            )
-
         ReaderComingSoonFormat.CONTENTS ->
             ComingSoonCopy(
                 icon = IndelibleIcons.SmartList,
@@ -63,8 +54,8 @@ private fun copyFor(format: ReaderComingSoonFormat): ComingSoonCopy =
     }
 
 /**
- * Placeholder for reader surfaces that have not shipped yet: the PDF and EPUB
- * readers, and the table of contents.
+ * Placeholder for reader surfaces that have not shipped yet: the PDF reader and
+ * the table of contents.
  */
 @Composable
 fun ReaderComingSoonContent(
@@ -110,19 +101,6 @@ private fun ReaderComingSoonContentPdfLightPreview() {
         Surface {
             ReaderComingSoonContent(
                 format = ReaderComingSoonFormat.PDF,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun ReaderComingSoonContentEpubDarkPreview() {
-    AppTheme(darkTheme = true) {
-        Surface {
-            ReaderComingSoonContent(
-                format = ReaderComingSoonFormat.EPUB,
                 modifier = Modifier.fillMaxSize(),
             )
         }

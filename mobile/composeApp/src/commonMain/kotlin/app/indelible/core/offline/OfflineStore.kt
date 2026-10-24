@@ -211,4 +211,9 @@ interface EnqueueTx {
         documentId: String,
         percent: Int,
     )
+
+    fun patchCachedPosition(
+        documentId: String,
+        position: ChapterPosition,
+    )
 }

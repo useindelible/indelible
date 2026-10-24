@@ -63,4 +63,16 @@ class ReaderNavigationPolicyTest {
 
         assertEquals(ReaderNavigationDecision.Cancel, decision)
     }
+
+    @Test
+    fun mailtoOpensExternally() {
+        val decision =
+            ReaderNavigationPolicy.decide(
+                isMainFrame = true,
+                scheme = "mailto",
+                initialReaderDocumentPending = false,
+            )
+
+        assertEquals(ReaderNavigationDecision.OpenExternally, decision)
+    }
 }

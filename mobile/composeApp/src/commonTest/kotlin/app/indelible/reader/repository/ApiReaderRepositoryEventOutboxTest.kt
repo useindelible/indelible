@@ -1,8 +1,14 @@
 package app.indelible.reader.repository
 
+import app.indelible.api.generated.models.ReadingAnchorSchemaFlat
+import app.indelible.api.generated.models.ReadingPositionSchema
+import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
+import app.indelible.core.offline.VIEW_DOC
+import app.indelible.core.offline.installRequest
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -28,6 +34,39 @@ class ApiReaderRepositoryEventOutboxTest {
             assertEquals(0L, payload.originSeq)
             assertTrue(payload.eventId.startsWith("rev_"))
             assertTrue(payload.recordedAtEpochMs > 0)
+        }
+
+    @Test
+    fun progress_with_a_position_queues_a_spine_anchor() =
+        runTest {
+            val harness = readerOutboxHarness()
+
+            harness.repository.recordProgress(OFFLINE_DOCUMENT_ID, 37.5f, SESSION_ID, ChapterPosition("ch3", 120))
+
+            val payload =
+                assertIs<OutboxPayload.ReadingEvent>(
+                    harness.store
+                        .rowsOf(OFFLINE_SCOPE, OutboxKind.READING_EVENT)
+                        .single()
+                        .payload,
+                )
+            assertEquals(3750, payload.progressBasisPoints)
+            val position = Json.decodeFromString(ReadingPositionSchema.serializer(), checkNotNull(payload.positionJson))
+            assertEquals(ReadingAnchorSchemaFlat(type = "spine", chapter = "ch3"), position.anchor)
+            assertEquals(120, position.offset)
+            assertEquals(0.375, position.fraction)
+        }
+
+    @Test
+    fun progress_with_a_position_moves_the_cached_copy_there() =
+        runTest {
+            val harness = readerOutboxHarness()
+            val revision = harness.store.localChanges(OFFLINE_SCOPE, VIEW_DOC).revision
+            harness.store.installCachedDocument(harness.session, installRequest(revision))
+
+            harness.repository.recordProgress(VIEW_DOC, 37.5f, SESSION_ID, ChapterPosition("ch3", 120))
+
+            assertEquals(ChapterPosition("ch3", 120), harness.store.cachedDocument(OFFLINE_SCOPE, VIEW_DOC)?.position)
         }
 
     @Test

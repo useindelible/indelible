@@ -3,6 +3,7 @@ package app.indelible.core.network
 import app.indelible.api.generated.client.ApiV1DocumentsAssetsClient
 import app.indelible.api.generated.client.ApiV1DocumentsClient
 import app.indelible.api.generated.client.ApiV1DocumentsEntitiesClient
+import app.indelible.api.generated.client.ApiV1DocumentsEpubTocClient
 import app.indelible.api.generated.client.ApiV1DocumentsHighlightsClient
 import app.indelible.api.generated.client.ApiV1DocumentsNoteClient
 import app.indelible.api.generated.client.ApiV1DocumentsProgressClient
@@ -20,6 +21,7 @@ import app.indelible.api.generated.models.DocumentReaderResponse
 import app.indelible.api.generated.models.DocumentReprocessResponse
 import app.indelible.api.generated.models.DocumentUpsertNoteBody
 import app.indelible.api.generated.models.EntitySummaryResponse
+import app.indelible.api.generated.models.EpubTocResponse
 import app.indelible.api.generated.models.HighlightListResponse
 import app.indelible.api.generated.models.HighlightNoteResponse
 import app.indelible.api.generated.models.HighlightResponse
@@ -60,6 +62,27 @@ class ReaderApiService(
     suspend fun getArticleToc(documentId: String): Result<ArticleTocResponse> =
         transport.authenticatedRequest { client, configuration ->
             ApiV1DocumentsTocClient(client).getArticleToc(documentId, configuration)
+        }
+
+    suspend fun getEpubToc(documentId: String): Result<EpubTocResponse> =
+        transport.authenticatedRequest { client, configuration ->
+            ApiV1DocumentsEpubTocClient(client).getEpubToc(documentId, configuration)
+        }
+
+    /** The chapter at [spineIndex] as the server's sanitized HTML. */
+    suspend fun fetchEpubChapter(
+        documentId: String,
+        spineIndex: Int,
+    ): Result<String> =
+        transport.directAuthenticatedRequest { client, baseUrl, token ->
+            val response =
+                client.get("$baseUrl/api/v1/documents/$documentId/epub/chapters/$spineIndex") {
+                    header("Authorization", "Bearer $token")
+                }
+            if (!response.status.isSuccess()) {
+                throw ApiException(response.status.value, "Failed to fetch chapter")
+            }
+            response.bodyAsText()
         }
 
     suspend fun getAssetWithUrl(

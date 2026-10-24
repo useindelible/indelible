@@ -3,6 +3,7 @@ package app.indelible.reader.repository
 import app.indelible.core.network.AuthenticatedApiTransport
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
+import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.offline.CachedHighlightRow
 import app.indelible.core.offline.EnqueueTx
 import app.indelible.core.offline.OfflineFiles
@@ -118,8 +119,7 @@ internal suspend fun TestScope.readerOutboxHarness(
             ApiReaderRepository(
                 readerApiService = ReaderApiService(transport),
                 libraryApiService = LibraryApiService(transport),
-                offlineStore = store,
-                worker = startedWorker(store, sender, registry),
+                outbox = ReaderOutboxWrites(store, startedWorker(store, sender, registry)),
                 sessionProvider = { registry.current.value.session },
                 offlineCopy =
                     ReaderOfflineCopy(
@@ -128,7 +128,9 @@ internal suspend fun TestScope.readerOutboxHarness(
                         sessionProvider = { registry.current.value.session },
                         clock = { testScheduler.currentTime },
                         requestCache = { _, _ -> },
+                        dispatcher = StandardTestDispatcher(testScheduler),
                     ),
+                capabilities = ServerCapabilities(transport, clock = { testScheduler.currentTime }),
             ),
         requests = requests,
         registry = registry,

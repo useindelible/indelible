@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.indelible.ui.theme.IndelibleSpacing
 
@@ -40,7 +41,9 @@ fun IndelibleButton(
     enabled: Boolean = true,
     style: IndelibleButtonStyle = IndelibleButtonStyle.Primary,
     compact: Boolean = false,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
+    val overflow = overflowFor(maxLines)
     val height = if (compact) IndelibleSpacing.step40 else IndelibleSpacing.touchTarget
 
     when (style) {
@@ -53,6 +56,8 @@ fun IndelibleButton(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = maxLines,
+                    overflow = overflow,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -72,6 +77,8 @@ fun IndelibleButton(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = maxLines,
+                    overflow = overflow,
                 )
             }
         }
@@ -90,6 +97,8 @@ fun IndelibleButton(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = maxLines,
+                    overflow = overflow,
                 )
             }
         }
@@ -126,9 +135,16 @@ fun IndelibleButton(
                     Text(
                         text = text,
                         style = MaterialTheme.typography.titleSmall,
+                        maxLines = maxLines,
+                        overflow = overflow,
                     )
                 }
             }
         }
     }
+}
+
+private fun overflowFor(maxLines: Int): TextOverflow {
+    if (maxLines == Int.MAX_VALUE) return TextOverflow.Clip
+    return TextOverflow.Ellipsis
 }
