@@ -6,21 +6,27 @@ import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryCounts
 import app.indelible.core.model.LibraryItem
 import app.indelible.library.repository.LibraryRepository
+import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.library_error_delete
 import indelible.composeapp.generated.resources.library_error_load
 import indelible.composeapp.generated.resources.library_error_load_more
 import indelible.composeapp.generated.resources.library_error_triage
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(
     private val repository: LibraryRepository,
+    offlineStatuses: Flow<Map<String, DocumentOfflineStatus>> = flowOf(emptyMap()),
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -43,6 +49,10 @@ class LibraryViewModel(
      */
     private val _counts = MutableStateFlow<LibraryCounts?>(null)
     val counts: StateFlow<LibraryCounts?> = _counts.asStateFlow()
+
+    /** Offline status by document id; documents with nothing on the device or queued are absent. */
+    val offline: StateFlow<Map<String, DocumentOfflineStatus>> =
+        offlineStatuses.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyMap())
 
     private var nextCursor: String? = null
 
@@ -212,5 +222,9 @@ class LibraryViewModel(
                     }
                 }
         }
+    }
+
+    private companion object {
+        const val STOP_TIMEOUT_MS = 5_000L
     }
 }

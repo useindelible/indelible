@@ -4,6 +4,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.core.storage.JvmTokenStorage
 import app.indelible.core.storage.JvmUserPreferencesStorage
@@ -17,6 +18,7 @@ fun main() =
         val userPreferencesStorage = remember { JvmUserPreferencesStorage() }
         val databaseDriverFactory = remember { DatabaseDriverFactory() }
         val connectivityObserver = remember { ConnectivityObserver() }
+        val offlineFilesRoot = remember { OfflineFilesRoot() }
         val pendingSaveRepository =
             remember(tokenState) {
                 JvmPendingSaveRepository { tokenState.pendingQueueOwner() }
@@ -39,6 +41,7 @@ fun main() =
                 pendingSaveRepository = pendingSaveRepository,
                 databaseDriverFactory = databaseDriverFactory,
                 connectivityObserver = connectivityObserver,
+                offlineFilesRoot = offlineFilesRoot,
             )
         }
     }

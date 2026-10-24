@@ -11,6 +11,7 @@ import app.indelible.api.generated.models.UpdateMilaPromptPresetBody
 import app.indelible.api.generated.models.UpsertMilaConfigBody
 import app.indelible.core.preferences.DefaultViewPreference
 import app.indelible.core.preferences.ThemePreference
+import app.indelible.core.storage.DEFAULT_OFFLINE_CAP_BYTES
 import app.indelible.core.storage.UserPreferencesStorage
 import app.indelible.profile.repository.AccountRepository
 import app.indelible.profile.repository.AddLibraryRepository
@@ -97,6 +98,10 @@ private class FakeUserPreferencesStorage : UserPreferencesStorage {
     override suspend fun saveDefaultView(view: DefaultViewPreference) = Unit
 
     override suspend fun getDefaultView(): DefaultViewPreference = DefaultViewPreference.LIBRARY
+
+    override suspend fun saveOfflineCapBytes(bytes: Long) = Unit
+
+    override suspend fun getOfflineCapBytes(): Long = DEFAULT_OFFLINE_CAP_BYTES
 }
 
 private fun <T> unused(): Result<T> = Result.failure(UnsupportedOperationException("not used"))

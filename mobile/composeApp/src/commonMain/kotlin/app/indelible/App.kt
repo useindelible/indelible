@@ -15,6 +15,7 @@ import app.indelible.core.di.rememberAppContainer
 import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.image.newImageLoader
 import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.offline.SyncDrainEffect
 import app.indelible.core.preferences.ThemePreference
 import app.indelible.core.storage.TokenStorage
@@ -36,6 +37,7 @@ fun App(
     pendingSaveRepository: PendingSaveRepository,
     databaseDriverFactory: DatabaseDriverFactory,
     connectivityObserver: ConnectivityObserver,
+    offlineFilesRoot: OfflineFilesRoot,
     appLanguageSettings: AppLanguageSettings? = null,
     onReady: () -> Unit = {},
 ) {
@@ -46,17 +48,10 @@ fun App(
             pendingSaveRepository,
             databaseDriverFactory,
             connectivityObserver,
+            offlineFilesRoot,
         )
     val transport = appContainer.apiTransport
-    LaunchedEffect(appContainer) {
-        // A failed sweep must not block sync from ever starting: the purge_pending flag it
-        // left behind is retried on the next launch, so the worker is released regardless.
-        runCatching { appContainer.scopePurger.resumeInterrupted() }
-            .onFailure { if (it is CancellationException) throw it }
-        runCatching { appContainer.sessionTransitions.restore() }
-            .onFailure { if (it is CancellationException) throw it }
-        appContainer.outboxWorker.markStartupReady()
-    }
+    LaunchedEffect(appContainer) { appContainer.startUp() }
     SyncDrainEffect(appContainer.outboxWorker, appContainer.connectivityObserver, transport)
     setSingletonImageLoaderFactory { context -> newImageLoader(context, transport) }
     val authViewModel = appContainer.authViewModel
@@ -116,4 +111,18 @@ private fun AppContent(
                 appLanguageSettings = appLanguageSettings,
             )
     }
+}
+
+private suspend fun AppContainer.startUp() {
+    // A failed purge must not block sync from ever starting: the purge_pending flag it
+    // left behind is retried on the next launch, so the worker is released regardless.
+    startupStep { scopePurger.resumeInterrupted() }
+    startupStep { sessionTransitions.restore() }
+    outboxWorker.markStartupReady()
+    // The file sweep only reclaims space, so sync is released first; it runs again next launch.
+    startupStep { downloads.cleanupAtLaunch() }
+}
+
+private suspend fun startupStep(step: suspend () -> Unit) {
+    runCatching { step() }.onFailure { if (it is CancellationException) throw it }
 }

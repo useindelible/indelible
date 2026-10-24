@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import app.indelible.mila.viewmodel.MilaChatViewModel
+import app.indelible.offline.ui.PendingSyncDot
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightData
@@ -35,6 +36,7 @@ import app.indelible.reader.model.TagData
 import app.indelible.reader.playback.PlaybackState
 import app.indelible.reader.ui.components.HighlightSheet
 import app.indelible.reader.ui.components.HighlightTagSheet
+import app.indelible.reader.ui.components.ItemOffline
 import app.indelible.reader.ui.components.MilaReaderDrawer
 import app.indelible.reader.ui.components.ReaderBottomChrome
 import app.indelible.reader.ui.components.ReaderDock
@@ -92,6 +94,7 @@ internal fun ReaderSuccessContent(
     onAnchorScrollConsumed: () -> Unit,
     handleScrollProgress: (Float, Float) -> Unit,
     onReaderTap: () -> Unit,
+    itemOffline: ItemOffline? = null,
 ) {
     val uriHandler = LocalUriHandler.current
     val clipboardManager = LocalClipboardManager.current
@@ -194,10 +197,14 @@ internal fun ReaderSuccessContent(
                         // already keeps the interactive dock above the system gesture area.
                         .padding(bottom = IndelibleSpacing.step48),
             ) {
-                ReaderDock(
-                    activePanel = activePanel,
-                    onPanelSelected = { viewModel.openPanel(it) },
-                )
+                Box {
+                    ReaderDock(
+                        activePanel = activePanel,
+                        onPanelSelected = { viewModel.openPanel(it) },
+                    )
+                    val openPending = itemOffline?.onOpenStorage ?: {}
+                    PendingSyncDot(itemOffline?.status?.sync, openPending, Modifier.align(Alignment.TopEnd))
+                }
             }
 
             val showMiniBar =
@@ -256,6 +263,7 @@ internal fun ReaderSuccessContent(
             onSelectVoice = { viewModel.selectVoice(it) },
             onSetSleepTimer = { viewModel.setSleepTimer(it) },
             onTocEntryTapped = { viewModel.onTocEntryTapped(it) },
+            itemOffline = itemOffline,
             onShare = {
                 val url = state.item.canonicalUrl ?: state.item.url
                 if (url != null) {

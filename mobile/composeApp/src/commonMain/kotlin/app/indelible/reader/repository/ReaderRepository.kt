@@ -15,8 +15,6 @@ import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
-import app.indelible.reader.model.toHighlightData
-import app.indelible.reader.model.toReaderDocument
 import app.indelible.reader.model.toTagData
 import kotlinx.coroutines.CancellationException
 
@@ -106,21 +104,24 @@ class ApiReaderRepository(
     offlineStore: OfflineStore,
     worker: OutboxWorker,
     private val sessionProvider: () -> Session?,
+    private val offlineCopy: ReaderOfflineCopy,
 ) : ReaderRepository,
     ReadingEventWriter {
     private val outbox = ReaderOutboxWrites(offlineStore, worker)
 
     override suspend fun getItem(itemId: String): Result<ReaderDocument> =
-        readerApiService.getDocumentReader(itemId).map { it.toReaderDocument() }
+        offlineCopy.document(itemId) { readerApiService.getDocumentReader(itemId) }
 
     override suspend fun triageItem(
         itemId: String,
         state: String,
     ): Result<Unit> = libraryApiService.triageItem(itemId, state).map {}
 
-    override suspend fun fetchReadableHtml(itemId: String): Result<String> = readerApiService.streamAsset(itemId, "readable_html")
+    override suspend fun fetchReadableHtml(itemId: String): Result<String> =
+        offlineCopy.readableHtml(itemId) { readerApiService.streamAsset(itemId, "readable_html") }
 
-    override suspend fun getArticleToc(itemId: String): Result<ArticleToc> = readerApiService.getArticleToc(itemId)
+    override suspend fun getArticleToc(itemId: String): Result<ArticleToc> =
+        offlineCopy.articleToc(itemId) { readerApiService.getArticleToc(itemId) }
 
     override suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult> =
         readerApiService.reprocessDocument(itemId).map { response ->
@@ -167,7 +168,7 @@ class ApiReaderRepository(
     }
 
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> =
-        readerApiService.listHighlights(itemId).map { response -> response.highlights.map { it.toHighlightData() } }
+        offlineCopy.highlights(itemId) { readerApiService.listHighlights(itemId) }
 
     override suspend fun listDocumentEntities(itemId: String) = readerApiService.listDocumentEntities(itemId)
 
@@ -231,7 +232,10 @@ class ApiReaderRepository(
 
     override suspend fun listTags(): Result<List<TagData>> = readerApiService.listTags().map { tags -> tags.map { it.toTagData() } }
 
-    override suspend fun getItemNote(itemId: String): Result<String?> = readerApiService.getItemNote(itemId).map { it?.body }
+    override suspend fun getItemNote(itemId: String): Result<String?> =
+        offlineCopy.note(itemId) {
+            readerApiService.getItemNote(itemId)
+        }
 
     override suspend fun upsertItemNote(
         itemId: String,

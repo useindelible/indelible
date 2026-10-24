@@ -287,8 +287,10 @@ kotlin {
             implementation(libs.markdown.renderer.m3)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.okio)
         }
         commonTest.dependencies {
+            implementation(libs.okio.fakefilesystem)
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.kotlinx.datetime)

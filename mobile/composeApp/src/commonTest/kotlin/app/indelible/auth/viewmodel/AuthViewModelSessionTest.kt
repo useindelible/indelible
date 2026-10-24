@@ -124,8 +124,7 @@ class AuthViewModelSessionTest {
             AuthViewModel(
                 ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                 tokenStorage,
-                worker,
-                ScopePurger(store),
+                testOfflineAccount(tokenStorage, store, worker, ScopePurger(store)),
                 sessions,
             ).also(viewModels::add)
         return Fixture(registry, tokenStorage, store, sessions, viewModel, Gates(gateA, profileGate))
