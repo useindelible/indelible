@@ -2,12 +2,7 @@ package app.indelible.core.offline
 
 import kotlinx.coroutines.CancellationException
 
-/**
- * Deletes every local trace of an offline scope. The step order is load-bearing: `client_state`
- * carries the `purge_pending` recovery flag, so it must be written first and removed last. A
- * crash between any two steps leaves the flag set, and [resumeInterrupted] re-runs [purge] for
- * that scope from the top; every step is idempotent so replaying them is safe.
- */
+/** Deletes a scope; purge_pending is set first and cleared last, so a crash leaves it for [resumeInterrupted]. */
 class ScopePurger(
     private val store: OfflineStore,
     private val deleteFiles: suspend (scope: String) -> Unit = {},
@@ -34,18 +29,13 @@ class ScopePurger(
             .forEach { purgeQuietly(it) }
     }
 
-    /**
-     * A scope stuck on one bad file must not block the rest of a sweep, nor the sign-in and
-     * startup paths that trigger one: the failure is swallowed per scope, which stays
-     * purge_pending and is retried on the next sweep.
-     */
+    /** One scope's failure must not block the sweep; it stays purge_pending for the next one. */
     private suspend fun purgeQuietly(scope: String) {
         try {
             purge(scope)
         } catch (e: CancellationException) {
             throw e
         } catch (ignored: Exception) {
-            // scope remains purge_pending
         }
     }
 }
