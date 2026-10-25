@@ -247,16 +247,25 @@ class DownloadManager(
             val beingRemoved = key in removing || key.scope in removingScopes
             val running = active?.takeUnless { beingRemoved || !it.job.isActive }?.request
             if (!wanted && running?.let { it.key == key && it.session === session } == true) return
-            val merged = (queue[key] ?: parked.remove(key))?.takeIf { it.session === session }
-            queue[key] =
-                merged?.also {
-                    it.pin = it.pin || pin
-                    it.forReading = it.forReading || forReading
-                } ?: Request(session, documentId, pin, forReading)
+            queue[key] = mergedRequest(key, session, documentId, pin, forReading)
             val owner = active?.takeUnless { it.settled }?.request?.key
             if (owner != key) acquisitions.set(key, Acquisition.Waiting)
         }
         wake.trySend(Unit)
+    }
+
+    private fun mergedRequest(
+        key: DocumentKey,
+        session: Session,
+        documentId: String,
+        pin: Boolean,
+        forReading: Boolean,
+    ): Request {
+        val merged = (queue[key] ?: parked.remove(key))?.takeIf { it.session === session }
+        return merged?.also {
+            it.pin = it.pin || pin
+            it.forReading = it.forReading || forReading
+        } ?: Request(session, documentId, pin, forReading)
     }
 
     private suspend fun drain(owned: CoroutineScope) {
@@ -264,7 +273,7 @@ class DownloadManager(
             acquiring.withLock {
                 val job =
                     lock.withLock {
-                        val eligible = { it: Request -> it.key !in removing && it.key.scope !in removingScopes }
+                        val eligible = { r: Request -> r.key !in removing && r.key.scope !in removingScopes }
                         // A reader is waiting on a reading request now; queued caches can wait.
                         val request =
                             queue.values.firstOrNull { it.forReading && eligible(it) }
@@ -324,16 +333,22 @@ class DownloadManager(
                 outcome == FetchResult.Stale || request.pin -> park(request, Acquisition.Waiting)
                 else -> finish(key)
             }
-        }.onFailure { error ->
-            if (error is CancellationException) throw error
-            if (error is NoSpaceException) lock.withLock { autoCachePaused += key.scope }
-            val shown = failureState(error, request.pin, request.forReading, isOnline)
-            when {
-                shown == null -> finish(key)
-                request.forReading -> show(request, shown)
-                isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
-                else -> settle(key, shown)
-            }
+        }.onFailure { error -> fetchFailed(request, error) }
+    }
+
+    private suspend fun fetchFailed(
+        request: Request,
+        error: Throwable,
+    ) {
+        val key = request.key
+        if (error is CancellationException) throw error
+        if (error is NoSpaceException) lock.withLock { autoCachePaused += key.scope }
+        val shown = failureState(error, request.pin, request.forReading, isOnline)
+        when {
+            shown == null -> finish(key)
+            request.forReading -> show(request, shown)
+            isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
+            else -> settle(key, shown)
         }
     }
 
@@ -387,13 +402,23 @@ private fun failureState(
     when {
         error is StaleSessionException || error is StaleWriteException || error is ScopeNotLiveException -> null
         error is NoSpaceException -> Acquisition.Failed(DownloadFailure.NO_SPACE)
-        (isConnectionFailure(error) || error is ChapterListUnavailableException) && !pin && !forReading -> null
-        isConnectionFailure(error) && (online || forReading) -> Acquisition.Failed(DownloadFailure.NETWORK)
-        isConnectionFailure(error) -> Acquisition.WaitingForConnection
+        isConnectionFailure(error) -> connectionFailureState(pin, forReading, online)
+        error is ChapterListUnavailableException && !pin && !forReading -> null
         error is ServerTooOldException -> Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD)
         // A pin on a book whose list is still being built waits for it, as it waits for a readable render.
         error is ChapterListPendingException -> Acquisition.Waiting
         else -> Acquisition.Failed(DownloadFailure.SERVER)
+    }
+
+private fun connectionFailureState(
+    pin: Boolean,
+    forReading: Boolean,
+    online: Boolean,
+): Acquisition? =
+    when {
+        !pin && !forReading -> null
+        online || forReading -> Acquisition.Failed(DownloadFailure.NETWORK)
+        else -> Acquisition.WaitingForConnection
     }
 
 // A pinned book without a list stays parked, so the pin survives until a reopen finds the list ready.
