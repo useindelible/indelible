@@ -1,7 +1,9 @@
 package app.indelible.reader.pdf
 
 import android.os.ParcelFileDescriptor
+import io.legere.pdfiumandroid.suspend.PdfDocumentKt
 import io.legere.pdfiumandroid.suspend.PdfiumCoreKt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -20,14 +22,22 @@ actual object PdfEngine {
                 } catch (error: IOException) {
                     throw PdfOpenException("pdfium cannot read $path", error)
                 }
-            try {
-                PdfiumDocument.open(core.newDocument(descriptor), descriptor, dispatcher)
-            } catch (error: IOException) {
-                descriptor.close()
-                throw PdfOpenException("pdfium cannot open $path", error)
-            } catch (error: IllegalStateException) {
-                descriptor.close()
-                throw PdfOpenException("pdfium cannot open $path", error)
+            val document =
+                runCatching { core.newDocument(descriptor) }.getOrElse { error ->
+                    descriptor.close()
+                    throw error.asOpenFailure(path)
+                }
+            // The document owns the descriptor from here on; closing it closes both.
+            runCatching { PdfiumDocument.open(document, dispatcher) }.getOrElse { error ->
+                document.safeClose()
+                throw error.asOpenFailure(path)
             }
         }
+
+    private fun Throwable.asOpenFailure(path: String): Throwable =
+        if (this is CancellationException) this else PdfOpenException("pdfium cannot open $path", this)
+}
+
+internal fun PdfDocumentKt.safeClose() {
+    runCatching { close() }
 }
