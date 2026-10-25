@@ -89,7 +89,8 @@ fun ReaderScreen(
     // the page resize under the reader every time the controls came and went.
     ImmersiveSystemBars(hidden = true)
 
-    ReaderExitEffects(viewModel, isBook = (uiState as? ReaderUiState.Success)?.contentMode == ReaderContentMode.EPUB)
+    val mode = (uiState as? ReaderUiState.Success)?.contentMode
+    ReaderExitEffects(viewModel, capturesPosition = mode == ReaderContentMode.EPUB || mode == ReaderContentMode.PDF)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -185,15 +186,15 @@ private fun ReaderLoadingState(modifier: Modifier = Modifier) {
     }
 }
 
-/** A book writes where its reader is before system Back leaves and when the app stops. */
+/** A book or PDF writes where its reader is before system Back leaves and when the app stops. */
 @Composable
 private fun ReaderExitEffects(
     viewModel: ReaderViewModel,
-    isBook: Boolean,
+    capturesPosition: Boolean,
 ) {
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
-        isBackEnabled = isBook,
+        isBackEnabled = capturesPosition,
         onBackCompleted = { viewModel.navigateBack() },
     )
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onStop() }

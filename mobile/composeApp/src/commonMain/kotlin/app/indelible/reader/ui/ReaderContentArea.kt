@@ -17,8 +17,6 @@ import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.playback.PlaybackState
-import app.indelible.reader.ui.components.ReaderComingSoonContent
-import app.indelible.reader.ui.components.ReaderComingSoonFormat
 import app.indelible.reader.ui.components.ReaderPreparingContent
 import app.indelible.reader.ui.components.YouTubeVideoHeader
 import app.indelible.reader.viewmodel.ReaderContentStatus
@@ -49,6 +47,7 @@ internal fun ReaderContentArea(
     immersive: Boolean,
     miniBarClearance: Dp?,
     uriHandler: UriHandler,
+    onOpenStorage: () -> Unit,
     viewModel: ReaderViewModel,
 ) {
     when (state.contentMode) {
@@ -71,11 +70,24 @@ internal fun ReaderContentArea(
                 viewModel = viewModel,
             )
 
-        ReaderContentMode.PDF ->
-            ReaderComingSoonContent(
-                format = ReaderComingSoonFormat.PDF,
-                modifier = Modifier.fillMaxSize(),
-            )
+        ReaderContentMode.PDF -> {
+            val pdf = state.pdf
+            val session = viewModel.pdfSession
+            if (pdf != null && session != null) {
+                ReaderPdfBody(
+                    state = state,
+                    pdf = pdf,
+                    session = session,
+                    topChromeInsetPx = topChromeInsetPx,
+                    onSelectedTextChanged = onSelectedTextChanged,
+                    onTappedHighlightChanged = onTappedHighlightChanged,
+                    onReaderTap = onReaderTap,
+                    handleScrollProgress = handleScrollProgress,
+                    onOpenStorage = onOpenStorage,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
 
         ReaderContentMode.EPUB -> {
             val epub = state.epub

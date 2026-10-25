@@ -8,6 +8,7 @@ import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.PdfHighlightTarget
 import app.indelible.reader.model.PdfStatus
 import app.indelible.reader.model.ReaderContentMode
+import app.indelible.reader.model.TagData
 import app.indelible.reader.pdf.NormalizedRect
 import app.indelible.reader.repository.PdfCopy
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeItemDetail
@@ -94,6 +95,24 @@ class ReaderPdfViewModelTest {
             val target = assertIs<PdfHighlightTarget>(repository.createdTargets.single())
             assertEquals(3, target.page)
             assertEquals("quick brown", target.textSnapshot)
+        }
+
+    @Test
+    fun toolbarTagOnAPdfOpensTheTagSheetForTheNewHighlight() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            val tags = listOf(TagData(id = "tag_1", name = "research"))
+            repository.listTagsResult = Result.success(tags)
+            var opened: Pair<String, List<TagData>>? = null
+
+            viewModel.createPdfHighlight(HighlightColor.YELLOW, pdfSelection()) { id ->
+                viewModel.loadTagsForPicker { loaded -> opened = id to loaded }
+            }
+            advanceUntilIdle()
+
+            assertIs<PdfHighlightTarget>(repository.createdTargets.single())
+            assertEquals("hlt_test1" to tags, opened)
         }
 
     @Test

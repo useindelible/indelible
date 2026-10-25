@@ -37,6 +37,7 @@ import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.TagData
+import app.indelible.reader.pdf.PdfSelection
 import app.indelible.reader.playback.PlaybackState
 import app.indelible.reader.ui.components.HighlightSheet
 import app.indelible.reader.ui.components.HighlightTagSheet
@@ -68,6 +69,7 @@ internal data class SelectedTextInfo(
     val startOffset: Int,
     val endOffset: Int,
     val rect: SelectionRect,
+    val pdf: PdfSelection? = null,
 )
 
 @Composable
@@ -152,6 +154,7 @@ internal fun ReaderSuccessContent(
                         immersive = immersive,
                         miniBarClearance = chapterClearance,
                         uriHandler = uriHandler,
+                        onOpenStorage = { itemOffline?.onOpenStorage?.invoke() },
                         viewModel = viewModel,
                     )
 
