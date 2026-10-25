@@ -1,5 +1,6 @@
 package app.indelible.reader.pdf
 
+import androidx.compose.ui.graphics.toArgb
 import app.indelible.reader.model.ReaderBackground
 import kotlin.math.pow
 import kotlin.test.Test
@@ -63,5 +64,12 @@ class PdfToneTest {
         assertEquals(PdfTone.DARK, toneFor(ReaderBackground.SLATE))
         assertEquals(PdfTone.DARK, toneFor(ReaderBackground.BLACK))
         assertNull(toneTable(PdfTone.NONE))
+    }
+
+    @Test
+    fun backgroundIsWhiteSeenThroughTheTone() {
+        assertEquals(0xFFFFFFFF.toInt(), toneBackground(PdfTone.NONE).toArgb())
+        assertEquals(0xFF1C1C1C.toInt(), toneBackground(PdfTone.DARK).toArgb())
+        assertEquals(0xFFF5EDDA.toInt(), toneBackground(PdfTone.SEPIA).toArgb())
     }
 }

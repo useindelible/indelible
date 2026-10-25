@@ -111,6 +111,9 @@ fun ReaderCanvasColors.canvasFor(background: ReaderBackground): Color =
         ReaderBackground.BLACK -> black
     }
 
+/** Highlight boxes and the live selection over PDF text share this opacity, as the web's overlay does. */
+const val HIGHLIGHT_FILL_ALPHA = 0.45f
+
 /** The fill behind highlighted PDF text, one per API colour; `bookmark` has none and is never drawn. */
 @Immutable
 data class HighlightFills(

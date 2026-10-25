@@ -115,7 +115,7 @@ Some semantic roles don't map to Material3 `ColorScheme` slots. These are expose
 | `success` | success | `#34C759` | `#30D158` | Success states, "Archive" triage action |
 | `onSuccess` | — | `#FFFFFF` | `#FFFFFF` | Text/icon on `success` filled area |
 | `readerCanvas` | reader-bg-paper/sepia/slate/black | `#FBFAF6` `#F4ECD8` `#22272E` `#0D1117` | same | The gutter behind PDF pages; pick with `canvasFor(background)` |
-| `highlightFills` | highlight-*-bg | `Highlight*Light` | `Highlight*Dark` | Boxes over highlighted PDF text at alpha 0.45; pick with `forApiColor(color)` |
+| `highlightFills` | highlight-*-bg | `Highlight*Light` | `Highlight*Dark` | Boxes over highlighted PDF text at `HIGHLIGHT_FILL_ALPHA` (0.45); pick with `forApiColor(color)` |
 
 Access pattern:
 ```kotlin

@@ -1,5 +1,6 @@
 package app.indelible.reader.pdf
 
+import androidx.compose.ui.graphics.Color
 import app.indelible.reader.model.ReaderBackground
 import kotlin.math.pow
 
@@ -54,3 +55,14 @@ fun toneFor(background: ReaderBackground): PdfTone =
         ReaderBackground.SEPIA -> PdfTone.SEPIA
         ReaderBackground.SLATE, ReaderBackground.BLACK -> PdfTone.DARK
     }
+
+/** What white paper looks like under [tone]: the placeholder behind a page until its bitmap arrives. */
+fun toneBackground(tone: PdfTone): Color {
+    val table = toneTable(tone) ?: return Color.White
+    val white = LEVELS - 1
+    return Color(
+        red = table[white].toInt() and CHANNEL_MASK,
+        green = table[LEVELS + white].toInt() and CHANNEL_MASK,
+        blue = table[2 * LEVELS + white].toInt() and CHANNEL_MASK,
+    )
+}

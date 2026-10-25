@@ -1,0 +1,149 @@
+package app.indelible.reader.ui.pdf
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import app.indelible.reader.pdf.PdfDocument
+import app.indelible.reader.pdf.PdfHighlightBox
+import app.indelible.reader.pdf.PdfSelection
+import app.indelible.reader.pdf.PdfTone
+import app.indelible.reader.ui.SelectionRect
+import app.indelible.reader.viewmodel.PdfRestoreRequest
+import app.indelible.reader.viewmodel.PdfScrollSample
+import app.indelible.ui.theme.HighlightFills
+import app.indelible.ui.theme.IndelibleSpacing
+import kotlin.math.roundToInt
+
+/** The pages of one open PDF, hidden until the saved place is on screen; [onSelection] gets a toolbar anchor in dp. */
+@Composable
+internal fun PdfReaderView(
+    document: PdfDocument,
+    tone: PdfTone,
+    gutter: Color,
+    highlightsByPage: Map<Int, List<PdfHighlightBox>>,
+    highlightFills: HighlightFills,
+    restore: PdfRestoreRequest?,
+    topInsetPx: Int,
+    onPositioned: () -> Unit,
+    onSample: (PdfScrollSample) -> Unit,
+    onSelection: (PdfSelection?, SelectionRect?) -> Unit,
+    onHighlightTapped: (highlightId: String) -> Unit,
+    onReaderTap: () -> Unit,
+    modifier: Modifier = Modifier,
+    zoom: PdfZoomState = rememberPdfZoomState(),
+) {
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val horizontal = rememberScrollState()
+    val bitmaps = remember(document) { PdfPageBitmaps(document) }
+    val selection = remember(document) { PdfSelectionState(document, scope) }
+    var revealed by remember(document) { mutableStateOf(false) }
+    LaunchedEffect(selection) { selection.followDrags() }
+
+    BoxWithConstraints(modifier.background(gutter).clipToBounds()) {
+        val itemWidthPx = (constraints.maxWidth * zoom.zoom).roundToInt().coerceAtLeast(1)
+        val heightsPx = remember(document, itemWidthPx) { document.pageSizes.map { pageHeightPx(it, itemWidthPx) } }
+        val gapPx = with(density) { IndelibleSpacing.step8.roundToPx() }
+        val layout = PdfLayout(listState, horizontal, PdfPageGrid(itemWidthPx, heightsPx, gapPx), topInsetPx, density)
+        val host = PdfPagesHost(document, bitmaps, selection, layout, zoom, scope)
+        val callbacks = PdfViewCallbacks(onSelection, onHighlightTapped, onReaderTap)
+
+        LaunchedEffect(restore, document) {
+            val target = restore ?: return@LaunchedEffect
+            if (heightsPx.isEmpty()) return@LaunchedEffect
+            val index = target.pageIndex.coerceIn(0, heightsPx.lastIndex)
+            listState.scrollToItem(index, restoreOffsetPx(target.pageOffset, heightsPx[index]))
+            revealed = true
+            onPositioned()
+        }
+        LaunchedEffect(listState, document) {
+            snapshotFlow { listState.layoutInfo }.collect { info ->
+                if (revealed) layout.sample(info, document.pageCount)?.let(onSample)
+            }
+        }
+
+        PdfPageStack(host, revealed, tone, highlightsByPage, highlightFills, callbacks)
+    }
+}
+
+@Composable
+private fun PdfPageStack(
+    host: PdfPagesHost,
+    shown: Boolean,
+    tone: PdfTone,
+    highlightsByPage: Map<Int, List<PdfHighlightBox>>,
+    fills: HighlightFills,
+    callbacks: PdfViewCallbacks,
+) {
+    val density = LocalDensity.current
+    val selectionColor = MaterialTheme.colorScheme.primary
+    val preview = host.zoom.preview
+    val pinchLayer =
+        Modifier.graphicsLayer {
+            scaleX = preview?.scale ?: 1f
+            scaleY = preview?.scale ?: 1f
+            transformOrigin =
+                preview?.let { TransformOrigin(it.centroid.x / size.width, it.centroid.y / size.height) }
+                    ?: TransformOrigin.Center
+        }
+    Box(
+        Modifier
+            .fillMaxSize()
+            .alpha(if (shown) 1f else 0f)
+            .then(pinchLayer)
+            .pinchToZoom(host.zoom, host::commitPinch)
+            .horizontalScroll(host.layout.horizontal),
+    ) {
+        LazyColumn(
+            state = host.layout.listState,
+            modifier = Modifier.width(with(density) { host.layout.itemWidthPx.toDp() }).fillMaxHeight(),
+            contentPadding = PaddingValues(top = with(density) { host.layout.topInsetPx.toDp() }),
+            verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
+        ) {
+            items(host.document.pageCount, key = { it }) { index ->
+                val boxes = highlightsByPage[index].orEmpty()
+                val layout = host.layout
+                val widthDp = with(density) { layout.itemWidthPx.toDp() }
+                val heightDp = with(density) { layout.heightsPx[index].toDp() }
+                PdfPageView(
+                    index = index,
+                    pageCount = host.document.pageCount,
+                    page = host.document.pageSizes[index],
+                    layoutWidthPx = host.layout.itemWidthPx,
+                    bitmaps = host.bitmaps,
+                    tone = tone,
+                    overlay = PdfPageOverlay(boxes, fills, host.selection.rectsOn(index), selectionColor),
+                    gestures = host.gestures(index, boxes, callbacks),
+                    modifier = Modifier.size(widthDp, heightDp),
+                )
+            }
+        }
+    }
+}
