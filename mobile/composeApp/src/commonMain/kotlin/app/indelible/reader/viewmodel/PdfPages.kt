@@ -19,7 +19,6 @@ data class PdfScrollSample(
     val scrollTopDp: Float,
 )
 
-/** Where a PDF resumes: the saved page position when there is one, else the saved percent. */
 data class PdfResume(
     val at: PagePosition?,
     val percent: Float,
