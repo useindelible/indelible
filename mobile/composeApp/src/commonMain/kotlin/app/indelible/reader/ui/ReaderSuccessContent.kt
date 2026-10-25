@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -333,6 +334,7 @@ internal fun ReaderSuccessContent(
 
         val noteId = noteSheetHighlightId
         val noteHighlight = if (noteId != null) state.highlights.find { it.id == noteId } else null
+        CloseSheetWhenHighlightGone(noteId, noteHighlight) { onNoteSheetHighlightIdChanged(null) }
         if (noteHighlight != null) {
             HighlightNoteSheet(
                 highlight = noteHighlight,
@@ -350,6 +352,7 @@ internal fun ReaderSuccessContent(
 
         val hlId = tagSheetHighlightId
         val tagHighlight = if (hlId != null) state.highlights.find { it.id == hlId } else null
+        CloseSheetWhenHighlightGone(hlId, tagHighlight) { onTagSheetHighlightIdChanged(null) }
         if (tagHighlight != null) {
             HighlightTagSheet(
                 appliedTags = tagHighlight.tags,
@@ -373,4 +376,15 @@ internal fun ReaderSuccessContent(
             )
         }
     }
+}
+
+/** A sheet whose highlight left the state closes, so a stale id cannot keep the chrome pinned open. */
+@Composable
+internal fun CloseSheetWhenHighlightGone(
+    highlightId: String?,
+    highlight: HighlightData?,
+    onClose: () -> Unit,
+) {
+    val gone = highlightId != null && highlight == null
+    LaunchedEffect(highlightId, gone) { if (gone) onClose() }
 }

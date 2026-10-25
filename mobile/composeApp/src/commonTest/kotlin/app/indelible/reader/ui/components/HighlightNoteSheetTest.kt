@@ -1,7 +1,11 @@
 package app.indelible.reader.ui.components
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -54,6 +58,29 @@ class HighlightNoteSheetTest {
 
             assertEquals(1, deleted)
             assertNull(saved)
+        }
+
+    @Test
+    fun saveIsDisabledForAnUnchangedNote() =
+        runComposeUiTest {
+            val stored = fakeHighlight().copy(note = fakeNote().copy(body = "Remember this\n"))
+            setContent { AppTheme { HighlightNoteEditor(stored, onSave = {}, onDeleteNote = {}) } }
+
+            onNodeWithText("Save").assertIsNotEnabled()
+        }
+
+    @Test
+    fun noteAddedElsewhereWhileEditingIsNotDeletedBySave() =
+        runComposeUiTest {
+            var highlight by mutableStateOf(fakeHighlight())
+            var deleted = 0
+            setContent { AppTheme { HighlightNoteEditor(highlight, onSave = {}, onDeleteNote = { deleted++ }) } }
+
+            highlight = highlight.copy(note = fakeNote().copy(body = "From the web"))
+            waitForIdle()
+            onNodeWithText("Save").performClick()
+
+            assertEquals(0, deleted)
         }
 
     @Test

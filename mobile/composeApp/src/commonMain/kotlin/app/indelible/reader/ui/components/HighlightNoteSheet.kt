@@ -60,8 +60,11 @@ internal fun HighlightNoteEditor(
     onDeleteNote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var body by remember(highlight.id) { mutableStateOf(highlight.note?.body.orEmpty()) }
-    val hasNote = highlight.note != null
+    // The sheet edits the note it opened with; a note that arrives from a sync meanwhile is never deleted by Save.
+    val opened = remember(highlight.id) { highlight.note?.body }
+    var body by remember(highlight.id) { mutableStateOf(opened.orEmpty()) }
+    val hasNote = opened != null
+    val changed = body.trim() != opened.orEmpty().trim()
     val save = {
         val trimmed = body.trim()
         if (trimmed.isEmpty()) {
@@ -112,7 +115,7 @@ internal fun HighlightNoteEditor(
             IndelibleButton(
                 text = stringResource(Res.string.common_save),
                 onClick = save,
-                enabled = body.trim() != highlight.note?.body.orEmpty() || body.isBlank() && hasNote,
+                enabled = changed,
                 modifier = Modifier.weight(1f),
             )
         }

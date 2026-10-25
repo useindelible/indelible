@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -32,6 +33,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
 class HighlightToolbarOverlayTest {
@@ -51,39 +53,62 @@ class HighlightToolbarOverlayTest {
         Dispatchers.resetMain()
     }
 
+    private class Opened {
+        var tagSheet: String? = null
+        var noteSheet: String? = null
+        var tags: List<TagData> = emptyList()
+    }
+
+    private fun ComposeUiTest.showToolbar(): Opened {
+        val events = RecordingReadingEventWriter()
+        val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events) { document }
+        val anchor = SelectionRect(0f, 64f, 10f, 10f)
+        val opened = Opened()
+        setContent {
+            AppTheme {
+                Box(Modifier.fillMaxSize()) {
+                    HighlightToolbarOverlay(
+                        sel = SelectedTextInfo("quick brown", 0, 0, anchor, pdf = selection),
+                        defaultHighlightColor = HighlightColor.YELLOW,
+                        snackbarHostState = SnackbarHostState(),
+                        coroutineScope = rememberCoroutineScope(),
+                        clipboardManager = LocalClipboardManager.current,
+                        viewModel = viewModel,
+                        onSelectedTextChanged = {},
+                        onAvailableTagsChanged = { opened.tags = it },
+                        onTagSheetHighlightIdChanged = { opened.tagSheet = it },
+                        onNoteSheetHighlightIdChanged = { opened.noteSheet = it },
+                    )
+                }
+            }
+        }
+        return opened
+    }
+
     @Test
     fun tagOnAPdfSelectionCreatesThePdfHighlightThenOpensTheTagSheet() =
         runComposeUiTest {
-            val viewModel =
-                ReaderViewModel("doc_test1", repository, readingEvents = RecordingReadingEventWriter()) { document }
-            val anchor = SelectionRect(0f, 64f, 10f, 10f)
-            var opened: String? = null
-            var tags: List<TagData> = emptyList()
-            setContent {
-                AppTheme {
-                    Box(Modifier.fillMaxSize()) {
-                        HighlightToolbarOverlay(
-                            sel = SelectedTextInfo("quick brown", 0, 0, anchor, pdf = selection),
-                            defaultHighlightColor = HighlightColor.YELLOW,
-                            snackbarHostState = SnackbarHostState(),
-                            coroutineScope = rememberCoroutineScope(),
-                            clipboardManager = LocalClipboardManager.current,
-                            viewModel = viewModel,
-                            onSelectedTextChanged = {},
-                            onAvailableTagsChanged = { tags = it },
-                            onTagSheetHighlightIdChanged = { opened = it },
-                            onNoteSheetHighlightIdChanged = {},
-                        )
-                    }
-                }
-            }
+            val opened = showToolbar()
 
             onNodeWithText("Tag").performClick()
             waitForIdle()
 
             val target = assertIs<PdfHighlightTarget>(repository.createdTargets.single())
             assertEquals(3, target.page)
-            assertEquals("hlt_test1", opened)
-            assertEquals(listOf("research"), tags.map { it.name })
+            assertEquals("hlt_test1", opened.tagSheet)
+            assertEquals(listOf("research"), opened.tags.map { it.name })
+        }
+
+    @Test
+    fun noteOnAPdfSelectionCreatesThePdfHighlightThenOpensTheNoteEditor() =
+        runComposeUiTest {
+            val opened = showToolbar()
+
+            onNodeWithText("Note").performClick()
+            waitForIdle()
+
+            assertIs<PdfHighlightTarget>(repository.createdTargets.single())
+            assertEquals("hlt_test1", opened.noteSheet)
+            assertNull(opened.tagSheet)
         }
 }
