@@ -47,6 +47,10 @@ internal class PdfPageGestures(
     val onDrag: (NormalizedPoint) -> Unit,
     val onDragEnd: () -> Unit,
     val onDragCancel: () -> Unit,
+)
+
+/** What accessibility services can do with a page: activate it, and open each highlight on it. */
+internal class PdfPageSemantics(
     val onActivate: () -> Unit,
     val highlightActions: List<CustomAccessibilityAction>,
 )
@@ -68,6 +72,7 @@ internal fun PdfPageView(
     tone: PdfTone,
     overlay: PdfPageOverlay,
     gestures: PdfPageGestures,
+    semantics: PdfPageSemantics,
     modifier: Modifier = Modifier,
 ) {
     val label = stringResource(Res.string.reader_pdf_page, index + 1, pageCount)
@@ -76,18 +81,18 @@ internal fun PdfPageView(
         value = bitmaps.tryBitmap(index, renderWidth, tone)
     }
     val current = rememberUpdatedState(gestures)
+    val currentSemantics = rememberUpdatedState(semantics)
     val placeholder = remember(tone) { toneBackground(tone) }
     Canvas(
         modifier
             .semantics {
                 contentDescription = label
                 onClick {
-                    current.value.onActivate()
+                    currentSemantics.value.onActivate()
                     true
                 }
-                customActions = current.value.highlightActions
-            }
-            .pointerInput(Unit) {
+                customActions = currentSemantics.value.highlightActions
+            }.pointerInput(Unit) {
                 detectTapGestures { current.value.onTap(normalized(it, size)) }
             }.pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(

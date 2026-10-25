@@ -64,7 +64,6 @@ internal class PdfPagesHost(
         index: Int,
         boxes: List<PdfHighlightBox>,
         callbacks: PdfViewCallbacks,
-        openHighlightLabel: String,
     ) = PdfPageGestures(
         onTap = { point -> tap(point, boxes, callbacks) },
         onDragStart = { selection.start(index, it) },
@@ -75,6 +74,13 @@ internal class PdfPagesHost(
             }
         },
         onDragCancel = selection::cancel,
+    )
+
+    fun semantics(
+        boxes: List<PdfHighlightBox>,
+        callbacks: PdfViewCallbacks,
+        openHighlightLabel: String,
+    ) = PdfPageSemantics(
         onActivate = callbacks.onReaderTap,
         highlightActions =
             boxes.map { box ->

@@ -11,6 +11,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
+/** Where a session reports: the success-state updater and the effect stream. */
+internal class ReaderSessionOutput(
+    val update: ((ReaderUiState.Success) -> ReaderUiState.Success) -> Unit,
+    val effects: MutableSharedFlow<ReaderEffect>,
+)
+
 /** The open book's or PDF's reading session, whichever the item is; both feed the same success state. */
 internal class ReaderSessions(
     private val documentId: String,
@@ -18,8 +24,7 @@ internal class ReaderSessions(
     private val scope: CoroutineScope,
     private val progress: ReaderProgressSync,
     private val openPdf: suspend (String) -> PdfDocument,
-    private val update: ((ReaderUiState.Success) -> ReaderUiState.Success) -> Unit,
-    private val effects: MutableSharedFlow<ReaderEffect>,
+    private val output: ReaderSessionOutput,
 ) {
     var epub: EpubReaderSession? = null
         private set
@@ -37,7 +42,9 @@ internal class ReaderSessions(
         epub = session
         scope.launch {
             session.state.collect { epub ->
-                update { it.copy(epub = epub, progress = epub.percent ?: it.progress, toc = epub.contentsPanel()) }
+                output.update {
+                    it.copy(epub = epub, progress = epub.percent ?: it.progress, toc = epub.contentsPanel())
+                }
             }
         }
         session.open()
@@ -53,7 +60,7 @@ internal class ReaderSessions(
         pdf = session
         scope.launch {
             session.state.collect { state ->
-                update { it.copy(pdf = state, progress = state.percent ?: it.progress) }
+                output.update { it.copy(pdf = state, progress = state.percent ?: it.progress) }
                 if (state.status == PdfStatus.COPY_REMOVED) leaveRemoved()
             }
         }
@@ -80,7 +87,7 @@ internal class ReaderSessions(
     private suspend fun leaveRemoved() {
         if (left) return
         left = true
-        effects.emit(ReaderEffect.NavigateBack)
+        output.effects.emit(ReaderEffect.NavigateBack)
     }
 }
 

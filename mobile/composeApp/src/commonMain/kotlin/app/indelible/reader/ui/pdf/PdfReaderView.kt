@@ -178,7 +178,8 @@ private fun PdfPageStack(
                     bitmaps = host.bitmaps,
                     tone = tone,
                     overlay = PdfPageOverlay(boxes, fills, host.selection.rectsOn(index), selectionColor),
-                    gestures = host.gestures(index, boxes, callbacks, openHighlightLabel),
+                    gestures = host.gestures(index, boxes, callbacks),
+                    semantics = host.semantics(boxes, callbacks, openHighlightLabel),
                     modifier = Modifier.size(widthDp, heightDp),
                 )
             }

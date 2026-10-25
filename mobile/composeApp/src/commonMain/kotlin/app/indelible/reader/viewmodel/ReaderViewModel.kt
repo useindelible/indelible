@@ -79,7 +79,14 @@ class ReaderViewModel(
             readingEvents.recordProgress(documentId, percent, sessionId, position)
         }
     private val sessions =
-        ReaderSessions(documentId, repository, viewModelScope, progressSync, openPdf, ::updateSuccessState, _effects)
+        ReaderSessions(
+            documentId,
+            repository,
+            viewModelScope,
+            progressSync,
+            openPdf,
+            ReaderSessionOutput(::updateSuccessState, _effects),
+        )
 
     /** The open book's reading session; null for anything else. */
     val epubSession: EpubReaderSession? get() = sessions.epub
