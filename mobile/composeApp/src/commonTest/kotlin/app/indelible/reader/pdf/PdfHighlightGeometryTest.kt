@@ -21,7 +21,8 @@ private fun highlight(
     id: String,
     color: String = "yellow",
     locator: HighlightLocator?,
-) = HighlightData(id, color, "text", locator, emptyList(), AT, AT)
+    text: String = "text",
+) = HighlightData(id, color, text, locator, emptyList(), AT, AT)
 
 private fun pdfLocator(
     page: Int,
@@ -143,6 +144,13 @@ class PdfHighlightGeometryTest {
         assertEquals(listOf("b", "c"), byPage.getValue(2).map { it.highlightId })
         assertEquals(listOf(NormalizedRect(0.1, 0.1, 0.2, 0.02)), byPage.getValue(0).single().rects)
         assertEquals("yellow", byPage.getValue(0).single().color)
+    }
+
+    @Test
+    fun boxesCarryTheHighlightsWords() {
+        val all = listOf(highlight("a", locator = pdfLocator(1), text = "  quick brown fox "))
+
+        assertEquals("quick brown fox", pdfHighlightsByPage(all).getValue(0).single().text)
     }
 
     @Test

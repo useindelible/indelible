@@ -76,15 +76,16 @@ internal class PdfPagesHost(
         onDragCancel = selection::cancel,
     )
 
+    /** One action per highlight, each named by [labels] at the same index, so a screen reader can tell them apart. */
     fun semantics(
         boxes: List<PdfHighlightBox>,
+        labels: List<String>,
         callbacks: PdfViewCallbacks,
-        openHighlightLabel: String,
     ) = PdfPageSemantics(
         onActivate = callbacks.onReaderTap,
         highlightActions =
-            boxes.map { box ->
-                CustomAccessibilityAction(openHighlightLabel) {
+            boxes.zip(labels) { box, label ->
+                CustomAccessibilityAction(label) {
                     callbacks.onHighlightTapped(box.highlightId)
                     true
                 }

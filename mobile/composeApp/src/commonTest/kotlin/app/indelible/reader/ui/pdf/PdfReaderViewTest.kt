@@ -26,7 +26,8 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class PdfReaderViewTest {
-    private val box = PdfHighlightBox("hlt_1", "yellow", listOf(NormalizedRect(0.1, 0.1, 0.5, 0.05)))
+    private val box = PdfHighlightBox("hlt_1", "yellow", "first words", listOf(NormalizedRect(0.1, 0.1, 0.5, 0.05)))
+    private val other = PdfHighlightBox("hlt_2", "blue", "other words", listOf(NormalizedRect(0.1, 0.3, 0.5, 0.05)))
 
     @Test
     fun tapOnAHighlightReportsItsId() =
@@ -174,7 +175,7 @@ class PdfReaderViewTest {
     @Test
     fun pageExposesTapAndHighlightsAsAccessibilityActions() =
         runComposeUiTest {
-            val reports = show(Scripted().document, highlights = mapOf(0 to listOf(box)))
+            val reports = show(Scripted().document, highlights = mapOf(0 to listOf(box, other)))
 
             page(1).performClick()
             waitForIdle()
@@ -183,9 +184,9 @@ class PdfReaderViewTest {
             val config = page(1).fetchSemanticsNode().config
             assertTrue(SemanticsActions.OnClick in config)
             val actions = config[SemanticsActions.CustomActions]
-            assertEquals(listOf("Open highlight"), actions.map { it.label })
-            actions.single().action()
+            assertEquals(listOf("Open highlight: first words", "Open highlight: other words"), actions.map { it.label })
+            actions.last().action()
             waitForIdle()
-            assertEquals(listOf("hlt_1"), reports.tapped)
+            assertEquals(listOf("hlt_2"), reports.tapped)
         }
 }

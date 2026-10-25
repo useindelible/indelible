@@ -33,6 +33,7 @@ fun pdfHighlightTarget(selection: PdfSelection): PdfHighlightTarget? {
 data class PdfHighlightBox(
     val highlightId: String,
     val color: String,
+    val text: String,
     val rects: List<NormalizedRect>,
 )
 
@@ -45,7 +46,7 @@ fun pdfHighlightsByPage(all: List<HighlightData>): Map<Int, List<PdfHighlightBox
             val locator = highlight.locator?.takeIf { it.type == PDF_LOCATOR } ?: return@mapNotNull null
             val page = locator.page ?: return@mapNotNull null
             val rects = locator.drawnRects() ?: return@mapNotNull null
-            (page - 1) to PdfHighlightBox(highlight.id, highlight.color, rects)
+            (page - 1) to PdfHighlightBox(highlight.id, highlight.color, highlight.textContent.trim(), rects)
         }.groupBy({ it.first }, { it.second })
 
 private fun HighlightLocator.drawnRects(): List<NormalizedRect>? {

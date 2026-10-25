@@ -143,7 +143,6 @@ private fun PdfPageStack(
 ) {
     val density = LocalDensity.current
     val selectionColor = MaterialTheme.colorScheme.primary
-    val openHighlightLabel = stringResource(Res.string.reader_pdf_open_highlight)
     val current by rememberUpdatedState(host)
     Box(
         Modifier
@@ -167,6 +166,7 @@ private fun PdfPageStack(
         ) {
             items(host.document.pageCount, key = { it }) { index ->
                 val boxes = highlightsByPage[index].orEmpty()
+                val labels = boxes.map { stringResource(Res.string.reader_pdf_open_highlight, it.text) }
                 val layout = host.layout
                 val widthDp = with(density) { layout.itemWidthPx.toDp() }
                 val heightDp = with(density) { layout.heightsPx[index].toDp() }
@@ -179,7 +179,7 @@ private fun PdfPageStack(
                     tone = tone,
                     overlay = PdfPageOverlay(boxes, fills, host.selection.rectsOn(index), selectionColor),
                     gestures = host.gestures(index, boxes, callbacks),
-                    semantics = host.semantics(boxes, callbacks, openHighlightLabel),
+                    semantics = host.semantics(boxes, labels, callbacks),
                     modifier = Modifier.size(widthDp, heightDp),
                 )
             }
