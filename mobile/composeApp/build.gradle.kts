@@ -260,10 +260,15 @@ kotlin {
             implementation(libs.sqldelight.android)
             implementation(libs.pdfium.android)
         }
-        androidInstrumentedTest.dependencies {
-            implementation(libs.androidx.testExt.junit)
-            implementation(libs.androidx.test.runner)
-            implementation(libs.kotlin.test)
+        androidInstrumentedTest {
+            kotlin.srcDir("src/pdfContract/kotlin")
+            dependencies {
+                implementation(libs.androidx.testExt.junit)
+                implementation(libs.androidx.test.runner)
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlin.testJunit)
+                implementation(libs.kotlinx.coroutines.test)
+            }
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
