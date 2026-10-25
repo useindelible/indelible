@@ -16,13 +16,21 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.Dp
 import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.offline.ui.PendingSyncDot
 import app.indelible.reader.model.DataPanel
@@ -96,6 +104,10 @@ internal fun ReaderSuccessContent(
 ) {
     val uriHandler = LocalUriHandler.current
     val clipboardManager = LocalClipboardManager.current
+    val density = LocalDensity.current
+    val showMiniBar = isMiniBarShown(playbackState, activePanel)
+    var miniBarClearance by remember { mutableStateOf<Dp?>(null) }
+    LaunchedEffect(showMiniBar) { if (!showMiniBar) miniBarClearance = null }
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
     val linkCopiedMessage = stringResource(Res.string.reader_link_copied)
     val linkMissingMessage = stringResource(Res.string.reader_link_missing)
@@ -138,6 +150,7 @@ internal fun ReaderSuccessContent(
                         onTappedHighlightChanged = onTappedHighlightChanged,
                         onReaderTap = onReaderTap,
                         immersive = immersive,
+                        miniBarClearance = miniBarClearance,
                         uriHandler = uriHandler,
                         viewModel = viewModel,
                     )
@@ -205,9 +218,6 @@ internal fun ReaderSuccessContent(
                 }
             }
 
-            val showMiniBar =
-                (playbackState.isPlaying || playbackState.positionMs > 0L) &&
-                    activePanel != DataPanel.LISTEN
             val miniBarBottom by animateDpAsState(
                 targetValue = if (immersive) IndelibleSpacing.step16 else IndelibleSpacing.step80,
                 label = "ttsMiniBarBottom",
@@ -221,7 +231,12 @@ internal fun ReaderSuccessContent(
                         .align(Alignment.BottomCenter)
                         .navigationBarsPadding()
                         .padding(horizontal = IndelibleSpacing.step12)
-                        .padding(bottom = miniBarBottom),
+                        .padding(bottom = miniBarBottom)
+                        .onGloballyPositioned { coordinates ->
+                            val rootHeight = coordinates.findRootCoordinates().size.height
+                            val top = coordinates.positionInRoot().y
+                            miniBarClearance = with(density) { (rootHeight - top).toDp() }
+                        },
             ) {
                 TtsMiniBar(
                     title = state.item.title,

@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.unit.Dp
 import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.i18n.LocalizedDateStyle
 import app.indelible.reader.model.DataPanel
@@ -46,6 +47,7 @@ internal fun ReaderContentArea(
     onTappedHighlightChanged: (HighlightData?) -> Unit,
     onReaderTap: () -> Unit,
     immersive: Boolean,
+    miniBarClearance: Dp?,
     uriHandler: UriHandler,
     viewModel: ReaderViewModel,
 ) {
@@ -90,6 +92,7 @@ internal fun ReaderContentArea(
                     onReaderTap = onReaderTap,
                     handleScrollProgress = handleScrollProgress,
                     immersive = immersive,
+                    miniBarClearance = miniBarClearance,
                     viewModel = viewModel,
                 )
             }

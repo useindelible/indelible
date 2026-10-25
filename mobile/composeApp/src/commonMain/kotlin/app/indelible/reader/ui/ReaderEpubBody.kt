@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.ui.components.EpubChapterBar
 import app.indelible.reader.ui.components.EpubStatusContent
@@ -25,7 +26,6 @@ import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.ReaderViewModel
 import app.indelible.reader.viewmodel.highlightsFor
 import app.indelible.reader.viewmodel.shows
-import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.reader_ask_follow_up
 import indelible.composeapp.generated.resources.reader_epub_chapter_number
@@ -45,6 +45,7 @@ internal fun ReaderEpubBody(
     onReaderTap: () -> Unit,
     handleScrollProgress: (Float, Float) -> Unit,
     immersive: Boolean,
+    miniBarClearance: Dp?,
     viewModel: ReaderViewModel,
 ) {
     LaunchedEffect(epub.current, epub.status) {
@@ -54,7 +55,7 @@ internal fun ReaderEpubBody(
     val chapter = epub.chapters.getOrNull(epub.current)
     val html = epub.html
     val barBottom by animateDpAsState(
-        targetValue = if (immersive) IndelibleSpacing.step56 else IndelibleSpacing.step48 + IndelibleSpacing.step64,
+        targetValue = chapterBarBottom(immersive, miniBarClearance),
         label = "epubChapterBarBottom",
     )
     Box(modifier = Modifier.fillMaxSize()) {
