@@ -4,6 +4,7 @@ import app.indelible.api.generated.models.DocumentReaderResponse
 import app.indelible.api.generated.models.HighlightNoteResponse
 import app.indelible.api.generated.models.HighlightWithNoteResponse
 import app.indelible.api.generated.models.LocatorSchemaFlat
+import app.indelible.api.generated.models.PdfRectSchema
 import app.indelible.api.generated.models.TagResponse
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -21,6 +22,63 @@ class ReaderModelMappingTest {
 
         assertEquals(HighlightLocator(type = "epub", startOffset = 12, endOffset = 40, chapter = "ch3"), locator)
         assertEquals(server, locator.toLocatorSchemaFlat())
+    }
+
+    @Test
+    fun pdfLocatorRoundTripsItsGeometry() {
+        val server =
+            LocatorSchemaFlat(
+                type = "pdf",
+                page = 3,
+                x = 0.1,
+                y = 0.2,
+                width = 0.5,
+                height = 0.04,
+                textSnapshot = "quick brown",
+                rects =
+                    listOf(
+                        PdfRectSchema(height = 0.02, width = 0.5, x = 0.1, y = 0.2),
+                        PdfRectSchema(height = 0.02, width = 0.3, x = 0.1, y = 0.22),
+                    ),
+            )
+
+        val locator = server.toHighlightLocator()
+
+        assertEquals(3, locator.page)
+        assertEquals(listOf(PdfRect(0.1, 0.2, 0.5, 0.02), PdfRect(0.1, 0.22, 0.3, 0.02)), locator.rects)
+        assertEquals("quick brown", locator.textSnapshot)
+        assertEquals(server, locator.toLocatorSchemaFlat())
+    }
+
+    @Test
+    fun serverPdfHighlightKeepsItsRects() {
+        val at = Instant.parse("2026-04-01T12:00:00Z")
+        val rects = listOf(PdfRectSchema(height = 0.02, width = 0.5, x = 0.1, y = 0.2))
+        val highlight =
+            HighlightWithNoteResponse(
+                color = "blue",
+                createdAt = at,
+                documentId = "doc_pdf",
+                id = "hl_pdf",
+                locator =
+                    LocatorSchemaFlat(
+                        type = "pdf",
+                        page = 2,
+                        x = 0.1,
+                        y = 0.2,
+                        width = 0.5,
+                        height = 0.02,
+                        rects = rects,
+                    ),
+                tags = emptyList(),
+                textContent = "selected",
+                updatedAt = at,
+            )
+
+        val mapped = highlight.toHighlightData()
+
+        assertEquals(2, mapped.locator?.page)
+        assertEquals(listOf(PdfRect(0.1, 0.2, 0.5, 0.02)), mapped.locator?.rects)
     }
 
     @Test

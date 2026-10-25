@@ -17,6 +17,8 @@ import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.HighlightRange
+import app.indelible.reader.model.HighlightTarget
+import app.indelible.reader.model.PdfHighlightTarget
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
@@ -58,7 +60,7 @@ interface ReaderRepository {
         itemId: String,
         color: String,
         textContent: String,
-        range: HighlightRange,
+        target: HighlightTarget,
     ): Result<HighlightData>
 
     suspend fun deleteHighlight(
@@ -110,6 +112,7 @@ private const val KIND_OPENED = "opened"
 private const val KIND_PROGRESS = "progress"
 private const val LOCATOR_HTML = "html"
 private const val LOCATOR_EPUB = "epub"
+private const val LOCATOR_PDF = "pdf"
 
 class ApiReaderRepository internal constructor(
     private val readerApiService: ReaderApiService,
@@ -204,17 +207,10 @@ class ApiReaderRepository internal constructor(
         itemId: String,
         color: String,
         textContent: String,
-        range: HighlightRange,
+        target: HighlightTarget,
     ): Result<HighlightData> {
-        val locator =
-            HighlightLocator(
-                type = if (range.chapter == null) LOCATOR_HTML else LOCATOR_EPUB,
-                startOffset = range.startOffset,
-                endOffset = range.endOffset,
-                chapter = range.chapter,
-            )
         val session = sessionProvider() ?: return Result.failure(NoSessionException())
-        return offlineResult { outbox.createHighlight(session, itemId, color, textContent, locator) }
+        return offlineResult { outbox.createHighlight(session, itemId, color, textContent, target.toLocator()) }
     }
 
     override suspend fun deleteHighlight(
@@ -300,3 +296,25 @@ class ApiReaderRepository internal constructor(
         return result
     }
 }
+
+private fun HighlightTarget.toLocator(): HighlightLocator =
+    when (this) {
+        is HighlightRange ->
+            HighlightLocator(
+                type = if (chapter == null) LOCATOR_HTML else LOCATOR_EPUB,
+                startOffset = startOffset,
+                endOffset = endOffset,
+                chapter = chapter,
+            )
+        is PdfHighlightTarget ->
+            HighlightLocator(
+                type = LOCATOR_PDF,
+                page = page,
+                x = x,
+                y = y,
+                width = width,
+                height = height,
+                textSnapshot = textSnapshot,
+                rects = rects,
+            )
+    }

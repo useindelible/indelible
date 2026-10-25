@@ -4,6 +4,7 @@ import app.indelible.api.generated.models.DocumentAssetResponse
 import app.indelible.api.generated.models.HighlightNoteResponse
 import app.indelible.api.generated.models.HighlightWithNoteResponse
 import app.indelible.api.generated.models.LocatorSchemaFlat
+import app.indelible.api.generated.models.PdfRectSchema
 import app.indelible.api.generated.models.TagResponse
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
@@ -138,6 +139,13 @@ fun LocatorSchemaFlat.toHighlightLocator(): HighlightLocator =
         startOffset = startOffset,
         endOffset = endOffset,
         chapter = chapter,
+        page = page,
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        textSnapshot = textSnapshot,
+        rects = rects?.map { PdfRect(it.x, it.y, it.width, it.height) },
     )
 
 fun HighlightLocator.toLocatorSchemaFlat(): LocatorSchemaFlat =
@@ -146,6 +154,13 @@ fun HighlightLocator.toLocatorSchemaFlat(): LocatorSchemaFlat =
         startOffset = startOffset,
         endOffset = endOffset,
         chapter = chapter,
+        page = page,
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        textSnapshot = textSnapshot,
+        rects = rects?.map { PdfRectSchema(height = it.height, width = it.width, x = it.x, y = it.y) },
     )
 
 fun DocumentAssetResponse.toAssetWithUrlResponse(): AssetWithUrlResponse =
