@@ -146,10 +146,10 @@ class DownloadManager(
         }
     }
 
-    internal fun isHeld(
+    internal suspend fun isHeld(
         scope: String,
         documentId: String,
-    ): Boolean = DocumentKey(scope, documentId) in held
+    ): Boolean = lock.withLock { DocumentKey(scope, documentId) in held }
 
     /** A request for the document made while this runs waits until the copy is gone, then acquires anew. */
     suspend fun removeFromDevice(
@@ -271,14 +271,14 @@ class DownloadManager(
     private suspend fun acquire(request: Request) {
         val key = request.key
         when {
-            registry.current.value.session !== request.session -> acquisitions.clear(key)
-            !isOnline && request.forReading -> acquisitions.set(key, Acquisition.Failed(DownloadFailure.NETWORK))
-            !isOnline -> if (request.pin) park(request, Acquisition.WaitingForConnection) else acquisitions.clear(key)
+            registry.current.value.session !== request.session -> finish(key)
             // A row whose files are missing or cut short is repaired by a fresh generation, not trusted.
             copies.isComplete(key.scope, request.documentId) -> {
                 if (request.pin) store.setPinned(key.scope, request.documentId, pinned = true)
-                acquisitions.clear(key)
+                finish(key)
             }
+            !isOnline && request.forReading -> show(request, Acquisition.Failed(DownloadFailure.NETWORK))
+            !isOnline -> if (request.pin) park(request, Acquisition.WaitingForConnection) else finish(key)
             else -> fetch(request)
         }
     }
@@ -287,8 +287,11 @@ class DownloadManager(
         val key = request.key
         acquisitions.set(key, Acquisition.Downloading(null))
         runCatching {
+            // A pinned row being repaired keeps its copy whatever the cap says, as its first download did.
+            val pinned = store.cachedDocument(key.scope, request.documentId)?.pinned == true
+            val uncapped = request.forReading || pinned
             val outcome =
-                fetcher.download(request.session, request.documentId, request.pin, ignoreCap = request.forReading) {
+                fetcher.download(request.session, request.documentId, request.pin, ignoreCap = uncapped) {
                     acquisitions.set(key, Acquisition.Downloading(it))
                 }
             if (outcome == FetchResult.Installed) copies.enforceCap(key.scope, heldIn(key.scope) + key.documentId)
@@ -297,25 +300,38 @@ class DownloadManager(
             when {
                 outcome == FetchResult.Installed -> {
                     lock.withLock { autoCachePaused -= key.scope }
-                    acquisitions.clear(key)
+                    finish(key)
                 }
                 // A reader waiting for the copy is told, not left waiting for a retry nothing schedules.
-                request.forReading -> acquisitions.set(key, Acquisition.Failed(DownloadFailure.SERVER))
+                request.forReading -> show(request, Acquisition.Failed(DownloadFailure.SERVER))
                 // A pin waits for a readable render rather than claiming a copy the reader cannot open.
                 outcome == FetchResult.Stale || request.pin -> park(request, Acquisition.Waiting)
-                else -> acquisitions.clear(key)
+                else -> finish(key)
             }
         }.onFailure { error ->
             if (error is CancellationException) throw error
             if (error is NoSpaceException) lock.withLock { autoCachePaused += key.scope }
             val shown = failureState(error, request.pin, request.forReading, isOnline)
             when {
-                shown == null -> acquisitions.clear(key)
-                request.forReading -> acquisitions.set(key, shown)
+                shown == null -> finish(key)
+                request.forReading -> show(request, shown)
                 isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
                 else -> acquisitions.set(key, shown)
             }
         }
+    }
+
+    // A request queued behind this one for the same document takes the board over instead of seeing it go dark.
+    private suspend fun finish(key: DocumentKey) {
+        lock.withLock { if (key in queue) acquisitions.set(key, Acquisition.Waiting) else acquisitions.clear(key) }
+    }
+
+    // A failure shown to a reader still parks the request when it also carries a pin, so the pin is retried.
+    private suspend fun show(
+        request: Request,
+        failure: Acquisition,
+    ) {
+        if (request.pin) park(request, failure) else acquisitions.set(request.key, failure)
     }
 
     private suspend fun heldIn(scope: String): Set<String> =

@@ -171,6 +171,20 @@ class OfflineEvictionTest {
         }
 
     @Test
+    fun heldDocumentSurvivesTheCapPassAfterAnotherInstall() =
+        runTest {
+            val h = downloadHarness()
+            h.seed("held", bytes = 100, openedAt = 1)
+            h.capBytes = 100
+            h.manager.hold(DL_SCOPE, "held")
+
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+
+            assertEquals(setOf("held", DL_DOC), h.copyIds())
+        }
+
+    @Test
     fun copyLargerThanTheCapIsEvictedFirst() =
         runTest {
             val h = downloadHarness()

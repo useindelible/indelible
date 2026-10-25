@@ -48,10 +48,19 @@ class OfflineCopies(
     suspend fun isComplete(
         scope: String,
         documentId: String,
+    ): Boolean = store.cachedDocument(scope, documentId)?.let { isIntact(scope, it) } == true
+
+    /** A file that cannot be read counts as missing, so the copy is repaired rather than trusted. */
+    internal suspend fun isIntact(
+        scope: String,
+        copy: CachedDocumentRow,
     ): Boolean {
-        val copy = store.cachedDocument(scope, documentId) ?: return false
-        val dir = files.generationDir(scope, documentId, copy.generation)
-        return store.assetsForDocument(scope, documentId).all { files.size(dir / it.path) == it.bytes }
+        val dir = files.generationDir(scope, copy.documentId, copy.generation)
+        return try {
+            store.assetsForDocument(scope, copy.documentId).all { files.size(dir / it.path) == it.bytes }
+        } catch (ignored: IOException) {
+            false
+        }
     }
 
     internal fun deleteQuietly(path: Path) {

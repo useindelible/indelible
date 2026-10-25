@@ -24,11 +24,3 @@ private suspend fun OfflineCopies.sweepScope(scope: String) {
     }
     store.dropOrphanHighlights(scope)
 }
-
-private suspend fun OfflineCopies.isIntact(
-    scope: String,
-    copy: CachedDocumentRow,
-): Boolean {
-    val dir = files.generationDir(scope, copy.documentId, copy.generation)
-    return store.assetsForDocument(scope, copy.documentId).all { files.size(dir / it.path) == it.bytes }
-}
