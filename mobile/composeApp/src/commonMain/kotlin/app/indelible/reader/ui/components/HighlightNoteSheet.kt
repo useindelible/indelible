@@ -35,6 +35,7 @@ import indelible.composeapp.generated.resources.reader_highlight_note_title
 import org.jetbrains.compose.resources.stringResource
 
 private const val NOTE_LINES = 4
+private const val NOTE_MAX_LINES = 8
 private const val QUOTE_LINES = 3
 
 /** One highlight's note in every reader: Save writes the trimmed body; an empty body or Delete note removes it. */
@@ -99,6 +100,7 @@ internal fun HighlightNoteEditor(
             label = stringResource(Res.string.reader_highlight_note_label),
             singleLine = false,
             minLines = NOTE_LINES,
+            maxLines = NOTE_MAX_LINES,
             imeAction = ImeAction.Default,
             modifier = Modifier.fillMaxWidth(),
         )

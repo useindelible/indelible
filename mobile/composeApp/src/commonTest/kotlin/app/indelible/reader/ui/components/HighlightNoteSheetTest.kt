@@ -1,8 +1,11 @@
 package app.indelible.reader.ui.components
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -12,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.unit.dp
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeHighlight
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeNote
 import app.indelible.ui.theme.AppTheme
@@ -92,5 +96,21 @@ class HighlightNoteSheetTest {
             onNodeWithText("Delete note").performClick()
 
             assertEquals(1, deleted)
+        }
+
+    @Test
+    fun longNoteKeepsSaveVisible() =
+        runComposeUiTest {
+            setContent {
+                AppTheme {
+                    Box(Modifier.size(400.dp, 400.dp)) {
+                        HighlightNoteEditor(fakeHighlight(), onSave = {}, onDeleteNote = {})
+                    }
+                }
+            }
+
+            onNode(hasSetTextAction()).performTextInput("line\n".repeat(80))
+
+            onNodeWithText("Save").assertIsDisplayed()
         }
 }
