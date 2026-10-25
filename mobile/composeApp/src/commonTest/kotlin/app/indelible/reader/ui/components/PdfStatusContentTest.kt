@@ -11,6 +11,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import app.indelible.reader.model.PdfStatus
 import app.indelible.reader.model.ReaderBackground
 import app.indelible.ui.theme.AppTheme
+import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.ReaderBgDark
 import app.indelible.ui.theme.ReaderBgPaper
 import app.indelible.ui.theme.ReaderBgSepia
@@ -91,12 +92,17 @@ class PdfStatusContentTest {
         }
 
     @Test
-    fun canvasFollowsTheReaderBackground() {
-        val canvas = ReaderCanvasColors(ReaderBgPaper, ReaderBgSepia, ReaderBgSlate, ReaderBgDark)
+    fun canvasFollowsTheReaderBackground() =
+        runComposeUiTest {
+            listOf(false, true).forEach { dark ->
+                lateinit var canvas: ReaderCanvasColors
+                setContent { AppTheme(darkTheme = dark) { canvas = IndelibleTheme.colors.readerCanvas } }
+                waitForIdle()
 
-        assertEquals(ReaderBgPaper, canvas.canvasFor(ReaderBackground.PAPER))
-        assertEquals(ReaderBgSepia, canvas.canvasFor(ReaderBackground.SEPIA))
-        assertEquals(ReaderBgSlate, canvas.canvasFor(ReaderBackground.SLATE))
-        assertEquals(ReaderBgDark, canvas.canvasFor(ReaderBackground.BLACK))
-    }
+                assertEquals(ReaderBgPaper, canvas.canvasFor(ReaderBackground.PAPER))
+                assertEquals(ReaderBgSepia, canvas.canvasFor(ReaderBackground.SEPIA))
+                assertEquals(ReaderBgSlate, canvas.canvasFor(ReaderBackground.SLATE))
+                assertEquals(ReaderBgDark, canvas.canvasFor(ReaderBackground.BLACK))
+            }
+        }
 }

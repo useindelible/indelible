@@ -11,6 +11,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.reader.model.HighlightData
+import app.indelible.reader.model.HighlightNoteData
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.components.IndelibleTextField
@@ -187,11 +189,27 @@ internal fun HighlightNoteEditor(
 @Preview
 @Composable
 private fun HighlightNoteEditorLightPreview() {
-    AppTheme(darkTheme = false) { HighlightNoteEditor(previewHighlight(), "", {}, false, false, {}, {}) }
+    AppTheme(darkTheme = false) {
+        Surface { HighlightNoteEditor(previewHighlight(), "", {}, false, false, {}, {}) }
+    }
 }
 
 @Preview
 @Composable
 private fun HighlightNoteEditorDarkPreview() {
-    AppTheme(darkTheme = true) { HighlightNoteEditor(previewHighlight(), "", {}, false, false, {}, {}) }
+    val base = previewHighlight()
+    val highlight =
+        base.copy(
+            note =
+                HighlightNoteData(
+                    id = "hnt_preview",
+                    highlightId = base.id,
+                    body = "Remember this",
+                    createdAt = base.createdAt,
+                    updatedAt = base.updatedAt,
+                ),
+        )
+    AppTheme(darkTheme = true) {
+        Surface { HighlightNoteEditor(highlight, "Remember this", {}, true, false, {}, {}) }
+    }
 }
