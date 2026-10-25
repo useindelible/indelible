@@ -1,6 +1,7 @@
 package app.indelible.navigation
 
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -64,7 +65,7 @@ fun NavGraphBuilder.contentRoutes(
                 ?.read { getStringOrNull("documentId") }
                 ?: return@composable
         val readerViewModel =
-            remember(documentId) {
+            viewModel(key = documentId) {
                 ReaderViewModel(documentId, readerRepository, readingEvents = readingEventWriter)
             }
         val offlineViewModel = remember(documentId) { documentOffline(documentId) }

@@ -13,11 +13,15 @@ import app.indelible.reader.repository.ReaderRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 private const val PERCENT_MAX = 100f
@@ -40,8 +44,7 @@ class PdfReaderSession internal constructor(
     private val repository: ReaderRepository,
     private val scope: CoroutineScope,
     private val progress: ReaderProgressSync,
-    private val resumeAt: PagePosition?,
-    private val resumePercent: Float,
+    private val resume: PdfResume,
     private val openPdf: suspend (String) -> PdfDocument,
 ) {
     private val _state = MutableStateFlow(PdfReaderState())
@@ -73,7 +76,7 @@ class PdfReaderSession internal constructor(
     }
 
     fun onSample(sample: PdfScrollSample) {
-        if (!tracking) return
+        if (!tracking || !sample.fraction.isFinite() || !sample.pageOffset.isFinite()) return
         val percent = (sample.fraction * PERCENT_MAX).coerceIn(0f, PERCENT_MAX)
         _state.update { it.copy(percent = percent) }
         val offset = (sample.pageOffset * PAGE_OFFSET_SCALE).roundToInt().coerceIn(0, PAGE_OFFSET_SCALE)
@@ -106,17 +109,18 @@ class PdfReaderSession internal constructor(
     }
 
     private suspend fun openDocument(path: String) {
+        // The engines open inside withContext; a cancellation there would drop the handle they just opened.
         val document =
-            runCatching { openPdf(path) }.getOrElse { error ->
+            runCatching { withContext(NonCancellable) { openPdf(path) } }.getOrElse { error ->
                 if (error is CancellationException) throw error
                 _state.update { it.copy(status = PdfStatus.UNREADABLE, download = null) }
                 return
             }
-        if (closed) {
+        if (closed || !currentCoroutineContext().isActive) {
             document.close()
             return
         }
-        val restore = pdfResumeTarget(resumeAt, resumePercent, document.pageCount, ++nonce)
+        val restore = pdfResumeTarget(resume.at, resume.percent, document.pageCount, ++nonce)
         _state.update { it.copy(status = PdfStatus.READY, download = null, document = document, restore = restore) }
     }
 

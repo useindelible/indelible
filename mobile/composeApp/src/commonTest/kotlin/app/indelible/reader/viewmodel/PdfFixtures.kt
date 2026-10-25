@@ -49,7 +49,7 @@ internal fun TestScope.pdfHarness(
     val progress = ReaderProgressSync(scope) { p, position -> written += p to position }
     lateinit var harness: PdfHarness
     repository.pdfCopyFlow = copy.onStart { harness.copyRequests++ }
-    val session = PdfReaderSession("doc_pdf", repository, scope, progress, resumeAt, percent, opener)
+    val session = PdfReaderSession("doc_pdf", repository, scope, progress, PdfResume(resumeAt, percent), opener)
     harness = PdfHarness(repository, written, session, document)
     return harness
 }

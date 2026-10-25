@@ -52,7 +52,7 @@ internal class ReaderSessions(
     ) {
         val resumeAt = item.savedPosition(finished) as? PagePosition
         val percent = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
-        val session = PdfReaderSession(documentId, repository, scope, progress, resumeAt, percent, openPdf)
+        val session = PdfReaderSession(documentId, repository, scope, progress, PdfResume(resumeAt, percent), openPdf)
         pdf = session
         scope.launch {
             session.state.collect { state ->
@@ -71,6 +71,9 @@ internal class ReaderSessions(
             else -> progress.flush()
         }
     }
+
+    /** True once the removed message is on its way out with its own NavigateBack. */
+    val leaving: Boolean get() = left
 
     fun close() {
         pdf?.close()

@@ -337,7 +337,7 @@ class ReaderViewModel(
 
     /** Leaves once the newest position is written; a book first asks its chapter where the reader is. */
     fun navigateBack() {
-        if (leaving) return
+        if (leaving || sessions.leaving) return
         leaving = true
         viewModelScope.launch {
             sessions.captureAndFlush()

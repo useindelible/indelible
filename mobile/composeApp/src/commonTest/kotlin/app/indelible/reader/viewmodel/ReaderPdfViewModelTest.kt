@@ -1,5 +1,6 @@
 package app.indelible.reader.viewmodel
 
+import androidx.lifecycle.ViewModelStore
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.offline.PagePosition
 import app.indelible.core.offline.ReadingPosition
@@ -131,6 +132,26 @@ class ReaderPdfViewModelTest {
         }
 
     @Test
+    fun backAfterTheRemovedMessageDoesNotLeaveTwice() =
+        runTest(testDispatcher) {
+            val copies = MutableSharedFlow<PdfCopy>()
+            repository.pdfCopyFlow = copies
+            val viewModel = viewModel()
+            val effects = mutableListOf<ReaderEffect>()
+            val collecting = launch { viewModel.effects.toList(effects) }
+            advanceUntilIdle()
+            copies.emit(PdfCopy.Ready(PDF_PATH))
+            copies.emit(PdfCopy.Removed)
+            advanceUntilIdle()
+
+            viewModel.navigateBack()
+            advanceUntilIdle()
+
+            assertEquals(1, effects.count { it == ReaderEffect.NavigateBack })
+            collecting.cancel()
+        }
+
+    @Test
     fun backFlushesThePdfPositionBeforeLeaving() =
         runTest(testDispatcher) {
             val viewModel = viewModel()
@@ -140,13 +161,34 @@ class ReaderPdfViewModelTest {
             val session = requireNotNull(viewModel.pdfSession)
             session.onPositioned()
             session.onSample(PdfScrollSample(page = 9, pageOffset = 0.1f, fraction = 0.405f, scrollTopDp = 0f))
+            session.onSample(PdfScrollSample(page = 12, pageOffset = 0.3f, fraction = 0.565f, scrollTopDp = 0f))
+            var writtenAtBack: List<ReadingPosition?>? = null
+            val watching =
+                launch {
+                    viewModel.effects.collect {
+                        if (it == ReaderEffect.NavigateBack) writtenAtBack = events.positions.toList()
+                    }
+                }
 
             viewModel.navigateBack()
-            advanceUntilIdle()
 
-            assertEquals(listOf<ReadingPosition?>(PagePosition(9, 1000)), events.positions)
+            assertEquals(listOf<ReadingPosition?>(PagePosition(9, 1000), PagePosition(12, 3000)), writtenAtBack)
             assertEquals(listOf<ReaderEffect>(ReaderEffect.NavigateBack), effects)
             collecting.cancel()
+            watching.cancel()
+        }
+
+    @Test
+    fun clearingTheViewModelClosesTheDocument() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            val store = ViewModelStore()
+            store.put("reader", viewModel)
+
+            store.clear()
+
+            assertEquals(1, document.closes)
         }
 
     @Test
