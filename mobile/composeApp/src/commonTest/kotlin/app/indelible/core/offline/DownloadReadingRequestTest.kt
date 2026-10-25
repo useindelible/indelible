@@ -201,6 +201,28 @@ class DownloadReadingRequestTest {
         }
 
     @Test
+    fun readingRequestRunsBeforeQueuedAutoCaches() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val h = pdf()
+            val reader = h.server.routes.getValue(READER_PATH)
+            h.server.route(READER_PATH) { request ->
+                gate.await()
+                reader(request)
+            }
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+
+            h.manager.cacheOnOpen(h.session, "doc_b")
+            h.manager.requestForReading(h.session, "doc_c")
+            gate.complete(Unit)
+            runCurrent()
+
+            val readers = listOf("/api/v1/documents/doc_c", "/api/v1/documents/doc_b")
+            assertEquals(readers, h.server.calls.map { it.path }.filter { it in readers })
+        }
+
+    @Test
     fun pinnedPendingRenderSurvivesAReadingRequestThatFails() =
         runTest {
             val h = pdf { available = emptyList() }
