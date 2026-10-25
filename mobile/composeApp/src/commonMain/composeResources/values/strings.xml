@@ -739,6 +739,10 @@
     <string name="reader_error_update_highlight_color">Couldn’t update the highlight color. Please try again.</string>
     <string name="reader_highlight">Highlight</string>
     <string name="reader_highlight_note_delete">Delete note</string>
+    <string name="reader_highlight_note_discard">Discard</string>
+    <string name="reader_highlight_note_discard_body">Your note has changes that are not saved.</string>
+    <string name="reader_highlight_note_discard_title">Discard changes?</string>
+    <string name="reader_highlight_note_keep">Keep editing</string>
     <string name="reader_highlight_note_label">Note</string>
     <string name="reader_highlight_note_title">Highlight note</string>
     <plurals name="reader_highlights_count">

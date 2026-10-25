@@ -2,6 +2,7 @@ package app.indelible.reader.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,18 +15,22 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
+import app.indelible.reader.model.HighlightData
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeHighlight
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeNote
 import app.indelible.ui.theme.AppTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class HighlightNoteSheetTest {
@@ -34,7 +39,7 @@ class HighlightNoteSheetTest {
     @Test
     fun existingNoteIsPrefilled() =
         runComposeUiTest {
-            setContent { AppTheme { HighlightNoteEditor(noted, onSave = {}, onDeleteNote = {}) } }
+            setContent { AppTheme { NoteEditor(noted, onSave = {}, onDeleteNote = {}) } }
 
             onNodeWithText("Remember this").assertIsDisplayed()
             onNodeWithText("Delete note").assertIsDisplayed()
@@ -44,7 +49,7 @@ class HighlightNoteSheetTest {
     fun savingSendsTheBody() =
         runComposeUiTest {
             var saved: String? = null
-            setContent { AppTheme { HighlightNoteEditor(fakeHighlight(), onSave = { saved = it }, onDeleteNote = {}) } }
+            setContent { AppTheme { NoteEditor(fakeHighlight(), onSave = { saved = it }, onDeleteNote = {}) } }
 
             onNode(hasSetTextAction()).performTextInput("A thought ")
             onNodeWithText("Save").performClick()
@@ -58,7 +63,7 @@ class HighlightNoteSheetTest {
             var saved: String? = null
             var deleted = 0
             setContent {
-                AppTheme { HighlightNoteEditor(noted, onSave = { saved = it }, onDeleteNote = { deleted++ }) }
+                AppTheme { NoteEditor(noted, onSave = { saved = it }, onDeleteNote = { deleted++ }) }
             }
 
             onNode(hasSetTextAction()).performTextClearance()
@@ -72,7 +77,7 @@ class HighlightNoteSheetTest {
     fun saveIsDisabledForAnUnchangedNote() =
         runComposeUiTest {
             val stored = fakeHighlight().copy(note = fakeNote().copy(body = "Remember this\n"))
-            setContent { AppTheme { HighlightNoteEditor(stored, onSave = {}, onDeleteNote = {}) } }
+            setContent { AppTheme { HighlightNoteSheet(stored, onSave = {}, onDeleteNote = {}, onDismiss = {}) } }
 
             onNodeWithText("Save").assertIsNotEnabled()
         }
@@ -82,7 +87,9 @@ class HighlightNoteSheetTest {
         runComposeUiTest {
             var highlight by mutableStateOf(fakeHighlight())
             var deleted = 0
-            setContent { AppTheme { HighlightNoteEditor(highlight, onSave = {}, onDeleteNote = { deleted++ }) } }
+            setContent {
+                AppTheme { HighlightNoteSheet(highlight, onSave = {}, onDeleteNote = { deleted++ }, onDismiss = {}) }
+            }
 
             highlight = highlight.copy(note = fakeNote().copy(body = "From the web"))
             waitForIdle()
@@ -95,7 +102,7 @@ class HighlightNoteSheetTest {
     fun deleteNoteAsksForTheDeletion() =
         runComposeUiTest {
             var deleted = 0
-            setContent { AppTheme { HighlightNoteEditor(noted, onSave = {}, onDeleteNote = { deleted++ }) } }
+            setContent { AppTheme { NoteEditor(noted, onSave = {}, onDeleteNote = { deleted++ }) } }
 
             onNodeWithText("Delete note").performClick()
 
@@ -108,7 +115,7 @@ class HighlightNoteSheetTest {
             setContent {
                 AppTheme {
                     Box(Modifier.size(400.dp, 400.dp)) {
-                        HighlightNoteEditor(fakeHighlight(), onSave = {}, onDeleteNote = {})
+                        NoteEditor(fakeHighlight(), onSave = {}, onDeleteNote = {})
                     }
                 }
             }
@@ -130,7 +137,7 @@ class HighlightNoteSheetTest {
                 registries += registry
                 CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
                     if (!hidden) {
-                        AppTheme { HighlightNoteEditor(fakeHighlight(), onSave = {}, onDeleteNote = {}) }
+                        AppTheme { HighlightNoteSheet(fakeHighlight(), onSave = {}, onDeleteNote = {}, onDismiss = {}) }
                     }
                 }
             }
@@ -145,4 +152,50 @@ class HighlightNoteSheetTest {
 
             onNodeWithText("A thought").assertIsDisplayed()
         }
+
+    @Test
+    fun dismissWithChangesAsksBeforeDiscarding() =
+        runComposeUiTest {
+            var dismissed = false
+            setContent {
+                AppTheme {
+                    HighlightNoteSheet(fakeHighlight(), {}, {}, onDismiss = { dismissed = true })
+                }
+            }
+
+            onNode(hasSetTextAction()).performTextInput("A thought")
+            onNodeWithContentDescription("Close sheet").performClick()
+
+            onNodeWithText("Discard changes?").assertIsDisplayed()
+            assertFalse(dismissed)
+            onNodeWithText("Keep editing").performClick()
+            onNodeWithText("A thought").assertIsDisplayed()
+        }
+
+    @Test
+    fun dismissWithoutChangesCloses() =
+        runComposeUiTest {
+            var dismissed = false
+            setContent {
+                AppTheme {
+                    HighlightNoteSheet(fakeHighlight(), {}, {}, onDismiss = { dismissed = true })
+                }
+            }
+
+            onNodeWithContentDescription("Close sheet").performClick()
+            waitForIdle()
+
+            assertTrue(dismissed)
+        }
+}
+
+@Composable
+private fun NoteEditor(
+    highlight: HighlightData,
+    onSave: (String) -> Unit,
+    onDeleteNote: () -> Unit,
+) {
+    val opened = highlight.note?.body
+    var body by remember { mutableStateOf(opened.orEmpty()) }
+    HighlightNoteEditor(highlight, body, { body = it }, opened != null, body != opened.orEmpty(), onSave, onDeleteNote)
 }

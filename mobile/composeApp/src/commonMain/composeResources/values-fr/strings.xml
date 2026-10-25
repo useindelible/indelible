@@ -739,6 +739,10 @@
     <string name="reader_error_update_highlight_color">Impossible de modifier la couleur du surlignage. Veuillez réessayer.</string>
     <string name="reader_highlight">Surlignage</string>
     <string name="reader_highlight_note_delete">Supprimer la note</string>
+    <string name="reader_highlight_note_discard">Abandonner</string>
+    <string name="reader_highlight_note_discard_body">Votre note contient des modifications non enregistrées.</string>
+    <string name="reader_highlight_note_discard_title">Abandonner les modifications ?</string>
+    <string name="reader_highlight_note_keep">Continuer la modification</string>
     <string name="reader_highlight_note_label">Note</string>
     <string name="reader_highlight_note_title">Note du surlignage</string>
     <plurals name="reader_highlights_count">
