@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -75,6 +76,24 @@ class DownloadPinnedBookTest {
             runCurrent()
 
             assertTrue(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
+        }
+
+    @Test
+    fun pinOnABookThatNeedsReuploadDoesNotRetryOnReconnect() =
+        runTest {
+            val h = book("needs_reupload")
+            h.manager.keepOffline(h.session, DL_DOC)
+            runCurrent()
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER), h.acquisition())
+            val fetched = h.server.count(READER_PATH)
+
+            h.online.value = false
+            runCurrent()
+            h.online.value = true
+            advanceUntilIdle()
+
+            assertEquals(fetched, h.server.count(READER_PATH), "a reconnect must not retry a book that needs reupload")
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER), h.acquisition())
         }
 
     @Test

@@ -34,6 +34,7 @@ class DownloadManager(
         var pin: Boolean,
         var forReading: Boolean = false,
     ) {
+        var retryOnReconnect: Boolean = true
         val key: DocumentKey get() = DocumentKey(session.scope, documentId)
     }
 
@@ -83,12 +84,13 @@ class DownloadManager(
                         isOnline = nowOnline
                         if (!nowOnline || parked.isEmpty()) return@withLock false
                         val live = registry.current.value.session
-                        parked.values.filter { it.session === live }.forEach { request ->
+                        val resuming = parked.values.filter { it.session === live && it.retryOnReconnect }
+                        resuming.forEach { request ->
+                            parked.remove(request.key)
                             queue[request.key] = request
                             acquisitions.set(request.key, Acquisition.Waiting)
                         }
-                        parked.clear()
-                        true
+                        resuming.isNotEmpty()
                     }
                 if (resumed) wake.trySend(Unit)
             }
@@ -365,7 +367,12 @@ class DownloadManager(
         request: Request,
         acquisition: Acquisition,
     ) {
-        lock.withLock { parked[request.key] = request }
+        lock.withLock {
+            // Only a network failure can clear on reconnect; any other failure waits for a new request.
+            request.retryOnReconnect =
+                acquisition !is Acquisition.Failed || acquisition.reason == DownloadFailure.NETWORK
+            parked[request.key] = request
+        }
         settle(request.key, acquisition)
     }
 }
