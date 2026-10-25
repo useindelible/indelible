@@ -74,6 +74,19 @@ class OfflineSweepTest {
         }
 
     @Test
+    fun sweepKeepsAPinnedRowWhoseFileIsMissingForRepair() =
+        runTest {
+            val h = downloadHarness()
+            h.seed("kept", bytes = 10, pinned = true)
+            h.fs.delete(h.fileOf("kept"))
+
+            h.manager.cleanupAtLaunch()
+
+            assertEquals(true, h.store.cachedDocument(DL_SCOPE, "kept")?.pinned)
+            assertTrue(h.fs.exists(h.files.documentDir(DL_SCOPE, "kept")))
+        }
+
+    @Test
     fun sweepDeletesDirsWithoutRows() =
         runTest {
             val h = downloadHarness()

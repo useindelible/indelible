@@ -20,6 +20,8 @@ import platform.PDFKit.kPDFDisplayBoxCropBox
 private const val FULL_TURN = 360
 private const val HALF_TURN = 180
 private const val QUARTER_TURN = 90
+private const val LINE_TOLERANCE = 16.0
+private const val EDGE_INSET = 0.5
 
 internal class PdfKitDocument(
     private val document: PDFDocument,
@@ -61,10 +63,15 @@ internal class PdfKitDocument(
     ): PdfSelection? =
         onPdfKit {
             val page = measured[pageIndex]
-            val from = toPageSpace(start.clamped(), page.crop, page.rotation).cgPoint()
-            val to = toPageSpace(end.clamped(), page.crop, page.rotation).cgPoint()
-            val dragged = page.page.selectionFromPoint(from, toPoint = to)
-            val chars = dragged?.charRange(page.page)
+            val from = toPageSpace(start.clamped(), page.crop, page.rotation)
+            val to = toPageSpace(end.clamped(), page.crop, page.rotation)
+            val dragged = page.page.selectionFromPoint(from.cgPoint(), toPoint = to.cgPoint())
+            val lines = dragged?.lineBounds(page.page).orEmpty()
+            val onLines =
+                dragged?.let {
+                    page.page.selectionFromPoint(from.onLine(lines).cgPoint(), toPoint = to.onLine(lines).cgPoint())
+                }
+            val chars = onLines?.charRange(page.page)
             val range = chars?.let { snapToWords(page.text, it.first, it.last + 1) }
             val selection = range?.takeUnless { it.isEmpty() }?.let { page.page.selectionForRange(it.nsRange()) }
             val text = selection?.string?.takeIf { it.isNotBlank() }
@@ -128,13 +135,21 @@ internal class PdfKitDocument(
         selection: PDFSelection,
         page: Page,
     ): List<NormalizedRect> {
-        val rects =
-            selection.selectionsByLine().filterIsInstance<PDFSelection>().map { line ->
-                line.boundsForPage(page.page).useContents {
-                    fromPageSpace(PageSpaceRect(origin.x, origin.y, size.width, size.height), page.crop, page.rotation)
-                }
-            }
+        val rects = selection.lineBounds(page.page).map { fromPageSpace(it, page.crop, page.rotation) }
         return mergeLineRects(rects).mapNotNull(::clipToPage)
+    }
+
+    private fun PDFSelection.lineBounds(page: PDFPage): List<PageSpaceRect> =
+        selectionsByLine().filterIsInstance<PDFSelection>().map { line ->
+            line.boundsForPage(page).useContents { PageSpaceRect(origin.x, origin.y, size.width, size.height) }
+        }
+
+    // PDFKit runs a drag that ends in the margin to the edge of the page; the line beside the point is the limit.
+    private fun PageSpacePoint.onLine(lines: List<PageSpaceRect>): PageSpacePoint {
+        val line =
+            lines.firstOrNull { y in it.y - LINE_TOLERANCE / 2..it.y + it.height + LINE_TOLERANCE / 2 } ?: return this
+        val inset = minOf(EDGE_INSET, line.width / 2)
+        return PageSpacePoint(x.coerceIn(line.x + inset, line.x + line.width - inset), y)
     }
 
     // The min location and max end over PDFKit's ranges; NSNotFound is positive, so it is checked by value.

@@ -148,11 +148,11 @@ class PdfEngineContractTest {
         }
 
     @Test
-    fun dragIntoTheMarginBesideALineKeepsItsDirection() =
+    fun dragIntoTheMarginBesideALineStopsAtItsEnd() =
         runTest {
             open("plain", PdfFixtures.plain) { document ->
                 val selection = assertNotNull(document.select(0, quick, NormalizedPoint(0.95, quick.y - 0.001)))
-                assertTrue(selection.text.startsWith("quick"), selection.text)
+                assertEquals("quick brown fox", selection.text.trim())
                 assertTrue(selection.rects.isNotEmpty())
                 selection.rects.forEach(::assertInsidePage)
             }
