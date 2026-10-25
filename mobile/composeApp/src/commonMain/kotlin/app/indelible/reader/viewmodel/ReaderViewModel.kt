@@ -215,11 +215,10 @@ class ReaderViewModel(
 
     private fun loadHighlights() {
         viewModelScope.launch {
-            repository
-                .listHighlights(documentId)
-                .onSuccess { highlights ->
-                    updateSuccessState { it.copy(highlights = highlights) }
-                }
+            val loaded = repository.listHighlights(documentId)
+            updateSuccessState { state ->
+                state.copy(highlights = loaded.getOrDefault(state.highlights), highlightsLoaded = true)
+            }
         }
     }
 

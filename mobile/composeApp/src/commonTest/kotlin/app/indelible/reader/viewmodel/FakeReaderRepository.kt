@@ -14,6 +14,7 @@ import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
 import app.indelible.reader.repository.PdfCopy
 import app.indelible.reader.repository.ReaderRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
@@ -36,6 +37,7 @@ class FakeReaderRepository : ReaderRepository {
     var epubChapterResult: suspend (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
     val epubChapterCalls = mutableListOf<Int>()
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
+    var highlightsGate: CompletableDeferred<Unit>? = null
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
     var deleteHighlightResult: Result<Unit> = Result.success(Unit)
@@ -134,7 +136,10 @@ class FakeReaderRepository : ReaderRepository {
         return saveToLibraryResult
     }
 
-    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> = listHighlightsResult
+    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> {
+        highlightsGate?.await()
+        return listHighlightsResult
+    }
 
     override suspend fun listDocumentEntities(itemId: String): Result<List<DocumentEntity>> = listDocumentEntitiesResult
 

@@ -158,6 +158,13 @@ class DownloadManager(
         documentId: String,
     ): Boolean = lock.withLock { DocumentKey(scope, documentId) in held }
 
+    // The row goes under the lock a hold takes, so a reader opening the copy waits for the decision.
+    private suspend fun evictUnlessHeld(
+        scope: String,
+        documentId: String,
+        remove: suspend () -> Boolean,
+    ): Boolean = lock.withLock { DocumentKey(scope, documentId) !in held && remove() }
+
     /** A request for the document made while this runs waits until the copy is gone, then acquires anew. */
     suspend fun removeFromDevice(
         scope: String,
@@ -225,7 +232,8 @@ class DownloadManager(
     /** Evicts [scope] down to the cap between acquisitions; room it frees lets auto-caching resume. */
     suspend fun enforceCap(scope: String) =
         withContext(dispatcher) {
-            val freed = acquiring.withLock { copies.enforceCap(scope) { isHeld(scope, it) } }
+            val freed =
+                acquiring.withLock { copies.enforceCap(scope) { id, remove -> evictUnlessHeld(scope, id, remove) } }
             if (freed) lock.withLock { autoCachePaused -= scope }
         }
 
@@ -320,7 +328,9 @@ class DownloadManager(
                     acquisitions.set(key, Acquisition.Downloading(it))
                 }
             if (outcome == FetchResult.Installed) {
-                copies.enforceCap(key.scope) { it == key.documentId || isHeld(key.scope, it) }
+                copies.enforceCap(key.scope) { id, remove ->
+                    id != key.documentId && evictUnlessHeld(key.scope, id, remove)
+                }
             }
             outcome
         }.onSuccess { outcome ->

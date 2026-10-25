@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -53,8 +55,8 @@ private const val QUOTE_LINES = 3
 @Composable
 fun HighlightNoteSheet(
     highlight: HighlightData,
-    onSave: (String) -> Unit,
-    onDeleteNote: () -> Unit,
+    onSave: (body: String, onSaved: () -> Unit) -> Unit,
+    onDeleteNote: (onDeleted: () -> Unit) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -65,12 +67,24 @@ fun HighlightNoteSheet(
     val changed = body.trim() != opened.orEmpty().trim()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    // A save or delete answers later; by then this sheet may show another highlight or a newer body.
+    val alive = remember(highlight.id) { mutableStateOf(true) }
+    DisposableEffect(highlight.id) { onDispose { alive.value = false } }
+    val closeIfStill = { expected: String -> if (alive.value && body.trim() == expected) onDismiss() }
     ModalBottomSheet(
         onDismissRequest = { if (changed) askDiscard = true else onDismiss() },
         sheetState = sheetState,
         modifier = modifier,
     ) {
-        HighlightNoteEditor(highlight, body, { body = it }, opened != null, changed, onSave, onDeleteNote)
+        HighlightNoteEditor(
+            highlight,
+            body,
+            { body = it },
+            opened != null,
+            changed,
+            onSave = { trimmed -> onSave(trimmed) { closeIfStill(trimmed) } },
+            onDeleteNote = { onDeleteNote { closeIfStill("") } },
+        )
     }
     if (askDiscard) {
         DiscardNoteDialog(
@@ -164,7 +178,7 @@ internal fun HighlightNoteEditor(
             minLines = NOTE_LINES,
             maxLines = NOTE_MAX_LINES,
             imeAction = ImeAction.Default,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
         )
         Spacer(Modifier.height(IndelibleSpacing.step16))
         Row(horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12), modifier = Modifier.fillMaxWidth()) {

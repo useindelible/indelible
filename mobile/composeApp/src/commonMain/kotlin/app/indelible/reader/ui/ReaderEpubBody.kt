@@ -46,6 +46,7 @@ internal fun ReaderEpubBody(
     handleScrollProgress: (Float, Float) -> Unit,
     immersive: Boolean,
     miniBarClearance: Dp?,
+    clearSelection: Long?,
     viewModel: ReaderViewModel,
 ) {
     LaunchedEffect(epub.current, epub.status) {
@@ -73,6 +74,7 @@ internal fun ReaderEpubBody(
                 onReaderTap = onReaderTap,
                 handleScrollProgress = handleScrollProgress,
                 immersive = immersive,
+                clearSelection = clearSelection,
                 viewModel = viewModel,
             )
         }
@@ -99,6 +101,7 @@ private fun ColumnScope.EpubBodyContent(
     onReaderTap: () -> Unit,
     handleScrollProgress: (Float, Float) -> Unit,
     immersive: Boolean,
+    clearSelection: Long?,
     viewModel: ReaderViewModel,
 ) {
     val fontFaceCss = rememberReaderFontCss()
@@ -119,6 +122,7 @@ private fun ColumnScope.EpubBodyContent(
                     onReaderTap = onReaderTap,
                     handleScrollProgress = handleScrollProgress,
                     immersive = immersive,
+                    clearSelection = clearSelection,
                     modifier = Modifier.weight(1f).fillMaxSize(),
                 )
             }
@@ -154,6 +158,7 @@ private fun EpubChapterView(
     onReaderTap: () -> Unit,
     handleScrollProgress: (Float, Float) -> Unit,
     immersive: Boolean,
+    clearSelection: Long?,
     modifier: Modifier,
 ) {
     val spine = chapter.spine
@@ -177,6 +182,7 @@ private fun EpubChapterView(
         },
         onSelectionCleared = { onSelectedTextChanged(null) },
         onHighlightTapped = { id, _ -> if (onScreen()) onTappedHighlightChanged(highlights.find { it.id == id }) },
+        clearSelection = clearSelection,
         onContentLoaded = {},
         onScrollRestored = {},
         onAnchorScrolled = {},

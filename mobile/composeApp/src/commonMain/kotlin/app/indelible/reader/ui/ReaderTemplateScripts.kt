@@ -144,6 +144,11 @@ internal val READER_BRIDGE_JS: String =
     try { NativeBridge.onHighlightTapped(hid, rectJson); } catch(e) {}
   });
 
+  window.clearSelection = function() {
+    var s = window.getSelection();
+    if (s) s.removeAllRanges();
+  };
+
   window.scrollToPercent = function(percent) {
     var max = scroller.scrollHeight - scroller.clientHeight;
     if (max > 0) {

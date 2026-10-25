@@ -36,7 +36,7 @@ class OfflineEvictionTest {
                 )
             h.seed("doc", bytes = 100, openedAt = 1)
             h.capBytes = 50
-            val eviction = launch { h.copies.enforceCap(DL_SCOPE) { false } }
+            val eviction = launch { h.copies.enforceCap(DL_SCOPE) { _, remove -> remove() } }
             listed.await()
 
             h.manager.keepOffline(h.session, "doc")
@@ -57,13 +57,13 @@ class OfflineEvictionTest {
             h.seed("newest", bytes = 100, openedAt = 3)
 
             h.capBytes = 250
-            h.copies.enforceCap(DL_SCOPE) { false }
+            h.copies.enforceCap(DL_SCOPE) { _, remove -> remove() }
             assertEquals(setOf("kept", "newest"), h.copyIds())
             assertFalse(h.fs.exists(h.files.documentDir(DL_SCOPE, "oldest")))
             assertFalse(h.fs.exists(h.files.documentDir(DL_SCOPE, "older")))
 
             h.capBytes = 50
-            h.copies.enforceCap(DL_SCOPE) { false }
+            h.copies.enforceCap(DL_SCOPE) { _, remove -> remove() }
             assertEquals(setOf("kept"), h.copyIds())
             assertTrue(h.fs.exists(h.files.documentDir(DL_SCOPE, "kept")))
         }
@@ -192,6 +192,41 @@ class OfflineEvictionTest {
         }
 
     @Test
+    fun holdWaitsForAnEvictionAlreadyDecidingThatCopy() =
+        runTest {
+            val deleting = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            val h =
+                downloadHarness(
+                    store = { real ->
+                        object : OfflineStore by real {
+                            override suspend fun evictCachedDocument(
+                                scope: String,
+                                documentId: String,
+                            ): Boolean {
+                                deleting.complete(Unit)
+                                resume.await()
+                                return real.evictCachedDocument(scope, documentId)
+                            }
+                        }
+                    },
+                )
+            h.seed(DL_DOC, bytes = 100, openedAt = 1)
+            h.capBytes = 50
+            val eviction = launch { h.manager.enforceCap(DL_SCOPE) }
+            deleting.await()
+
+            val hold = launch { h.manager.hold(DL_SCOPE, DL_DOC) }
+            runCurrent()
+            assertFalse(hold.isCompleted, "a hold must wait for the eviction already deciding this copy")
+
+            resume.complete(Unit)
+            eviction.join()
+            hold.join()
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+        }
+
+    @Test
     fun heldDocumentSurvivesTheCapPassAfterAnotherInstall() =
         runTest {
             val h = downloadHarness()
@@ -255,7 +290,7 @@ class OfflineEvictionTest {
             h.seed(DL_DOC, bytes = 10)
             h.capBytes = 100
 
-            h.copies.enforceCap(DL_SCOPE) { false }
+            h.copies.enforceCap(DL_SCOPE) { _, remove -> remove() }
 
             assertEquals(setOf(DL_DOC), h.copyIds())
             assertEquals("foreign", h.store.cachedDocument(FOREIGN, "foreign")?.documentId)

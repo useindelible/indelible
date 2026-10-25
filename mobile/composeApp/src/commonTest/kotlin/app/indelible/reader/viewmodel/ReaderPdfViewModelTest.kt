@@ -11,6 +11,7 @@ import app.indelible.reader.model.TagData
 import app.indelible.reader.pdf.NormalizedRect
 import app.indelible.reader.repository.PdfCopy
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeItemDetail
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,6 +26,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -49,6 +51,8 @@ class ReaderPdfViewModelTest {
 
     private fun viewModel() = ReaderViewModel("doc_test1", repository, readingEvents = events, openPdf = { document })
 
+    private fun ReaderViewModel.success() = assertIs<ReaderUiState.Success>(uiState.value)
+
     @Test
     fun pdf_item_opens_the_pdf_reader() =
         runTest(testDispatcher) {
@@ -62,6 +66,19 @@ class ReaderPdfViewModelTest {
             assertEquals(0.25f, state.pdf?.restore?.pageOffset)
             assertEquals(TocStatus.NONE, state.toc.status)
             assertTrue(repository.contentCallLog.none { it.startsWith("fetchReadableHtml") })
+        }
+
+    @Test
+    fun highlightsCountAsLoadedOnlyOnceTheFetchAnswers() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            repository.highlightsGate = gate
+            val vm = viewModel()
+            assertFalse(vm.success().highlightsLoaded)
+
+            gate.complete(Unit)
+
+            assertTrue(vm.success().highlightsLoaded)
         }
 
     @Test

@@ -29,6 +29,7 @@ import app.indelible.ui.theme.AppTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -77,7 +78,9 @@ class HighlightNoteSheetTest {
     fun saveIsDisabledForAnUnchangedNote() =
         runComposeUiTest {
             val stored = fakeHighlight().copy(note = fakeNote().copy(body = "Remember this\n"))
-            setContent { AppTheme { HighlightNoteSheet(stored, onSave = {}, onDeleteNote = {}, onDismiss = {}) } }
+            setContent {
+                AppTheme { HighlightNoteSheet(stored, onSave = { _, _ -> }, onDeleteNote = {}, onDismiss = {}) }
+            }
 
             onNodeWithText("Save").assertIsNotEnabled()
         }
@@ -88,7 +91,9 @@ class HighlightNoteSheetTest {
             var highlight by mutableStateOf(fakeHighlight())
             var deleted = 0
             setContent {
-                AppTheme { HighlightNoteSheet(highlight, onSave = {}, onDeleteNote = { deleted++ }, onDismiss = {}) }
+                AppTheme {
+                    HighlightNoteSheet(highlight, onSave = { _, _ -> }, onDeleteNote = { deleted++ }, onDismiss = {})
+                }
             }
 
             highlight = highlight.copy(note = fakeNote().copy(body = "From the web"))
@@ -126,6 +131,70 @@ class HighlightNoteSheetTest {
         }
 
     @Test
+    fun saveStaysVisibleInAShortViewport() =
+        runComposeUiTest {
+            setContent {
+                AppTheme {
+                    Box(Modifier.size(400.dp, 260.dp)) {
+                        NoteEditor(fakeHighlight(), onSave = {}, onDeleteNote = {})
+                    }
+                }
+            }
+
+            onNode(hasSetTextAction()).performTextInput("line\n".repeat(80))
+
+            onNodeWithText("Save").assertIsDisplayed()
+        }
+
+    @Test
+    fun saveThatCompletesAfterMoreTypingKeepsTheEditorOpen() =
+        runComposeUiTest {
+            var saved: (() -> Unit)? = null
+            var dismissed = false
+            setContent {
+                AppTheme {
+                    HighlightNoteSheet(
+                        fakeHighlight(),
+                        { _, done -> saved = done },
+                        {},
+                        onDismiss = { dismissed = true },
+                    )
+                }
+            }
+
+            onNode(hasSetTextAction()).performTextInput("first")
+            onNodeWithText("Save").performClick()
+            onNode(hasSetTextAction()).performTextInput(" newer")
+            assertNotNull(saved).invoke()
+            waitForIdle()
+
+            assertFalse(dismissed)
+            onNodeWithText("first newer").assertIsDisplayed()
+        }
+
+    @Test
+    fun lateSaveCompletionNeverClosesAnotherHighlightsSheet() =
+        runComposeUiTest {
+            var highlight by mutableStateOf(fakeHighlight(id = "hlt_a"))
+            var saved: (() -> Unit)? = null
+            var dismissed = false
+            setContent {
+                AppTheme {
+                    HighlightNoteSheet(highlight, { _, done -> saved = done }, {}, onDismiss = { dismissed = true })
+                }
+            }
+            onNode(hasSetTextAction()).performTextInput("first")
+            onNodeWithText("Save").performClick()
+
+            highlight = fakeHighlight(id = "hlt_b")
+            waitForIdle()
+            assertNotNull(saved).invoke()
+            waitForIdle()
+
+            assertFalse(dismissed)
+        }
+
+    @Test
     fun typedNoteSurvivesRecreation() =
         runComposeUiTest {
             var state: Map<String, List<Any?>>? = null
@@ -137,7 +206,9 @@ class HighlightNoteSheetTest {
                 registries += registry
                 CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
                     if (!hidden) {
-                        AppTheme { HighlightNoteSheet(fakeHighlight(), onSave = {}, onDeleteNote = {}, onDismiss = {}) }
+                        AppTheme {
+                            HighlightNoteSheet(fakeHighlight(), onSave = { _, _ -> }, onDeleteNote = {}, onDismiss = {})
+                        }
                     }
                 }
             }
@@ -159,7 +230,7 @@ class HighlightNoteSheetTest {
             var dismissed = false
             setContent {
                 AppTheme {
-                    HighlightNoteSheet(fakeHighlight(), {}, {}, onDismiss = { dismissed = true })
+                    HighlightNoteSheet(fakeHighlight(), { _, _ -> }, {}, onDismiss = { dismissed = true })
                 }
             }
 
@@ -178,7 +249,7 @@ class HighlightNoteSheetTest {
             var dismissed = false
             setContent {
                 AppTheme {
-                    HighlightNoteSheet(fakeHighlight(), {}, {}, onDismiss = { dismissed = true })
+                    HighlightNoteSheet(fakeHighlight(), { _, _ -> }, {}, onDismiss = { dismissed = true })
                 }
             }
 

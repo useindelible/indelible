@@ -17,7 +17,9 @@ class HighlightSheetGuardTest {
         runComposeUiTest {
             var highlight by mutableStateOf<HighlightData?>(fakeHighlight())
             var closed = 0
-            setContent { CloseSheetWhenHighlightGone(highlightId = "hlt_test1", highlight = highlight) { closed++ } }
+            setContent {
+                CloseSheetWhenHighlightGone("hlt_test1", highlight, highlightsLoaded = true) { closed++ }
+            }
             waitForIdle()
             assertEquals(0, closed)
 
@@ -28,10 +30,25 @@ class HighlightSheetGuardTest {
         }
 
     @Test
+    fun sheetWaitsWhileTheHighlightsAreStillLoading() =
+        runComposeUiTest {
+            var loaded by mutableStateOf(false)
+            var closed = 0
+            setContent { CloseSheetWhenHighlightGone("hlt_test1", null, highlightsLoaded = loaded) { closed++ } }
+            waitForIdle()
+            assertEquals(0, closed)
+
+            loaded = true
+            waitForIdle()
+
+            assertEquals(1, closed)
+        }
+
+    @Test
     fun noSheetMeansNothingToClose() =
         runComposeUiTest {
             var closed = 0
-            setContent { CloseSheetWhenHighlightGone(highlightId = null, highlight = null, onClose = { closed++ }) }
+            setContent { CloseSheetWhenHighlightGone(null, null, highlightsLoaded = true, onClose = { closed++ }) }
             waitForIdle()
 
             assertEquals(0, closed)

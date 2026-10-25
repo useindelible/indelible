@@ -112,6 +112,12 @@ internal fun ReaderSuccessContent(
     val density = LocalDensity.current
     val showMiniBar = isMiniBarShown(playbackState, activePanel)
     var miniBarClearance by remember { mutableStateOf<Dp?>(null) }
+    // The toolbar is done with the words; the page drops its selection so the handles go too.
+    var clearSelection by remember { mutableStateOf<Long?>(null) }
+    val onToolbarDone: (SelectedTextInfo?) -> Unit = { info ->
+        if (info == null) clearSelection = (clearSelection ?: 0L) + 1L
+        onSelectedTextChanged(info)
+    }
     // The bar keeps reporting its place through its exit animation, so the clearance is gated by visibility.
     val chapterClearance = if (showMiniBar) miniBarClearance else null
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
@@ -160,6 +166,7 @@ internal fun ReaderSuccessContent(
                         uriHandler = uriHandler,
                         onOpenStorage = { itemOffline?.onOpenStorage?.invoke() },
                         selectedText = selectedText,
+                        clearSelection = clearSelection,
                         viewModel = viewModel,
                     )
 
@@ -172,7 +179,7 @@ internal fun ReaderSuccessContent(
                             coroutineScope = coroutineScope,
                             clipboardManager = clipboardManager,
                             viewModel = viewModel,
-                            onSelectedTextChanged = onSelectedTextChanged,
+                            onSelectedTextChanged = onToolbarDone,
                             onAvailableTagsChanged = onAvailableTagsChanged,
                             onTagSheetHighlightIdChanged = onTagSheetHighlightIdChanged,
                             onNoteSheetHighlightIdChanged = onNoteSheetHighlightIdChanged,
@@ -334,23 +341,21 @@ internal fun ReaderSuccessContent(
 
         val noteId = noteSheetHighlightId
         val noteHighlight = if (noteId != null) state.highlights.find { it.id == noteId } else null
-        CloseSheetWhenHighlightGone(noteId, noteHighlight) { onNoteSheetHighlightIdChanged(null) }
+        CloseSheetWhenHighlightGone(noteId, noteHighlight, state.highlightsLoaded) {
+            onNoteSheetHighlightIdChanged(null)
+        }
         if (noteHighlight != null) {
             HighlightNoteSheet(
                 highlight = noteHighlight,
-                onSave = { body ->
-                    viewModel.upsertHighlightNote(noteHighlight.id, body) { onNoteSheetHighlightIdChanged(null) }
-                },
-                onDeleteNote = {
-                    viewModel.deleteHighlightNote(noteHighlight.id) { onNoteSheetHighlightIdChanged(null) }
-                },
+                onSave = { body, saved -> viewModel.upsertHighlightNote(noteHighlight.id, body, saved) },
+                onDeleteNote = { deleted -> viewModel.deleteHighlightNote(noteHighlight.id, deleted) },
                 onDismiss = { onNoteSheetHighlightIdChanged(null) },
             )
         }
 
         val hlId = tagSheetHighlightId
         val tagHighlight = if (hlId != null) state.highlights.find { it.id == hlId } else null
-        CloseSheetWhenHighlightGone(hlId, tagHighlight) { onTagSheetHighlightIdChanged(null) }
+        CloseSheetWhenHighlightGone(hlId, tagHighlight, state.highlightsLoaded) { onTagSheetHighlightIdChanged(null) }
         if (tagHighlight != null) {
             HighlightTagSheet(
                 appliedTags = tagHighlight.tags,
@@ -381,8 +386,9 @@ internal fun ReaderSuccessContent(
 internal fun CloseSheetWhenHighlightGone(
     highlightId: String?,
     highlight: HighlightData?,
+    highlightsLoaded: Boolean,
     onClose: () -> Unit,
 ) {
-    val gone = highlightId != null && highlight == null
+    val gone = highlightId != null && highlightsLoaded && highlight == null
     LaunchedEffect(highlightId, gone) { if (gone) onClose() }
 }
