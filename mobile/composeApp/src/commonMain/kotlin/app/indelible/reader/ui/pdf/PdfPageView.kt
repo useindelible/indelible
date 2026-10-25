@@ -17,7 +17,10 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import app.indelible.reader.pdf.NormalizedPoint
@@ -44,6 +47,8 @@ internal class PdfPageGestures(
     val onDrag: (NormalizedPoint) -> Unit,
     val onDragEnd: () -> Unit,
     val onDragCancel: () -> Unit,
+    val onActivate: () -> Unit,
+    val highlightActions: List<CustomAccessibilityAction>,
 )
 
 internal class PdfPageOverlay(
@@ -74,7 +79,14 @@ internal fun PdfPageView(
     val placeholder = remember(tone) { toneBackground(tone) }
     Canvas(
         modifier
-            .semantics { contentDescription = label }
+            .semantics {
+                contentDescription = label
+                onClick {
+                    current.value.onActivate()
+                    true
+                }
+                customActions = current.value.highlightActions
+            }
             .pointerInput(Unit) {
                 detectTapGestures { current.value.onTap(normalized(it, size)) }
             }.pointerInput(Unit) {

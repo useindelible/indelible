@@ -41,7 +41,10 @@ import app.indelible.reader.viewmodel.PdfRestoreRequest
 import app.indelible.reader.viewmodel.PdfScrollSample
 import app.indelible.ui.theme.HighlightFills
 import app.indelible.ui.theme.IndelibleSpacing
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_pdf_open_highlight
 import kotlinx.coroutines.flow.first
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 private const val NO_NONCE = -1L
@@ -138,6 +141,7 @@ private fun PdfPageStack(
 ) {
     val density = LocalDensity.current
     val selectionColor = MaterialTheme.colorScheme.primary
+    val openHighlightLabel = stringResource(Res.string.reader_pdf_open_highlight)
     val current by rememberUpdatedState(host)
     Box(
         Modifier
@@ -172,7 +176,7 @@ private fun PdfPageStack(
                     bitmaps = host.bitmaps,
                     tone = tone,
                     overlay = PdfPageOverlay(boxes, fills, host.selection.rectsOn(index), selectionColor),
-                    gestures = host.gestures(index, boxes, callbacks),
+                    gestures = host.gestures(index, boxes, callbacks, openHighlightLabel),
                     modifier = Modifier.size(widthDp, heightDp),
                 )
             }

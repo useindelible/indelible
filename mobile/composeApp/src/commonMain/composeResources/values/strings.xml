@@ -788,6 +788,7 @@
     <string name="reader_pdf_download_failed_title">Couldn’t get this PDF</string>
     <string name="reader_pdf_no_space_body">This device is out of space. Free some up, then try again.</string>
     <string name="reader_pdf_no_space_title">Not enough space</string>
+    <string name="reader_pdf_open_highlight">Open highlight</string>
     <string name="reader_pdf_page">Page %1$d of %2$d</string>
     <string name="reader_pdf_unreadable_body">This file isn’t a PDF the app can open.</string>
     <string name="reader_pdf_unreadable_title">Couldn’t open this PDF</string>

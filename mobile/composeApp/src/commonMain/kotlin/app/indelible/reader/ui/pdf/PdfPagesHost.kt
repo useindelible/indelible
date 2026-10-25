@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.unit.Density
 import app.indelible.reader.pdf.NormalizedPoint
 import app.indelible.reader.pdf.NormalizedRect
@@ -63,6 +64,7 @@ internal class PdfPagesHost(
         index: Int,
         boxes: List<PdfHighlightBox>,
         callbacks: PdfViewCallbacks,
+        openHighlightLabel: String,
     ) = PdfPageGestures(
         onTap = { point -> tap(point, boxes, callbacks) },
         onDragStart = { selection.start(index, it) },
@@ -73,6 +75,14 @@ internal class PdfPagesHost(
             }
         },
         onDragCancel = selection::cancel,
+        onActivate = callbacks.onReaderTap,
+        highlightActions =
+            boxes.map { box ->
+                CustomAccessibilityAction(openHighlightLabel) {
+                    callbacks.onHighlightTapped(box.highlightId)
+                    true
+                }
+            },
     )
 
     private fun tap(

@@ -5,11 +5,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.runComposeUiTest
@@ -147,5 +149,21 @@ class PdfReaderViewTest {
             page(2).assertExists()
             onNode(hasScrollToIndexAction()).performScrollToIndex(2)
             page(3).assertExists()
+        }
+
+    @Test
+    fun pageExposesTapAndHighlightsAsAccessibilityActions() =
+        runComposeUiTest {
+            val reports = show(Scripted().document, highlights = mapOf(0 to listOf(box)))
+
+            page(1).performClick()
+            waitForIdle()
+            assertEquals(1, reports.readerTaps)
+
+            val actions = page(1).fetchSemanticsNode().config[SemanticsActions.CustomActions]
+            assertEquals(listOf("Open highlight"), actions.map { it.label })
+            actions.single().action()
+            waitForIdle()
+            assertEquals(listOf("hlt_1"), reports.tapped)
         }
 }
