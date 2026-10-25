@@ -215,9 +215,12 @@ class OfflineSetFetcher(
                 client.prepareGet(baseUrl + fetch.route) { bearer(token) }.execute { response ->
                     response.requireSuccess()
                     val expected = response.contentLength()?.takeIf { it > 0 } ?: progress?.announced
-                    files.write(dir / fetch.file, response.bodyAsChannel()) { written ->
-                        if (progress != null && expected != null && expected > 0) progress.report(written, expected)
-                    }
+                    val total =
+                        files.write(dir / fetch.file, response.bodyAsChannel()) { written ->
+                            if (progress != null && expected != null && expected > 0) progress.report(written, expected)
+                        }
+                    progress?.finish()
+                    total
                 }
             }
         return CachedAssetRow(documentId, fetch.kind, fetch.idx, fetch.file, bytes)
@@ -238,6 +241,13 @@ class OfflineSetFetcher(
             if (fraction - last >= PROGRESS_STEP || (fraction == 1f && last < 1f)) {
                 last = fraction
                 onProgress(fraction)
+            }
+        }
+
+        fun finish() {
+            if (last >= 0f && last < 1f) {
+                last = 1f
+                onProgress(1f)
             }
         }
     }

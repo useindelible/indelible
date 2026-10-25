@@ -88,6 +88,14 @@ class DownloadPdfTest {
         }
 
     @Test
+    fun pdfDownloadWithALargerAnnouncedSizeStillEndsAtOne() =
+        runTest {
+            val seen = pdf(announced = PDF_BYTES * 2L).fractions()
+
+            assertEquals(1f, seen.last())
+        }
+
+    @Test
     fun pdfKindsPreferPdfThenOriginalUpload() =
         runTest {
             val h =
