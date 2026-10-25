@@ -143,7 +143,7 @@ class ReaderViewModel(
                             htmlLoader.loadArticleToc()
                         }
                         ReaderContentMode.EPUB -> sessions.openBook(item, finished)
-                        ReaderContentMode.PDF -> sessions.openPdf(item, finished)
+                        ReaderContentMode.PDF -> sessions.openPdf(item, finished, savedProgress)
                     }
                     loadHighlights()
                     loadItemNoteAndTags()

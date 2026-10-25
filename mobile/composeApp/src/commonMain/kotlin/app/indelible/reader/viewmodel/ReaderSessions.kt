@@ -53,9 +53,9 @@ internal class ReaderSessions(
     fun openPdf(
         item: ReaderDocument,
         finished: Boolean,
+        percent: Float,
     ) {
         val resumeAt = item.savedPosition(finished) as? PagePosition
-        val percent = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
         val session = PdfReaderSession(documentId, repository, scope, progress, PdfResume(resumeAt, percent), openPdf)
         pdf = session
         scope.launch {
