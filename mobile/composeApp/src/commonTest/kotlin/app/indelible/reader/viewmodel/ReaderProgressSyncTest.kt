@@ -1,6 +1,7 @@
 package app.indelible.reader.viewmodel
 
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -52,10 +53,10 @@ class ReaderProgressSyncTest {
     @Test
     fun flush_now_returns_after_the_enqueue() =
         runTest {
-            val flushed = mutableListOf<Pair<Float, ChapterPosition?>>()
+            val flushed = mutableListOf<Pair<Float, ReadingPosition?>>()
             val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + SupervisorJob())
             val sync = ReaderProgressSync(scope) { percent, position -> flushed += percent to position }
-            val position = ChapterPosition("ch2", 7)
+            val position: ReadingPosition = ChapterPosition("ch2", 7)
 
             sync.schedule(10f, null)
             sync.schedule(20f, position)

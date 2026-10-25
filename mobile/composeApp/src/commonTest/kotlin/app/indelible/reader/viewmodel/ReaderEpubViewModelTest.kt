@@ -1,6 +1,7 @@
 package app.indelible.reader.viewmodel
 
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.reader.model.EpubChapterList
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderContentMode
@@ -169,7 +170,7 @@ class ReaderEpubViewModelTest {
             session.onSample(5, sample(percent = 20f, offset = 3))
             runCurrent()
 
-            assertEquals(listOf<ChapterPosition?>(ChapterPosition("e5", 1), ChapterPosition("e5", 3)), events.positions)
+            assertEquals(listOf<ReadingPosition?>(ChapterPosition("e5", 1), ChapterPosition("e5", 3)), events.positions)
         }
 
     @Test
@@ -199,7 +200,7 @@ class ReaderEpubViewModelTest {
             session.onSample(5, sample(percent = 50f, offset = 11))
             advanceUntilIdle()
 
-            assertEquals(listOf<ChapterPosition?>(ChapterPosition("e5", 11)), events.positions)
+            assertEquals(listOf<ReadingPosition?>(ChapterPosition("e5", 11)), events.positions)
             assertEquals(listOf<ReaderEffect>(ReaderEffect.NavigateBack), effects)
             collecting.cancel()
         }

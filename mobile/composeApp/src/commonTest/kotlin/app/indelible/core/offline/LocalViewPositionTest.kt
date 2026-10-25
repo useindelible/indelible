@@ -81,6 +81,20 @@ class LocalViewPositionTest {
             assertEquals(SERVER_AT, s.cachedCopy().position)
         }
 
+    @Test
+    fun queuedPagePositionWinsOverServer() =
+        runTest {
+            val s = signedInStore()
+            s.installNow(serverDocument(progress = Progress(10, 10, PagePosition(2, 0))))
+            assertEquals(PagePosition(2, 0), s.cachedCopy().position)
+
+            s.enqueuePosition(PagePosition(7, 4200))
+
+            assertEquals(PagePosition(7, 4200), s.cachedCopy().position)
+            val view = s.store.localChanges(s.scope, VIEW_DOC).progress(Progress(10, 10, PagePosition(2, 0)))
+            assertEquals(PagePosition(7, 4200), view.position)
+        }
+
     private suspend fun SignedIn.cachedCopy() = checkNotNull(store.cachedDocument(scope, VIEW_DOC))
 
     private suspend fun SignedIn.enqueueProgressOnly(basisPoints: Int) {
@@ -89,7 +103,7 @@ class LocalViewPositionTest {
         }
     }
 
-    private suspend fun SignedIn.enqueuePosition(position: ChapterPosition): String {
+    private suspend fun SignedIn.enqueuePosition(position: ReadingPosition): String {
         store.enqueue(session, OutboxKind.READING_EVENT, VIEW_DOC, VIEW_DOC) {
             patchCachedProgress(VIEW_DOC, 50)
             patchCachedPosition(VIEW_DOC, position)

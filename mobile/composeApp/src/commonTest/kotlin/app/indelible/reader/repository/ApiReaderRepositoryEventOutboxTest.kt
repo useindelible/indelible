@@ -5,6 +5,7 @@ import app.indelible.api.generated.models.ReadingPositionSchema
 import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
+import app.indelible.core.offline.PagePosition
 import app.indelible.core.offline.VIEW_DOC
 import app.indelible.core.offline.installRequest
 import kotlinx.coroutines.test.runTest
@@ -67,6 +68,30 @@ class ApiReaderRepositoryEventOutboxTest {
             harness.repository.recordProgress(VIEW_DOC, 37.5f, SESSION_ID, ChapterPosition("ch3", 120))
 
             assertEquals(ChapterPosition("ch3", 120), harness.store.cachedDocument(OFFLINE_SCOPE, VIEW_DOC)?.position)
+        }
+
+    @Test
+    fun progressWithAPagePositionQueuesAPageAnchor() =
+        runTest {
+            val harness = readerOutboxHarness()
+            val revision = harness.store.localChanges(OFFLINE_SCOPE, VIEW_DOC).revision
+            harness.store.installCachedDocument(harness.session, installRequest(revision))
+
+            harness.repository.recordProgress(VIEW_DOC, 12.5f, SESSION_ID, PagePosition(3, 2500))
+
+            val payload =
+                assertIs<OutboxPayload.ReadingEvent>(
+                    harness.store
+                        .rowsOf(OFFLINE_SCOPE, OutboxKind.READING_EVENT)
+                        .single()
+                        .payload,
+                )
+            assertEquals(1250, payload.progressBasisPoints)
+            val position = Json.decodeFromString(ReadingPositionSchema.serializer(), checkNotNull(payload.positionJson))
+            assertEquals(ReadingAnchorSchemaFlat(type = "page", page = 3), position.anchor)
+            assertEquals(2500, position.offset)
+            assertEquals(0.125, position.fraction)
+            assertEquals(PagePosition(3, 2500), harness.store.cachedDocument(OFFLINE_SCOPE, VIEW_DOC)?.position)
         }
 
     @Test

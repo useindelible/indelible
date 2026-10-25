@@ -64,10 +64,10 @@ internal class EnqueueTxImpl(
 
     override fun patchCachedPosition(
         documentId: String,
-        position: ChapterPosition,
+        position: ReadingPosition,
     ) {
         checkOpen()
-        queries.patchCachedPosition(position.chapter, position.offset.toLong(), scope, documentId)
+        queries.patchCachedPosition(position.locator, position.offset.toLong(), scope, documentId)
     }
 }
 

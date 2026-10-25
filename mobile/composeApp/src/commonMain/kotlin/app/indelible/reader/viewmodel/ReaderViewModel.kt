@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.readingPositionOf
 import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.DataPanel
@@ -141,7 +142,7 @@ class ReaderViewModel(
         finished: Boolean,
     ) {
         val locator = item.chapterLocator?.takeUnless { finished }
-        val resumeAt = locator?.let { ChapterPosition(it, item.chapterOffset ?: 0) }
+        val resumeAt = locator?.let { readingPositionOf(it, item.chapterOffset ?: 0) as? ChapterPosition }
         val session = EpubReaderSession(documentId, repository, viewModelScope, progressSync, resumeAt)
         epubSession = session
         viewModelScope.launch {

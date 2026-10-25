@@ -6,7 +6,7 @@ import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.offline.CapabilitiesUnknownException
-import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.NoSessionException
 import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
@@ -179,7 +179,7 @@ class ApiReaderRepository internal constructor(
         documentId: String,
         percent: Float,
         sessionId: String,
-        position: ChapterPosition?,
+        position: ReadingPosition?,
     ) {
         recordEvent(documentId, KIND_PROGRESS, sessionId, EventProgress(basisPoints(percent), position))
     }

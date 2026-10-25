@@ -1,6 +1,6 @@
 package app.indelible.reader.repository
 
-import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 
 /** The open reader's own event writer, keyed by its sitting's session id; best-effort, never throws. */
 interface ReadingEventWriter {
@@ -13,6 +13,6 @@ interface ReadingEventWriter {
         documentId: String,
         percent: Float,
         sessionId: String,
-        position: ChapterPosition? = null,
+        position: ReadingPosition? = null,
     )
 }

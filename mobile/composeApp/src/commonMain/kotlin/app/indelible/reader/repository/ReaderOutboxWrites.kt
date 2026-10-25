@@ -2,7 +2,7 @@ package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.LocatorSchemaFlat
 import app.indelible.core.offline.CachedHighlight
-import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
@@ -29,7 +29,7 @@ private const val EVENT_CAUSE = "reader"
 
 internal data class EventProgress(
     val basisPoints: Int,
-    val position: ChapterPosition? = null,
+    val position: ReadingPosition? = null,
 ) {
     val fraction: Double get() = basisPoints / BASIS_POINTS_PER_UNIT
 }

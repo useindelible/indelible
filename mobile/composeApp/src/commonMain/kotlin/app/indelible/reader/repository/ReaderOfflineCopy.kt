@@ -284,7 +284,7 @@ class ReaderOfflineCopy(
             copy(
                 progressPercent = progress.percent,
                 maxProgressPercent = progress.maxPercent,
-                chapterLocator = progress.position?.chapter,
+                chapterLocator = progress.position?.locator,
                 chapterOffset = progress.position?.offset,
             )
 
