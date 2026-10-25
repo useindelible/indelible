@@ -61,6 +61,7 @@ fun ReaderScreen(
     var selectedText by remember { mutableStateOf<SelectedTextInfo?>(null) }
     var tappedHighlight by remember { mutableStateOf<HighlightData?>(null) }
     var tagSheetHighlightId by remember { mutableStateOf<String?>(null) }
+    var noteSheetHighlightId by remember { mutableStateOf<String?>(null) }
     var availableTags by remember { mutableStateOf<List<TagData>>(emptyList()) }
     var scrollToPercent by remember { mutableStateOf<Float?>(null) }
     var anchorScroll by remember { mutableStateOf<AnchorScrollRequest?>(null) }
@@ -74,7 +75,7 @@ fun ReaderScreen(
             activePanel = activePanel,
             hasSelection = selectedText != null,
             hasTappedHighlight = tappedHighlight != null,
-            hasOpenTagSheet = tagSheetHighlightId != null,
+            hasOpenTagSheet = tagSheetHighlightId != null || noteSheetHighlightId != null,
         )
     ReaderChromeSuppressionEffect(chromeState, chromeSuppressed)
 
@@ -139,6 +140,7 @@ fun ReaderScreen(
                     selectedText = selectedText,
                     tappedHighlight = tappedHighlight,
                     tagSheetHighlightId = tagSheetHighlightId,
+                    noteSheetHighlightId = noteSheetHighlightId,
                     milaStarted = milaStarted,
                     scrollToPercent = scrollToPercent,
                     anchorScroll = anchorScroll,
@@ -161,6 +163,7 @@ fun ReaderScreen(
                         tappedHighlight = it
                     },
                     onTagSheetHighlightIdChanged = { tagSheetHighlightId = it },
+                    onNoteSheetHighlightIdChanged = { noteSheetHighlightId = it },
                     onAvailableTagsChanged = { availableTags = it },
                     onScrollToPercentConsumed = {
                         viewModel.onScrollRestored()

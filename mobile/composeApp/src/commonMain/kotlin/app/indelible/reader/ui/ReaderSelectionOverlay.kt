@@ -32,6 +32,7 @@ internal fun BoxScope.HighlightToolbarOverlay(
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onAvailableTagsChanged: (List<TagData>) -> Unit,
     onTagSheetHighlightIdChanged: (String?) -> Unit,
+    onNoteSheetHighlightIdChanged: (String?) -> Unit,
 ) {
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
     // sel.rect.y is a CSS viewport-relative pixel from getBoundingClientRect().
@@ -62,8 +63,8 @@ internal fun BoxScope.HighlightToolbarOverlay(
             }
         },
         onNoteSelected = {
-            create(defaultHighlightColor) {}
             onSelectedTextChanged(null)
+            create(defaultHighlightColor) { highlightId -> onNoteSheetHighlightIdChanged(highlightId) }
         },
         onCopySelected = {
             clipboardManager.setText(AnnotatedString(sel.text))

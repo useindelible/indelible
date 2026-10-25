@@ -116,6 +116,23 @@ class ReaderPdfViewModelTest {
         }
 
     @Test
+    fun toolbarNoteOpensTheEditorForTheNewHighlight() =
+        runTest(testDispatcher) {
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            var editing: String? = null
+
+            viewModel.createPdfHighlight(HighlightColor.YELLOW, pdfSelection()) { id -> editing = id }
+            advanceUntilIdle()
+
+            assertEquals("hlt_test1", editing)
+            assertIs<PdfHighlightTarget>(repository.createdTargets.single())
+            viewModel.upsertHighlightNote("hlt_test1", "A thought")
+            advanceUntilIdle()
+            assertEquals("A thought", repository.upsertedNotes.singleOrNull())
+        }
+
+    @Test
     fun selectionWithNothingLeftAfterClippingCreatesNothing() =
         runTest(testDispatcher) {
             val viewModel = viewModel()

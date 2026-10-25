@@ -41,6 +41,7 @@ class FakeReaderRepository : ReaderRepository {
     var deleteHighlightResult: Result<Unit> = Result.success(Unit)
     var updateHighlightColorResult: Result<HighlightData> = Result.success(fakeHighlight())
     var upsertNoteResult: Result<HighlightNoteData> = Result.success(fakeNote())
+    val upsertedNotes = mutableListOf<String>()
     var deleteNoteResult: Result<Unit> = Result.success(Unit)
     var setHighlightTagsResult: Result<List<String>> = Result.success(emptyList())
     var listTagsResult: Result<List<TagData>> = Result.success(emptyList())
@@ -173,6 +174,7 @@ class FakeReaderRepository : ReaderRepository {
         body: String,
     ): Result<HighlightNoteData> {
         lastHighlightMutationItemId = itemId
+        upsertedNotes += body
         return upsertNoteResult
     }
 

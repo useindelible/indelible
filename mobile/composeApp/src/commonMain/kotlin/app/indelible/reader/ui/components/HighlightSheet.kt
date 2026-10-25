@@ -246,7 +246,7 @@ private fun HighlightSheetContentPreviewDark() {
     }
 }
 
-private fun previewHighlight(color: String = "Yellow") =
+internal fun previewHighlight(color: String = "Yellow") =
     HighlightData(
         id = "hlt_preview",
         documentId = "doc_preview",

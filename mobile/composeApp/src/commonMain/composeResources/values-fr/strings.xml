@@ -738,6 +738,9 @@
     <string name="reader_error_save_tags">Impossible d’enregistrer les étiquettes. Veuillez réessayer.</string>
     <string name="reader_error_update_highlight_color">Impossible de modifier la couleur du surlignage. Veuillez réessayer.</string>
     <string name="reader_highlight">Surlignage</string>
+    <string name="reader_highlight_note_delete">Supprimer la note</string>
+    <string name="reader_highlight_note_label">Note</string>
+    <string name="reader_highlight_note_title">Note du surlignage</string>
     <plurals name="reader_highlights_count">
         <item quantity="one">%1$d surlignage</item>
         <item quantity="other">%1$d surlignages</item>

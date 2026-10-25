@@ -39,6 +39,7 @@ import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.TagData
 import app.indelible.reader.pdf.PdfSelection
 import app.indelible.reader.playback.PlaybackState
+import app.indelible.reader.ui.components.HighlightNoteSheet
 import app.indelible.reader.ui.components.HighlightSheet
 import app.indelible.reader.ui.components.HighlightTagSheet
 import app.indelible.reader.ui.components.ItemOffline
@@ -83,6 +84,7 @@ internal fun ReaderSuccessContent(
     selectedText: SelectedTextInfo?,
     tappedHighlight: HighlightData?,
     tagSheetHighlightId: String?,
+    noteSheetHighlightId: String?,
     milaStarted: Boolean,
     scrollToPercent: Float?,
     anchorScroll: AnchorScrollRequest?,
@@ -96,6 +98,7 @@ internal fun ReaderSuccessContent(
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onTappedHighlightChanged: (HighlightData?) -> Unit,
     onTagSheetHighlightIdChanged: (String?) -> Unit,
+    onNoteSheetHighlightIdChanged: (String?) -> Unit,
     onAvailableTagsChanged: (List<TagData>) -> Unit,
     onScrollToPercentConsumed: () -> Unit,
     onAnchorScrollConsumed: () -> Unit,
@@ -171,6 +174,7 @@ internal fun ReaderSuccessContent(
                             onSelectedTextChanged = onSelectedTextChanged,
                             onAvailableTagsChanged = onAvailableTagsChanged,
                             onTagSheetHighlightIdChanged = onTagSheetHighlightIdChanged,
+                            onNoteSheetHighlightIdChanged = onNoteSheetHighlightIdChanged,
                         )
                     }
                 }
@@ -302,6 +306,7 @@ internal fun ReaderSuccessContent(
                 },
                 onEditNote = {
                     onTappedHighlightChanged(null)
+                    onNoteSheetHighlightIdChanged(highlight.id)
                 },
                 onTagsSelected = {
                     val hlId = highlight.id
@@ -323,6 +328,23 @@ internal fun ReaderSuccessContent(
                     }
                 },
                 onDismiss = { onTappedHighlightChanged(null) },
+            )
+        }
+
+        val noteId = noteSheetHighlightId
+        val noteHighlight = if (noteId != null) state.highlights.find { it.id == noteId } else null
+        if (noteHighlight != null) {
+            HighlightNoteSheet(
+                highlight = noteHighlight,
+                onSave = { body ->
+                    viewModel.upsertHighlightNote(noteHighlight.id, body)
+                    onNoteSheetHighlightIdChanged(null)
+                },
+                onDeleteNote = {
+                    viewModel.deleteHighlightNote(noteHighlight.id)
+                    onNoteSheetHighlightIdChanged(null)
+                },
+                onDismiss = { onNoteSheetHighlightIdChanged(null) },
             )
         }
 
