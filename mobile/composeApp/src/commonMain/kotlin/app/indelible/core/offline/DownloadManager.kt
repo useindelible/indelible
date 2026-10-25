@@ -239,7 +239,7 @@ class DownloadManager(
 
     private suspend fun fetch(request: Request) {
         val key = request.key
-        acquisitions.set(key, Acquisition.Downloading(0f))
+        acquisitions.set(key, Acquisition.Downloading(null))
         runCatching {
             fetcher
                 .download(request.session, request.documentId, request.pin) { fraction ->

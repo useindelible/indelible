@@ -18,6 +18,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -146,7 +147,8 @@ class OfflineSetFetcher(
             TYPE_PDF -> {
                 val kind = PDF_KINDS.firstOrNull { it in available } ?: return emptyList()
                 val pdf = AssetFetch(kind, 0, assetRoute(documentId, kind), PDF_FILE)
-                listOf(fetchAsset(session, documentId, pdf, dir))
+                val announced = model.assets.firstOrNull { it.assetKind == kind }?.sizeBytes
+                listOf(fetchAsset(session, documentId, pdf, dir, ByteProgress(announced, onProgress)))
             }
             TYPE_BOOK -> if (EPUB in available) bookAssets(session, documentId, dir, onProgress) else emptyList()
             else ->
@@ -201,15 +203,38 @@ class OfflineSetFetcher(
         documentId: String,
         fetch: AssetFetch,
         dir: Path,
+        progress: ByteProgress? = null,
     ): CachedAssetRow {
         val bytes =
             transport.sessionRequest(session) { client, baseUrl, token ->
                 client.prepareGet(baseUrl + fetch.route) { bearer(token) }.execute { response ->
                     response.requireSuccess()
-                    files.write(dir / fetch.file, response.bodyAsChannel())
+                    val expected = response.contentLength()?.takeIf { it > 0 } ?: progress?.announced
+                    files.write(dir / fetch.file, response.bodyAsChannel()) { written ->
+                        if (progress != null && expected != null && expected > 0) progress.report(written, expected)
+                    }
                 }
             }
         return CachedAssetRow(documentId, fetch.kind, fetch.idx, fetch.file, bytes)
+    }
+
+    /** Reports bytes written over the expected total, clamped to 1 and only when it has moved by [PROGRESS_STEP]. */
+    private class ByteProgress(
+        val announced: Long?,
+        private val onProgress: (Float) -> Unit,
+    ) {
+        private var last = -1f
+
+        fun report(
+            written: Long,
+            expected: Long,
+        ) {
+            val fraction = minOf(1f, written.toFloat() / expected)
+            if (fraction - last >= PROGRESS_STEP || (fraction == 1f && last < 1f)) {
+                last = fraction
+                onProgress(fraction)
+            }
+        }
     }
 
     private suspend fun serverDocument(
@@ -268,6 +293,7 @@ class OfflineSetFetcher(
 
     private companion object {
         const val INSTALL_ATTEMPTS = 3
+        const val PROGRESS_STEP = 0.01f
         const val NOT_FOUND = 404
         const val ERROR_PREVIEW_CHARS = 200
         const val TYPE_PDF = "pdf"
@@ -283,7 +309,7 @@ class OfflineSetFetcher(
         const val PDF_FILE = "document.pdf"
 
         // The same preference the web reader uses when a PDF was stored under more than one kind.
-        val PDF_KINDS = listOf("pdf", "original", "original_upload")
+        val PDF_KINDS = listOf("pdf", "original_upload")
 
         val json = Json { ignoreUnknownKeys = true }
 
