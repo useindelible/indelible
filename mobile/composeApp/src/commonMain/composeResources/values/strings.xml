@@ -696,10 +696,6 @@
     <string name="reader_color_pink">Pink</string>
     <string name="reader_color_purple">Purple</string>
     <string name="reader_color_yellow">Yellow</string>
-    <string name="reader_coming_contents_body">Jumping between an article’s headings will arrive in an upcoming update.</string>
-    <string name="reader_coming_contents_title">Contents is coming soon</string>
-    <string name="reader_coming_pdf_body">We’re building a dedicated PDF reader. It will arrive in an upcoming update.</string>
-    <string name="reader_coming_pdf_title">PDF reading is coming soon</string>
     <string name="reader_contents">Contents</string>
     <string name="reader_contents_building_body">The table of contents is being prepared for this article. It usually takes a few seconds.</string>
     <string name="reader_contents_building_title">Building the outline</string>

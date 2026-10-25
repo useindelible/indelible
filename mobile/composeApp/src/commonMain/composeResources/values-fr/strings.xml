@@ -696,10 +696,6 @@
     <string name="reader_color_pink">Rose</string>
     <string name="reader_color_purple">Violet</string>
     <string name="reader_color_yellow">Jaune</string>
-    <string name="reader_coming_contents_body">La navigation entre les titres d’un article arrivera dans une prochaine mise à jour.</string>
-    <string name="reader_coming_contents_title">Le sommaire arrive bientôt</string>
-    <string name="reader_coming_pdf_body">Nous développons un lecteur PDF dédié. Il arrivera dans une prochaine mise à jour.</string>
-    <string name="reader_coming_pdf_title">La lecture des PDF arrive bientôt</string>
     <string name="reader_contents">Sommaire</string>
     <string name="reader_contents_building_body">Le sommaire de cet article est en cours de préparation. Cela prend généralement quelques secondes.</string>
     <string name="reader_contents_building_title">Création du sommaire</string>
