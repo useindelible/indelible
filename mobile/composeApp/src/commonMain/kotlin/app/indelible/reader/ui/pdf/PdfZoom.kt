@@ -9,7 +9,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -59,8 +60,10 @@ class PdfZoomState {
     internal var preview by mutableStateOf<PinchPreview?>(null)
 }
 
+private val ZoomSaver = Saver<PdfZoomState, Float>(save = { it.zoom }, restore = { PdfZoomState().apply { zoom = it } })
+
 @Composable
-fun rememberPdfZoomState(): PdfZoomState = remember { PdfZoomState() }
+fun rememberPdfZoomState(): PdfZoomState = rememberSaveable(saver = ZoomSaver) { PdfZoomState() }
 
 /** Follows a two-finger pinch from the first pass, so the lists below never see it as a scroll. */
 internal fun Modifier.pinchToZoom(

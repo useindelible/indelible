@@ -75,7 +75,7 @@ internal fun ComposeUiTest.show(
     restore: () -> PdfRestoreRequest? = { PdfRestoreRequest(0, 0f, 1) },
     highlights: Map<Int, List<PdfHighlightBox>> = emptyMap(),
     height: Dp = 700.dp,
-    zoom: PdfZoomState = PdfZoomState(),
+    zoom: PdfZoomState? = null,
     activeSelection: () -> PdfSelection? = { null },
     saved: SavedViews = SavedViews(),
     generation: () -> Int = { 0 },
@@ -103,7 +103,7 @@ internal fun ComposeUiTest.show(
                         onHighlightTapped = { reports.tapped += it },
                         onReaderTap = { reports.readerTaps++ },
                         modifier = Modifier.size(300.dp, height).testTag(VIEW_TAG),
-                        zoom = zoom,
+                        zoom = zoom ?: rememberPdfZoomState(),
                     )
                 }
             }

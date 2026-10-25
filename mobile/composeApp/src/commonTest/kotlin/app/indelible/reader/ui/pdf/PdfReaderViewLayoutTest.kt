@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -18,6 +19,7 @@ import app.indelible.reader.viewmodel.PdfRestoreRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
@@ -90,22 +92,68 @@ class PdfReaderViewLayoutTest {
             assertTrue(sample.scrollTopDp in near, "top ${sample.scrollTopDp}")
         }
 
+    private fun ComposeUiTest.pinchOut() =
+        onNodeWithTag(VIEW_TAG).performTouchInput {
+            down(0, Offset(125f, 300f))
+            down(1, Offset(175f, 300f))
+            advanceEventTime(50)
+            moveTo(0, Offset(100f, 300f))
+            moveTo(1, Offset(200f, 300f))
+            advanceEventTime(50)
+            up(0)
+            up(1)
+        }
+
+    @Test
+    fun stillTwoFingerTouchWhileZoomedEndsCleanly() =
+        runComposeUiTest {
+            val zoom = PdfZoomState()
+            show(Scripted().document, zoom = zoom)
+            pinchOut()
+            waitForIdle()
+
+            onNodeWithTag(VIEW_TAG).performTouchInput {
+                down(0, Offset(100f, 400f))
+                down(1, Offset(200f, 400f))
+                advanceEventTime(50)
+                up(0)
+                up(1)
+            }
+            waitForIdle()
+
+            assertEquals(2f, zoom.zoom)
+            assertNull(zoom.preview)
+        }
+
+    @Test
+    fun recreatedViewKeepsItsZoom() =
+        runComposeUiTest {
+            var generation by mutableStateOf(0)
+            val saved = SavedViews()
+            show(Scripted().document, saved = saved, generation = { generation })
+            pinchOut()
+            waitForIdle()
+            assertTrue(page(1).fetchSemanticsNode().size.width in 598..602)
+
+            saved.state = saved.registries.last().performSave()
+            saved.hidden = true
+            waitForIdle()
+            generation++
+            saved.hidden = false
+            waitForIdle()
+
+            val node = page(1).fetchSemanticsNode()
+            assertTrue(node.size.width in 598..602, "width ${node.size.width}")
+            assertTrue(node.positionInRoot.x in -152f..-148f, "left ${node.positionInRoot.x}")
+        }
+
     @Test
     fun pinchZoomsAroundTheFingers() =
         runComposeUiTest {
             val zoom = PdfZoomState()
             show(Scripted().document, zoom = zoom)
 
-            onNodeWithTag(VIEW_TAG).performTouchInput {
-                down(0, Offset(125f, 300f))
-                down(1, Offset(175f, 300f))
-                advanceEventTime(50)
-                moveTo(0, Offset(100f, 300f))
-                moveTo(1, Offset(200f, 300f))
-                advanceEventTime(50)
-                up(0)
-                up(1)
-            }
+            pinchOut()
             waitForIdle()
 
             assertEquals(2f, zoom.zoom)

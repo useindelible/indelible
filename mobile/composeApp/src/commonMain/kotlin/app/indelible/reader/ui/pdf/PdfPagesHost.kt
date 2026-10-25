@@ -44,18 +44,18 @@ internal class PdfPagesHost(
         val focus = centroid - Offset(0f, layout.topInsetPx.toFloat())
         val commit = commitZoom(zoom.zoom, scale, focus, first, layout.horizontal.value)
         val widthBefore = list.layoutInfo.viewportSize.width
-        val widthChanges = (layout.viewportWidthPx * commit.zoom).roundToInt().coerceAtLeast(1) != layout.itemWidthPx
+        val target = (layout.viewportWidthPx * commit.zoom).roundToInt().coerceAtLeast(1)
         zoom.zoom = commit.zoom
+        zoom.preview = null
+        list.requestScrollToItem(commit.anchor.index, commit.anchor.offsetPx.coerceAtLeast(0))
         scope.launch {
-            // The scroll ranges only exist once the list has measured at its new width.
-            if (widthChanges) {
-                snapshotFlow { list.layoutInfo.viewportSize.width }.first { it != widthBefore }
+            // The horizontal range only exists once the list has measured at its new width.
+            if (target != widthBefore) {
+                snapshotFlow { list.layoutInfo.viewportSize.width }.first { it == target }
                 withFrameNanos { }
             }
-            list.scrollToItem(commit.anchor.index, commit.anchor.offsetPx.coerceAtLeast(0))
             if (commit.anchor.offsetPx < 0) list.scrollBy(commit.anchor.offsetPx.toFloat())
             layout.horizontal.scrollTo(commit.horizontalScroll)
-            zoom.preview = null
         }
     }
 

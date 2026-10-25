@@ -118,11 +118,12 @@ private fun PdfPageStack(
 ) {
     val density = LocalDensity.current
     val selectionColor = MaterialTheme.colorScheme.primary
+    val current by rememberUpdatedState(host)
     Box(
         Modifier
             .fillMaxSize()
             .alpha(if (shown) 1f else 0f)
-            .pinchToZoom(host.zoom, host::commitPinch)
+            .pinchToZoom(host.zoom) { scale, centroid -> current.commitPinch(scale, centroid) }
             .graphicsLayer {
                 val preview = host.zoom.preview
                 scaleX = preview?.scale ?: 1f
