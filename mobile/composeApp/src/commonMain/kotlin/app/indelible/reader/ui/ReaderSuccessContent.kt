@@ -339,12 +339,10 @@ internal fun ReaderSuccessContent(
             HighlightNoteSheet(
                 highlight = noteHighlight,
                 onSave = { body ->
-                    viewModel.upsertHighlightNote(noteHighlight.id, body)
-                    onNoteSheetHighlightIdChanged(null)
+                    viewModel.upsertHighlightNote(noteHighlight.id, body) { onNoteSheetHighlightIdChanged(null) }
                 },
                 onDeleteNote = {
-                    viewModel.deleteHighlightNote(noteHighlight.id)
-                    onNoteSheetHighlightIdChanged(null)
+                    viewModel.deleteHighlightNote(noteHighlight.id) { onNoteSheetHighlightIdChanged(null) }
                 },
                 onDismiss = { onNoteSheetHighlightIdChanged(null) },
             )

@@ -1,10 +1,15 @@
 package app.indelible.reader.viewmodel
 
+import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeHighlight
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeItemDetail
+import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.reader_error_save_note
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -151,5 +156,39 @@ class ReaderHighlightStateTest {
             val found = state.highlights.find { it.id == "hlt_note" }
             assertNotNull(found?.note)
             assertEquals("test note", found.note?.body)
+        }
+
+    @Test
+    fun noteSaveReportsSuccessOnlyAfterTheWrite() =
+        runTest(testDispatcher) {
+            repository.listHighlightsResult = Result.success(listOf(fakeHighlight(id = "hlt_note")))
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+            val writesAtReport = mutableListOf<Int>()
+
+            viewModel.upsertHighlightNote("hlt_note", "my note") { writesAtReport += repository.upsertedNotes.size }
+            advanceUntilIdle()
+
+            assertEquals(listOf(1), writesAtReport)
+        }
+
+    @Test
+    fun failedNoteSaveDoesNotReportSuccess() =
+        runTest(testDispatcher) {
+            repository.listHighlightsResult = Result.success(listOf(fakeHighlight(id = "hlt_note")))
+            repository.upsertNoteResult = Result.failure(RuntimeException("Disk full"))
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+            val effects = mutableListOf<ReaderEffect>()
+            val job = launch { viewModel.effects.toList(effects) }
+            var reported = 0
+
+            viewModel.upsertHighlightNote("hlt_note", "my note") { reported++ }
+            advanceUntilIdle()
+            job.cancel()
+
+            assertEquals(0, reported)
+            val failed = ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_note))
+            assertEquals(listOf<ReaderEffect>(failed), effects)
         }
 }

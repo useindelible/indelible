@@ -116,6 +116,7 @@ internal class ReaderHighlightActions(
     fun upsertHighlightNote(
         highlightId: String,
         body: String,
+        onSaved: () -> Unit = {},
     ) {
         scope.launch {
             repository
@@ -129,13 +130,17 @@ internal class ReaderHighlightActions(
                                 },
                         )
                     }
+                    onSaved()
                 }.onFailure {
                     effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_note)))
                 }
         }
     }
 
-    fun deleteHighlightNote(highlightId: String) {
+    fun deleteHighlightNote(
+        highlightId: String,
+        onDeleted: () -> Unit = {},
+    ) {
         scope.launch {
             repository
                 .deleteHighlightNote(documentId, highlightId)
@@ -148,6 +153,7 @@ internal class ReaderHighlightActions(
                                 },
                         )
                     }
+                    onDeleted()
                 }.onFailure {
                     effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_delete_note)))
                 }

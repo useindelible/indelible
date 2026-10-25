@@ -385,9 +385,13 @@ class ReaderViewModel(
     fun upsertHighlightNote(
         highlightId: String,
         body: String,
-    ) = highlightActions.upsertHighlightNote(highlightId, body)
+        onSaved: () -> Unit = {},
+    ) = highlightActions.upsertHighlightNote(highlightId, body, onSaved)
 
-    fun deleteHighlightNote(highlightId: String) = highlightActions.deleteHighlightNote(highlightId)
+    fun deleteHighlightNote(
+        highlightId: String,
+        onDeleted: () -> Unit = {},
+    ) = highlightActions.deleteHighlightNote(highlightId, onDeleted)
 
     fun setHighlightTags(
         highlightId: String,
