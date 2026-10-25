@@ -36,10 +36,11 @@ fun renderSizeFor(
     return PdfRenderSize(width, heightFor(width, aspect))
 }
 
+// A page over 4096 times taller than wide cannot keep its aspect at width 1; the height bound wins over it.
 private fun heightFor(
     width: Int,
     aspect: Double,
-): Int = maxOf(1, (width * aspect).roundToInt())
+): Int = (width * aspect).roundToInt().coerceIn(1, MAX_RENDER_HEIGHT_PX)
 
 /** The widest render of [page] that stays inside every bound; never above [layoutWidthPx]. */
 fun renderWidthFor(

@@ -17,6 +17,7 @@ internal data class FixturePage(
     val lines: List<FixtureText>,
     val crop: PageSpaceRect? = null,
     val rotation: Int = 0,
+    val redSwatch: PageSpaceRect? = null,
 ) {
     val box: PageSpaceRect get() = crop ?: PageSpaceRect(0.0, 0.0, width, height)
 }
@@ -41,6 +42,7 @@ internal object PdfFixtures {
             ),
         )
     val rotated = plain.map { it.copy(rotation = 90) }
+    val swatch = plain.map { it.copy(redSwatch = PageSpaceRect(72.0, 72.0, 72.0, 72.0)) }
     val cropped =
         listOf(
             FixturePage(
@@ -124,10 +126,13 @@ internal object PdfFixtures {
             val box = "/MediaBox [0 0 ${num(page.width)} ${num(page.height)}]$crop$rotate"
             val resources = "/Resources << /Font << /F1 3 0 R >> >>"
             objects += "<< /Type /Page /Parent 2 0 R $box $resources /Contents $contents 0 R >>"
+            val fill =
+                page.redSwatch?.let { "1 0 0 rg ${num(it.x)} ${num(it.y)} ${num(it.width)} ${num(it.height)} re f\n" }
             val stream =
-                page.lines.joinToString("\n") {
-                    "BT /F1 ${num(FONT_SIZE)} Tf ${num(it.x)} ${num(it.baseline)} Td (${it.text}) Tj ET"
-                }
+                fill.orEmpty() +
+                    page.lines.joinToString("\n") {
+                        "BT /F1 ${num(FONT_SIZE)} Tf ${num(it.x)} ${num(it.baseline)} Td (${it.text}) Tj ET"
+                    }
             objects += "<< /Length ${stream.length} >>\nstream\n$stream\nendstream"
         }
         val out = StringBuilder("%PDF-1.4\n")

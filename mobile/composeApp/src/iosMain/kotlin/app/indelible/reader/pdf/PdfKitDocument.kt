@@ -4,6 +4,7 @@ package app.indelible.reader.pdf
 
 import androidx.compose.ui.graphics.ImageBitmap
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.autoreleasepool
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -29,7 +30,9 @@ internal class PdfKitDocument(
         val crop: PageSpaceRect,
         val rotation: Int,
         val size: PdfPageSize,
-    )
+    ) {
+        val text: String by lazy { page.string.orEmpty() }
+    }
 
     private val measured: List<Page> =
         List(document.pageCount.toInt()) { index ->
@@ -44,28 +47,25 @@ internal class PdfKitDocument(
         widthPx: Int,
         tone: PdfTone,
     ): ImageBitmap =
-        withContext(dispatcher) {
+        onPdfKit {
             val page = measured[pageIndex]
             renderPage(page.page, page.size, widthPx, tone)
         }
 
-    override suspend fun text(pageIndex: Int): String {
-        val page = measured[pageIndex].page
-        return withContext(dispatcher) { page.string.orEmpty() }
-    }
+    override suspend fun text(pageIndex: Int): String = onPdfKit { measured[pageIndex].text }
 
     override suspend fun select(
         pageIndex: Int,
         start: NormalizedPoint,
         end: NormalizedPoint,
     ): PdfSelection? =
-        withContext(dispatcher) {
+        onPdfKit {
             val page = measured[pageIndex]
             val from = toPageSpace(start.clamped(), page.crop, page.rotation).cgPoint()
             val to = toPageSpace(end.clamped(), page.crop, page.rotation).cgPoint()
             val dragged = page.page.selectionFromPoint(from, toPoint = to)
             val chars = dragged?.charRange(page.page)
-            val range = chars?.let { snapToWords(page.page.string.orEmpty(), it.first, it.last + 1) }
+            val range = chars?.let { snapToWords(page.text, it.first, it.last + 1) }
             val selection = range?.takeUnless { it.isEmpty() }?.let { page.page.selectionForRange(it.nsRange()) }
             val text = selection?.string?.takeIf { it.isNotBlank() }
             if (selection == null || range == null || text == null) {
@@ -80,15 +80,16 @@ internal class PdfKitDocument(
         startChar: Int,
         endChar: Int,
     ): List<NormalizedRect> =
-        withContext(dispatcher) {
+        onPdfKit {
             val page = measured[pageIndex]
-            val range = startChar until maxOf(startChar, endChar)
-            val selection = page.page.selectionForRange(range.nsRange())
+            val start = startChar.coerceIn(0, page.text.length)
+            val range = start until endChar.coerceIn(start, page.text.length)
+            val selection = if (range.isEmpty()) null else page.page.selectionForRange(range.nsRange())
             selection?.let { lineRects(it, page) }.orEmpty()
         }
 
     override suspend fun search(query: String): List<PdfHit> =
-        withContext(dispatcher) {
+        onPdfKit {
             document
                 .findString(query, withOptions = NSCaseInsensitiveSearch)
                 .filterIsInstance<PDFSelection>()
@@ -96,6 +97,9 @@ internal class PdfKitDocument(
         }
 
     override fun close() = Unit
+
+    // The dispatcher's worker threads never drain a pool of their own, so each call drains what it autoreleased.
+    private suspend fun <T> onPdfKit(block: () -> T): T = withContext(dispatcher) { autoreleasepool(block) }
 
     private fun PDFSelection.toHit(): PdfHit? {
         val pdfPage = pages.firstOrNull() as? PDFPage

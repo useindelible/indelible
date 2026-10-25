@@ -28,6 +28,15 @@ class PdfRenderBoundsTest {
     }
 
     @Test
+    fun extremeAspectStaysInsideTheHeightBound() {
+        val size = renderSizeFor(PdfPageSize(1.0, 5000.0), 3072)
+
+        assertTrue(size.height <= MAX_RENDER_HEIGHT_PX, "height ${size.height}")
+        assertTrue(size.width >= 1)
+        bufferBytes(size.width, size.height)
+    }
+
+    @Test
     fun hugePageIsNarrowedToFitThePixelBound() {
         val page = PdfPageSize(3072.0, 4000.0)
 

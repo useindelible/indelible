@@ -22,6 +22,9 @@ private const val MIN_THICKNESS = 0.5
 private const val MAX_THICKNESS = 1.8
 private const val WHITE = 0xFFFFFFFF.toInt()
 private const val DARK_PAGE = 0xFF1C1C1C.toInt()
+private const val SEPIA_PAGE = 0xFFF5EDDA.toInt()
+private const val FULL_CHANNEL = 250
+private const val EMPTY_CHANNEL = 5
 private const val INK_CONTRAST = 10
 private const val NEAR_WHITE = 250.0
 
@@ -145,6 +148,17 @@ class PdfEngineContractTest {
         }
 
     @Test
+    fun dragIntoTheMarginBesideALineKeepsItsDirection() =
+        runTest {
+            open("plain", PdfFixtures.plain) { document ->
+                val selection = assertNotNull(document.select(0, quick, NormalizedPoint(0.95, quick.y - 0.001)))
+                assertTrue(selection.text.startsWith("quick"), selection.text)
+                assertTrue(selection.rects.isNotEmpty())
+                selection.rects.forEach(::assertInsidePage)
+            }
+        }
+
+    @Test
     fun blankMarginSelectsNothing() =
         runTest {
             open("plain", PdfFixtures.plain) { document ->
@@ -175,6 +189,34 @@ class PdfEngineContractTest {
                 assertEquals(WHITE, light.toPixelMap()[2, 2].toArgb())
                 val dark = document.render(0, 300, PdfTone.DARK)
                 assertEquals(DARK_PAGE, dark.toPixelMap()[2, 2].toArgb())
+            }
+        }
+
+    @Test
+    fun renderKeepsTheChannelOrder() =
+        runTest {
+            val page = PdfFixtures.swatch.single()
+            open("swatch", PdfFixtures.swatch) { document ->
+                val sepia = document.render(0, 300, PdfTone.SEPIA)
+                assertEquals(SEPIA_PAGE, sepia.toPixelMap()[2, 2].toArgb())
+                val light = document.render(0, 300, PdfTone.NONE)
+                val square = fromPageSpace(checkNotNull(page.redSwatch), page.box, page.rotation)
+                val x = ((square.x + square.width / 2) * light.width).toInt()
+                val y = ((square.y + square.height / 2) * light.height).toInt()
+                val argb = light.toPixelMap()[x, y].toArgb()
+                val (red, green, blue) = listOf((argb shr 16) and 0xFF, (argb shr 8) and 0xFF, argb and 0xFF)
+                assertTrue(red >= FULL_CHANNEL && green <= EMPTY_CHANNEL && blue <= EMPTY_CHANNEL, "pixel $argb")
+            }
+        }
+
+    @Test
+    fun rangeOutsideThePageIsClampedToIt() =
+        runTest {
+            open("plain", PdfFixtures.plain) { document ->
+                val clamped = document.rectsForRange(0, -5, 3)
+                assertEquals(1, clamped.size)
+                clamped.forEach(::assertInsidePage)
+                assertTrue(document.rectsForRange(0, 10_000, 10_010).isEmpty())
             }
         }
 
