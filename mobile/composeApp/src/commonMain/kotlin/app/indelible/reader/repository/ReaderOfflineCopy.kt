@@ -1,6 +1,7 @@
 package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.DocumentNoteResponse
+import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.DocumentReaderResponse
 import app.indelible.api.generated.models.HighlightListResponse
 import app.indelible.core.offline.CachedDocumentRow
@@ -128,14 +129,22 @@ class ReaderOfflineCopy(
             json.decodeFromString(ArticleToc.serializer(), it)
         }
 
-    /** With a copy, the book's contents come from its file; the server only when that file is missing or unreadable. */
+    /**
+     * With a copy, the book's contents come from its file; the server only when that file is missing or
+     * unreadable. A ready list from the server asks for the copy, which also retries a kept book that waited.
+     */
     suspend fun epubToc(
         documentId: String,
         fetch: suspend (String) -> Result<EpubToc>,
-    ): Result<EpubToc> =
-        copyFirst(documentId, AssetSlot(EPUB_TOC, 0), { fetch(documentId) }) {
+    ): Result<EpubToc> {
+        val session = sessionProvider()
+        return copyFirst(documentId, AssetSlot(EPUB_TOC, 0), { fetch(documentId) }) {
             json.decodeFromString(EpubToc.serializer(), it)
+        }.onSuccess { toc ->
+            if (session == null || toc.chapterList != EpubChapterList.READY) return@onSuccess
+            if (store.cachedDocument(session.scope, documentId) == null) requestCache(session, documentId)
         }
+    }
 
     /** The chapter at [spineIndex], from the copy first, as [epubToc]. */
     suspend fun epubChapter(

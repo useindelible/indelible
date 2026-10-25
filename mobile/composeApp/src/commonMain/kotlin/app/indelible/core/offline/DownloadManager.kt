@@ -256,7 +256,7 @@ class DownloadManager(
             val shown = failureState(error, request.pin, isOnline)
             when {
                 shown == null -> acquisitions.clear(key)
-                isConnectionFailure(error) -> park(request, shown)
+                isConnectionFailure(error) || shown == Acquisition.Waiting -> park(request, shown)
                 else -> acquisitions.set(key, shown)
             }
         }
@@ -284,6 +284,8 @@ private fun failureState(
         isConnectionFailure(error) && online -> Acquisition.Failed(DownloadFailure.NETWORK)
         isConnectionFailure(error) -> Acquisition.WaitingForConnection
         error is ServerTooOldException -> Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD)
+        // A pin on a book whose list is still being built waits for it, as it waits for a readable render.
+        error is ChapterListUnavailableException -> Acquisition.Waiting
         else -> Acquisition.Failed(DownloadFailure.SERVER)
     }
 
