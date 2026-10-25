@@ -90,6 +90,26 @@ class PdfReaderViewTest {
         }
 
     @Test
+    fun tapWhileAFinalSelectIsPendingReportsOnlyTheTap() =
+        runComposeUiTest {
+            val gate = CompletableDeferred<Unit>()
+            val reports = show(Scripted(gate, gateFrom = 0.55).document)
+
+            page(1).performTouchInput {
+                longPressDrag(at(0.2, 0.3), listOf(at(0.6, 0.3)))
+                up()
+            }
+            waitForIdle()
+            page(1).performTouchInput { click(at(0.5, 0.9)) }
+            waitForIdle()
+            gate.complete(Unit)
+            waitForIdle()
+
+            assertEquals(1, reports.readerTaps)
+            assertTrue(reports.selections.all { it.first == null }, "selections ${reports.selections}")
+        }
+
+    @Test
     fun cancelledDragReportsNothing() =
         runComposeUiTest {
             val reports = show(Scripted().document)

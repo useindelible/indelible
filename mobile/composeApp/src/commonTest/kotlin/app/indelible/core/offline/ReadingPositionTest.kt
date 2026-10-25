@@ -18,6 +18,13 @@ class ReadingPositionTest {
     }
 
     @Test
+    fun oddPageLocatorsAreChapters() {
+        assertEquals(ChapterPosition("page:", 7), readingPositionOf("page:", 7))
+        assertEquals(ChapterPosition("page:-1", 7), readingPositionOf("page:-1", 7))
+        assertEquals(ChapterPosition("page:2147483648", 7), readingPositionOf("page:2147483648", 7))
+    }
+
+    @Test
     fun pagePositionWritesAPageAnchor() {
         val json = readingPositionJson(PagePosition(12, 4200), fraction = 0.37)
 

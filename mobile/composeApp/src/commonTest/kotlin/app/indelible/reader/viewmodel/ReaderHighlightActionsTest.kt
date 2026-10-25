@@ -37,7 +37,7 @@ class ReaderHighlightActionsTest {
         }
 
     @Test
-    fun pdfTargetIsBuiltBeforeTheWriteStarts() =
+    fun pdfHighlightWriteIsDeferredToTheLaunch() =
         runTest {
             val repository = FakeReaderRepository()
             val actions =

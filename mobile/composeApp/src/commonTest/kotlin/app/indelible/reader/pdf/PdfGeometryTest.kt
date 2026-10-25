@@ -60,6 +60,32 @@ class PdfGeometryTest {
     }
 
     @Test
+    fun rectsOverlappingExactlyHalfStaySeparate() {
+        val merged =
+            mergeLineRects(
+                listOf(
+                    NormalizedRect(0.1, 0.5, 0.1, 0.125),
+                    NormalizedRect(0.1, 0.5625, 0.1, 0.125),
+                ),
+            )
+
+        assertEquals(2, merged.size)
+    }
+
+    @Test
+    fun rectsOverlappingJustOverHalfMerge() {
+        val merged =
+            mergeLineRects(
+                listOf(
+                    NormalizedRect(0.1, 0.5, 0.1, 0.125),
+                    NormalizedRect(0.1, 0.5546875, 0.1, 0.125),
+                ),
+            )
+
+        assertEquals(1, merged.size)
+    }
+
+    @Test
     fun linesAreOrderedTopToBottom() {
         val merged =
             mergeLineRects(
@@ -119,6 +145,21 @@ class PdfGeometryTest {
             val page = toPageSpace(point, crop, rotation)
             val back = fromPageSpace(PageSpaceRect(page.x, page.y, 0.0, 0.0), crop, rotation)
             assertClose(point, NormalizedPoint(back.x, back.y))
+        }
+    }
+
+    @Test
+    fun cropAndRotationComposeInBothDirections() {
+        val crop = PageSpaceRect(50.0, 100.0, 512.0, 592.0)
+        val point = PageSpacePoint(100.0, 600.0)
+
+        for (rotation in listOf(0, 90, 180, 270)) {
+            val display = fromPageSpace(PageSpaceRect(point.x, point.y, 0.0, 0.0), crop, rotation)
+            val back = toPageSpace(NormalizedPoint(display.x, display.y), crop, rotation)
+            assertTrue(
+                kotlin.math.abs(back.x - point.x) < EPS && kotlin.math.abs(back.y - point.y) < EPS,
+                "rotation $rotation: expected $point but was $back",
+            )
         }
     }
 

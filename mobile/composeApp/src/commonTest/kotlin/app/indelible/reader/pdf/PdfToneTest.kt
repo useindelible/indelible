@@ -2,7 +2,6 @@ package app.indelible.reader.pdf
 
 import androidx.compose.ui.graphics.toArgb
 import app.indelible.reader.model.ReaderBackground
-import kotlin.math.pow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -34,8 +33,28 @@ class PdfToneTest {
     fun darkTableMatchesTheWebAt128() {
         val table = checkNotNull(toneTable(PdfTone.DARK))
 
-        val expected = (255 - 227 * (128 / 255.0).pow(0.6)).toInt()
-        assertEquals(expected, table.channel(0, 128))
+        // The web computes 255 - 227 * (128 / 255)^0.6, truncated.
+        assertEquals(104, table.channel(0, 128))
+    }
+
+    @Test
+    fun sepiaTableMatchesTheWebAt128() {
+        val table = checkNotNull(toneTable(PdfTone.SEPIA))
+
+        assertEquals(listOf(168, 153, 136), (0..2).map { table.channel(it, 128) })
+    }
+
+    @Test
+    fun toneKeepsChannelOrder() {
+        val table = checkNotNull(toneTable(PdfTone.DARK))
+        val pixels = intArrayOf(0xFF0000FF.toInt())
+
+        applyToneArgb(pixels, table)
+
+        val pixel = pixels[0]
+        assertEquals(255, (pixel shr 16) and 0xFF)
+        assertEquals(255, (pixel shr 8) and 0xFF)
+        assertEquals(28, pixel and 0xFF)
     }
 
     @Test
