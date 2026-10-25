@@ -47,18 +47,26 @@ data class ReaderPreferences(
 )
 
 @Serializable
+data class PdfRect(
+    val x: Double,
+    val y: Double,
+    val width: Double,
+    val height: Double,
+)
+
+@Serializable
 data class HighlightLocator(
     val type: String,
     val startOffset: Long? = null,
     val endOffset: Long? = null,
     val chapter: String? = null,
-)
-
-/** A selection's character offsets; [chapter] is the book chapter's key, null in an article. */
-data class HighlightRange(
-    val startOffset: Long,
-    val endOffset: Long,
-    val chapter: String? = null,
+    val page: Int? = null,
+    val x: Double? = null,
+    val y: Double? = null,
+    val width: Double? = null,
+    val height: Double? = null,
+    val textSnapshot: String? = null,
+    val rects: List<PdfRect>? = null,
 )
 
 @Serializable
