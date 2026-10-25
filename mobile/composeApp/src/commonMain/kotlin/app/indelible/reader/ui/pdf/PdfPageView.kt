@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -70,7 +71,7 @@ internal fun PdfPageView(
         value = bitmaps.tryBitmap(index, renderWidth, tone)
     }
     val current = rememberUpdatedState(gestures)
-    val placeholder = toneBackground(tone)
+    val placeholder = remember(tone) { toneBackground(tone) }
     Canvas(
         modifier
             .semantics { contentDescription = label }
