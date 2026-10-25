@@ -101,9 +101,10 @@ class PdfReaderSession internal constructor(
             is PdfCopy.Ready -> openDocument(copy.path)
             is PdfCopy.Failed -> _state.update { it.copy(status = copy.reason.status(), download = null) }
             PdfCopy.Removed -> {
-                closeDocument()
                 tracking = false
-                _state.update { it.copy(status = PdfStatus.COPY_REMOVED) }
+                val document = _state.value.document
+                _state.update { it.copy(status = PdfStatus.COPY_REMOVED, document = null) }
+                document?.close()
             }
         }
     }

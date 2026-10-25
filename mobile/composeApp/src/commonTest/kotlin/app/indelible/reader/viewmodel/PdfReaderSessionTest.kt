@@ -11,11 +11,15 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -117,6 +121,22 @@ class PdfReaderSessionTest {
             assertEquals(PdfStatus.COPY_REMOVED, h.state.status)
             assertNull(h.state.document)
             assertEquals(1, h.document.closes)
+        }
+
+    @Test
+    fun removedCopyNeverPublishesReadyWithoutADocument() =
+        runTest {
+            val h = pdfHarness(copy = flowOf(PdfCopy.Ready(PDF_PATH), PdfCopy.Removed))
+            val states = mutableListOf<PdfReaderState>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { h.session.state.toList(states) }
+
+            h.session.open()
+            advanceUntilIdle()
+
+            assertFalse(states.isEmpty())
+            assertTrue(states.none { it.status == PdfStatus.READY && it.document == null })
+            assertEquals(PdfStatus.COPY_REMOVED, states.last().status)
+            assertNull(states.last().document)
         }
 
     @Test
