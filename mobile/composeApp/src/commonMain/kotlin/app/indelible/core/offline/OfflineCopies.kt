@@ -23,18 +23,19 @@ class OfflineCopies(
         files.deleteTree(files.scopeDir(scope))
     }
 
-    /** Evicts unpinned copies not in [keep] down to the cap, oversize ones first, then least recently opened. */
+    /** Evicts unpinned copies to the cap, oversize then oldest opened, except copies for which [keep] answers true. */
     suspend fun enforceCap(
         scope: String,
-        keep: Set<String>,
+        keep: suspend (String) -> Boolean,
     ): Boolean {
         val cap = capBytes()
         var total = store.totalBytes(scope)
         var evicted = false
-        val unpinned = store.unpinnedLru(scope).filter { it.documentId !in keep }
+        val unpinned = store.unpinnedLru(scope)
         val candidates = (unpinned.filter { it.bytes > cap } + unpinned.filter { it.bytes <= cap }).iterator()
         while (total > cap && candidates.hasNext()) {
             val copy = candidates.next()
+            if (keep(copy.documentId)) continue
             if (store.evictCachedDocument(scope, copy.documentId)) {
                 deleteQuietly(files.documentDir(scope, copy.documentId))
                 total -= copy.bytes

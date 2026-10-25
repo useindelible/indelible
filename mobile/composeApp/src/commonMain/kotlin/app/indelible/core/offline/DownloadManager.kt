@@ -221,7 +221,7 @@ class DownloadManager(
     /** Evicts [scope] down to the cap between acquisitions; room it frees lets auto-caching resume. */
     suspend fun enforceCap(scope: String) =
         withContext(dispatcher) {
-            val freed = acquiring.withLock { copies.enforceCap(scope, heldIn(scope)) }
+            val freed = acquiring.withLock { copies.enforceCap(scope) { isHeld(scope, it) } }
             if (freed) lock.withLock { autoCachePaused -= scope }
         }
 
@@ -304,7 +304,9 @@ class DownloadManager(
                 fetcher.download(request.session, request.documentId, request.pin, ignoreCap = uncapped) {
                     acquisitions.set(key, Acquisition.Downloading(it))
                 }
-            if (outcome == FetchResult.Installed) copies.enforceCap(key.scope, heldIn(key.scope) + key.documentId)
+            if (outcome == FetchResult.Installed) {
+                copies.enforceCap(key.scope) { it == key.documentId || isHeld(key.scope, it) }
+            }
             outcome
         }.onSuccess { outcome ->
             when {
@@ -356,9 +358,6 @@ class DownloadManager(
             }
         }
     }
-
-    private suspend fun heldIn(scope: String): Set<String> =
-        lock.withLock { held.keys.filter { it.scope == scope }.mapTo(mutableSetOf()) { it.documentId } }
 
     private suspend fun park(
         request: Request,
