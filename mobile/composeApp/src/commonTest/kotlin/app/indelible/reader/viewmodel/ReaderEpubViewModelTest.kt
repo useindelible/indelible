@@ -109,7 +109,7 @@ class ReaderEpubViewModelTest {
             val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
-            viewModel.createHighlight(HighlightColor.YELLOW, "text", startOffset = 1, endOffset = 5)
+            viewModel.createHighlightForTag(HighlightColor.YELLOW, "text", startOffset = 1, endOffset = 5) {}
             advanceUntilIdle()
 
             assertEquals("e5", repository.createdRanges.single().chapter)
@@ -122,7 +122,7 @@ class ReaderEpubViewModelTest {
             val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
-            viewModel.createHighlight(HighlightColor.YELLOW, "text", startOffset = 1, endOffset = 5)
+            viewModel.createHighlightForTag(HighlightColor.YELLOW, "text", startOffset = 1, endOffset = 5) {}
             advanceUntilIdle()
 
             assertEquals(0, repository.createHighlightCallCount)

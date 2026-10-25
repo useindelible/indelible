@@ -52,7 +52,7 @@ class ReaderHighlightStateTest {
             viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
-            viewModel.createHighlight(HighlightColor.GREEN, "text", 0, 10)
+            viewModel.createHighlightForTag(HighlightColor.GREEN, "text", 0, 10) {}
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)

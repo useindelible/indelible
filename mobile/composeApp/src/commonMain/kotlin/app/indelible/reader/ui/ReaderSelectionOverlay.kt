@@ -35,9 +35,8 @@ internal fun BoxScope.HighlightToolbarOverlay(
     onNoteSheetHighlightIdChanged: (String?) -> Unit,
 ) {
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
-    // sel.rect.y is a CSS viewport-relative pixel from getBoundingClientRect().
-    // CSS pixels from a standard-viewport WebView equal dp, so use .dp
-    // directly — .toDp() would incorrectly divide by display density.
+    // Every reader reports the anchor in dp: the WebView's CSS pixels equal dp at the standard viewport,
+    // the PDF view converts.
     val yOffset = sel.rect.y.dp - IndelibleSpacing.step64
     val create: (HighlightColor, (String) -> Unit) -> Unit = { color, onCreated ->
         val pdf = sel.pdf

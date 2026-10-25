@@ -76,7 +76,7 @@ fun ReaderScreen(
             activePanel = activePanel,
             hasSelection = selectedText != null,
             hasTappedHighlight = tappedHighlight != null,
-            hasOpenTagSheet = tagSheetHighlightId != null || noteSheetHighlightId != null,
+            hasOpenHighlightSheet = tagSheetHighlightId != null || noteSheetHighlightId != null,
         )
     ReaderChromeSuppressionEffect(chromeState, chromeSuppressed)
 

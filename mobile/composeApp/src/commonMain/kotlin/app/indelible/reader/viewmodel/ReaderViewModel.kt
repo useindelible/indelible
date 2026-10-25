@@ -354,15 +354,6 @@ class ReaderViewModel(
         }
     }
 
-    fun createHighlight(
-        color: HighlightColor,
-        textContent: String,
-        startOffset: Long,
-        endOffset: Long,
-    ) {
-        if (!bookChapterMissing) highlightActions.createHighlight(color, textContent, startOffset, endOffset)
-    }
-
     fun createHighlightForTag(
         color: HighlightColor,
         textContent: String,
