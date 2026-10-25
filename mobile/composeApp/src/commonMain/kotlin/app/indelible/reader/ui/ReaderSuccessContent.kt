@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -107,7 +106,8 @@ internal fun ReaderSuccessContent(
     val density = LocalDensity.current
     val showMiniBar = isMiniBarShown(playbackState, activePanel)
     var miniBarClearance by remember { mutableStateOf<Dp?>(null) }
-    LaunchedEffect(showMiniBar) { if (!showMiniBar) miniBarClearance = null }
+    // The bar keeps reporting its place through its exit animation, so the clearance is gated by visibility.
+    val chapterClearance = if (showMiniBar) miniBarClearance else null
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
     val linkCopiedMessage = stringResource(Res.string.reader_link_copied)
     val linkMissingMessage = stringResource(Res.string.reader_link_missing)
@@ -150,7 +150,7 @@ internal fun ReaderSuccessContent(
                         onTappedHighlightChanged = onTappedHighlightChanged,
                         onReaderTap = onReaderTap,
                         immersive = immersive,
-                        miniBarClearance = miniBarClearance,
+                        miniBarClearance = chapterClearance,
                         uriHandler = uriHandler,
                         viewModel = viewModel,
                     )
