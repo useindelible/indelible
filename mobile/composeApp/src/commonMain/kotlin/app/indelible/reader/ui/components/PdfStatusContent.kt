@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.reader.model.PdfStatus
@@ -101,22 +102,27 @@ fun PdfStatusContent(
                 )
             }
             if (copy.progress) DownloadProgress(downloadFraction)
-            Row(horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12)) {
-                if (copy.storage) {
-                    IndelibleButton(
-                        text = stringResource(Res.string.offline_manage_storage),
-                        onClick = onManageStorage,
-                        style = IndelibleButtonStyle.Secondary,
-                        compact = true,
-                    )
-                }
-                if (copy.retry) {
-                    IndelibleButton(
-                        text = stringResource(Res.string.common_retry),
-                        onClick = onRetry,
-                        style = IndelibleButtonStyle.Secondary,
-                        compact = true,
-                    )
+            if (copy.storage || copy.retry) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step12),
+                    modifier = Modifier.testTag("pdfStatusActions"),
+                ) {
+                    if (copy.storage) {
+                        IndelibleButton(
+                            text = stringResource(Res.string.offline_manage_storage),
+                            onClick = onManageStorage,
+                            style = IndelibleButtonStyle.Secondary,
+                            compact = true,
+                        )
+                    }
+                    if (copy.retry) {
+                        IndelibleButton(
+                            text = stringResource(Res.string.common_retry),
+                            onClick = onRetry,
+                            style = IndelibleButtonStyle.Secondary,
+                            compact = true,
+                        )
+                    }
                 }
             }
         }

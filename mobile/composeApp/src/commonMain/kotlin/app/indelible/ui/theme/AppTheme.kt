@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.ReaderBackground
 import app.indelible.ui.platform.StatusBarAppearance
 
@@ -124,15 +125,17 @@ data class HighlightFills(
     val purple: Color,
 )
 
-fun HighlightFills.forApiColor(color: String): Color? =
+fun HighlightFills.fill(color: HighlightColor): Color =
     when (color) {
-        "yellow" -> yellow
-        "blue" -> blue
-        "green" -> green
-        "pink" -> pink
-        "purple" -> purple
-        else -> null
+        HighlightColor.YELLOW -> yellow
+        HighlightColor.BLUE -> blue
+        HighlightColor.GREEN -> green
+        HighlightColor.PINK -> pink
+        HighlightColor.PURPLE -> purple
     }
+
+fun HighlightFills.forApiColor(color: String): Color? =
+    HighlightColor.entries.firstOrNull { it.apiValue == color }?.let(::fill)
 
 // ============================================================
 // EXTENDED COLORS — semantic slots beyond MaterialTheme
