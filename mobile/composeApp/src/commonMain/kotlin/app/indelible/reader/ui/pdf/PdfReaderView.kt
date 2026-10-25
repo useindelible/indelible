@@ -20,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -40,6 +42,8 @@ import app.indelible.ui.theme.HighlightFills
 import app.indelible.ui.theme.IndelibleSpacing
 import kotlin.math.roundToInt
 
+private const val NO_NONCE = -1L
+
 /** The pages of one open PDF, hidden until the saved place is on screen; [onSelection] gets a toolbar anchor in dp. */
 @Composable
 internal fun PdfReaderView(
@@ -49,6 +53,7 @@ internal fun PdfReaderView(
     highlightsByPage: Map<Int, List<PdfHighlightBox>>,
     highlightFills: HighlightFills,
     restore: PdfRestoreRequest?,
+    activeSelection: PdfSelection?,
     topInsetPx: Int,
     onPositioned: () -> Unit,
     onSample: (PdfScrollSample) -> Unit,
@@ -64,28 +69,37 @@ internal fun PdfReaderView(
     val horizontal = rememberScrollState()
     val bitmaps = remember(document) { PdfPageBitmaps(document) }
     val selection = remember(document) { PdfSelectionState(document, scope) }
-    var revealed by remember(document) { mutableStateOf(false) }
+    var revealed by rememberSaveable(document) { mutableStateOf(false) }
+    var applied by rememberSaveable(document) { mutableStateOf(NO_NONCE) }
     LaunchedEffect(selection) { selection.followDrags() }
+    LaunchedEffect(activeSelection) { if (activeSelection == null) selection.clear() }
 
     BoxWithConstraints(modifier.background(gutter).clipToBounds()) {
         val itemWidthPx = (constraints.maxWidth * zoom.zoom).roundToInt().coerceAtLeast(1)
         val heightsPx = remember(document, itemWidthPx) { document.pageSizes.map { pageHeightPx(it, itemWidthPx) } }
         val gapPx = with(density) { IndelibleSpacing.step8.roundToPx() }
-        val layout = PdfLayout(listState, horizontal, PdfPageGrid(itemWidthPx, heightsPx, gapPx), topInsetPx, density)
+        val grid = PdfPageGrid(constraints.maxWidth, itemWidthPx, heightsPx, gapPx)
+        val layout = PdfLayout(listState, horizontal, grid, topInsetPx, density)
         val host = PdfPagesHost(document, bitmaps, selection, layout, zoom, scope)
         val callbacks = PdfViewCallbacks(onSelection, onHighlightTapped, onReaderTap)
 
+        // A recreated view keeps the list where the reader left it; only a new restore request scrolls.
         LaunchedEffect(restore, document) {
             val target = restore ?: return@LaunchedEffect
             if (heightsPx.isEmpty()) return@LaunchedEffect
-            val index = target.pageIndex.coerceIn(0, heightsPx.lastIndex)
-            listState.scrollToItem(index, restoreOffsetPx(target.pageOffset, heightsPx[index]))
+            if (applied != target.nonce) {
+                val index = target.pageIndex.coerceIn(0, heightsPx.lastIndex)
+                listState.scrollToItem(index, restoreOffsetPx(target.pageOffset, heightsPx[index]))
+                applied = target.nonce
+            }
             revealed = true
             onPositioned()
         }
+        val currentLayout by rememberUpdatedState(layout)
+        val currentOnSample by rememberUpdatedState(onSample)
         LaunchedEffect(listState, document) {
             snapshotFlow { listState.layoutInfo }.collect { info ->
-                if (revealed) layout.sample(info, document.pageCount)?.let(onSample)
+                if (revealed) currentLayout.sample(info, document.pageCount)?.let(currentOnSample)
             }
         }
 
@@ -104,22 +118,19 @@ private fun PdfPageStack(
 ) {
     val density = LocalDensity.current
     val selectionColor = MaterialTheme.colorScheme.primary
-    val preview = host.zoom.preview
-    val pinchLayer =
-        Modifier.graphicsLayer {
-            scaleX = preview?.scale ?: 1f
-            scaleY = preview?.scale ?: 1f
-            transformOrigin =
-                preview?.let { TransformOrigin(it.centroid.x / size.width, it.centroid.y / size.height) }
-                    ?: TransformOrigin.Center
-        }
     Box(
         Modifier
             .fillMaxSize()
             .alpha(if (shown) 1f else 0f)
-            .then(pinchLayer)
             .pinchToZoom(host.zoom, host::commitPinch)
-            .horizontalScroll(host.layout.horizontal),
+            .graphicsLayer {
+                val preview = host.zoom.preview
+                scaleX = preview?.scale ?: 1f
+                scaleY = preview?.scale ?: 1f
+                transformOrigin =
+                    preview?.let { TransformOrigin(it.centroid.x / size.width, it.centroid.y / size.height) }
+                        ?: TransformOrigin.Center
+            }.horizontalScroll(host.layout.horizontal),
     ) {
         LazyColumn(
             state = host.layout.listState,

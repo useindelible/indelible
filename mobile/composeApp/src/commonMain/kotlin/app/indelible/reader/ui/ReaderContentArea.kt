@@ -48,6 +48,7 @@ internal fun ReaderContentArea(
     miniBarClearance: Dp?,
     uriHandler: UriHandler,
     onOpenStorage: () -> Unit,
+    selectedText: SelectedTextInfo?,
     viewModel: ReaderViewModel,
 ) {
     when (state.contentMode) {
@@ -78,6 +79,7 @@ internal fun ReaderContentArea(
                     state = state,
                     pdf = pdf,
                     session = session,
+                    selectedText = selectedText,
                     topChromeInsetPx = topChromeInsetPx,
                     onSelectedTextChanged = onSelectedTextChanged,
                     onTappedHighlightChanged = onTappedHighlightChanged,

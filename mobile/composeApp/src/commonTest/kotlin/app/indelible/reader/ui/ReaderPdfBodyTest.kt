@@ -99,6 +99,7 @@ class ReaderPdfBodyTest {
                     state = state,
                     pdf = pdf,
                     session = session,
+                    selectedText = null,
                     topChromeInsetPx = 0,
                     onSelectedTextChanged = { reports.selected += it },
                     onTappedHighlightChanged = { reports.tapped += it },

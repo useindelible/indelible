@@ -155,6 +155,7 @@ internal fun ReaderSuccessContent(
                         miniBarClearance = chapterClearance,
                         uriHandler = uriHandler,
                         onOpenStorage = { itemOffline?.onOpenStorage?.invoke() },
+                        selectedText = selectedText,
                         viewModel = viewModel,
                     )
 

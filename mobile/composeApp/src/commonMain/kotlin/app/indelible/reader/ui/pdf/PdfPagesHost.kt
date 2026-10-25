@@ -1,8 +1,10 @@
 package app.indelible.reader.ui.pdf
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
@@ -14,7 +16,9 @@ import app.indelible.reader.pdf.PdfSelection
 import app.indelible.reader.ui.SelectionRect
 import app.indelible.reader.viewmodel.PdfScrollSample
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 internal class PdfViewCallbacks(
     val onSelection: (PdfSelection?, SelectionRect?) -> Unit,
@@ -39,12 +43,19 @@ internal class PdfPagesHost(
         val first = LazyAnchor(list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset)
         val focus = centroid - Offset(0f, layout.topInsetPx.toFloat())
         val commit = commitZoom(zoom.zoom, scale, focus, first, layout.horizontal.value)
+        val widthBefore = list.layoutInfo.viewportSize.width
+        val widthChanges = (layout.viewportWidthPx * commit.zoom).roundToInt().coerceAtLeast(1) != layout.itemWidthPx
         zoom.zoom = commit.zoom
-        zoom.preview = null
         scope.launch {
-            withFrameNanos { }
-            list.scrollToItem(commit.anchor.index, commit.anchor.offsetPx)
+            // The scroll ranges only exist once the list has measured at its new width.
+            if (widthChanges) {
+                snapshotFlow { list.layoutInfo.viewportSize.width }.first { it != widthBefore }
+                withFrameNanos { }
+            }
+            list.scrollToItem(commit.anchor.index, commit.anchor.offsetPx.coerceAtLeast(0))
+            if (commit.anchor.offsetPx < 0) list.scrollBy(commit.anchor.offsetPx.toFloat())
             layout.horizontal.scrollTo(commit.horizontalScroll)
+            zoom.preview = null
         }
     }
 
@@ -83,6 +94,7 @@ private fun NormalizedRect.contains(point: NormalizedPoint) = point.x in x..(x +
 
 /** Where the laid-out pages are, for turning list frames into samples and selections into toolbar anchors. */
 internal data class PdfPageGrid(
+    val viewportWidthPx: Int,
     val itemWidthPx: Int,
     val heightsPx: List<Int>,
     val gapPx: Int,
@@ -95,6 +107,7 @@ internal class PdfLayout(
     val topInsetPx: Int,
     private val density: Density,
 ) {
+    val viewportWidthPx: Int get() = grid.viewportWidthPx
     val itemWidthPx: Int get() = grid.itemWidthPx
     val heightsPx: List<Int> get() = grid.heightsPx
 

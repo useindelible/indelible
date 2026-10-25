@@ -32,7 +32,7 @@ data class ZoomCommit(
     val horizontalScroll: Int,
 )
 
-/** The layout after a pinch of [gestureScale] around [centroid]: the content under the fingers stays there. */
+/** The layout after a pinch around [centroid] keeps the content under the fingers; a negative offset reaches up. */
 fun commitZoom(
     zoom: Float,
     gestureScale: Float,
@@ -42,7 +42,7 @@ fun commitZoom(
 ): ZoomCommit {
     val next = (zoom * gestureScale).coerceIn(MIN_ZOOM, MAX_ZOOM)
     val ratio = next / zoom
-    val offset = (ratio * (first.offsetPx + centroid.y) - centroid.y).roundToInt().coerceAtLeast(0)
+    val offset = (ratio * (first.offsetPx + centroid.y) - centroid.y).roundToInt()
     val scrolled = (ratio * (horizontalScroll + centroid.x) - centroid.x).roundToInt().coerceAtLeast(0)
     return ZoomCommit(next, LazyAnchor(first.index, offset), if (next == MIN_ZOOM) 0 else scrolled)
 }

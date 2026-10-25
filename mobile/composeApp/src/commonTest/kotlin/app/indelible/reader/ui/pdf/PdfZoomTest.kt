@@ -44,9 +44,9 @@ class PdfZoomTest {
     }
 
     @Test
-    fun focalPointAboveTheAnchorPageStaysOnIt() {
+    fun focalPointAboveTheAnchorPageKeepsItsRawOffset() {
         val commit = commit(zoom = 2f, scale = 0.5f, first = LazyAnchor(3, 0), focus = Offset(0f, 10f))
 
-        assertEquals(LazyAnchor(3, 0), commit.anchor)
+        assertEquals(LazyAnchor(3, -5), commit.anchor)
     }
 }

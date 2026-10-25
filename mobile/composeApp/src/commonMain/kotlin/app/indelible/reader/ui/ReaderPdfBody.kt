@@ -29,6 +29,7 @@ internal fun ReaderPdfBody(
     state: ReaderUiState.Success,
     pdf: PdfReaderState,
     session: PdfReaderSession,
+    selectedText: SelectedTextInfo?,
     topChromeInsetPx: Int,
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onTappedHighlightChanged: (HighlightData?) -> Unit,
@@ -55,6 +56,7 @@ internal fun ReaderPdfBody(
                 highlightsByPage = byPage,
                 highlightFills = IndelibleTheme.colors.highlightFills,
                 restore = pdf.restore,
+                activeSelection = selectedText?.pdf,
                 topInsetPx = topChromeInsetPx,
                 onPositioned = session::onPositioned,
                 onSample = { sample ->
