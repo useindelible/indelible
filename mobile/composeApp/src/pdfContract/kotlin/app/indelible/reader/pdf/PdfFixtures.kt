@@ -42,6 +42,20 @@ internal object PdfFixtures {
             ),
         )
     val rotated = plain.map { it.copy(rotation = 90) }
+
+    val columns =
+        listOf(
+            FixturePage(
+                LETTER_W,
+                LETTER_H,
+                listOf(
+                    FixtureText("alpha beta", 72.0, 720.0),
+                    FixtureText("gamma delta", 350.0, 720.0),
+                    FixtureText("epsilon zeta", 72.0, 700.0),
+                    FixtureText("eta theta", 350.0, 700.0),
+                ),
+            ),
+        )
     val swatch = plain.map { it.copy(redSwatch = PageSpaceRect(72.0, 72.0, 72.0, 72.0)) }
     val cropped =
         listOf(

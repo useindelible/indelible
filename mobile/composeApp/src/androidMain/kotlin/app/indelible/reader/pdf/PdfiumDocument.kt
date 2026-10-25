@@ -9,6 +9,8 @@ import io.legere.pdfiumandroid.suspend.PdfDocumentKt
 import io.legere.pdfiumandroid.suspend.PdfPageKt
 import io.legere.pdfiumandroid.suspend.PdfTextPageKt
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
@@ -109,13 +111,17 @@ internal class PdfiumDocument private constructor(
         }
 
     override fun close() {
-        synchronized(open) {
-            if (closed) return
-            closed = true
-            open.values.forEach { it.close() }
-            open.clear()
+        val held =
+            synchronized(open) {
+                if (closed) return
+                closed = true
+                open.values.toList().also { open.clear() }
+            }
+        // pdfium serialises every native call, so closing here would make the caller wait for a render in flight.
+        CoroutineScope(dispatcher).launch {
+            held.forEach { it.close() }
+            document.safeClose()
         }
-        document.safeClose()
     }
 
     private suspend fun <T> onPdfium(block: suspend () -> T): T =
@@ -131,11 +137,12 @@ internal class PdfiumDocument private constructor(
         val opened = OpenPage(document.openPage(index), pages[index])
         val evicted =
             synchronized(open) {
-                check(!closed) { "the PDF document is closed" }
+                if (closed) return@synchronized opened
                 open[index] = opened
                 if (open.size > OPEN_PAGES) open.remove(open.keys.first()) else null
             }
         evicted?.close()
+        check(!closed) { "the PDF document is closed" }
         return opened
     }
 
@@ -177,11 +184,19 @@ private class OpenPage(
 
     suspend fun textPage(): PdfTextPageKt = text ?: page.openTextPage().also { text = it }
 
+    // Read one character at a time: the bulk text call omits glyphs without unicode and its binding copies
+    // past the returned length, while char indices and string offsets must stay one to one.
     suspend fun chars(): String {
         val known = chars
         if (known != null) return known
         val text = textPage()
-        return text.textPageGetText(0, text.textPageCountChars()).orEmpty().also { chars = it }
+        val count = text.textPageCountChars()
+        val builder = StringBuilder(count)
+        for (index in 0 until count) {
+            val unicode = text.textPageGetUnicode(index)
+            builder.append(if (unicode == '\u0000') '\uFFFD' else unicode)
+        }
+        return builder.toString().also { chars = it }
     }
 
     /** The character under [point]; a point in the margin beside a line takes that line's nearest character. */

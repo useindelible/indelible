@@ -16,6 +16,7 @@ import platform.PDFKit.PDFDocument
 import platform.PDFKit.PDFPage
 import platform.PDFKit.PDFSelection
 import platform.PDFKit.kPDFDisplayBoxCropBox
+import kotlin.math.abs
 
 private const val FULL_TURN = 360
 private const val HALF_TURN = 180
@@ -146,8 +147,9 @@ internal class PdfKitDocument(
 
     // PDFKit runs a drag that ends in the margin to the edge of the page; the line beside the point is the limit.
     private fun PageSpacePoint.onLine(lines: List<PageSpaceRect>): PageSpacePoint {
-        val line =
-            lines.firstOrNull { y in it.y - LINE_TOLERANCE / 2..it.y + it.height + LINE_TOLERANCE / 2 } ?: return this
+        val beside = lines.filter { y in it.y - LINE_TOLERANCE / 2..it.y + it.height + LINE_TOLERANCE / 2 }
+        if (beside.any { x in it.x..it.x + it.width }) return this
+        val line = beside.minByOrNull { minOf(abs(x - it.x), abs(x - it.x - it.width)) } ?: return this
         val inset = minOf(EDGE_INSET, line.width / 2)
         return PageSpacePoint(x.coerceIn(line.x + inset, line.x + line.width - inset), y)
     }

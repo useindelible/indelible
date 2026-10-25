@@ -159,6 +159,18 @@ class PdfEngineContractTest {
         }
 
     @Test
+    fun selectionEndingInTheRightColumnKeepsItsText() =
+        runTest {
+            val page = PdfFixtures.columns.single()
+            open("columns", PdfFixtures.columns) { document ->
+                val start = pointIn(page, page.lines[0], 0..4)
+                val end = pointIn(page, page.lines[1], 6..10)
+                val selection = assertNotNull(document.select(0, start, end))
+                assertTrue(selection.text.contains("delta"), selection.text)
+            }
+        }
+
+    @Test
     fun blankMarginSelectsNothing() =
         runTest {
             open("plain", PdfFixtures.plain) { document ->
