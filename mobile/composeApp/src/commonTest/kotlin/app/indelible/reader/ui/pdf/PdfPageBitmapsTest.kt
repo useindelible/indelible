@@ -3,6 +3,10 @@ package app.indelible.reader.ui.pdf
 import app.indelible.reader.pdf.FakePdfDocument
 import app.indelible.reader.pdf.PdfPageSize
 import app.indelible.reader.pdf.PdfTone
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,5 +51,22 @@ class PdfPageBitmapsTest {
             bitmaps.bitmap(1, 100, PdfTone.NONE)
 
             assertEquals(listOf(0, 1, 2, 1), document.renders.map { it.first })
+        }
+
+    @Test
+    fun twoMissesOnOneKeyCountItsBytesOnce() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            document.beforeRender = { gate.await() }
+            val bitmaps = PdfPageBitmaps(document, budgetBytes = pageBytes * 2)
+
+            val racing = List(2) { async { bitmaps.bitmap(0, 100, PdfTone.NONE) } }
+            runCurrent()
+            gate.complete(Unit)
+            racing.awaitAll()
+            bitmaps.bitmap(1, 100, PdfTone.NONE)
+            bitmaps.bitmap(0, 100, PdfTone.NONE)
+
+            assertEquals(2, document.renders.count { it.first == 0 })
         }
 }

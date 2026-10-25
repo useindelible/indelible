@@ -40,6 +40,7 @@ internal class PdfPageBitmaps(
         key: Key,
         bitmap: ImageBitmap,
     ) {
+        cache.remove(key)?.let { usedBytes -= it.bytes() }
         val bytes = bitmap.bytes()
         while (cache.isNotEmpty() && usedBytes + bytes > budgetBytes) {
             val oldest = cache.keys.first()

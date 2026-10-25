@@ -14,6 +14,7 @@ class FakePdfDocument(
     val renders = mutableListOf<Triple<Int, Int, PdfTone>>()
     var closes = 0
         private set
+    var beforeRender: (suspend () -> Unit)? = null
 
     override suspend fun render(
         pageIndex: Int,
@@ -21,6 +22,7 @@ class FakePdfDocument(
         tone: PdfTone,
     ): ImageBitmap {
         renders += Triple(pageIndex, widthPx, tone)
+        beforeRender?.invoke()
         val size = pageSizes[pageIndex]
         return ImageBitmap(widthPx, (widthPx * size.height / size.width).roundToInt())
     }
