@@ -1,6 +1,5 @@
 package app.indelible.reader.viewmodel
 
-import app.indelible.core.i18n.UiMessage
 import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.PagePosition
 import app.indelible.core.offline.readingPositionOf
@@ -8,8 +7,6 @@ import app.indelible.reader.model.PdfStatus
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.pdf.PdfDocument
 import app.indelible.reader.repository.ReaderRepository
-import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.reader_pdf_copy_removed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -72,18 +69,17 @@ internal class ReaderSessions(
         }
     }
 
-    /** True once the removed message is on its way out with its own NavigateBack. */
+    /** True once the removal has queued its own NavigateBack. */
     val leaving: Boolean get() = left
 
     fun close() {
         pdf?.close()
     }
 
-    // Remove from device closed the file under the reader: say so once, then leave.
+    // Remove from device closed the file under the reader: leave once.
     private suspend fun leaveRemoved() {
         if (left) return
         left = true
-        effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_pdf_copy_removed)))
         effects.emit(ReaderEffect.NavigateBack)
     }
 }

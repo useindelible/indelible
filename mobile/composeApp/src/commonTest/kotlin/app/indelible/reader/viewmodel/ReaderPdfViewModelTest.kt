@@ -1,7 +1,6 @@
 package app.indelible.reader.viewmodel
 
 import androidx.lifecycle.ViewModelStore
-import app.indelible.core.i18n.UiMessage
 import app.indelible.core.offline.PagePosition
 import app.indelible.core.offline.ReadingPosition
 import app.indelible.reader.model.HighlightColor
@@ -12,8 +11,6 @@ import app.indelible.reader.model.TagData
 import app.indelible.reader.pdf.NormalizedRect
 import app.indelible.reader.repository.PdfCopy
 import app.indelible.reader.viewmodel.FakeReaderRepository.Companion.fakeItemDetail
-import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.reader_pdf_copy_removed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -146,7 +143,7 @@ class ReaderPdfViewModelTest {
         }
 
     @Test
-    fun removedCopyLeavesTheReaderWithAMessage() =
+    fun removedCopyLeavesTheReaderAtOnce() =
         runTest(testDispatcher) {
             val copies = MutableSharedFlow<PdfCopy>()
             repository.pdfCopyFlow = copies
@@ -160,15 +157,13 @@ class ReaderPdfViewModelTest {
             copies.emit(PdfCopy.Removed)
             advanceUntilIdle()
 
-            val removed = ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_pdf_copy_removed))
-            val expected = listOf(removed, ReaderEffect.NavigateBack)
-            assertEquals(expected, effects)
+            assertEquals(listOf<ReaderEffect>(ReaderEffect.NavigateBack), effects)
             assertEquals(1, document.closes)
             collecting.cancel()
         }
 
     @Test
-    fun backAfterTheRemovedMessageDoesNotLeaveTwice() =
+    fun backAfterTheRemovalDoesNotLeaveTwice() =
         runTest(testDispatcher) {
             val copies = MutableSharedFlow<PdfCopy>()
             repository.pdfCopyFlow = copies
