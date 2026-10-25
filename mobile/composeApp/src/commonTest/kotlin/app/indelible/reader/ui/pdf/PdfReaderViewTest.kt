@@ -160,7 +160,9 @@ class PdfReaderViewTest {
             waitForIdle()
             assertEquals(1, reports.readerTaps)
 
-            val actions = page(1).fetchSemanticsNode().config[SemanticsActions.CustomActions]
+            val config = page(1).fetchSemanticsNode().config
+            assertTrue(SemanticsActions.OnClick in config)
+            val actions = config[SemanticsActions.CustomActions]
             assertEquals(listOf("Open highlight"), actions.map { it.label })
             actions.single().action()
             waitForIdle()
