@@ -2,6 +2,7 @@ package app.indelible.reader.viewmodel
 
 import app.indelible.core.offline.PAGE_OFFSET_SCALE
 import app.indelible.core.offline.PagePosition
+import app.indelible.reader.model.PERCENT_MAX
 import kotlin.math.floor
 
 /** Where the view scrolls before revealing the pages: a 0-based page and a fraction of its height. */
@@ -23,8 +24,6 @@ data class PdfResume(
     val at: PagePosition?,
     val percent: Float,
 )
-
-private const val PERCENT_MAX = 100f
 
 /** The saved page clamped into the document, with its offset only when the page stood; else the percent's page. */
 fun pdfResumeTarget(

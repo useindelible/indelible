@@ -2,6 +2,7 @@ package app.indelible.reader.viewmodel
 
 import app.indelible.core.offline.PAGE_OFFSET_SCALE
 import app.indelible.core.offline.PagePosition
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.reader.model.PdfHighlightTarget
 import app.indelible.reader.model.PdfStatus
 import app.indelible.reader.pdf.PdfDocument
@@ -23,8 +24,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
-
-private const val PERCENT_MAX = 100f
 
 /** [document] is open only while [status] is READY; [download] is the copy's progress while waiting for it. */
 data class PdfReaderState(

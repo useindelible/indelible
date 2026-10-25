@@ -7,6 +7,7 @@ import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderPreferences
@@ -463,8 +464,6 @@ class ReaderViewModel(
         super.onCleared()
     }
 }
-
-private const val PERCENT_MAX = 100f
 
 /** A finished item opens at its start, so a reread does not begin on the last page. */
 private fun ReaderDocument.isFinished(): Boolean =

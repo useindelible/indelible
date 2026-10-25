@@ -26,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.i18n.LocalizedDateStyle
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
@@ -150,8 +151,6 @@ private fun LengthValue(
         textAlign = TextAlign.End,
     )
 }
-
-private const val PERCENT_MAX = 100f
 
 @Composable
 private fun ProgressValue(progress: Float) {

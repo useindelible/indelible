@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import app.indelible.reader.model.HighlightData
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.reader.model.PdfStatus
 import app.indelible.reader.pdf.pdfHighlightsByPage
 import app.indelible.reader.pdf.toneFor
@@ -22,7 +23,6 @@ import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.canvasFor
 
-private const val PERCENT_MAX = 100f
 private val NO_RECT = SelectionRect(0f, 0f, 0f, 0f)
 
 /** What the reader shows for a PDF: its pages, a spinner while the copy is checked, or why it is not open. */
