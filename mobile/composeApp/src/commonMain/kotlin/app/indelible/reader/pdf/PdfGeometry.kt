@@ -1,7 +1,5 @@
 package app.indelible.reader.pdf
 
-import kotlin.math.nextDown
-
 /** Unrotated page space in points, origin bottom-left, as the PDFKit and pdfium text APIs report. */
 data class PageSpaceRect(
     val x: Double,
@@ -20,6 +18,9 @@ private const val QUARTER_TURN = 90
 private const val HALF_TURN = 180
 private const val THREE_QUARTER_TURN = 270
 private const val LINE_OVERLAP = 0.5
+
+/** How far inside the far edges a clipped side ends; the server's float parse can land one ulp above the sum. */
+const val EDGE_MARGIN = 1e-9
 
 /** Glyph rects on one text line become one rect, the web's rule: vertical overlap over half the smaller height. */
 fun mergeLineRects(rects: List<NormalizedRect>): List<NormalizedRect> {
@@ -44,20 +45,10 @@ private fun overlapY(
 fun clipToPage(rect: NormalizedRect): NormalizedRect? {
     val left = maxOf(0.0, rect.x)
     val top = maxOf(0.0, rect.y)
-    val right = minOf(1.0, rect.x + rect.width)
-    val bottom = minOf(1.0, rect.y + rect.height)
+    val right = minOf(1.0 - EDGE_MARGIN, rect.x + rect.width)
+    val bottom = minOf(1.0 - EDGE_MARGIN, rect.y + rect.height)
     if (!(right > left && bottom > top)) return null
-    return NormalizedRect(left, top, insideEdge(left, right - left), insideEdge(top, bottom - top))
-}
-
-// `x + width` can round above 1.0 in Double, which the backend refuses, so the side steps down until it holds.
-private fun insideEdge(
-    start: Double,
-    length: Double,
-): Double {
-    var side = length
-    while (start + side > 1.0) side = side.nextDown()
-    return side
+    return NormalizedRect(left, top, right - left, bottom - top)
 }
 
 fun unionOf(rects: List<NormalizedRect>): NormalizedRect? {

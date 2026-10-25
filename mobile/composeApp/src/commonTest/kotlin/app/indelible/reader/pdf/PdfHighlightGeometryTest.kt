@@ -73,9 +73,21 @@ class PdfHighlightGeometryTest {
             val target = checkNotNull(pdfHighlightTarget(selection(rects = listOf(NormalizedRect(x, x, 2.0, 2.0)))))
             val rect = target.rects.single()
             assertTrue(rect.width > 0.0 && rect.height > 0.0, "empty at $x: $rect")
-            assertTrue(rect.x + rect.width <= 1.0 && rect.y + rect.height <= 1.0, "past the edge at $x: $rect")
-            assertTrue(target.x + target.width <= 1.0 && target.y + target.height <= 1.0, "box past the edge at $x")
+            assertTrue(rect.x + rect.width <= 1.0 - EDGE_MARGIN / 2, "past the edge at $x: $rect")
+            assertTrue(rect.y + rect.height <= 1.0 - EDGE_MARGIN / 2, "past the edge at $x: $rect")
+            assertTrue(target.x + target.width <= 1.0 - EDGE_MARGIN / 2, "box past the edge at $x")
+            assertTrue(target.y + target.height <= 1.0 - EDGE_MARGIN / 2, "box past the edge at $x")
         }
+    }
+
+    @Test
+    fun edgeRectLeavesRoomForTheServersFloatParse() {
+        val x = 0.9417539788507979
+        val target = checkNotNull(pdfHighlightTarget(selection(rects = listOf(NormalizedRect(x, 0.1, 0.5, 0.02)))))
+
+        val rect = target.rects.single()
+        assertEquals(x, rect.x)
+        assertTrue(rect.x + rect.width <= 1.0 - EDGE_MARGIN / 2, "a sum parsing just above 1.0 is refused: $rect")
     }
 
     @Test

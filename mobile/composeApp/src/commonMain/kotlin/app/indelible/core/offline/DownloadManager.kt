@@ -192,9 +192,10 @@ class DownloadManager(
         val key = DocumentKey(session.scope, documentId)
         lock.withLock {
             if (!pin && session.scope in autoCachePaused) return
-            // An unpinned duplicate of the running acquisition would only download the same set again; a
-            // cancelled one is being removed and the new request must wait for that removal instead.
-            val running = active?.takeIf { it.job.isActive }?.request
+            // An unpinned duplicate of the running acquisition would only download the same set again; one
+            // being removed is about to be cancelled, so a request made now must wait for that removal.
+            val beingRemoved = key in removing || key.scope in removingScopes
+            val running = active?.takeUnless { beingRemoved || !it.job.isActive }?.request
             if (!pin && running?.let { it.key == key && it.session === session } == true) return
             val merged = (queue[key] ?: parked.remove(key))?.takeIf { it.session === session }
             queue[key] = merged?.also { it.pin = it.pin || pin } ?: Request(session, documentId, pin)
