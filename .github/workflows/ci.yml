@@ -195,7 +195,7 @@ jobs:
         working-directory: .
         run: |
           git diff --unified=0 "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- mobile/gradle/libs.versions.toml \
-            | grep -qE '^[+-][^+-]\s*(pdfium|agp|composeMultiplatform|kotlin)\s*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
+            | grep -qE '^[+-][[:space:]]*(pdfium|agp|composeMultiplatform|kotlin)[[:space:]]*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
       - name: Decide whether the engine contract runs
         id: gate
         # The weekly run never drives a simulator; a manual run always does.
@@ -258,7 +258,7 @@ jobs:
         working-directory: .
         run: |
           git diff --unified=0 "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- mobile/gradle/libs.versions.toml \
-            | grep -qE '^[+-][^+-]\s*(pdfium|agp|composeMultiplatform|kotlin)\s*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
+            | grep -qE '^[+-][[:space:]]*(pdfium|agp|composeMultiplatform|kotlin)[[:space:]]*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
       - name: Decide whether the engine contract runs
         id: gate
         if: github.event_name != 'schedule'
