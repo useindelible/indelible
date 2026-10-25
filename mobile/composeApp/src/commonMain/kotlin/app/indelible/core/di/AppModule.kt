@@ -186,6 +186,10 @@ private fun Module.readerRepositories() {
             sessionProvider = { registry.current.value.session },
             clock = { getTimeMillis() },
             requestCache = { session, documentId -> downloads.cacheOnOpen(session, documentId) },
+            requestReadingCopy = { session, documentId -> downloads.requestForReading(session, documentId) },
+            acquisitions = downloads.acquisitions::observe,
+            hold = downloads::hold,
+            release = downloads::release,
         )
     }
     single {

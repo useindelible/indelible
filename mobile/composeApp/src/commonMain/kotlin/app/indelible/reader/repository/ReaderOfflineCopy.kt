@@ -4,6 +4,7 @@ import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentReaderResponse
 import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.HighlightListResponse
+import app.indelible.core.offline.Acquisition
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.DocumentRevision
 import app.indelible.core.offline.LocalChanges
@@ -29,6 +30,7 @@ import app.indelible.reader.model.toReaderDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okio.IOException
@@ -66,9 +68,14 @@ class ReaderOfflineCopy(
     private val sessionProvider: () -> Session?,
     private val clock: () -> Long,
     private val requestCache: suspend (Session, String) -> Unit,
+    requestReadingCopy: suspend (Session, String) -> Unit,
+    acquisitions: (String) -> Flow<Map<String, Acquisition>>,
+    hold: suspend (String, String) -> Unit,
+    release: suspend (String, String) -> Unit,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     val tags = OfflineTags(files, store, sessionProvider, FALLBACK_BUDGET_MS, dispatcher)
+    private val pdf = PdfCopySource(store, files, requestReadingCopy, acquisitions, hold, release)
 
     suspend fun document(
         documentId: String,
@@ -145,6 +152,12 @@ class ReaderOfflineCopy(
             if (store.cachedDocument(session.scope, documentId) == null) requestCache(session, documentId)
         }
     }
+
+    /** The absolute path of the copy's whole PDF, or null without a readable copy. */
+    suspend fun pdfFile(documentId: String): String? = sessionProvider()?.let { pdf.pdfFile(it.scope, documentId) }
+
+    /** The copy's PDF, or the reading download that brings one; the document is held while collected. */
+    fun pdfCopy(documentId: String): Flow<PdfCopy> = pdf.pdfCopy(sessionProvider, documentId)
 
     /** The chapter at [spineIndex], from the copy first, as [epubToc]. */
     suspend fun epubChapter(

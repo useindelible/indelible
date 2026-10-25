@@ -24,6 +24,7 @@ import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
 import app.indelible.reader.model.toTagData
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 
 interface ReaderRepository {
     suspend fun getItem(itemId: String): Result<ReaderDocument>
@@ -45,6 +46,9 @@ interface ReaderRepository {
     ): Result<String>
 
     suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult>
+
+    /** The PDF's offline copy, downloaded for reading when there is none; the copy is held while collected. */
+    fun pdfCopy(itemId: String): Flow<PdfCopy>
 
     suspend fun saveToLibrary(
         url: String,
@@ -152,6 +156,8 @@ class ApiReaderRepository internal constructor(
         itemId: String,
         spineIndex: Int,
     ) = offlineCopy.epubChapter(itemId, spineIndex) { readerApiService.fetchEpubChapter(itemId, spineIndex) }
+
+    override fun pdfCopy(itemId: String): Flow<PdfCopy> = offlineCopy.pdfCopy(itemId)
 
     override suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult> =
         readerApiService.reprocessDocument(itemId).map { response ->

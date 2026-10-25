@@ -12,7 +12,10 @@ import app.indelible.reader.model.HighlightTarget
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
+import app.indelible.reader.repository.PdfCopy
 import app.indelible.reader.repository.ReaderRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 
 class FakeReaderRepository : ReaderRepository {
@@ -41,6 +44,7 @@ class FakeReaderRepository : ReaderRepository {
     var deleteNoteResult: Result<Unit> = Result.success(Unit)
     var setHighlightTagsResult: Result<List<String>> = Result.success(emptyList())
     var listTagsResult: Result<List<TagData>> = Result.success(emptyList())
+    var pdfCopyFlow: Flow<PdfCopy> = flowOf(PdfCopy.Ready("/fake/document.pdf"))
     var reprocessDocumentResult: Result<ReaderReprocessResult> =
         Result.success(ReaderReprocessResult(queued = true, retryAfterSeconds = null))
     val contentCallLog = mutableListOf<String>()
@@ -92,6 +96,8 @@ class FakeReaderRepository : ReaderRepository {
     }
 
     override suspend fun getEpubToc(itemId: String): Result<EpubToc> = epubTocResult
+
+    override fun pdfCopy(itemId: String): Flow<PdfCopy> = pdfCopyFlow
 
     override suspend fun getEpubChapter(
         itemId: String,

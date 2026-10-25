@@ -36,6 +36,9 @@ sealed interface FetchResult {
     data object Stale : FetchResult
 }
 
+// The same preference the web reader uses when a PDF was stored under more than one kind.
+internal val PDF_KINDS = listOf("pdf", "original_upload")
+
 /** The server keeps no chapter list for a book, so no copy of it could be known complete. */
 open class ChapterListUnavailableException(
     message: String,
@@ -309,9 +312,6 @@ class OfflineSetFetcher(
         const val ARTICLE_TOC_FILE = "article_toc.json"
         const val EPUB_TOC_FILE = "epub_toc.json"
         const val PDF_FILE = "document.pdf"
-
-        // The same preference the web reader uses when a PDF was stored under more than one kind.
-        val PDF_KINDS = listOf("pdf", "original_upload")
 
         val json = Json { ignoreUnknownKeys = true }
 

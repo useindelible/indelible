@@ -28,6 +28,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -128,6 +129,10 @@ internal suspend fun TestScope.readerOutboxHarness(
                         sessionProvider = { registry.current.value.session },
                         clock = { testScheduler.currentTime },
                         requestCache = { _, _ -> },
+                        requestReadingCopy = { _, _ -> },
+                        acquisitions = { emptyFlow() },
+                        hold = { _, _ -> },
+                        release = { _, _ -> },
                         dispatcher = StandardTestDispatcher(testScheduler),
                     ),
                 capabilities = ServerCapabilities(transport, clock = { testScheduler.currentTime }),
