@@ -91,6 +91,37 @@ class PdfReaderViewLayoutTest {
         }
 
     @Test
+    fun recreatedViewAtAnotherWidthKeepsItsPlaceInThePage() =
+        runComposeUiTest {
+            var width by mutableStateOf(300.dp)
+            var generation by mutableStateOf(0)
+            val saved = SavedViews()
+            val reports =
+                show(
+                    Scripted().document,
+                    restore = { PdfRestoreRequest(1, 0.5f, 1) },
+                    height = 300.dp,
+                    width = { width },
+                    saved = saved,
+                    generation = { generation },
+                )
+            val first = assertNotNull(reports.samples.firstOrNull())
+            assertTrue(first.pageOffset in 0.48f..0.52f, "offset ${first.pageOffset}")
+
+            saved.state = saved.registries.last().performSave()
+            saved.hidden = true
+            waitForIdle()
+            width = 600.dp
+            generation++
+            saved.hidden = false
+            waitForIdle()
+
+            val sample = reports.samples.last()
+            assertEquals(2, sample.page)
+            assertTrue(sample.pageOffset in 0.48f..0.52f, "offset ${sample.pageOffset}")
+        }
+
+    @Test
     fun samplesAfterAZoomUseTheZoomedHeights() =
         runComposeUiTest {
             val zoom = PdfZoomState()

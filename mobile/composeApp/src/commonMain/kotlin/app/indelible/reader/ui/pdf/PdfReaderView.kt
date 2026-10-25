@@ -102,24 +102,26 @@ internal fun PdfReaderView(
         }
         val currentLayout by rememberUpdatedState(layout)
         val currentOnSample by rememberUpdatedState(onSample)
-        var latest by remember(document) { mutableStateOf<PdfScrollSample?>(null) }
-        var viewportSeen by remember(document) { mutableStateOf(constraints.maxWidth) }
+        var latestPage by rememberSaveable(document) { mutableStateOf(0) }
+        var latestOffset by rememberSaveable(document) { mutableStateOf(0f) }
+        var viewportSeen by rememberSaveable(document) { mutableStateOf(constraints.maxWidth) }
         // A rotation changes the page heights under the list; the place in the page is kept, not the px offset.
         LaunchedEffect(constraints.maxWidth) {
             if (viewportSeen == constraints.maxWidth) return@LaunchedEffect
             viewportSeen = constraints.maxWidth
-            val sample = latest ?: return@LaunchedEffect
-            if (heightsPx.isEmpty()) return@LaunchedEffect
-            val index = (sample.page - 1).coerceIn(0, heightsPx.lastIndex)
+            if (latestPage == 0 || heightsPx.isEmpty()) return@LaunchedEffect
+            val index = (latestPage - 1).coerceIn(0, heightsPx.lastIndex)
+            val pageOffset = latestOffset
             snapshotFlow { listState.layoutInfo.viewportSize.width }.first { it == itemWidthPx }
             withFrameNanos {}
-            listState.scrollToItem(index, restoreOffsetPx(sample.pageOffset, heightsPx[index]))
+            listState.scrollToItem(index, restoreOffsetPx(pageOffset, heightsPx[index]))
         }
         LaunchedEffect(listState, document) {
             snapshotFlow { listState.layoutInfo }.collect { info ->
                 if (revealed) {
                     currentLayout.sample(info, document.pageCount)?.let { sample ->
-                        latest = sample
+                        latestPage = sample.page
+                        latestOffset = sample.pageOffset
                         currentOnSample(sample)
                     }
                 }
