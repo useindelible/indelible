@@ -189,13 +189,13 @@ jobs:
               - 'mobile/composeApp/src/pdfContract/**'
               - 'mobile/composeApp/build.gradle.kts'
               - '.github/workflows/ci.yml'
-      - name: Did the pdfium version change
+      - name: Did an engine toolchain version change
         id: pdfium
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         working-directory: .
         run: |
           git diff --unified=0 "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- mobile/gradle/libs.versions.toml \
-            | grep -qE '^[+-][^+-].*pdfium' && echo changed=true >> "$GITHUB_OUTPUT" || true
+            | grep -qE '^[+-][^+-]\s*(pdfium|agp|composeMultiplatform|kotlin)\s*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
       - name: Decide whether the engine contract runs
         id: gate
         # The weekly run never drives a simulator; a manual run always does.
@@ -252,13 +252,13 @@ jobs:
               - 'mobile/composeApp/src/pdfContract/**'
               - 'mobile/composeApp/build.gradle.kts'
               - '.github/workflows/ci.yml'
-      - name: Did the pdfium version change
+      - name: Did an engine toolchain version change
         id: pdfium
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         working-directory: .
         run: |
           git diff --unified=0 "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- mobile/gradle/libs.versions.toml \
-            | grep -qE '^[+-][^+-].*pdfium' && echo changed=true >> "$GITHUB_OUTPUT" || true
+            | grep -qE '^[+-][^+-]\s*(pdfium|agp|composeMultiplatform|kotlin)\s*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
       - name: Decide whether the engine contract runs
         id: gate
         if: github.event_name != 'schedule'

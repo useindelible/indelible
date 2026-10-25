@@ -42,6 +42,8 @@ internal object PdfFixtures {
             ),
         )
     val rotated = plain.map { it.copy(rotation = 90) }
+    val rotatedHalf = plain.map { it.copy(rotation = 180) }
+    val rotatedThreeQuarters = plain.map { it.copy(rotation = 270) }
 
     val columns =
         listOf(
@@ -65,6 +67,16 @@ internal object PdfFixtures {
                 listOf(FixtureText("Cropped words", 100.0, 600.0)),
                 crop = PageSpaceRect(50.0, 100.0, 512.0, 592.0),
             ),
+        )
+    val croppedRotated = cropped.map { it.copy(rotation = 90) }
+
+    /** Every rotation of the plain page plus the rotated crop, named for test messages. */
+    val turned =
+        listOf(
+            "rotated" to rotated,
+            "rotatedHalf" to rotatedHalf,
+            "rotatedThreeQuarters" to rotatedThreeQuarters,
+            "croppedRotated" to croppedRotated,
         )
     val multi =
         listOf(LETTER_W to LETTER_H, LETTER_H to LETTER_W, 300.0 to 300.0).mapIndexed { index, (w, h) ->

@@ -90,15 +90,19 @@ class PdfEngineContractTest {
         }
 
     @Test
-    fun selectionOnARotatedPageIsInDisplayCoordinates() =
+    fun selectionOnATurnedPageIsInDisplayCoordinates() =
         runTest {
-            val page = PdfFixtures.rotated.single()
-            open("rotated", PdfFixtures.rotated) { document ->
+            for ((name, pages) in PdfFixtures.turned) {
+                val page = pages.single()
                 val line = page.lines[0]
-                val selection =
-                    assertNotNull(document.select(0, pointIn(page, line, 4..8), pointIn(page, line, 16..18)))
-                assertEquals("quick brown fox", selection.text.trim())
-                assertRectMatches(expectedRect(page, line, 4..18), selection.rects.single(), page.rotation)
+                val words = if (line.text.startsWith("The")) 4..18 else 0..12
+                val start = pointIn(page, line, words.first..words.first + 4)
+                val end = pointIn(page, line, words.last - 2..words.last)
+                open(name, pages) { document ->
+                    val selection = assertNotNull(document.select(0, start, end), name)
+                    assertEquals(line.text.substring(words), selection.text.trim(), name)
+                    assertRectMatches(expectedRect(page, line, words), selection.rects.single(), page.rotation)
+                }
             }
         }
 
@@ -235,8 +239,7 @@ class PdfEngineContractTest {
     @Test
     fun renderPutsInkWhereTheTextRectsSay() =
         runTest {
-            val fixtures =
-                listOf("plain" to PdfFixtures.plain, "rotated" to PdfFixtures.rotated, "cropped" to PdfFixtures.cropped)
+            val fixtures = listOf("plain" to PdfFixtures.plain, "cropped" to PdfFixtures.cropped) + PdfFixtures.turned
             for ((name, pages) in fixtures) {
                 val page = pages.single()
                 open(name, pages) { document ->
@@ -245,8 +248,8 @@ class PdfEngineContractTest {
                         val rect = expectedRect(page, line)
                         assertTrue(luminance(bitmap, rect) < NEAR_WHITE - INK_CONTRAST, "$name: no ink in $rect")
                     }
-                    val margin = luminance(bitmap, NormalizedRect(0.6, 0.6, 0.3, 0.3))
-                    assertTrue(margin >= NEAR_WHITE, "$name: ink in the margin")
+                    val blank = luminance(bitmap, NormalizedRect(0.4, 0.4, 0.2, 0.2))
+                    assertTrue(blank >= NEAR_WHITE, "$name: ink in the blank centre")
                 }
             }
         }
