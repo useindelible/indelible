@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,8 +61,8 @@ fun ReaderScreen(
 
     var selectedText by remember { mutableStateOf<SelectedTextInfo?>(null) }
     var tappedHighlight by remember { mutableStateOf<HighlightData?>(null) }
-    var tagSheetHighlightId by remember { mutableStateOf<String?>(null) }
-    var noteSheetHighlightId by remember { mutableStateOf<String?>(null) }
+    var tagSheetHighlightId by rememberSaveable { mutableStateOf<String?>(null) }
+    var noteSheetHighlightId by rememberSaveable { mutableStateOf<String?>(null) }
     var availableTags by remember { mutableStateOf<List<TagData>>(emptyList()) }
     var scrollToPercent by remember { mutableStateOf<Float?>(null) }
     var anchorScroll by remember { mutableStateOf<AnchorScrollRequest?>(null) }

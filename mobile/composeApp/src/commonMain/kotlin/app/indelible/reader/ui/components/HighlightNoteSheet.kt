@@ -15,7 +15,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -62,8 +62,8 @@ internal fun HighlightNoteEditor(
     modifier: Modifier = Modifier,
 ) {
     // The sheet edits the note it opened with; a note that arrives from a sync meanwhile is never deleted by Save.
-    val opened = remember(highlight.id) { highlight.note?.body }
-    var body by remember(highlight.id) { mutableStateOf(opened.orEmpty()) }
+    val opened = rememberSaveable(highlight.id) { mutableStateOf(highlight.note?.body) }.value
+    var body by rememberSaveable(highlight.id) { mutableStateOf(opened.orEmpty()) }
     val hasNote = opened != null
     val changed = body.trim() != opened.orEmpty().trim()
     val save = {

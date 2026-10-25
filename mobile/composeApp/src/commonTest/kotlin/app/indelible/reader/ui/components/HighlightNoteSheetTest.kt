@@ -2,8 +2,12 @@ package app.indelible.reader.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
+import androidx.compose.runtime.saveable.SaveableStateRegistry
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -112,5 +116,33 @@ class HighlightNoteSheetTest {
             onNode(hasSetTextAction()).performTextInput("line\n".repeat(80))
 
             onNodeWithText("Save").assertIsDisplayed()
+        }
+
+    @Test
+    fun typedNoteSurvivesRecreation() =
+        runComposeUiTest {
+            var state: Map<String, List<Any?>>? = null
+            var hidden by mutableStateOf(false)
+            var generation by mutableStateOf(0)
+            val registries = mutableListOf<SaveableStateRegistry>()
+            setContent {
+                val registry = remember(generation) { SaveableStateRegistry(state) { true } }
+                registries += registry
+                CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
+                    if (!hidden) {
+                        AppTheme { HighlightNoteEditor(fakeHighlight(), onSave = {}, onDeleteNote = {}) }
+                    }
+                }
+            }
+
+            onNode(hasSetTextAction()).performTextInput("A thought")
+            state = registries.last().performSave()
+            hidden = true
+            waitForIdle()
+            generation++
+            hidden = false
+            waitForIdle()
+
+            onNodeWithText("A thought").assertIsDisplayed()
         }
 }
