@@ -13,7 +13,6 @@ interface PdfDocument : AutoCloseable {
     /** Points, after the crop box and /Rotate are applied (display orientation). */
     val pageSizes: List<PdfPageSize>
 
-    /** A bitmap [widthPx] wide, height from the page's aspect, with [tone] applied. */
     suspend fun render(
         pageIndex: Int,
         widthPx: Int,

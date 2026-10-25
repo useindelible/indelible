@@ -42,7 +42,6 @@ private fun heightFor(
     aspect: Double,
 ): Int = (width * aspect).roundToInt().coerceIn(1, MAX_RENDER_HEIGHT_PX)
 
-/** The widest render of [page] that stays inside every bound; never above [layoutWidthPx]. */
 fun renderWidthFor(
     page: PdfPageSize,
     layoutWidthPx: Int,
