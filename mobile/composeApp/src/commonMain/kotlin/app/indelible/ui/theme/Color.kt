@@ -108,6 +108,8 @@ val PurpleDark = Color(0xFFBF5AF2)
 // READER SURFACES — native reader canvas (behind WebView aura)
 // ============================================================
 val ReaderBgPaper = Color(0xFFFBFAF6)
+val ReaderBgSepia = Color(0xFFF4ECD8)
+val ReaderBgSlate = Color(0xFF22272E)
 val ReaderBgDark = Color(0xFF0D1117)
 val ReaderInkLight = Color(0xFF1B1712)
 val ReaderInkDark = Color(0xFFE9EEF4)
@@ -125,13 +127,6 @@ val ReaderSwatchSlate = Color(0xFF22272E)
 // accent-line = accent @ 0.35 light / accent-strong @ 0.45 dark
 val AccentLineLight = Color(0x590969DA)
 val AccentLineDark = Color(0x73388BFD)
-
-// ============================================================
-// AURA palettes — three blob stops each, drawn behind the
-// ============================================================
-
-
-
 
 // ============================================================
 // ALWAYS-FIXED

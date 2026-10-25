@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import app.indelible.reader.model.ReaderBackground
 import app.indelible.ui.platform.StatusBarAppearance
 
 // ============================================================
@@ -93,6 +94,43 @@ private val DarkColorScheme =
         inversePrimary = AccentLight,
     )
 
+/** The colour behind PDF pages for each reader background; the same in both themes, as the pages are. */
+@Immutable
+data class ReaderCanvasColors(
+    val paper: Color,
+    val sepia: Color,
+    val slate: Color,
+    val black: Color,
+)
+
+fun ReaderCanvasColors.canvasFor(background: ReaderBackground): Color =
+    when (background) {
+        ReaderBackground.PAPER -> paper
+        ReaderBackground.SEPIA -> sepia
+        ReaderBackground.SLATE -> slate
+        ReaderBackground.BLACK -> black
+    }
+
+/** The fill behind highlighted PDF text, one per API colour; `bookmark` has none and is never drawn. */
+@Immutable
+data class HighlightFills(
+    val yellow: Color,
+    val blue: Color,
+    val green: Color,
+    val pink: Color,
+    val purple: Color,
+)
+
+fun HighlightFills.forApiColor(color: String): Color? =
+    when (color) {
+        "yellow" -> yellow
+        "blue" -> blue
+        "green" -> green
+        "pink" -> pink
+        "purple" -> purple
+        else -> null
+    }
+
 // ============================================================
 // EXTENDED COLORS — semantic slots beyond MaterialTheme
 // ============================================================
@@ -129,10 +167,13 @@ data class IndelibleExtendedColors(
     val accentLine: Color,
     /** Stronger accent stop, paired with the primary accent for gradient fills. */
     val accentStrong: Color,
-    /** Three-stop aura blob palettes, indexed by [app.indelible.ui.components.AuraStyle]. */
     /** Reader background swatches (paper, sepia, slate, black) for display settings. */
     val readerBackgroundSwatches: List<Color>,
+    val readerCanvas: ReaderCanvasColors,
+    val highlightFills: HighlightFills,
 )
+
+private val ReaderCanvas = ReaderCanvasColors(ReaderBgPaper, ReaderBgSepia, ReaderBgSlate, ReaderBgDark)
 
 private val LightExtendedColors =
     IndelibleExtendedColors(
@@ -163,6 +204,15 @@ private val LightExtendedColors =
         accentLine = AccentLineLight,
         accentStrong = AccentHoverLight,
         readerBackgroundSwatches = listOf(ReaderBgPaper, ReaderSwatchSepia, ReaderSwatchSlate, ReaderBgDark),
+        readerCanvas = ReaderCanvas,
+        highlightFills =
+            HighlightFills(
+                HighlightYellowLight,
+                HighlightBlueLight,
+                HighlightGreenLight,
+                HighlightPinkLight,
+                HighlightPurpleLight,
+            ),
     )
 
 private val DarkExtendedColors =
@@ -194,6 +244,15 @@ private val DarkExtendedColors =
         accentLine = AccentLineDark,
         accentStrong = AccentHoverDark,
         readerBackgroundSwatches = listOf(ReaderBgPaper, ReaderSwatchSepia, ReaderSwatchSlate, ReaderBgDark),
+        readerCanvas = ReaderCanvas,
+        highlightFills =
+            HighlightFills(
+                HighlightYellowDark,
+                HighlightBlueDark,
+                HighlightGreenDark,
+                HighlightPinkDark,
+                HighlightPurpleDark,
+            ),
     )
 
 val LocalIndelibleColors = staticCompositionLocalOf { LightExtendedColors }
