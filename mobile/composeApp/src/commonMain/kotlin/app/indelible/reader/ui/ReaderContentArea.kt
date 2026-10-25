@@ -71,7 +71,7 @@ internal fun ReaderContentArea(
                 viewModel = viewModel,
             )
 
-        ReaderContentMode.PDF_COMING_SOON ->
+        ReaderContentMode.PDF ->
             ReaderComingSoonContent(
                 format = ReaderComingSoonFormat.PDF,
                 modifier = Modifier.fillMaxSize(),

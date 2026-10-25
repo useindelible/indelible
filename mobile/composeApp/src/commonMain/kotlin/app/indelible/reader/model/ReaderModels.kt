@@ -9,12 +9,8 @@ import app.indelible.api.generated.models.TagResponse
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
-/**
- * What the reader renders for the current item. The reader is HTML-only; PDF
- * items and EPUB books (item type `book`) show a coming-soon placeholder until
- * their dedicated readers ship.
- */
-enum class ReaderContentMode { HTML, PDF_COMING_SOON, EPUB }
+/** What the reader renders for the current item: an article's HTML, a PDF's pages, or a book's chapters. */
+enum class ReaderContentMode { HTML, PDF, EPUB }
 
 enum class ReaderTheme { LIGHT, DARK, SEPIA, AUTO }
 

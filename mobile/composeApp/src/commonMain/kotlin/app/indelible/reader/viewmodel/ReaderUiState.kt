@@ -43,6 +43,7 @@ sealed class ReaderUiState {
         val retryAfterSeconds: Long? = null,
         val toc: TocPanelState = TocPanelState(),
         val epub: EpubReaderState? = null,
+        val pdf: PdfReaderState? = null,
     ) : ReaderUiState()
 
     data class Error(

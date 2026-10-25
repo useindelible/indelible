@@ -3,8 +3,6 @@ package app.indelible.reader.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
-import app.indelible.core.offline.ChapterPosition
-import app.indelible.core.offline.readingPositionOf
 import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.DataPanel
@@ -13,6 +11,9 @@ import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderPreferences
 import app.indelible.reader.model.TagData
+import app.indelible.reader.pdf.PdfDocument
+import app.indelible.reader.pdf.PdfEngine
+import app.indelible.reader.pdf.PdfSelection
 import app.indelible.reader.playback.PlaybackState
 import app.indelible.reader.playback.ReaderPlaybackController
 import app.indelible.reader.playback.ReaderVoice
@@ -41,6 +42,7 @@ class ReaderViewModel(
     private val repository: ReaderRepository,
     private val initialPreferences: ReaderPreferences = ReaderPreferences(),
     private val readingEvents: ReadingEventWriter,
+    openPdf: suspend (String) -> PdfDocument = PdfEngine::open,
 ) : ViewModel() {
     /** One sitting: every event this reader records is grouped under it. */
     private val sessionId = uuidV7()
@@ -60,10 +62,6 @@ class ReaderViewModel(
     val playbackState: StateFlow<PlaybackState> = playbackController.state
     val voices: List<ReaderVoice> get() = playbackController.voices
 
-    /** The open book's reading session; null for anything else. */
-    var epubSession: EpubReaderSession? = null
-        private set
-
     private var leaving = false
 
     private val bookChapterMissing: Boolean
@@ -80,6 +78,14 @@ class ReaderViewModel(
         ReaderProgressSync(viewModelScope) { percent, position ->
             readingEvents.recordProgress(documentId, percent, sessionId, position)
         }
+    private val sessions =
+        ReaderSessions(documentId, repository, viewModelScope, progressSync, openPdf, ::updateSuccessState, _effects)
+
+    /** The open book's reading session; null for anything else. */
+    val epubSession: EpubReaderSession? get() = sessions.epub
+
+    /** The open PDF's reading session; null for anything else. */
+    val pdfSession: PdfReaderSession? get() = sessions.pdf
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
 
@@ -101,12 +107,14 @@ class ReaderViewModel(
                 .onSuccess { item ->
                     val contentMode =
                         when (item.itemType) {
-                            "pdf" -> ReaderContentMode.PDF_COMING_SOON
+                            "pdf" -> ReaderContentMode.PDF
                             "book" -> ReaderContentMode.EPUB
                             else -> ReaderContentMode.HTML
                         }
                     val finished = item.isFinished()
                     val savedProgress = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
+                    val isPdf = contentMode == ReaderContentMode.PDF
+                    val toc = if (isPdf) TocPanelState(TocStatus.NONE) else TocPanelState()
 
                     _uiState.value =
                         ReaderUiState.Success(
@@ -116,6 +124,7 @@ class ReaderViewModel(
                             highlights = emptyList(),
                             progress = savedProgress,
                             preferences = preferences,
+                            toc = toc,
                         )
 
                     recordOpened()
@@ -125,8 +134,8 @@ class ReaderViewModel(
                             htmlLoader.loadHtmlContent()
                             htmlLoader.loadArticleToc()
                         }
-                        ReaderContentMode.EPUB -> openBook(item, finished)
-                        ReaderContentMode.PDF_COMING_SOON -> Unit
+                        ReaderContentMode.EPUB -> sessions.openBook(item, finished)
+                        ReaderContentMode.PDF -> sessions.openPdf(item, finished)
                     }
                     loadHighlights()
                     loadItemNoteAndTags()
@@ -135,24 +144,6 @@ class ReaderViewModel(
                     _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
                 }
         }
-    }
-
-    private fun openBook(
-        item: ReaderDocument,
-        finished: Boolean,
-    ) {
-        val locator = item.chapterLocator?.takeUnless { finished }
-        val resumeAt = locator?.let { readingPositionOf(it, item.chapterOffset ?: 0) as? ChapterPosition }
-        val session = EpubReaderSession(documentId, repository, viewModelScope, progressSync, resumeAt)
-        epubSession = session
-        viewModelScope.launch {
-            session.state.collect { epub ->
-                updateSuccessState {
-                    it.copy(epub = epub, progress = epub.percent ?: it.progress, toc = epub.contentsPanel())
-                }
-            }
-        }
-        session.open()
     }
 
     fun onTocEntryTapped(entry: ArticleTocEntry) {
@@ -338,20 +329,18 @@ class ReaderViewModel(
         progressTrackingEnabled = true
     }
 
-    /** The app leaves the screen: a book writes where its reader is. */
+    /** The app leaves the screen: a book or PDF writes where its reader is. */
     fun onStop() {
-        val book = epubSession ?: return
-        viewModelScope.launch { book.captureAndFlush() }
+        if (epubSession == null && pdfSession == null) return
+        viewModelScope.launch { sessions.captureAndFlush() }
     }
 
     /** Leaves once the newest position is written; a book first asks its chapter where the reader is. */
     fun navigateBack() {
         if (leaving) return
         leaving = true
-        val book = epubSession
-        if (book == null) progressSync.flush()
         viewModelScope.launch {
-            book?.captureAndFlush()
+            sessions.captureAndFlush()
             _effects.emit(ReaderEffect.NavigateBack)
             leaving = false
         }
@@ -374,6 +363,16 @@ class ReaderViewModel(
         onCreated: (String) -> Unit,
     ) {
         if (!bookChapterMissing) highlightActions.createHighlight(color, textContent, startOffset, endOffset, onCreated)
+    }
+
+    /** A PDF selection becomes a highlight on its page; nothing is created when clipping leaves no box. */
+    fun createPdfHighlight(
+        color: HighlightColor,
+        selection: PdfSelection,
+        onCreated: (String) -> Unit = {},
+    ) {
+        val target = pdfSession?.highlightTarget(selection) ?: return
+        highlightActions.createPdfHighlight(color, target, selection.text.trim(), onCreated)
     }
 
     fun deleteHighlight(highlightId: String) = highlightActions.deleteHighlight(highlightId)
@@ -448,6 +447,7 @@ class ReaderViewModel(
     }
 
     override fun onCleared() {
+        sessions.close()
         playbackController.release()
         super.onCleared()
     }

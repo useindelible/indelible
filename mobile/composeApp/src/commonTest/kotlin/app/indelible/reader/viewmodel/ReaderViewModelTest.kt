@@ -102,14 +102,14 @@ class ReaderViewModelTest {
         }
 
     @Test
-    fun pdf_item_uses_pdf_coming_soon_mode_without_fetching_html() =
+    fun pdf_item_uses_pdf_mode_without_fetching_html() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail(itemType = "pdf"))
             viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
             advanceUntilIdle()
 
             val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
-            assertEquals(ReaderContentMode.PDF_COMING_SOON, state.contentMode)
+            assertEquals(ReaderContentMode.PDF, state.contentMode)
             assertNull(state.htmlContent)
         }
 
