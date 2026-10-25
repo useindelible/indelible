@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
@@ -40,6 +41,7 @@ import app.indelible.reader.viewmodel.PdfRestoreRequest
 import app.indelible.reader.viewmodel.PdfScrollSample
 import app.indelible.ui.theme.HighlightFills
 import app.indelible.ui.theme.IndelibleSpacing
+import kotlinx.coroutines.flow.first
 import kotlin.math.roundToInt
 
 private const val NO_NONCE = -1L
@@ -97,9 +99,27 @@ internal fun PdfReaderView(
         }
         val currentLayout by rememberUpdatedState(layout)
         val currentOnSample by rememberUpdatedState(onSample)
+        var latest by remember(document) { mutableStateOf<PdfScrollSample?>(null) }
+        var viewportSeen by remember(document) { mutableStateOf(constraints.maxWidth) }
+        // A rotation changes the page heights under the list; the place in the page is kept, not the px offset.
+        LaunchedEffect(constraints.maxWidth) {
+            if (viewportSeen == constraints.maxWidth) return@LaunchedEffect
+            viewportSeen = constraints.maxWidth
+            val sample = latest ?: return@LaunchedEffect
+            if (heightsPx.isEmpty()) return@LaunchedEffect
+            val index = (sample.page - 1).coerceIn(0, heightsPx.lastIndex)
+            snapshotFlow { listState.layoutInfo.viewportSize.width }.first { it == itemWidthPx }
+            withFrameNanos {}
+            listState.scrollToItem(index, restoreOffsetPx(sample.pageOffset, heightsPx[index]))
+        }
         LaunchedEffect(listState, document) {
             snapshotFlow { listState.layoutInfo }.collect { info ->
-                if (revealed) currentLayout.sample(info, document.pageCount)?.let(currentOnSample)
+                if (revealed) {
+                    currentLayout.sample(info, document.pageCount)?.let { sample ->
+                        latest = sample
+                        currentOnSample(sample)
+                    }
+                }
             }
         }
 

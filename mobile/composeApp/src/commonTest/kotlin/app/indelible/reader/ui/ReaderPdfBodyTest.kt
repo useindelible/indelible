@@ -1,8 +1,10 @@
 package app.indelible.reader.ui
 
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
@@ -11,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
@@ -81,6 +84,8 @@ class ReaderPdfBodyTest {
     private fun ComposeUiTest.show(
         pdf: PdfReaderState,
         highlights: List<HighlightData> = emptyList(),
+        topInset: Int = 0,
+        density: Float = 1f,
     ): Reports {
         val reports = Reports()
         val state =
@@ -94,25 +99,36 @@ class ReaderPdfBodyTest {
                 pdf = pdf,
             )
         setContent {
-            AppTheme {
-                ReaderPdfBody(
-                    state = state,
-                    pdf = pdf,
-                    session = session,
-                    selectedText = null,
-                    topChromeInsetPx = 0,
-                    onSelectedTextChanged = { reports.selected += it },
-                    onTappedHighlightChanged = { reports.tapped += it },
-                    onReaderTap = {},
-                    handleScrollProgress = { percent, top -> reports.progress += percent to top },
-                    onOpenStorage = {},
-                    modifier = Modifier.size(300.dp, 700.dp),
-                )
+            CompositionLocalProvider(LocalDensity provides Density(density)) {
+                AppTheme {
+                    ReaderPdfBody(
+                        state = state,
+                        pdf = pdf,
+                        session = session,
+                        selectedText = null,
+                        topChromeInsetPx = topInset,
+                        onSelectedTextChanged = { reports.selected += it },
+                        onTappedHighlightChanged = { reports.tapped += it },
+                        onReaderTap = {},
+                        handleScrollProgress = { percent, top -> reports.progress += percent to top },
+                        onOpenStorage = {},
+                        modifier = Modifier.size(300.dp, 700.dp),
+                    )
+                }
             }
         }
         waitForIdle()
         return reports
     }
+
+    @Test
+    fun topInsetIsTheChromeHeightInDp() =
+        runComposeUiTest {
+            show(ready(), topInset = 48, density = 2f)
+
+            val top = onNodeWithContentDescription("Page 1 of 3").fetchSemanticsNode().positionInRoot.y
+            assertEquals(96f, top)
+        }
 
     @Test
     fun readyPdfReportsASelectionWithItsPdfGeometry() =

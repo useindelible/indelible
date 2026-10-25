@@ -8,6 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.PdfStatus
 import app.indelible.reader.pdf.pdfHighlightsByPage
@@ -57,7 +59,7 @@ internal fun ReaderPdfBody(
                 highlightFills = IndelibleTheme.colors.highlightFills,
                 restore = pdf.restore,
                 activeSelection = selectedText?.pdf,
-                topInsetPx = topChromeInsetPx,
+                topInsetPx = with(LocalDensity.current) { topChromeInsetPx.dp.roundToPx() },
                 onPositioned = session::onPositioned,
                 onSample = { sample ->
                     handleScrollProgress(sample.fraction * PERCENT_MAX, sample.scrollTopDp)

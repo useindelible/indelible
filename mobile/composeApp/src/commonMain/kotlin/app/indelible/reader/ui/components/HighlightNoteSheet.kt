@@ -81,7 +81,7 @@ internal fun HighlightNoteEditor(
     ) {
         Text(
             text = stringResource(Res.string.reader_highlight_note_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(IndelibleSpacing.step8))
