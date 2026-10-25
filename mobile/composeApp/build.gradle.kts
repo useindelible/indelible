@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -312,7 +313,14 @@ kotlin {
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
         }
+        iosTest {
+            kotlin.srcDir("src/pdfContract/kotlin")
+        }
     }
+}
+
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    device.set("iPhone 16")
 }
 
 android {

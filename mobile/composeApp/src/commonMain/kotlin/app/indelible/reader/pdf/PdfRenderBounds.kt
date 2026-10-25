@@ -8,6 +8,38 @@ const val MAX_RENDER_WIDTH_PX = 3072
 const val MAX_RENDER_HEIGHT_PX = 4096
 const val MAX_RENDER_PIXELS = 12_000_000L
 private const val BYTES_PER_PIXEL = 4L
+private const val LETTER_WIDTH = 612.0
+private const val LETTER_HEIGHT = 792.0
+
+data class PdfRenderSize(
+    val width: Int,
+    val height: Int,
+)
+
+/** A page the engine could not measure (0x0, NaN or negative) renders as US Letter rather than crashing. */
+fun safePageSize(
+    width: Double,
+    height: Double,
+): PdfPageSize {
+    val measured = listOf(width, height).all { it.isFinite() && it > 0.0 }
+    return if (measured) PdfPageSize(width, height) else PdfPageSize(LETTER_WIDTH, LETTER_HEIGHT)
+}
+
+/** The bitmap for [page] at most [layoutWidthPx] wide that stays inside every bound, height from the aspect. */
+fun renderSizeFor(
+    page: PdfPageSize,
+    layoutWidthPx: Int,
+): PdfRenderSize {
+    val aspect = page.height / page.width
+    var width = renderWidthFor(page, layoutWidthPx)
+    while (width > 1 && width.toLong() * heightFor(width, aspect) > MAX_RENDER_PIXELS) width--
+    return PdfRenderSize(width, heightFor(width, aspect))
+}
+
+private fun heightFor(
+    width: Int,
+    aspect: Double,
+): Int = maxOf(1, (width * aspect).roundToInt())
 
 /** The widest render of [page] that stays inside every bound; never above [layoutWidthPx]. */
 fun renderWidthFor(

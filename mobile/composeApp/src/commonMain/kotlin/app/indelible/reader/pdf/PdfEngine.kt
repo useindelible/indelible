@@ -2,6 +2,10 @@ package app.indelible.reader.pdf
 
 import androidx.compose.ui.graphics.ImageBitmap
 
+expect object PdfEngine {
+    suspend fun open(path: String): PdfDocument
+}
+
 /** One open PDF; calls are serialised by the engine; every page index is 0-based. */
 interface PdfDocument : AutoCloseable {
     val pageCount: Int
