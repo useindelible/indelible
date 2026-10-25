@@ -219,7 +219,8 @@ class DownloadReadingRequestTest {
             runCurrent()
 
             val readers = listOf("/api/v1/documents/doc_c", "/api/v1/documents/doc_b")
-            assertEquals(readers, h.server.calls.map { it.path }.filter { it in readers })
+            val readerCalls = h.server.calls.map { it.path }
+            assertEquals(readers, readerCalls.filter { it in readers })
         }
 
     @Test

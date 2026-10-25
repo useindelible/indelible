@@ -2,6 +2,7 @@ package app.indelible.reader.pdf
 
 import okio.FileSystem
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.SYSTEM
 import kotlin.random.Random
 
@@ -95,6 +96,20 @@ internal object PdfFixtures {
         name: String,
         pages: List<FixturePage>,
     ): String = writeBytes(name, pdf(pages))
+
+    /** Writes the fixture, runs [block] on its path and deletes the file afterwards. */
+    suspend fun <T> using(
+        name: String,
+        pages: List<FixturePage>,
+        block: suspend (String) -> T,
+    ): T {
+        val path = write(name, pages)
+        try {
+            return block(path)
+        } finally {
+            FileSystem.SYSTEM.delete(path.toPath(), mustExist = false)
+        }
+    }
 
     fun writeBytes(
         name: String,

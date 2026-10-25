@@ -36,8 +36,10 @@ fun mergeLineRects(rects: List<NormalizedRect>): List<NormalizedRect> {
     return lines
 }
 
-private fun hasArea(rect: NormalizedRect): Boolean =
-    rect.x.isFinite() && rect.y.isFinite() && rect.width > 0 && rect.height > 0
+private fun hasArea(rect: NormalizedRect): Boolean {
+    val anchored = rect.x.isFinite() && rect.y.isFinite()
+    return anchored && rect.width > 0 && rect.height > 0
+}
 
 private fun overlapY(
     a: NormalizedRect,

@@ -6,9 +6,6 @@ import androidx.compose.ui.graphics.toPixelMap
 import app.indelible.reader.pdf.PdfFixtures.expectedRect
 import app.indelible.reader.pdf.PdfFixtures.pointIn
 import kotlinx.coroutines.test.runTest
-import okio.FileSystem
-import okio.Path.Companion.toPath
-import okio.SYSTEM
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -36,14 +33,7 @@ class PdfEngineContractTest {
         name: String,
         pages: List<FixturePage>,
         block: suspend (PdfDocument) -> T,
-    ): T {
-        val path = PdfFixtures.write(name, pages)
-        try {
-            return PdfEngine.open(path).use { block(it) }
-        } finally {
-            FileSystem.SYSTEM.delete(path.toPath(), mustExist = false)
-        }
-    }
+    ): T = PdfFixtures.using(name, pages) { path -> PdfEngine.open(path).use { block(it) } }
 
     private val plain = PdfFixtures.plain.single()
     private val firstLine = plain.lines[0]

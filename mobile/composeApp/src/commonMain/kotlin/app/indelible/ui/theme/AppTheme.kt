@@ -134,8 +134,10 @@ fun HighlightFills.fill(color: HighlightColor): Color =
         HighlightColor.PURPLE -> purple
     }
 
-fun HighlightFills.forApiColor(color: String): Color? =
-    HighlightColor.entries.firstOrNull { it.apiValue == color }?.let(::fill)
+fun HighlightFills.forApiColor(color: String): Color? {
+    val known = HighlightColor.entries.firstOrNull { it.apiValue == color }
+    return known?.let(::fill)
+}
 
 // ============================================================
 // EXTENDED COLORS — semantic slots beyond MaterialTheme

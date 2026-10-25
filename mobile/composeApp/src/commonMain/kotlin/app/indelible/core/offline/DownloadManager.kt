@@ -387,7 +387,8 @@ class DownloadManager(
         lock.withLock {
             // Only a network failure can clear on reconnect; any other failure waits for a new request.
             request.retryOnReconnect =
-                acquisition !is Acquisition.Failed || acquisition.reason == DownloadFailure.NETWORK
+                acquisition !is Acquisition.Failed ||
+                acquisition.reason == DownloadFailure.NETWORK
             parked[request.key] = request
         }
         settle(request.key, acquisition)

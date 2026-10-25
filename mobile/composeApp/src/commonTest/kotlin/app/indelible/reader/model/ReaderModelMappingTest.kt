@@ -15,6 +15,14 @@ import kotlin.test.assertTrue
 
 class ReaderModelMappingTest {
     @Test
+    fun onlyPagedAndChapteredContentCapturesItsPosition() {
+        assertEquals(
+            listOf(ReaderContentMode.PDF, ReaderContentMode.EPUB),
+            ReaderContentMode.entries.filter { it.capturesPosition },
+        )
+    }
+
+    @Test
     fun epubLocatorRoundTripsItsChapter() {
         val server = LocatorSchemaFlat(type = "epub", chapter = "ch3", startOffset = 12, endOffset = 40)
 

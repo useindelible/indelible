@@ -9,8 +9,17 @@ import app.indelible.api.generated.models.TagResponse
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
-/** What the reader renders for the current item: an article's HTML, a PDF's pages, or a book's chapters. */
-enum class ReaderContentMode { HTML, PDF, EPUB }
+/**
+ * What the reader renders for the current item: an article's HTML, a PDF's pages, or a book's chapters.
+ * Paged and chaptered content writes its exact place before the reader leaves; an article's percent is enough.
+ */
+enum class ReaderContentMode(
+    val capturesPosition: Boolean,
+) {
+    HTML(capturesPosition = false),
+    PDF(capturesPosition = true),
+    EPUB(capturesPosition = true),
+}
 
 enum class ReaderTheme { LIGHT, DARK, SEPIA, AUTO }
 

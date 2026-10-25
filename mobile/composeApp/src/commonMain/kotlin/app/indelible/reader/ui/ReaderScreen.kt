@@ -30,7 +30,6 @@ import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
-import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.TagData
 import app.indelible.reader.ui.components.ReaderOpenFailed
 import app.indelible.reader.ui.components.rememberItemOffline
@@ -76,7 +75,7 @@ fun ReaderScreen(
             activePanel = activePanel,
             hasSelection = selectedText != null,
             hasTappedHighlight = tappedHighlight != null,
-            hasOpenHighlightSheet = tagSheetHighlightId != null || noteSheetHighlightId != null,
+            hasOpenHighlightSheet = listOfNotNull(tagSheetHighlightId, noteSheetHighlightId).isNotEmpty(),
         )
     ReaderChromeSuppressionEffect(chromeState, chromeSuppressed)
 
@@ -92,7 +91,7 @@ fun ReaderScreen(
     ImmersiveSystemBars(hidden = true)
 
     val mode = (uiState as? ReaderUiState.Success)?.contentMode
-    ReaderExitEffects(viewModel, capturesPosition = mode == ReaderContentMode.EPUB || mode == ReaderContentMode.PDF)
+    ReaderExitEffects(viewModel, capturesPosition = mode?.capturesPosition == true)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
