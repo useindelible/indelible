@@ -137,4 +137,13 @@ class PdfGeometryTest {
         assertClose(NormalizedRect(0.1, 0.1, 0.5, 0.3), checkNotNull(union))
         assertEquals(null, unionOf(emptyList()))
     }
+
+    @Test
+    fun emptyAndNanRectsAreDroppedBeforeMerging() {
+        val a = NormalizedRect(0.1, 0.5, 0.2, 0.02)
+        val b = NormalizedRect(0.35, 0.5, 0.2, 0.02)
+        val input = listOf(a, NormalizedRect(Double.NaN, 0.5, 0.1, 0.02), NormalizedRect(0.5, 0.5, 0.0, 0.02), b)
+
+        assertEquals(listOf(unionOf(listOf(a, b))), mergeLineRects(input))
+    }
 }

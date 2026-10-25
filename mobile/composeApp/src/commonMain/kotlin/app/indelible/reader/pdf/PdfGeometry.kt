@@ -25,7 +25,7 @@ const val EDGE_MARGIN = 1e-9
 /** Glyph rects on one text line become one rect, the web's rule: vertical overlap over half the smaller height. */
 fun mergeLineRects(rects: List<NormalizedRect>): List<NormalizedRect> {
     val lines = mutableListOf<NormalizedRect>()
-    for (rect in rects.sortedWith(compareBy({ it.y }, { it.x }))) {
+    for (rect in rects.filter(::hasArea).sortedWith(compareBy({ it.y }, { it.x }))) {
         val last = lines.lastOrNull()
         if (last != null && overlapY(last, rect) > minOf(last.height, rect.height) * LINE_OVERLAP) {
             lines[lines.lastIndex] = checkNotNull(unionOf(listOf(last, rect)))
@@ -35,6 +35,9 @@ fun mergeLineRects(rects: List<NormalizedRect>): List<NormalizedRect> {
     }
     return lines
 }
+
+private fun hasArea(rect: NormalizedRect): Boolean =
+    rect.x.isFinite() && rect.y.isFinite() && rect.width > 0 && rect.height > 0
 
 private fun overlapY(
     a: NormalizedRect,
