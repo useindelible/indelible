@@ -40,6 +40,9 @@ open class ChapterListUnavailableException(
     message: String,
 ) : IllegalStateException(message)
 
+/** The list is still being built; the server resolves this by itself, so a kept book waits for it. */
+class ChapterListPendingException : ChapterListUnavailableException("the chapter list is pending")
+
 /** The server predates the chapter list, so it can serve no book offline until it is updated. */
 class ServerTooOldException : ChapterListUnavailableException("the server does not list book chapters")
 
@@ -171,7 +174,10 @@ class OfflineSetFetcher(
         val outline = json.decodeFromString(EpubTocResponse.serializer(), tocJson)
         val listed =
             outline.metadata.chapters?.takeIf { outline.chapterList == EpubChapterList.READY }
-                ?: throw ChapterListUnavailableException("the chapter list is ${outline.chapterList}")
+                ?: throw when (outline.chapterList) {
+                    EpubChapterList.PENDING -> ChapterListPendingException()
+                    else -> ChapterListUnavailableException("the chapter list is ${outline.chapterList}")
+                }
         val chapters =
             listed.mapIndexed { done, chapter ->
                 val index = chapter.spineIndex

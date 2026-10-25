@@ -1,8 +1,8 @@
 package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.DocumentNoteResponse
-import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.DocumentReaderResponse
+import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.HighlightListResponse
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.DocumentRevision

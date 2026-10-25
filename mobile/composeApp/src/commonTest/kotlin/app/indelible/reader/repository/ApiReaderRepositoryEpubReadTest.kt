@@ -148,6 +148,22 @@ class ApiReaderRepositoryEpubReadTest {
 
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertNull(h.download.acquisition())
+            assertEquals(1, h.server.count(EPUB_TOC_PATH), "no download asked the server for the list again")
+        }
+
+    @Test
+    fun readyListAfterAPendingPinInstallsTheKeptCopy() =
+        runTest {
+            val h = book { route(EPUB_TOC_PATH) { json(epubToc(chapters = null, chapterList = "pending")) } }
+            h.download.manager.keepOffline(h.download.session, DL_DOC)
+            runCurrent()
+            h.server.route(EPUB_TOC_PATH) { json(epubToc()) }
+
+            assertTrue(h.repository.getEpubToc(DL_DOC).isSuccess)
+            runCurrent()
+
+            assertTrue(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
+            assertNull(h.download.acquisition())
         }
 
     @Test

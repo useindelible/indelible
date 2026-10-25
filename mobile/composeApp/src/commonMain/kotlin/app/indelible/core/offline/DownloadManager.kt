@@ -192,6 +192,8 @@ class DownloadManager(
         val key = DocumentKey(session.scope, documentId)
         lock.withLock {
             if (!pin && session.scope in autoCachePaused) return
+            // An unpinned duplicate of the running acquisition would only download the same set again.
+            if (!pin && active?.request?.let { it.key == key && it.session === session } == true) return
             val merged = (queue[key] ?: parked.remove(key))?.takeIf { it.session === session }
             queue[key] = merged?.also { it.pin = it.pin || pin } ?: Request(session, documentId, pin)
             if (active?.request?.key != key) acquisitions.set(key, Acquisition.Waiting)
@@ -256,7 +258,7 @@ class DownloadManager(
             val shown = failureState(error, request.pin, isOnline)
             when {
                 shown == null -> acquisitions.clear(key)
-                isConnectionFailure(error) || shown == Acquisition.Waiting -> park(request, shown)
+                isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
                 else -> acquisitions.set(key, shown)
             }
         }
@@ -285,8 +287,11 @@ private fun failureState(
         isConnectionFailure(error) -> Acquisition.WaitingForConnection
         error is ServerTooOldException -> Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD)
         // A pin on a book whose list is still being built waits for it, as it waits for a readable render.
-        error is ChapterListUnavailableException -> Acquisition.Waiting
+        error is ChapterListPendingException -> Acquisition.Waiting
         else -> Acquisition.Failed(DownloadFailure.SERVER)
     }
+
+// A pinned book without a list stays parked, so the pin survives until a reopen finds the list ready.
+private fun keepsThePin(error: Throwable) = error is ChapterListUnavailableException && error !is ServerTooOldException
 
 private fun isConnectionFailure(error: Throwable) = error is CapabilitiesUnknownException || isNetworkException(error)
