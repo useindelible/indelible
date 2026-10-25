@@ -257,6 +257,7 @@ kotlin {
             implementation(libs.androidx.browser)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android)
+            implementation(libs.pdfium.android)
         }
         androidInstrumentedTest.dependencies {
             implementation(libs.androidx.testExt.junit)
