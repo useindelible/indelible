@@ -4,13 +4,13 @@ import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentReaderResponse
 import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.HighlightListResponse
-import app.indelible.core.offline.Acquisition
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.DocumentRevision
 import app.indelible.core.offline.LocalChanges
 import app.indelible.core.offline.OfflineFiles
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.Progress
+import app.indelible.core.offline.ReadingCopies
 import app.indelible.core.offline.RefreshRequest
 import app.indelible.core.offline.ScopeNotLiveException
 import app.indelible.core.offline.ServerNote
@@ -68,15 +68,11 @@ class ReaderOfflineCopy(
     private val files: OfflineFiles,
     private val sessionProvider: () -> Session?,
     private val clock: () -> Long,
-    private val requestCache: suspend (Session, String) -> Unit,
-    requestReadingCopy: suspend (Session, String) -> Unit,
-    acquisitions: (String) -> Flow<Map<String, Acquisition>>,
-    hold: suspend (String, String) -> Unit,
-    release: suspend (String, String) -> Unit,
+    private val copies: ReadingCopies,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     val tags = OfflineTags(files, store, sessionProvider, FALLBACK_BUDGET_MS, dispatcher)
-    private val pdf = PdfCopySource(store, files, requestReadingCopy, acquisitions, hold, release)
+    private val pdf = PdfCopySource(store, files, copies)
 
     suspend fun document(
         documentId: String,
@@ -94,7 +90,7 @@ class ReaderOfflineCopy(
         // Progress is append-only; the server never lets an older event win, so an overtaken view still stands.
         return fromCopy ?: steady(session.scope, documentId, { it.position }, fetch)
             .map { it.server.toReaderDocument().withProgress(it.changes.progress(it.server.progress())) }
-            .onSuccess { requestCache(session, documentId) }
+            .onSuccess { copies.cacheOnOpen(session, documentId) }
     }
 
     suspend fun highlights(
@@ -150,12 +146,9 @@ class ReaderOfflineCopy(
             json.decodeFromString(EpubToc.serializer(), it)
         }.onSuccess { toc ->
             if (session == null || toc.chapterList != EpubChapterList.READY) return@onSuccess
-            if (store.cachedDocument(session.scope, documentId) == null) requestCache(session, documentId)
+            if (store.cachedDocument(session.scope, documentId) == null) copies.cacheOnOpen(session, documentId)
         }
     }
-
-    /** The absolute path of the copy's whole PDF, or null without a readable copy. */
-    suspend fun pdfFile(documentId: String): String? = sessionProvider()?.let { pdf.pdfFile(it.scope, documentId) }
 
     /** The copy's PDF, or the reading download that brings one; the document is held while collected. */
     fun pdfCopy(documentId: String): Flow<PdfCopy> = pdf.pdfCopy(sessionProvider, documentId).flowOn(dispatcher)

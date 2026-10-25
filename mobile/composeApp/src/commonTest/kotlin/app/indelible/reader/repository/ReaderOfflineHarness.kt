@@ -105,11 +105,7 @@ internal suspend fun TestScope.readerOfflineHarness(
             files = download.files,
             sessionProvider = session,
             clock = { testScheduler.currentTime },
-            requestCache = { live, documentId -> download.manager.cacheOnOpen(live, documentId) },
-            requestReadingCopy = { live, documentId -> download.manager.requestForReading(live, documentId) },
-            acquisitions = download.manager.acquisitions::observe,
-            hold = download.manager::hold,
-            release = download.manager::release,
+            copies = download.manager,
             dispatcher = StandardTestDispatcher(testScheduler),
         )
     val repository =

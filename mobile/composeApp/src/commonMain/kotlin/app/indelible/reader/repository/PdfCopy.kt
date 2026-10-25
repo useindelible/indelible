@@ -5,6 +5,7 @@ import app.indelible.core.offline.DownloadFailure
 import app.indelible.core.offline.OfflineFiles
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.PDF_KINDS
+import app.indelible.core.offline.ReadingCopies
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.generationDir
 import kotlinx.coroutines.NonCancellable
@@ -42,10 +43,7 @@ enum class PdfCopyFailure { CONNECTION, NO_SPACE, SERVER }
 internal class PdfCopySource(
     private val store: OfflineStore,
     private val files: OfflineFiles,
-    private val requestReadingCopy: suspend (Session, String) -> Unit,
-    private val acquisitions: (String) -> Flow<Map<String, Acquisition>>,
-    private val hold: suspend (String, String) -> Unit,
-    private val release: suspend (String, String) -> Unit,
+    private val copies: ReadingCopies,
 ) {
     /** The copy's PDF, whole at its recorded size, or null. */
     suspend fun pdfFile(
@@ -72,7 +70,7 @@ internal class PdfCopySource(
         flow {
             val live = session() ?: return@flow emit(PdfCopy.Failed(PdfCopyFailure.CONNECTION))
             val scope = live.scope
-            hold(scope, documentId)
+            copies.hold(scope, documentId)
             try {
                 val path = pdfFile(scope, documentId) ?: awaitCopy(live, documentId)
                 if (path != null) {
@@ -81,7 +79,7 @@ internal class PdfCopySource(
                     emit(PdfCopy.Removed)
                 }
             } finally {
-                withContext(NonCancellable) { release(scope, documentId) }
+                withContext(NonCancellable) { copies.release(scope, documentId) }
             }
         }
 
@@ -91,9 +89,9 @@ internal class PdfCopySource(
         documentId: String,
     ): String? {
         val scope = session.scope
-        requestReadingCopy(session, documentId)
+        copies.requestForReading(session, documentId)
         var path: String? = null
-        combine(store.observeCatalog(scope), acquisitions(scope)) { _, all -> all[documentId] }
+        combine(store.observeCatalog(scope), copies.observeAcquisitions(scope)) { _, all -> all[documentId] }
             .distinctUntilChanged()
             .transformWhile { acquisition ->
                 val file = pdfFile(scope, documentId)

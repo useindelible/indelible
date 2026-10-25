@@ -27,7 +27,7 @@ class DownloadManager(
     private val copies: OfflineCopies,
     private val online: Flow<Boolean>,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
-) {
+) : ReadingCopies {
     private class Request(
         val session: Session,
         val documentId: String,
@@ -46,6 +46,8 @@ class DownloadManager(
     }
 
     val acquisitions = AcquisitionBoard()
+
+    override fun observeAcquisitions(scope: String): Flow<Map<String, Acquisition>> = acquisitions.observe(scope)
 
     private val lock = Mutex()
 
@@ -114,7 +116,7 @@ class DownloadManager(
     }
 
     /** An unpinned copy of a document opened online, unless a full disk paused auto-caching. */
-    suspend fun cacheOnOpen(
+    override suspend fun cacheOnOpen(
         session: Session,
         documentId: String,
     ) {
@@ -122,7 +124,7 @@ class DownloadManager(
     }
 
     /** A copy to read now: unpinned, past the cap, never dropped silently; it merges with any other request. */
-    suspend fun requestForReading(
+    override suspend fun requestForReading(
         session: Session,
         documentId: String,
     ) {
@@ -130,7 +132,7 @@ class DownloadManager(
     }
 
     /** Keeps the copy out of eviction while a reader has it open; each hold needs its own [release]. */
-    suspend fun hold(
+    override suspend fun hold(
         scope: String,
         documentId: String,
     ) {
@@ -138,7 +140,7 @@ class DownloadManager(
         lock.withLock { held[key] = (held[key] ?: 0) + 1 }
     }
 
-    suspend fun release(
+    override suspend fun release(
         scope: String,
         documentId: String,
     ) {
