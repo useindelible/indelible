@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.withContext
+import okio.IOException
 
 /** Where the PDF the reader wants stands; [Failed] and [Removed] end the flow. */
 sealed interface PdfCopy {
@@ -54,7 +55,13 @@ internal class PdfCopySource(
         val copy = store.cachedDocument(scope, documentId) ?: return null
         val asset = store.assetsForDocument(scope, documentId).firstOrNull { it.kind in PDF_KINDS }
         val path = asset?.let { files.generationDir(scope, documentId, copy.generation) / it.path }
-        return path?.toString()?.takeIf { files.size(path) == asset.bytes }
+        val whole =
+            try {
+                path != null && files.size(path) == asset.bytes
+            } catch (ignored: IOException) {
+                false
+            }
+        return path?.toString()?.takeIf { whole }
     }
 
     /** Holds the document while collected; without a copy it asks for a reading download and follows it. */
@@ -63,10 +70,11 @@ internal class PdfCopySource(
         documentId: String,
     ): Flow<PdfCopy> =
         flow {
-            val scope = session()?.scope ?: return@flow emit(PdfCopy.Failed(PdfCopyFailure.CONNECTION))
+            val live = session() ?: return@flow emit(PdfCopy.Failed(PdfCopyFailure.CONNECTION))
+            val scope = live.scope
             hold(scope, documentId)
             try {
-                val path = pdfFile(scope, documentId) ?: awaitCopy(checkNotNull(session()), documentId)
+                val path = pdfFile(scope, documentId) ?: awaitCopy(live, documentId)
                 if (path != null) {
                     emit(PdfCopy.Ready(path))
                     store.observeCatalog(scope).first { rows -> rows.none { it.documentId == documentId } }

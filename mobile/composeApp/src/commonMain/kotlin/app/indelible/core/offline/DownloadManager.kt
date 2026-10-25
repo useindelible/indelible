@@ -40,7 +40,10 @@ class DownloadManager(
     private class Active(
         val request: Request,
         val job: Job,
-    )
+    ) {
+        // Set once the run has written its last board state, so a later request owns the board again.
+        var settled = false
+    }
 
     val acquisitions = AcquisitionBoard()
 
@@ -166,7 +169,7 @@ class DownloadManager(
             }
         try {
             job?.cancelAndJoin()
-            acquisitions.clear(key)
+            lock.withLock { if (key !in queue) acquisitions.clear(key) }
             copies.remove(scope, documentId)
         } finally {
             withContext(NonCancellable) {
@@ -199,7 +202,10 @@ class DownloadManager(
                 }
             try {
                 job?.cancelAndJoin()
-                acquisitions.clearScope(scope)
+                lock.withLock {
+                    acquisitions.clearScope(scope)
+                    queue.keys.filter { it.scope == scope }.forEach { acquisitions.set(it, Acquisition.Waiting) }
+                }
                 copies.removeAll(scope)
             } finally {
                 withContext(NonCancellable) {
@@ -243,7 +249,8 @@ class DownloadManager(
                     it.pin = it.pin || pin
                     it.forReading = it.forReading || forReading
                 } ?: Request(session, documentId, pin, forReading)
-            if (active?.request?.key != key) acquisitions.set(key, Acquisition.Waiting)
+            val owner = active?.takeUnless { it.settled }?.request?.key
+            if (owner != key) acquisitions.set(key, Acquisition.Waiting)
         }
         wake.trySend(Unit)
     }
@@ -316,22 +323,35 @@ class DownloadManager(
                 shown == null -> finish(key)
                 request.forReading -> show(request, shown)
                 isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
-                else -> acquisitions.set(key, shown)
+                else -> settle(key, shown)
             }
         }
     }
 
-    // A request queued behind this one for the same document takes the board over instead of seeing it go dark.
-    private suspend fun finish(key: DocumentKey) {
-        lock.withLock { if (key in queue) acquisitions.set(key, Acquisition.Waiting) else acquisitions.clear(key) }
-    }
+    private suspend fun finish(key: DocumentKey) = settle(key, state = null)
 
     // A failure shown to a reader still parks the request when it also carries a pin, so the pin is retried.
     private suspend fun show(
         request: Request,
         failure: Acquisition,
     ) {
-        if (request.pin) park(request, failure) else acquisitions.set(request.key, failure)
+        if (request.pin) park(request, failure) else settle(request.key, failure)
+    }
+
+    // The run's last word on the board: a request queued behind it takes the board over instead of seeing
+    // the run's outcome or an empty entry, and later requests set their own state again.
+    private suspend fun settle(
+        key: DocumentKey,
+        state: Acquisition?,
+    ) {
+        lock.withLock {
+            active?.takeIf { it.request.key == key }?.settled = true
+            when {
+                key in queue -> acquisitions.set(key, Acquisition.Waiting)
+                state == null -> acquisitions.clear(key)
+                else -> acquisitions.set(key, state)
+            }
+        }
     }
 
     private suspend fun heldIn(scope: String): Set<String> =
@@ -342,7 +362,7 @@ class DownloadManager(
         acquisition: Acquisition,
     ) {
         lock.withLock { parked[request.key] = request }
-        acquisitions.set(request.key, acquisition)
+        settle(request.key, acquisition)
     }
 }
 

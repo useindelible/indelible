@@ -4,10 +4,12 @@ import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.FailingWriteFileSystem
 import app.indelible.core.offline.FakeServer
+import app.indelible.core.offline.UnreadableMetadataFileSystem
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -68,6 +70,7 @@ class ApiReaderRepositoryPdfCopyTest {
                         respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, body.size.toString()))
                     }
                 }
+            h.download.capBytes = PDF_BYTES / 2L
             val (seen, job) = collecting(h)
             runCurrent()
 
@@ -138,6 +141,56 @@ class ApiReaderRepositoryPdfCopyTest {
 
             assertEquals(PdfCopy.Removed, seen.last())
             assertTrue(job.isCompleted)
+        }
+
+    @Test
+    fun unreadableCopyIsRepairedAndOpens() =
+        runTest {
+            val fs = UnreadableMetadataFileSystem(FakeFileSystem())
+            val h = pdf(fs = fs)
+            h.keepCopy()
+            fs.failUnder = h.download.generationDir(1)
+            val (seen, job) = collecting(h)
+            runCurrent()
+
+            assertIs<PdfCopy.Downloading>(seen.first())
+            assertEquals(PdfCopy.Ready(h.pdfPath(2)), seen.last())
+            job.cancel()
+        }
+
+    @Test
+    fun autoCacheFailureWhileWaitingDoesNotEndTheWait() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            var served = 0
+            val h =
+                pdf {
+                    route(STORED_PDF) {
+                        gate.await()
+                        val first = served++ == 0
+                        if (first) respond("", HttpStatusCode.InternalServerError) else respond(body, HttpStatusCode.OK)
+                    }
+                }
+            h.download.manager.cacheOnOpen(h.download.session, DL_DOC)
+            runCurrent()
+            val (seen, job) = collecting(h)
+            runCurrent()
+
+            gate.complete(Unit)
+            runCurrent()
+
+            assertEquals(PdfCopy.Ready(h.pdfPath(1)), seen.last(), "$seen")
+            assertTrue(seen.none { it is PdfCopy.Failed }, "$seen")
+            job.cancel()
+        }
+
+    @Test
+    fun withoutASessionTheCopyFailsWithConnection() =
+        runTest {
+            val h = pdf()
+            h.signOut()
+
+            assertEquals(PdfCopy.Failed(PdfCopyFailure.CONNECTION), h.lastState())
         }
 
     @Test

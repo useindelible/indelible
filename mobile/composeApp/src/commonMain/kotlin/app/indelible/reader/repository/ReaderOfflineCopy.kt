@@ -31,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okio.IOException
@@ -157,7 +158,7 @@ class ReaderOfflineCopy(
     suspend fun pdfFile(documentId: String): String? = sessionProvider()?.let { pdf.pdfFile(it.scope, documentId) }
 
     /** The copy's PDF, or the reading download that brings one; the document is held while collected. */
-    fun pdfCopy(documentId: String): Flow<PdfCopy> = pdf.pdfCopy(sessionProvider, documentId)
+    fun pdfCopy(documentId: String): Flow<PdfCopy> = pdf.pdfCopy(sessionProvider, documentId).flowOn(dispatcher)
 
     /** The chapter at [spineIndex], from the copy first, as [epubToc]. */
     suspend fun epubChapter(

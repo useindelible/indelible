@@ -8,11 +8,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import okio.FileMetadata
 import okio.FileSystem
-import okio.ForwardingFileSystem
 import okio.IOException
-import okio.Path
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -266,6 +263,49 @@ class DownloadReadingRequestTest {
 
             assertEquals(2L, h.store.cachedDocument(DL_SCOPE, DL_DOC)?.generation)
         }
+
+    @Test
+    fun readingRequestDuringARemovalKeepsItsBoardEntry() =
+        runTest {
+            val removing = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            val h =
+                downloadHarness(store = { real ->
+                    object : OfflineStore by real {
+                        override suspend fun removeCachedDocument(
+                            scope: String,
+                            documentId: String,
+                        ) {
+                            removing.complete(Unit)
+                            resume.await()
+                            real.removeCachedDocument(scope, documentId)
+                        }
+                    }
+                }) {
+                    documentType = "pdf"
+                    available = listOf("pdf")
+                }
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+            val removal = launch { h.manager.removeFromDevice(DL_SCOPE, DL_DOC) }
+            removing.await()
+
+            h.manager.requestForReading(h.session, DL_DOC)
+            val seen = mutableListOf<Pair<Acquisition?, Boolean>>()
+            val watching =
+                launch {
+                    h.manager.acquisitions.observe(DL_SCOPE).collect {
+                        seen += it[DL_DOC] to (h.store.cachedDocument(DL_SCOPE, DL_DOC) != null)
+                    }
+                }
+            resume.complete(Unit)
+            removal.join()
+            runCurrent()
+            watching.cancel()
+
+            assertNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC), "the reading request ran after the removal")
+            assertTrue(seen.none { (acquisition, copy) -> acquisition == null && !copy }, "board went dark: $seen")
+        }
 }
 
 private const val READER_PATH = "/api/v1/documents/$DL_DOC"
@@ -276,16 +316,4 @@ private fun FakeServer.bigPdf() {
     sizes = mapOf("pdf" to BIG_PDF_BYTES.toLong())
     val body = ByteArray(BIG_PDF_BYTES) { 'x'.code.toByte() }.also { "%PDF-1.7".encodeToByteArray().copyInto(it) }
     route(STORED_PDF) { respond(body, HttpStatusCode.OK) }
-}
-
-private class UnreadableMetadataFileSystem(
-    delegate: okio.FileSystem,
-) : ForwardingFileSystem(delegate) {
-    var failUnder: Path? = null
-
-    override fun metadataOrNull(path: Path): FileMetadata? {
-        val blocked = failUnder
-        if (blocked != null && path.toString().startsWith("$blocked/")) throw IOException("metadata refused")
-        return super.metadataOrNull(path)
-    }
 }
