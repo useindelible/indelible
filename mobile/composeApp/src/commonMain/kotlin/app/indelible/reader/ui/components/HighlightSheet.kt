@@ -142,12 +142,15 @@ private fun HighlightSheetContent(
         Spacer(modifier = Modifier.height(IndelibleSpacing.step16))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+        val noteAction =
+            if (highlight.note != null) {
+                Res.string.reader_action_edit_note
+            } else {
+                Res.string.reader_action_add_note
+            }
         SheetAction(
             icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-            label =
-                stringResource(
-                    if (highlight.note != null) Res.string.reader_action_edit_note else Res.string.reader_action_add_note,
-                ),
+            label = stringResource(noteAction),
             onClick = onEditNote,
         )
 

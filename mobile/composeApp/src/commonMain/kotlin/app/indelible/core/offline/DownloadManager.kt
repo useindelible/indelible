@@ -273,7 +273,9 @@ class DownloadManager(
             acquiring.withLock {
                 val job =
                     lock.withLock {
-                        val eligible = { r: Request -> r.key !in removing && r.key.scope !in removingScopes }
+                        val eligible = { candidate: Request ->
+                            candidate.key !in removing && candidate.key.scope !in removingScopes
+                        }
                         // A reader is waiting on a reading request now; queued caches can wait.
                         val request =
                             queue.values.firstOrNull { it.forReading && eligible(it) }

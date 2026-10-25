@@ -71,25 +71,18 @@ internal fun ReaderContentArea(
                 viewModel = viewModel,
             )
 
-        ReaderContentMode.PDF -> {
-            val pdf = state.pdf
-            val session = viewModel.pdfSession
-            if (pdf != null && session != null) {
-                ReaderPdfBody(
-                    state = state,
-                    pdf = pdf,
-                    session = session,
-                    selectedText = selectedText,
-                    topChromeInsetPx = topChromeInsetPx,
-                    onSelectedTextChanged = onSelectedTextChanged,
-                    onTappedHighlightChanged = onTappedHighlightChanged,
-                    onReaderTap = onReaderTap,
-                    handleScrollProgress = handleScrollProgress,
-                    onOpenStorage = onOpenStorage,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
+        ReaderContentMode.PDF ->
+            PdfContent(
+                state = state,
+                viewModel = viewModel,
+                selectedText = selectedText,
+                topChromeInsetPx = topChromeInsetPx,
+                onSelectedTextChanged = onSelectedTextChanged,
+                onTappedHighlightChanged = onTappedHighlightChanged,
+                onReaderTap = onReaderTap,
+                handleScrollProgress = handleScrollProgress,
+                onOpenStorage = onOpenStorage,
+            )
 
         ReaderContentMode.EPUB -> {
             val epub = state.epub
@@ -111,6 +104,37 @@ internal fun ReaderContentArea(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PdfContent(
+    state: ReaderUiState.Success,
+    viewModel: ReaderViewModel,
+    selectedText: SelectedTextInfo?,
+    topChromeInsetPx: Int,
+    onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
+    onTappedHighlightChanged: (HighlightData?) -> Unit,
+    onReaderTap: () -> Unit,
+    handleScrollProgress: (Float, Float) -> Unit,
+    onOpenStorage: () -> Unit,
+) {
+    val pdf = state.pdf
+    val session = viewModel.pdfSession
+    if (pdf != null && session != null) {
+        ReaderPdfBody(
+            state = state,
+            pdf = pdf,
+            session = session,
+            selectedText = selectedText,
+            topChromeInsetPx = topChromeInsetPx,
+            onSelectedTextChanged = onSelectedTextChanged,
+            onTappedHighlightChanged = onTappedHighlightChanged,
+            onReaderTap = onReaderTap,
+            handleScrollProgress = handleScrollProgress,
+            onOpenStorage = onOpenStorage,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
