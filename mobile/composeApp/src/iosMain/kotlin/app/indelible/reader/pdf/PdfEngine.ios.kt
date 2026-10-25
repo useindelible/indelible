@@ -16,7 +16,10 @@ actual object PdfEngine {
     actual suspend fun open(path: String): PdfDocument =
         withContext(dispatcher) {
             autoreleasepool {
-                val document = runCatching { PDFDocument(uRL = NSURL.fileURLWithPath(path)) }.getOrNull()
+                val document =
+                    runCatching { PDFDocument(uRL = NSURL.fileURLWithPath(path)) }.getOrElse { error ->
+                        throw PdfOpenException("PDFKit cannot open $path", error)
+                    }
                 if (document == null || document.isLocked() || document.pageCount == 0uL) {
                     throw PdfOpenException("PDFKit cannot open $path")
                 }

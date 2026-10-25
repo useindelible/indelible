@@ -6,6 +6,9 @@ import androidx.compose.ui.graphics.toPixelMap
 import app.indelible.reader.pdf.PdfFixtures.expectedRect
 import app.indelible.reader.pdf.PdfFixtures.pointIn
 import kotlinx.coroutines.test.runTest
+import okio.FileSystem
+import okio.Path.Companion.toPath
+import okio.SYSTEM
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -33,7 +36,14 @@ class PdfEngineContractTest {
         name: String,
         pages: List<FixturePage>,
         block: suspend (PdfDocument) -> T,
-    ): T = PdfEngine.open(PdfFixtures.write(name, pages)).use { block(it) }
+    ): T {
+        val path = PdfFixtures.write(name, pages)
+        try {
+            return PdfEngine.open(path).use { block(it) }
+        } finally {
+            FileSystem.SYSTEM.delete(path.toPath(), mustExist = false)
+        }
+    }
 
     private val plain = PdfFixtures.plain.single()
     private val firstLine = plain.lines[0]
@@ -171,6 +181,15 @@ class PdfEngineContractTest {
                 val end = pointIn(page, page.lines[1], 6..10)
                 val selection = assertNotNull(document.select(0, start, end))
                 assertTrue(selection.text.contains("delta"), selection.text)
+            }
+        }
+
+    @Test
+    fun callsAfterCloseAreRefused() =
+        runTest {
+            open("plain", PdfFixtures.plain) { document ->
+                document.close()
+                assertFailsWith<IllegalStateException> { document.text(0) }
             }
         }
 

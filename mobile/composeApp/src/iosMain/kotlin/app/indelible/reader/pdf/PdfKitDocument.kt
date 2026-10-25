@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalForeignApi::class)
+@file:OptIn(ExperimentalForeignApi::class, ExperimentalAtomicApi::class)
 
 package app.indelible.reader.pdf
 
@@ -11,6 +11,8 @@ import platform.Foundation.NSCaseInsensitiveSearch
 import platform.PDFKit.PDFDocument
 import platform.PDFKit.PDFPage
 import platform.PDFKit.PDFSelection
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 internal class PdfKitDocument(
     private val document: PDFDocument,
@@ -21,8 +23,10 @@ internal class PdfKitDocument(
             measure(checkNotNull(document.pageAtIndex(index.toULong())))
         }
 
+    private val closed = AtomicBoolean(false)
+
     override val pageCount: Int get() = measured.size
-    override val pageSizes: List<PdfPageSize> get() = measured.map { it.size }
+    override val pageSizes: List<PdfPageSize> = measured.map { it.size }
 
     override suspend fun render(
         pageIndex: Int,
@@ -83,10 +87,16 @@ internal class PdfKitDocument(
                 .mapNotNull { hit -> hit.toHit() }
         }
 
-    override fun close() = Unit
+    override fun close() {
+        closed.store(true)
+    }
 
     // The dispatcher's worker threads never drain a pool of their own, so each call drains what it autoreleased.
-    private suspend fun <T> onPdfKit(block: () -> T): T = withContext(dispatcher) { autoreleasepool(block) }
+    private suspend fun <T> onPdfKit(block: () -> T): T =
+        withContext(dispatcher) {
+            check(!closed.load()) { "the PDF document is closed" }
+            autoreleasepool(block)
+        }
 
     private fun PDFSelection.toHit(): PdfHit? {
         val pdfPage = pages.firstOrNull() as? PDFPage
