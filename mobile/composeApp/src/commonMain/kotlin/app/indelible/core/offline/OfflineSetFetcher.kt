@@ -73,10 +73,12 @@ class OfflineSetFetcher(
         session: Session,
         documentId: String,
         pin: Boolean,
+        ignoreCap: Boolean = false,
         onProgress: (Float) -> Unit = {},
     ): FetchResult {
         val first = readerDocument(session, documentId)
-        if (!first.model.worthCaching(pin, capBytes())) return FetchResult.Skipped
+        val uncapped = pin || ignoreCap
+        if (!first.model.worthCaching(uncapped, capBytes())) return FetchResult.Skipped
         val scope = session.scope
         val previous = store.cachedDocument(scope, documentId)?.generation
         val generation = (previous ?: 0L) + 1
@@ -85,7 +87,7 @@ class OfflineSetFetcher(
         try {
             val assets = downloadAssets(session, first.model, dir, onProgress)
             val bytes = assets.sumOf { it.bytes }
-            val tooLarge = !pin && bytes > capBytes()
+            val tooLarge = !uncapped && bytes > capBytes()
             val installed =
                 !tooLarge &&
                     (1..INSTALL_ATTEMPTS).any {
@@ -330,11 +332,11 @@ class OfflineSetFetcher(
         // a book's chapters can unpack to more than its EPUB, so the downloaded total is checked
         // again before an auto-cache installs.
         fun DocumentReaderResponse.worthCaching(
-            pin: Boolean,
+            uncapped: Boolean,
             cap: Long,
         ): Boolean {
             val kind = readableKind()?.takeIf { it in availableAssets } ?: return false
-            return pin || assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
+            return uncapped || assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
         }
 
         fun HttpRequestBuilder.bearer(token: String) {

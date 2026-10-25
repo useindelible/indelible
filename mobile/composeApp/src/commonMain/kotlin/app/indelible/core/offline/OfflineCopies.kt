@@ -23,15 +23,16 @@ class OfflineCopies(
         files.deleteTree(files.scopeDir(scope))
     }
 
-    /** Evicts unpinned copies, least recently opened first, down to the cap; true if it freed any. */
+    /** Evicts unpinned copies not in [keep] down to the cap, oversize ones first, then least recently opened. */
     suspend fun enforceCap(
         scope: String,
-        keep: String?,
+        keep: Set<String>,
     ): Boolean {
         val cap = capBytes()
         var total = store.totalBytes(scope)
         var evicted = false
-        val candidates = store.unpinnedLru(scope).filter { it.documentId != keep }.iterator()
+        val unpinned = store.unpinnedLru(scope).filter { it.documentId !in keep }
+        val candidates = (unpinned.filter { it.bytes > cap } + unpinned.filter { it.bytes <= cap }).iterator()
         while (total > cap && candidates.hasNext()) {
             val copy = candidates.next()
             if (store.evictCachedDocument(scope, copy.documentId)) {
@@ -41,6 +42,16 @@ class OfflineCopies(
             }
         }
         return evicted
+    }
+
+    /** True when every file the copy's catalog lists is present at its recorded size. */
+    suspend fun isComplete(
+        scope: String,
+        documentId: String,
+    ): Boolean {
+        val copy = store.cachedDocument(scope, documentId) ?: return false
+        val dir = files.generationDir(scope, documentId, copy.generation)
+        return store.assetsForDocument(scope, documentId).all { files.size(dir / it.path) == it.bytes }
     }
 
     internal fun deleteQuietly(path: Path) {

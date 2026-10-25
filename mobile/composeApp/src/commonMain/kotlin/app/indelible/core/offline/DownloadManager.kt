@@ -32,6 +32,7 @@ class DownloadManager(
         val session: Session,
         val documentId: String,
         var pin: Boolean,
+        var forReading: Boolean = false,
     ) {
         val key: DocumentKey get() = DocumentKey(session.scope, documentId)
     }
@@ -58,6 +59,9 @@ class DownloadManager(
     // One entry per removal in progress, so a request waits for every overlapping removal to end.
     private val removing = mutableListOf<DocumentKey>()
     private val removingScopes = mutableListOf<String>()
+
+    // Open readers by document; a held copy is never evicted, though Remove from device still removes it.
+    private val held = mutableMapOf<DocumentKey, Int>()
     private var active: Active? = null
     private var isOnline = true
     private val wake = Channel<Unit>(Channel.CONFLATED)
@@ -113,6 +117,39 @@ class DownloadManager(
     ) {
         request(session, documentId, pin = false)
     }
+
+    /** A copy to read now: unpinned, past the cap, never dropped silently; it merges with any other request. */
+    suspend fun requestForReading(
+        session: Session,
+        documentId: String,
+    ) {
+        request(session, documentId, pin = false, forReading = true)
+    }
+
+    /** Keeps the copy out of eviction while a reader has it open; each hold needs its own [release]. */
+    suspend fun hold(
+        scope: String,
+        documentId: String,
+    ) {
+        val key = DocumentKey(scope, documentId)
+        lock.withLock { held[key] = (held[key] ?: 0) + 1 }
+    }
+
+    suspend fun release(
+        scope: String,
+        documentId: String,
+    ) {
+        val key = DocumentKey(scope, documentId)
+        lock.withLock {
+            val left = (held[key] ?: 0) - 1
+            if (left > 0) held[key] = left else held.remove(key)
+        }
+    }
+
+    internal fun isHeld(
+        scope: String,
+        documentId: String,
+    ): Boolean = DocumentKey(scope, documentId) in held
 
     /** A request for the document made while this runs waits until the copy is gone, then acquires anew. */
     suspend fun removeFromDevice(
@@ -178,7 +215,8 @@ class DownloadManager(
     /** Evicts [scope] down to the cap between acquisitions; room it frees lets auto-caching resume. */
     suspend fun enforceCap(scope: String) =
         withContext(dispatcher) {
-            if (acquiring.withLock { copies.enforceCap(scope, keep = null) }) lock.withLock { autoCachePaused -= scope }
+            val freed = acquiring.withLock { copies.enforceCap(scope, heldIn(scope)) }
+            if (freed) lock.withLock { autoCachePaused -= scope }
         }
 
     /** The launch sweep; it waits for the running acquisition, and the next one waits for it. */
@@ -188,17 +226,23 @@ class DownloadManager(
         session: Session,
         documentId: String,
         pin: Boolean,
+        forReading: Boolean = false,
     ) {
         val key = DocumentKey(session.scope, documentId)
+        val wanted = pin || forReading
         lock.withLock {
-            if (!pin && session.scope in autoCachePaused) return
+            if (!wanted && session.scope in autoCachePaused) return
             // An unpinned duplicate of the running acquisition would only download the same set again; one
             // being removed is about to be cancelled, so a request made now must wait for that removal.
             val beingRemoved = key in removing || key.scope in removingScopes
             val running = active?.takeUnless { beingRemoved || !it.job.isActive }?.request
-            if (!pin && running?.let { it.key == key && it.session === session } == true) return
+            if (!wanted && running?.let { it.key == key && it.session === session } == true) return
             val merged = (queue[key] ?: parked.remove(key))?.takeIf { it.session === session }
-            queue[key] = merged?.also { it.pin = it.pin || pin } ?: Request(session, documentId, pin)
+            queue[key] =
+                merged?.also {
+                    it.pin = it.pin || pin
+                    it.forReading = it.forReading || forReading
+                } ?: Request(session, documentId, pin, forReading)
             if (active?.request?.key != key) acquisitions.set(key, Acquisition.Waiting)
         }
         wake.trySend(Unit)
@@ -228,8 +272,10 @@ class DownloadManager(
         val key = request.key
         when {
             registry.current.value.session !== request.session -> acquisitions.clear(key)
+            !isOnline && request.forReading -> acquisitions.set(key, Acquisition.Failed(DownloadFailure.NETWORK))
             !isOnline -> if (request.pin) park(request, Acquisition.WaitingForConnection) else acquisitions.clear(key)
-            store.cachedDocument(key.scope, request.documentId) != null -> {
+            // A row whose files are missing or cut short is repaired by a fresh generation, not trusted.
+            copies.isComplete(key.scope, request.documentId) -> {
                 if (request.pin) store.setPinned(key.scope, request.documentId, pinned = true)
                 acquisitions.clear(key)
             }
@@ -241,16 +287,20 @@ class DownloadManager(
         val key = request.key
         acquisitions.set(key, Acquisition.Downloading(null))
         runCatching {
-            fetcher
-                .download(request.session, request.documentId, request.pin) { fraction ->
-                    acquisitions.set(key, Acquisition.Downloading(fraction))
-                }.also { if (it == FetchResult.Installed) copies.enforceCap(key.scope, keep = request.documentId) }
+            val outcome =
+                fetcher.download(request.session, request.documentId, request.pin, ignoreCap = request.forReading) {
+                    acquisitions.set(key, Acquisition.Downloading(it))
+                }
+            if (outcome == FetchResult.Installed) copies.enforceCap(key.scope, heldIn(key.scope) + key.documentId)
+            outcome
         }.onSuccess { outcome ->
             when {
                 outcome == FetchResult.Installed -> {
                     lock.withLock { autoCachePaused -= key.scope }
                     acquisitions.clear(key)
                 }
+                // A reader waiting for the copy is told, not left waiting for a retry nothing schedules.
+                request.forReading -> acquisitions.set(key, Acquisition.Failed(DownloadFailure.SERVER))
                 // A pin waits for a readable render rather than claiming a copy the reader cannot open.
                 outcome == FetchResult.Stale || request.pin -> park(request, Acquisition.Waiting)
                 else -> acquisitions.clear(key)
@@ -258,14 +308,18 @@ class DownloadManager(
         }.onFailure { error ->
             if (error is CancellationException) throw error
             if (error is NoSpaceException) lock.withLock { autoCachePaused += key.scope }
-            val shown = failureState(error, request.pin, isOnline)
+            val shown = failureState(error, request.pin, request.forReading, isOnline)
             when {
                 shown == null -> acquisitions.clear(key)
+                request.forReading -> acquisitions.set(key, shown)
                 isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
                 else -> acquisitions.set(key, shown)
             }
         }
     }
+
+    private suspend fun heldIn(scope: String): Set<String> =
+        lock.withLock { held.keys.filter { it.scope == scope }.mapTo(mutableSetOf()) { it.documentId } }
 
     private suspend fun park(
         request: Request,
@@ -280,13 +334,14 @@ class DownloadManager(
 private fun failureState(
     error: Throwable,
     pin: Boolean,
+    forReading: Boolean,
     online: Boolean,
 ): Acquisition? =
     when {
         error is StaleSessionException || error is StaleWriteException || error is ScopeNotLiveException -> null
         error is NoSpaceException -> Acquisition.Failed(DownloadFailure.NO_SPACE)
-        (isConnectionFailure(error) || error is ChapterListUnavailableException) && !pin -> null
-        isConnectionFailure(error) && online -> Acquisition.Failed(DownloadFailure.NETWORK)
+        (isConnectionFailure(error) || error is ChapterListUnavailableException) && !pin && !forReading -> null
+        isConnectionFailure(error) && (online || forReading) -> Acquisition.Failed(DownloadFailure.NETWORK)
         isConnectionFailure(error) -> Acquisition.WaitingForConnection
         error is ServerTooOldException -> Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD)
         // A pin on a book whose list is still being built waits for it, as it waits for a readable render.
