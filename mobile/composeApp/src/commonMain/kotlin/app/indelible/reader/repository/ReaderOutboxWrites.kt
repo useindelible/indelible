@@ -2,11 +2,11 @@ package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.LocatorSchemaFlat
 import app.indelible.core.offline.CachedHighlight
-import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.applyToCachedHighlight
 import app.indelible.core.offline.readingPositionJson

@@ -50,10 +50,10 @@ fun pdfHighlightsByPage(all: List<HighlightData>): Map<Int, List<PdfHighlightBox
 
 private fun HighlightLocator.drawnRects(): List<NormalizedRect>? {
     val listed = rects.orEmpty().map { NormalizedRect(it.x, it.y, it.width, it.height) }
-    val sides = listOfNotNull(x, y, width, height)
+    val box = listOfNotNull(x, y, width, height).takeIf { it.size == BOX_SIDES }
     return when {
         listed.isNotEmpty() -> listed
-        sides.size == BOX_SIDES -> listOf(NormalizedRect(sides[0], sides[1], sides[2], sides[3]))
+        box != null -> listOf(NormalizedRect(box[0], box[1], box[2], box.last()))
         else -> null
     }
 }

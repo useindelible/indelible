@@ -6,8 +6,8 @@ import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.offline.CapabilitiesUnknownException
-import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.NoSessionException
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
 import app.indelible.reader.model.ArticleToc

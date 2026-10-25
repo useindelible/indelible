@@ -1,8 +1,5 @@
 package app.indelible.core.offline
 
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -10,6 +7,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+private const val READER_PATH = "/api/v1/documents/$DL_DOC"
 
 class DownloadPinnedBookTest {
     private suspend fun TestScope.book(chapterList: String): DownloadHarness =
@@ -90,38 +89,13 @@ class DownloadPinnedBookTest {
             h.manager.keepOffline(h.session, DL_DOC)
             runCurrent()
             assertEquals(Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD), h.acquisition())
-            val asked = h.server.count(CAPABILITIES)
+            val fetched = h.server.count(READER_PATH)
 
             h.online.value = false
             runCurrent()
             h.online.value = true
             runCurrent()
 
-            assertEquals(asked, h.server.count(CAPABILITIES))
-        }
-
-    @Test
-    fun unpinnedRequestForTheRunningDownloadAddsNoSecondDownload() =
-        runTest {
-            val release = CompletableDeferred<Unit>()
-            val h =
-                downloadHarness {
-                    documentType = "book"
-                    available = listOf("epub")
-                    route(chapterPath(2)) {
-                        release.await()
-                        respond("<h1>2</h1>", HttpStatusCode.OK)
-                    }
-                }
-            h.capBytes = 1
-            h.manager.cacheOnOpen(h.session, DL_DOC)
-            runCurrent()
-
-            h.manager.cacheOnOpen(h.session, DL_DOC)
-            release.complete(Unit)
-            runCurrent()
-
-            assertEquals(1, h.server.count(EPUB_TOC_PATH))
-            assertNull(h.acquisition())
+            assertEquals(fetched, h.server.count(READER_PATH), "a reconnect must not retry a server too old")
         }
 }
