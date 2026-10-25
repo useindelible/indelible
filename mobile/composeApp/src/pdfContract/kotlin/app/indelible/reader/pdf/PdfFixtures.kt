@@ -46,6 +46,15 @@ internal object PdfFixtures {
     val rotatedHalf = plain.map { it.copy(rotation = 180) }
     val rotatedThreeQuarters = plain.map { it.copy(rotation = 270) }
 
+    val hyphenated =
+        listOf(
+            FixturePage(
+                LETTER_W,
+                LETTER_H,
+                listOf(FixtureText("question answer-", 72.0, 720.0), FixtureText("ing task", 72.0, 700.0)),
+            ),
+        )
+
     val columns =
         listOf(
             FixturePage(

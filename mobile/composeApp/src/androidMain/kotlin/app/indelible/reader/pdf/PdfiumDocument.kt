@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
+private const val JOINED_HYPHEN = '\u0002'
 private const val QUARTER_TURNS = 4
 private const val DEGREES_PER_TURN = 90
 private const val HALF_TURN = 180
@@ -186,6 +187,7 @@ private class OpenPage(
 
     // Read one character at a time: the bulk text call omits glyphs without unicode and its binding copies
     // past the returned length, while char indices and string offsets must stay one to one.
+    // pdfium marks a line-end hyphen it joined to the next line as U+0002; the hyphen is what the web shows.
     suspend fun chars(): String {
         val known = chars
         if (known != null) return known
@@ -193,8 +195,13 @@ private class OpenPage(
         val count = text.textPageCountChars()
         val builder = StringBuilder(count)
         for (index in 0 until count) {
-            val unicode = text.textPageGetUnicode(index)
-            builder.append(if (unicode == '\u0000') '\uFFFD' else unicode)
+            builder.append(
+                when (val unicode = text.textPageGetUnicode(index)) {
+                    '\u0000' -> '\uFFFD'
+                    JOINED_HYPHEN -> '-'
+                    else -> unicode
+                },
+            )
         }
         return builder.toString().also { chars = it }
     }
