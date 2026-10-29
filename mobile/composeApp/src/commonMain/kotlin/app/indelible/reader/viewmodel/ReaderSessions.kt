@@ -8,6 +8,7 @@ import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.pdf.PdfDocument
 import app.indelible.reader.repository.ReaderRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
@@ -33,14 +34,18 @@ internal class ReaderSessions(
 
     private var left = false
 
+    // A replaced session must never write into the reader that replaced it.
+    private val collectors = mutableListOf<Job>()
+
     fun openBook(
         item: ReaderDocument,
         finished: Boolean,
     ) {
+        close()
         val resumeAt = item.savedPosition(finished) as? ChapterPosition
         val session = EpubReaderSession(documentId, repository, scope, progress, resumeAt)
         epub = session
-        scope.launch {
+        collectors += scope.launch {
             session.state.collect { epub ->
                 output.update {
                     it.copy(epub = epub, progress = epub.percent ?: it.progress, toc = epub.contentsPanel())
@@ -55,10 +60,11 @@ internal class ReaderSessions(
         finished: Boolean,
         percent: Float,
     ) {
+        close()
         val resumeAt = item.savedPosition(finished) as? PagePosition
         val session = PdfReaderSession(documentId, repository, scope, progress, PdfResume(resumeAt, percent), openPdf)
         pdf = session
-        scope.launch {
+        collectors += scope.launch {
             session.state.collect { state ->
                 output.update { it.copy(pdf = state, progress = state.percent ?: it.progress) }
                 if (state.status == PdfStatus.COPY_REMOVED) leaveRemoved()
@@ -79,8 +85,18 @@ internal class ReaderSessions(
     /** True once the removal has queued its own NavigateBack. */
     val leaving: Boolean get() = left
 
+    /** Asks the open book or PDF for its copy again. */
+    fun retry() {
+        pdf?.retry() ?: epub?.retry()
+    }
+
     fun close() {
+        collectors.forEach { it.cancel() }
+        collectors.clear()
         pdf?.close()
+        epub?.close()
+        pdf = null
+        epub = null
     }
 
     // Remove from device closed the file under the reader: leave once.

@@ -38,6 +38,7 @@ internal fun ReaderPdfBody(
     onReaderTap: () -> Unit,
     handleScrollProgress: (Float, Float) -> Unit,
     onOpenStorage: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(pdf.status, pdf.document) {
@@ -80,7 +81,7 @@ internal fun ReaderPdfBody(
             PdfStatusContent(
                 status = pdf.status,
                 downloadFraction = pdf.download,
-                onRetry = session::retry,
+                onRetry = onRetry,
                 onManageStorage = onOpenStorage,
                 modifier = modifier,
             )

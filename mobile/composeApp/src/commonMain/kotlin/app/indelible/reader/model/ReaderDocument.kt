@@ -31,6 +31,8 @@ data class ReaderDocument(
     val summary: String? = null,
     val wordCount: Int? = null,
     val savedAt: Instant = lastReadAt ?: Instant.parse("1970-01-01T00:00:00Z"),
+    /** Built from the list row the server last sent, because the server gave no answer and there is no copy. */
+    val lastSeen: Boolean = false,
 ) {
     val documentId: String get() = id
 

@@ -112,6 +112,7 @@ class ReaderPdfBodyTest {
                         onReaderTap = {},
                         handleScrollProgress = { percent, top -> reports.progress += percent to top },
                         onOpenStorage = {},
+                        onRetry = {},
                         modifier = Modifier.size(300.dp, 700.dp),
                     )
                 }

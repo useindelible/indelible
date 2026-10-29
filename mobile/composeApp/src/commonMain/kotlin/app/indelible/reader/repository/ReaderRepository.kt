@@ -10,6 +10,7 @@ import app.indelible.core.offline.NoSessionException
 import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
+import app.indelible.library.repository.keepAfterTriage
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.EpubToc
@@ -133,7 +134,13 @@ class ApiReaderRepository internal constructor(
     override suspend fun triageItem(
         itemId: String,
         state: String,
-    ): Result<Unit> = libraryApiService.triageItem(itemId, state).map {}
+    ): Result<Unit> {
+        val session = sessionProvider()
+        return libraryApiService
+            .triageItem(itemId, state)
+            .onSuccess { offlineCopy.lists.forget(session, itemId, keepAfterTriage(it.triageState)) }
+            .map {}
+    }
 
     override suspend fun fetchReadableHtml(itemId: String): Result<String> =
         offlineCopy.readableHtml(itemId) { readerApiService.streamAsset(itemId, "readable_html") }

@@ -6,6 +6,7 @@ import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.HighlightListResponse
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.DocumentRevision
+import app.indelible.core.offline.ListSnapshots
 import app.indelible.core.offline.LocalChanges
 import app.indelible.core.offline.OfflineFiles
 import app.indelible.core.offline.OfflineStore
@@ -18,6 +19,7 @@ import app.indelible.core.offline.ServerPart
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.StaleWriteException
 import app.indelible.core.offline.generationDir
+import app.indelible.core.offline.orFromDevice
 import app.indelible.core.offline.progress
 import app.indelible.core.offline.toCachedHighlight
 import app.indelible.reader.model.ArticleToc
@@ -72,6 +74,7 @@ class ReaderOfflineCopy(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     val tags = OfflineTags(files, store, sessionProvider, FALLBACK_BUDGET_MS, dispatcher)
+    val lists = ListSnapshots(store, sessionProvider, clock)
     private val pdf = PdfCopySource(store, files, copies)
 
     suspend fun document(
@@ -91,6 +94,9 @@ class ReaderOfflineCopy(
         return fromCopy ?: steady(session.scope, documentId, { it.position }, fetch)
             .map { it.server.toReaderDocument().withProgress(it.changes.progress(it.server.progress())) }
             .onSuccess { copies.cacheOnOpen(session, documentId) }
+            .orFromDevice {
+                lists.lastSeen(session, documentId)?.toLastSeenDocument(store.localChanges(session.scope, documentId))
+            }
     }
 
     suspend fun highlights(
@@ -287,16 +293,16 @@ class ReaderOfflineCopy(
         fun DocumentReaderResponse.readerPart(): ServerPart =
             ServerPart.Reader(title, json.encodeToString(DocumentReaderResponse.serializer(), this), progress())
 
-        fun ReaderDocument.withProgress(progress: Progress): ReaderDocument =
-            copy(
-                progressPercent = progress.percent,
-                maxProgressPercent = progress.maxPercent,
-                chapterLocator = progress.position?.locator,
-                chapterOffset = progress.position?.offset,
-            )
-
         fun HighlightListResponse.toCached(documentId: String) = highlights.map { it.toCachedHighlight(documentId) }
 
         fun DocumentNoteResponse.toServerNote() = ServerNote(body, updatedAt.toEpochMilliseconds())
     }
 }
+
+internal fun ReaderDocument.withProgress(progress: Progress): ReaderDocument =
+    copy(
+        progressPercent = progress.percent,
+        maxProgressPercent = progress.maxPercent,
+        chapterLocator = progress.position?.locator,
+        chapterOffset = progress.position?.offset,
+    )

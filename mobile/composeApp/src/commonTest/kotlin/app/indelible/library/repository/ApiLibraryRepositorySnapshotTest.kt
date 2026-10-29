@@ -233,16 +233,10 @@ class ApiLibraryRepositorySnapshotTest {
 
 private fun Result<PaginatedItems>.ids(): List<String> = getOrThrow().data.map { it.id }
 
-private const val WHEN = "2026-01-01T00:00:00Z"
-
 private fun entry(
     id: String,
     triage: String = "inbox",
-): String =
-    """{"library_entry_id":"$id","document_id":"doc_${id.removePrefix("entry_")}","object":"library_entry",""" +
-        """"progress_percent":40,"max_progress_percent":40,"last_read_at":null,"finished_at":null,""" +
-        """"title":"Title $id","source":"web","document_type":"pdf","triage_state":"$triage",""" +
-        """"is_favorite":false,"is_shortlisted":false,"saved_at":"$WHEN","created_at":"$WHEN","updated_at":"$WHEN"}"""
+): String = libraryEntryJson(id, triage = triage)
 
 private fun page(vararg ids: String): String =
     """{"data":[${ids.joinToString(",") { entry(it) }}],"page":{"has_more":true,"next_cursor":"next"}}"""

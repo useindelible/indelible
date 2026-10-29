@@ -136,6 +136,7 @@ private fun PdfContent(
             onReaderTap = onReaderTap,
             handleScrollProgress = handleScrollProgress,
             onOpenStorage = onOpenStorage,
+            onRetry = viewModel::retryOpen,
             modifier = Modifier.fillMaxSize(),
         )
     }

@@ -135,7 +135,7 @@ private fun ColumnScope.EpubBodyContent(
         else ->
             EpubStatusContent(
                 status = epub.status,
-                onRetry = session::retry,
+                onRetry = viewModel::retryOpen,
                 onReprocess = viewModel::reprocessBook,
                 modifier = Modifier.fillMaxWidth().weight(1f),
             )

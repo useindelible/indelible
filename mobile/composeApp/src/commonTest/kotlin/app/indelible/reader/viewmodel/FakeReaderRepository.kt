@@ -25,6 +25,9 @@ class FakeReaderRepository : ReaderRepository {
     /** When set, successive getItem calls return these in order, repeating the last entry. */
     var getItemResults: List<Result<ReaderDocument>>? = null
     var getItemCallCount = 0
+
+    /** When set, getItem waits for it after counting the call. */
+    var getItemGate: CompletableDeferred<Unit>? = null
     var triageItemResult: Result<Unit> = Result.success(Unit)
     var fetchHtmlResult: Result<String> = Result.success("<p>Hello world</p>")
     var getArticleTocResult: Result<ArticleToc> =
@@ -82,6 +85,7 @@ class FakeReaderRepository : ReaderRepository {
                 getItemResult
             }
         getItemCallCount++
+        getItemGate?.await()
         return result
     }
 

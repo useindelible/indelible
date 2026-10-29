@@ -30,6 +30,7 @@ import indelible.composeapp.generated.resources.reader_error_save_note
 import indelible.composeapp.generated.resources.reader_error_save_tags
 import indelible.composeapp.generated.resources.reader_saved_library
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -66,11 +67,11 @@ class ReaderViewModel(
     private var leaving = false
 
     private val bookChapterMissing: Boolean
-        get() = epubSession?.let { it.currentChapterKey() == null } == true
+        get() = epubSession?.let { it.currentChapterKey == null } == true
 
     private val highlightActions =
         ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects) {
-            epubSession?.currentChapterKey()
+            epubSession?.currentChapterKey
         }
 
     private val htmlLoader = ReaderHtmlLoader(documentId, repository, viewModelScope, _uiState)
@@ -96,62 +97,72 @@ class ReaderViewModel(
     val pdfSession: PdfReaderSession? get() = sessions.pdf
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
+    private var loadJob: Job? = null
 
     init {
         _uiState.value = ReaderUiState.Loading
         load(initialPreferences)
     }
 
+    /**
+     * Retry from any reader screen. An item opened from its last seen list row is loaded again whole, so the
+     * server's document, resume point, highlights and tags replace what the row could tell.
+     */
     fun retryOpen() {
-        if (_uiState.value !is ReaderUiState.Error) return
+        val state = _uiState.value
+        if (state is ReaderUiState.Success && !state.item.lastSeen) return sessions.retry()
+        if (state !is ReaderUiState.Error && state !is ReaderUiState.Success) return
+        sessions.close()
         _uiState.value = ReaderUiState.Loading
-        load(initialPreferences)
+        load((state as? ReaderUiState.Success)?.preferences ?: initialPreferences)
     }
 
     private fun load(preferences: ReaderPreferences) {
-        viewModelScope.launch {
-            repository
-                .getItem(documentId)
-                .onSuccess { item ->
-                    val contentMode =
-                        when (item.itemType) {
-                            "pdf" -> ReaderContentMode.PDF
-                            "book" -> ReaderContentMode.EPUB
-                            else -> ReaderContentMode.HTML
+        loadJob?.cancel()
+        loadJob =
+            viewModelScope.launch {
+                repository
+                    .getItem(documentId)
+                    .onSuccess { item ->
+                        val contentMode =
+                            when (item.itemType) {
+                                "pdf" -> ReaderContentMode.PDF
+                                "book" -> ReaderContentMode.EPUB
+                                else -> ReaderContentMode.HTML
+                            }
+                        val finished = item.isFinished()
+                        val savedProgress = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
+                        val isPdf = contentMode == ReaderContentMode.PDF
+                        val toc = if (isPdf) TocPanelState(TocStatus.NONE) else TocPanelState()
+
+                        _uiState.value =
+                            ReaderUiState.Success(
+                                item = item,
+                                htmlContent = null,
+                                contentMode = contentMode,
+                                highlights = emptyList(),
+                                progress = savedProgress,
+                                preferences = preferences,
+                                toc = toc,
+                            )
+
+                        recordOpened()
+
+                        when (contentMode) {
+                            ReaderContentMode.HTML -> {
+                                htmlLoader.loadHtmlContent()
+                                htmlLoader.loadArticleToc()
+                            }
+                            ReaderContentMode.EPUB -> sessions.openBook(item, finished)
+                            ReaderContentMode.PDF -> sessions.openPdf(item, finished, savedProgress)
                         }
-                    val finished = item.isFinished()
-                    val savedProgress = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
-                    val isPdf = contentMode == ReaderContentMode.PDF
-                    val toc = if (isPdf) TocPanelState(TocStatus.NONE) else TocPanelState()
-
-                    _uiState.value =
-                        ReaderUiState.Success(
-                            item = item,
-                            htmlContent = null,
-                            contentMode = contentMode,
-                            highlights = emptyList(),
-                            progress = savedProgress,
-                            preferences = preferences,
-                            toc = toc,
-                        )
-
-                    recordOpened()
-
-                    when (contentMode) {
-                        ReaderContentMode.HTML -> {
-                            htmlLoader.loadHtmlContent()
-                            htmlLoader.loadArticleToc()
-                        }
-                        ReaderContentMode.EPUB -> sessions.openBook(item, finished)
-                        ReaderContentMode.PDF -> sessions.openPdf(item, finished, savedProgress)
+                        loadHighlights()
+                        loadItemNoteAndTags()
+                        loadEntities()
+                    }.onFailure {
+                        _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
                     }
-                    loadHighlights()
-                    loadItemNoteAndTags()
-                    loadEntities()
-                }.onFailure {
-                    _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
-                }
-        }
+            }
     }
 
     fun onTocEntryTapped(entry: ArticleTocEntry) {
