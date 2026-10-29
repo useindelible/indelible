@@ -223,7 +223,7 @@ private object UnreachableOfflineStore : OfflineStore {
     override fun observeList(
         scope: String,
         key: String,
-    ): Flow<List<SnapshotRow>> = unreachable()
+    ): Flow<KeptList> = unreachable()
 
     override suspend fun lastSeen(
         scope: String,

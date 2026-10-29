@@ -210,6 +210,7 @@
     <string name="home_offline_chip_offline">Offline</string>
     <string name="home_offline_chip_synced">Online</string>
     <string name="home_offline_empty_body">Nothing is saved on this phone yet. Items you open are kept for later, and you can keep any item offline on purpose.</string>
+    <string name="home_offline_empty_body_last_loaded">Nothing is saved on this phone yet. What you saw last is still here to look through; opening it needs a network until it has a copy.</string>
     <string name="home_offline_empty_next">Next time you are online</string>
     <string name="home_offline_empty_shelf">Your shelf will sit here</string>
     <string name="home_offline_empty_step_keep">Tap Keep offline in its info sheet.</string>
@@ -222,6 +223,7 @@
         <item quantity="other">items on board</item>
     </plurals>
     <string name="home_offline_kept">Kept offline</string>
+    <string name="home_offline_not_on_phone">Not on phone</string>
     <plurals name="home_offline_on_phone">
         <item quantity="one">%1$d on this phone</item>
         <item quantity="other">%1$d on this phone</item>

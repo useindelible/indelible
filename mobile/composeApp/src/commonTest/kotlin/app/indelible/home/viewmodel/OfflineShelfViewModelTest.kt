@@ -3,9 +3,11 @@ package app.indelible.home.viewmodel
 import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.DownloadHarness
 import app.indelible.core.offline.OutboxPayload
+import app.indelible.core.offline.SessionState
 import app.indelible.core.offline.downloadHarness
 import app.indelible.core.offline.enqueue
 import app.indelible.core.offline.seed
+import app.indelible.home.repository.homeRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OfflineShelfViewModelTest {
@@ -192,5 +195,51 @@ class OfflineShelfViewModelTest {
             advanceTimeBy(PROBE_EVERY_MS * 3)
 
             assertEquals(0, probes)
+        }
+
+    @Test
+    fun offlineShowsTheLastLoadedSectionsWithTheShelf() =
+        runTest {
+            val (h, shelf) = shelf()
+            h.seed("doc_b", bytes = 10, openedAt = 1, pinned = true)
+            h.store.replaceList(h.session, "home:continue", listOf(homeRow("doc_a", "book"), homeRow("doc_b")), at = 5)
+            h.store.replaceList(h.session, "home:recent", listOf(homeRow("doc_c", "article", "example.com")), at = 5)
+            runCurrent()
+
+            val state = shelf.state.value
+            assertEquals(listOf("doc_a", "doc_b"), state.continueReading.map { it.documentId })
+            assertEquals(listOf(false, true), state.continueReading.map { it.onPhone })
+            assertEquals(listOf(false, true), state.continueReading.map { it.pinned })
+            assertEquals("example.com", state.recentlySaved.single().domain)
+            assertEquals(5L, state.loadedAt)
+            assertEquals(listOf("doc_b"), state.items.map { it.documentId })
+        }
+
+    @Test
+    fun sectionsFollowAFreshSnapshot() =
+        runTest {
+            val (h, shelf) = shelf()
+            h.store.replaceList(h.session, "home:recent", listOf(homeRow("doc_a")), at = 1)
+            runCurrent()
+
+            h.store.replaceList(h.session, "home:recent", listOf(homeRow("doc_z", progress = 62.5f)), at = 2)
+            runCurrent()
+
+            val item = shelf.state.value.recentlySaved.single()
+            assertEquals("doc_z", item.documentId)
+            assertEquals(62, item.progressPercent)
+        }
+
+    @Test
+    fun anotherScopesRowsAreNotShown() =
+        runTest {
+            val (h, shelf) = shelf()
+            val own = h.session
+            val other = h.signedIn.switchTo("http://a.test|u2")
+            h.store.replaceList(other, "home:recent", listOf(homeRow("doc_b")), at = 1)
+            h.signedIn.registry.publish(SessionState(own.epoch, own))
+            runCurrent()
+
+            assertTrue(shelf.state.value.recentlySaved.isEmpty())
         }
 }

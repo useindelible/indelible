@@ -42,7 +42,6 @@ import app.indelible.home.ui.components.todayLabel
 import app.indelible.home.viewmodel.Greeting
 import app.indelible.home.viewmodel.OfflineShelfState
 import app.indelible.home.viewmodel.ShelfItem
-import app.indelible.home.viewmodel.ShelfNet
 import app.indelible.ui.theme.IndelibleIcons
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
@@ -50,6 +49,7 @@ import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.MonochromeColors
 import app.indelible.ui.theme.OfflineIcons
 import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.home_continue_reading
 import indelible.composeapp.generated.resources.home_offline_cached
 import indelible.composeapp.generated.resources.home_offline_empty_next
 import indelible.composeapp.generated.resources.home_offline_empty_shelf
@@ -62,6 +62,7 @@ import indelible.composeapp.generated.resources.home_offline_shelf
 import indelible.composeapp.generated.resources.home_offline_shelf_count
 import indelible.composeapp.generated.resources.home_pick_up
 import indelible.composeapp.generated.resources.home_progress_percent
+import indelible.composeapp.generated.resources.home_recently_saved
 import indelible.composeapp.generated.resources.home_resume
 import indelible.composeapp.generated.resources.reader_type_article
 import indelible.composeapp.generated.resources.reader_type_book
@@ -70,8 +71,8 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Home without a network: the window-seat card, the item to pick up, and the shelf of copies on
- * this phone. With nothing on the phone it says what to do next time instead.
+ * Home without a network: the window-seat card, the item to pick up, what the server sent last, and the
+ * shelf of copies on this phone. With nothing on the phone it says what to do next time instead.
  */
 @Composable
 fun OfflineHome(
@@ -82,7 +83,6 @@ fun OfflineHome(
     onOpenItem: (String) -> Unit,
 ) {
     val mono = IndelibleTheme.monochrome
-    val resume = shelf.items.firstOrNull()
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(mono.canvas),
         contentPadding =
@@ -91,23 +91,42 @@ fun OfflineHome(
                 bottom = contentPadding.calculateBottomPadding() + IndelibleSpacing.step40,
             ),
     ) {
-        item { Lede(greeting, firstName, mono) }
-        item { OfflineHero(shelf, Modifier.padding(horizontal = IndelibleSpacing.step14)) }
-        if (resume != null) {
-            item { SectionHead(stringResource(Res.string.home_pick_up), null, mono) }
-            item { ResumeCard(resume, mono, onOpen = { onOpenItem(resume.documentId) }) }
-            item {
-                val count = shelf.items.size
-                val total = pluralStringResource(Res.plurals.home_offline_shelf_count, count, count)
-                SectionHead(stringResource(Res.string.home_offline_shelf), total, mono)
+        offlineSections(shelf).forEach { section ->
+            when (section) {
+                OfflineSection.LEDE -> item { Lede(greeting, firstName, mono) }
+                OfflineSection.HERO ->
+                    item { OfflineHero(shelf, Modifier.padding(horizontal = IndelibleSpacing.step14)) }
+                OfflineSection.PICK_UP -> {
+                    val resume = shelf.items.first()
+                    item { SectionHead(stringResource(Res.string.home_pick_up), null, mono) }
+                    item { ResumeCard(resume, mono, onOpen = { onOpenItem(resume.documentId) }) }
+                }
+                OfflineSection.CONTINUE ->
+                    item {
+                        val title = stringResource(Res.string.home_continue_reading)
+                        LastLoadedShelf(title, shelf.continueReading, shelf.loadedAt, mono, onOpenItem)
+                    }
+                OfflineSection.RECENT ->
+                    item {
+                        val title = stringResource(Res.string.home_recently_saved)
+                        LastLoadedShelf(title, shelf.recentlySaved, shelf.loadedAt, mono, onOpenItem)
+                    }
+                OfflineSection.SHELF -> {
+                    item {
+                        val count = shelf.items.size
+                        val total = pluralStringResource(Res.plurals.home_offline_shelf_count, count, count)
+                        SectionHead(stringResource(Res.string.home_offline_shelf), total, mono)
+                    }
+                    item { Shelf(shelf.items, mono, onOpenItem) }
+                }
+                OfflineSection.HINT -> item { Hint(mono) }
+                OfflineSection.EMPTY_SHELF -> {
+                    item { SectionHead(stringResource(Res.string.home_offline_empty_shelf), null, mono) }
+                    item { GhostShelf(mono) }
+                    item { SectionHead(stringResource(Res.string.home_offline_empty_next), null, mono) }
+                    item { Steps(mono) }
+                }
             }
-            item { Shelf(shelf.items, mono, onOpenItem) }
-            if (shelf.net == ShelfNet.OFFLINE) item { Hint(mono) }
-        } else if (shelf.net == ShelfNet.OFFLINE) {
-            item { SectionHead(stringResource(Res.string.home_offline_empty_shelf), null, mono) }
-            item { GhostShelf(mono) }
-            item { SectionHead(stringResource(Res.string.home_offline_empty_next), null, mono) }
-            item { Steps(mono) }
         }
     }
 }
@@ -139,7 +158,7 @@ private fun Lede(
 }
 
 @Composable
-private fun SectionHead(
+internal fun SectionHead(
     title: String,
     count: String?,
     mono: MonochromeColors,
@@ -158,7 +177,7 @@ private fun SectionHead(
 }
 
 @Composable
-private fun kindLabel(documentType: String): String =
+internal fun kindLabel(documentType: String): String =
     when (documentType) {
         "book" -> stringResource(Res.string.reader_type_book)
         "pdf" -> stringResource(Res.string.reader_type_pdf)

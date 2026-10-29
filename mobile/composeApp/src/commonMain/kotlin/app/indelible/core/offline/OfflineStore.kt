@@ -205,7 +205,7 @@ interface ListSnapshotStore {
     fun observeList(
         scope: String,
         key: String,
-    ): Flow<List<SnapshotRow>>
+    ): Flow<KeptList>
 
     suspend fun lastSeen(
         scope: String,

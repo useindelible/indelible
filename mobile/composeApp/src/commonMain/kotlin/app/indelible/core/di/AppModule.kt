@@ -129,7 +129,7 @@ internal fun appModule(
         apiServices()
         single<AuthRepository> { ApiAuthRepository(get(), get()) }
         single { SaveUrlUseCase(get(), get(), get()) }
-        single<HomeRepository> { ApiHomeRepository(get()) }
+        single<HomeRepository> { ApiHomeRepository(get(), get()) }
         single {
             val registry = get<SessionRegistry>()
             ListSnapshots(get<OfflineStore>(), { registry.current.value.session }) { getTimeMillis() }

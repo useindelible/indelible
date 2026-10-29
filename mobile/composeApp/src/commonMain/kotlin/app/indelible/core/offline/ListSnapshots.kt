@@ -12,6 +12,12 @@ data class SnapshotRow(
     val rowJson: String,
 )
 
+/** A list as last kept; [seenAt] is when its newest rows arrived, null for a list never kept. */
+data class KeptList(
+    val rows: List<SnapshotRow>,
+    val seenAt: Long?,
+)
+
 /** Takes the session captured before the request, so a late response never writes or reads another account's rows. */
 class ListSnapshots(
     private val store: ListSnapshotStore,

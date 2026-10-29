@@ -210,6 +210,7 @@
     <string name="home_offline_chip_offline">Hors ligne</string>
     <string name="home_offline_chip_synced">En ligne</string>
     <string name="home_offline_empty_body">Rien n’est encore enregistré sur ce téléphone. Les éléments que vous ouvrez sont gardés pour plus tard, et vous pouvez garder n’importe quel élément hors ligne.</string>
+    <string name="home_offline_empty_body_last_loaded">Rien n’est encore enregistré sur ce téléphone. Ce que vous avez vu en dernier reste consultable ; l’ouvrir demande une connexion tant qu’il n’est pas copié sur le téléphone.</string>
     <string name="home_offline_empty_next">La prochaine fois que vous êtes en ligne</string>
     <string name="home_offline_empty_shelf">Votre étagère sera ici</string>
     <string name="home_offline_empty_step_keep">Touchez Garder hors ligne dans sa fiche.</string>
@@ -222,6 +223,7 @@
         <item quantity="other">éléments à bord</item>
     </plurals>
     <string name="home_offline_kept">Gardé hors ligne</string>
+    <string name="home_offline_not_on_phone">Pas sur le téléphone</string>
     <plurals name="home_offline_on_phone">
         <item quantity="one">%1$d sur ce téléphone</item>
         <item quantity="other">%1$d sur ce téléphone</item>

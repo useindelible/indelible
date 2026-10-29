@@ -61,11 +61,11 @@ class ListSnapshotStoreTest {
             val signedIn = signedInTestStore()
             val store = signedIn.store
             store.replaceList(signedIn.session, "home:recent", listOf(row("a")), at = 1)
-            assertEquals(listOf(row("a")), store.observeList(signedIn.scope, "home:recent").first())
+            assertEquals(KeptList(listOf(row("a")), 1), store.observeList(signedIn.scope, "home:recent").first())
 
             store.replaceList(signedIn.session, "home:recent", listOf(row("b")), at = 2)
 
-            assertEquals(listOf(row("b")), store.observeList(signedIn.scope, "home:recent").first())
+            assertEquals(KeptList(listOf(row("b")), 2), store.observeList(signedIn.scope, "home:recent").first())
         }
 
     @Test

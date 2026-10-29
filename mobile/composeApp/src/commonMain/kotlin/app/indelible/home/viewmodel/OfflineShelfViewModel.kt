@@ -4,9 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.CatalogEntry
+import app.indelible.core.offline.KeptList
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.SnapshotRow
+import app.indelible.core.offline.offlineJson
+import app.indelible.home.model.HomeItem
+import app.indelible.home.repository.HOME_CONTINUE_KEY
+import app.indelible.home.repository.HOME_RECENT_KEY
 import app.indelible.offline.viewmodel.ChangeStatus
 import app.indelible.offline.viewmodel.pendingChanges
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,7 +40,10 @@ import kotlinx.serialization.json.jsonPrimitive
 /** How Home stands with the network: the shelf shows for every state but [ONLINE]. */
 enum class ShelfNet { OFFLINE, SENDING, SYNCED, ONLINE }
 
-/** [progressPercent] is 0..100, null when the item was never read; [imageUrl] is the item's own artwork. */
+/**
+ * [progressPercent] is 0..100, null when the item was never read; [imageUrl] is the item's own artwork.
+ * [onPhone] is false for an item the server last listed that has no copy here, so it cannot open offline.
+ */
 data class ShelfItem(
     val documentId: String,
     val title: String,
@@ -42,6 +51,8 @@ data class ShelfItem(
     val pinned: Boolean,
     val progressPercent: Int?,
     val imageUrl: String? = null,
+    val domain: String? = null,
+    val onPhone: Boolean = true,
 )
 
 /** [queued] changes still to send; [sendTotal] is the queue when the network came back, for "n of m". */
@@ -50,6 +61,9 @@ data class OfflineShelfState(
     val items: List<ShelfItem> = emptyList(),
     val queued: Int = 0,
     val sendTotal: Int = 0,
+    val continueReading: List<ShelfItem> = emptyList(),
+    val recentlySaved: List<ShelfItem> = emptyList(),
+    val loadedAt: Long? = null,
 ) {
     val sent: Int get() = (sendTotal - queued).coerceAtLeast(0)
 }
@@ -114,7 +128,11 @@ class OfflineShelfViewModel(
                 switched -> OfflineShelfState(ShelfNet.ONLINE, shelf.items, shelf.queued)
                 else -> previous.reconnected(shelf)
             }
-        _state.value = next
+        _state.value = next.copy(
+            continueReading = shelf.continueReading,
+            recentlySaved = shelf.recentlySaved,
+            loadedAt = shelf.loadedAt,
+        )
         when {
             next.net == ShelfNet.SYNCED && previous.net != ShelfNet.SYNCED -> leaveAfter(SYNCED_HOLD_MS)
             next.net == ShelfNet.SENDING && (previous.net != next.net || next.queued != previous.queued) ->
@@ -156,16 +174,40 @@ class OfflineShelfViewModel(
             .flatMapLatest { scope -> scope?.let(::shelfOf) ?: flowOf(Shelf()) }
 
     private fun shelfOf(scope: String): Flow<Shelf> =
-        combine(store.observeCatalog(scope), store.observeOutbox(scope)) { catalog, rows -> catalog to rows }
-            .mapLatest { (catalog, rows) ->
-                val copies = store.cachedDocuments(scope).associateBy { it.documentId }
-                Shelf(scope, catalog.toItems(copies), queued(rows, catalog))
-            }
+        combine(
+            store.observeCatalog(scope),
+            store.observeOutbox(scope),
+            store.observeList(scope, HOME_CONTINUE_KEY),
+            store.observeList(scope, HOME_RECENT_KEY),
+            ::ShelfInputs,
+        ).mapLatest { inputs ->
+            val catalog = inputs.catalog
+            val copies = store.cachedDocuments(scope).associateBy { it.documentId }
+            val entries = catalog.associateBy { it.documentId }
+            Shelf(
+                scope = scope,
+                items = catalog.toItems(copies),
+                queued = queued(inputs.rows, catalog),
+                continueReading = inputs.continued.rows.toLastLoaded(entries, copies),
+                recentlySaved = inputs.recent.rows.toLastLoaded(entries, copies),
+                loadedAt = listOfNotNull(inputs.continued.seenAt, inputs.recent.seenAt).maxOrNull(),
+            )
+        }
+
+    private data class ShelfInputs(
+        val catalog: List<CatalogEntry>,
+        val rows: List<OutboxRow>,
+        val continued: KeptList,
+        val recent: KeptList,
+    )
 
     private data class Shelf(
         val scope: String? = null,
         val items: List<ShelfItem> = emptyList(),
         val queued: Int = 0,
+        val continueReading: List<ShelfItem> = emptyList(),
+        val recentlySaved: List<ShelfItem> = emptyList(),
+        val loadedAt: Long? = null,
     )
 }
 
@@ -174,6 +216,26 @@ private fun List<CatalogEntry>.toItems(copies: Map<String, CachedDocumentRow>): 
         val copy = copies[it.documentId]
         val image = copy?.readerJson?.let(::shelfImageOf)
         ShelfItem(it.documentId, it.title, it.documentType, it.pinned, copy?.progressPercent, image)
+    }
+
+private fun List<SnapshotRow>.toLastLoaded(
+    entries: Map<String, CatalogEntry>,
+    copies: Map<String, CachedDocumentRow>,
+): List<ShelfItem> =
+    mapNotNull { row ->
+        runCatching { offlineJson.decodeFromString(HomeItem.serializer(), row.rowJson) }.getOrNull()
+    }.map { item ->
+        val entry = entries[item.id]
+        ShelfItem(
+            documentId = item.id,
+            title = item.title,
+            documentType = item.itemType,
+            pinned = entry?.pinned == true,
+            progressPercent = copies[item.id]?.progressPercent ?: item.progressPercent?.toInt(),
+            imageUrl = item.thumbnailUrl ?: item.leadImageUrl,
+            domain = item.domain,
+            onPhone = entry != null,
+        )
     }
 
 /** The thumbnail, else the lead image, of a copy's stored reader response; null when it has neither. */

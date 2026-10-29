@@ -53,12 +53,12 @@ internal class SqlDelightListSnapshots(
     override fun observeList(
         scope: String,
         key: String,
-    ): Flow<List<SnapshotRow>> =
+    ): Flow<KeptList> =
         context.queries
             .snapshotRows(scope, key)
             .asFlow()
             .mapToList(context.dispatcher)
-            .map { rows -> rows.map(::snapshotRowFrom) }
+            .map { rows -> KeptList(rows.map(::snapshotRowFrom), rows.maxOfOrNull { it.seen_at }) }
 
     override suspend fun lastSeen(
         scope: String,
