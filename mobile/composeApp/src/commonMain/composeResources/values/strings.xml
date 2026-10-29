@@ -469,6 +469,7 @@
     <string name="offline_key_cached">Cached %1$s</string>
     <string name="offline_key_free">Free %1$s</string>
     <string name="offline_key_kept">Kept %1$s</string>
+    <string name="offline_last_loaded">Showing what was last loaded.</string>
     <string name="offline_limit">Storage limit</string>
     <string name="offline_manage_kept">Manage kept items</string>
     <string name="offline_manage_kept_body">Kept items alone use more than the limit. Remove some to free space.</string>

@@ -1,10 +1,12 @@
 package app.indelible.library.viewmodel
 
 import app.indelible.core.i18n.UiMessage
+import app.indelible.core.model.PaginatedItems
 import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.fakeLibraryItem
 import app.indelible.library.viewmodel.FakeLibraryRepository.Companion.paginatedItems
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.library_error_load
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -179,4 +181,148 @@ class LibraryViewModelTest {
             assertEquals("inbox", repository.lastListItemsTriageState)
             assertNull(repository.lastListItemsItemType)
         }
+
+    @Test
+    fun deviceRowsAreShownAsSuccessFromDevice() =
+        runTest(testDispatcher) {
+            repository.listItemsResult = Result.success(devicePage())
+            viewModel = LibraryViewModel(repository)
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertTrue(assertIs<LibraryUiState.Success>(viewModel.uiState.value).fromDevice)
+        }
+
+    @Test
+    fun aDeviceListAsksForNoNextPage() =
+        runTest(testDispatcher) {
+            repository.listItemsResult = Result.success(devicePage())
+            viewModel = LibraryViewModel(repository)
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            viewModel.loadNextPage()
+            advanceUntilIdle()
+
+            assertEquals(1, repository.listItemsCallCount)
+        }
+
+    @Test
+    fun aRefreshTheServerAnswersClearsFromDevice() =
+        runTest(testDispatcher) {
+            repository.listItemsResult = Result.success(devicePage())
+            viewModel = LibraryViewModel(repository)
+            viewModel.refresh()
+            advanceUntilIdle()
+            repository.listItemsResult = Result.success(paginatedItems(listOf(fakeLibraryItem("a"))))
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            assertEquals(false, assertIs<LibraryUiState.Success>(viewModel.uiState.value).fromDevice)
+        }
+
+    @Test
+    fun aNewerRefreshReplacesTheOlderOne() =
+        runTest(testDispatcher) {
+            val older = CompletableDeferred<Result<PaginatedItems>>()
+            val newer = CompletableDeferred<Result<PaginatedItems>>()
+            repository.listItemsAnswer = { call -> if (call == 1) older.await() else newer.await() }
+            viewModel = LibraryViewModel(repository)
+            viewModel.refresh()
+            viewModel.refresh()
+
+            newer.complete(Result.success(paginatedItems(listOf(fakeLibraryItem("newer")))))
+            older.complete(Result.success(paginatedItems(listOf(fakeLibraryItem("older")))))
+            advanceUntilIdle()
+
+            val state = assertIs<LibraryUiState.Success>(viewModel.uiState.value)
+            assertEquals(listOf("newer"), state.items.map { it.id })
+            assertEquals(2, repository.listItemsCallCount)
+        }
+
+    @Test
+    fun aRefreshDropsAnAppendStillInFlight() =
+        runTest(testDispatcher) {
+            val oldPageTwo = CompletableDeferred<Result<PaginatedItems>>()
+            repository.listItemsAnswer = { call ->
+                when (call) {
+                    1 -> Result.success(pageOf("a", "c1"))
+                    2 -> oldPageTwo.await()
+                    else -> Result.success(pageOf("x", "c9"))
+                }
+            }
+            viewModel = LibraryViewModel(repository)
+            viewModel.refresh()
+            viewModel.loadNextPage()
+
+            viewModel.setTriageFilter(TriageFilter.LATER)
+            oldPageTwo.complete(Result.success(paginatedItems(listOf(fakeLibraryItem("b")), nextCursor = "c2")))
+            advanceUntilIdle()
+            viewModel.loadNextPage()
+            advanceUntilIdle()
+
+            val state = assertIs<LibraryUiState.Success>(viewModel.uiState.value)
+            assertEquals(listOf("x", "x"), state.items.map { it.id })
+            assertEquals("c9", repository.lastListItemsCursor)
+        }
+
+    @Test
+    fun noNextPageWhileRefreshing() =
+        runTest(testDispatcher) {
+            val refreshed = CompletableDeferred<Result<PaginatedItems>>()
+            repository.listItemsAnswer = { call ->
+                if (call == 1) {
+                    Result.success(pageOf("a", "c1"))
+                } else {
+                    refreshed.await()
+                }
+            }
+            viewModel = LibraryViewModel(repository)
+            viewModel.refresh()
+            viewModel.refresh()
+
+            viewModel.loadNextPage()
+
+            assertEquals(2, repository.listItemsCallCount)
+        }
+
+    @Test
+    fun refreshingAnErrorShowsLoading() =
+        runTest(testDispatcher) {
+            repository.listItemsResult = Result.failure(IllegalStateException("down"))
+            viewModel = LibraryViewModel(repository)
+            viewModel.refresh()
+            advanceUntilIdle()
+            val answer = CompletableDeferred<Result<PaginatedItems>>()
+            repository.listItemsAnswer = { answer.await() }
+
+            viewModel.refresh()
+
+            assertIs<LibraryUiState.Loading>(viewModel.uiState.value)
+        }
+
+    @Test
+    fun aListOnlyRefreshFetchesCountsOnceTheServerSendsTheList() =
+        runTest(testDispatcher) {
+            repository.listItemsResult = Result.success(devicePage())
+            viewModel = LibraryViewModel(repository)
+
+            viewModel.refresh(withCounts = false)
+            advanceUntilIdle()
+            assertEquals(0, repository.scopeCountsCallCount)
+
+            repository.listItemsResult = Result.success(paginatedItems(listOf(fakeLibraryItem("a"))))
+            viewModel.refresh(withCounts = false)
+            advanceUntilIdle()
+            assertEquals(1, repository.scopeCountsCallCount)
+        }
+
+    private fun pageOf(
+        id: String,
+        cursor: String,
+    ) = paginatedItems(listOf(fakeLibraryItem(id)), hasMore = true, nextCursor = cursor)
+
+    private fun devicePage() = paginatedItems(listOf(fakeLibraryItem("a"))).copy(fromDevice = true)
 }

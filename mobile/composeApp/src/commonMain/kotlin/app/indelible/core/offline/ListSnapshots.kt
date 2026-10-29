@@ -53,6 +53,8 @@ class ListSnapshots(
         bestEffort { store.forget(session, id, keep) }
     }
 
+    fun currentSession(): Session? = sessionProvider()
+
     private fun current(session: Session?): Session? = session?.takeIf { it === sessionProvider() }
 
     // Checked again after the read: the session can end while the read waits for the database.

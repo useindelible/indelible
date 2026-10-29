@@ -469,6 +469,7 @@
     <string name="offline_key_cached">En cache %1$s</string>
     <string name="offline_key_free">Libre %1$s</string>
     <string name="offline_key_kept">Conservé %1$s</string>
+    <string name="offline_last_loaded">Affichage du dernier contenu chargé.</string>
     <string name="offline_limit">Limite de stockage</string>
     <string name="offline_manage_kept">Gérer les éléments conservés</string>
     <string name="offline_manage_kept_body">Les éléments conservés dépassent à eux seuls la limite. Retirez-en pour libérer de l’espace.</string>

@@ -41,6 +41,7 @@ data class LibraryItem(
 data class PaginatedItems(
     val `data`: List<LibraryItem>,
     val page: PageInfo,
+    val fromDevice: Boolean = false,
 )
 
 fun LibraryEntryResponse.toLibraryItem(): LibraryItem =

@@ -1,5 +1,6 @@
 package app.indelible.library.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,20 +46,27 @@ import app.indelible.library.viewmodel.LibraryEffect
 import app.indelible.library.viewmodel.LibraryScope
 import app.indelible.library.viewmodel.LibraryUiState
 import app.indelible.library.viewmodel.LibraryViewModel
+import app.indelible.library.viewmodel.TriageFilter
 import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import app.indelible.profile.viewmodel.AddLibraryEffect
 import app.indelible.profile.viewmodel.AddLibraryViewModel
 import app.indelible.sidebar.model.Collection
 import app.indelible.sidebar.model.SmartList
+import app.indelible.ui.components.IndelibleButton
+import app.indelible.ui.components.IndelibleButtonStyle
+import app.indelible.ui.components.LastLoadedNotice
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.common_coming_soon
+import indelible.composeapp.generated.resources.common_retry
 import indelible.composeapp.generated.resources.library_scope_archive
 import indelible.composeapp.generated.resources.library_scope_inbox
 import indelible.composeapp.generated.resources.library_scope_later
 import indelible.composeapp.generated.resources.library_url_queued
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -78,6 +86,8 @@ fun LibraryScreen(
     userDisplayName: String? = null,
     avatarUrl: String? = null,
     avatarBytes: ByteArray? = null,
+    online: Flow<Boolean> = emptyFlow(),
+    reachable: Flow<Boolean?> = emptyFlow(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val addLibraryUiState by addLibraryViewModel.uiState.collectAsState()
@@ -111,6 +121,12 @@ fun LibraryScreen(
                 }
             }
         }
+    }
+
+    ReloadWhenReachable(online, reachable) {
+        val state = viewModel.uiState.value
+        val stale = state is LibraryUiState.Success && state.fromDevice && !state.isRefreshing
+        if (state is LibraryUiState.Error || stale) viewModel.refresh(withCounts = false)
     }
 
     val scopeTitle = scopeTitle(scope, triageFilter)
@@ -159,48 +175,13 @@ fun LibraryScreen(
                     )
                 }
 
-                when (val state = uiState) {
-                    is LibraryUiState.Loading ->
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-
-                    is LibraryUiState.Error ->
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = state.message.resolve(),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-
-                    is LibraryUiState.Success ->
-                        PullToRefreshBox(
-                            isRefreshing = state.isRefreshing,
-                            onRefresh = { viewModel.refresh() },
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            if (state.items.isEmpty()) {
-                                LibraryEmptyState(triageFilter = triageFilter)
-                            } else {
-                                ItemList(
-                                    state = state,
-                                    offline = offline,
-                                    onNavigateToItem = onNavigateToItem,
-                                    onDelete = { viewModel.deleteItem(it) },
-                                    onTriage = { item, triageState -> viewModel.triageItem(item, triageState) },
-                                    onLoadMore = { viewModel.loadNextPage() },
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            }
-                        }
-                }
+                LibraryContent(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    triageFilter = triageFilter,
+                    offline = offline,
+                    onNavigateToItem = onNavigateToItem,
+                )
             }
 
             ScopeSwitcherPopover(
@@ -238,6 +219,73 @@ fun LibraryScreen(
                 }
             },
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LibraryContent(
+    uiState: LibraryUiState,
+    viewModel: LibraryViewModel,
+    triageFilter: TriageFilter,
+    offline: Map<String, DocumentOfflineStatus>,
+    onNavigateToItem: (String) -> Unit,
+) {
+    when (val state = uiState) {
+        is LibraryUiState.Loading ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+
+        is LibraryUiState.Error ->
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement =
+                    Arrangement.spacedBy(IndelibleSpacing.step16, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = state.message.resolve(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                IndelibleButton(
+                    text = stringResource(Res.string.common_retry),
+                    onClick = { viewModel.refresh() },
+                    style = IndelibleButtonStyle.Secondary,
+                )
+            }
+
+        is LibraryUiState.Success -> {
+            if (state.fromDevice) {
+                LastLoadedNotice(
+                    onRetry = { viewModel.refresh() },
+                    modifier = Modifier.padding(bottom = IndelibleSpacing.step8),
+                )
+            }
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (state.items.isEmpty()) {
+                    LibraryEmptyState(triageFilter = triageFilter)
+                } else {
+                    ItemList(
+                        state = state,
+                        offline = offline,
+                        onNavigateToItem = onNavigateToItem,
+                        onDelete = { viewModel.deleteItem(it) },
+                        onTriage = { item, triageState -> viewModel.triageItem(item, triageState) },
+                        onLoadMore = { viewModel.loadNextPage() },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
     }
 }
 

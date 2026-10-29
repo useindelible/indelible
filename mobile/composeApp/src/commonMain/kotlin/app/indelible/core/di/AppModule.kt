@@ -30,6 +30,7 @@ import app.indelible.core.network.TrashApiService
 import app.indelible.core.offline.ApiOutboxSender
 import app.indelible.core.offline.ConnectivityObserver
 import app.indelible.core.offline.DownloadManager
+import app.indelible.core.offline.ListSnapshots
 import app.indelible.core.offline.OfflineCopies
 import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.offline.OfflineSetFetcher
@@ -129,7 +130,11 @@ internal fun appModule(
         single<AuthRepository> { ApiAuthRepository(get(), get()) }
         single { SaveUrlUseCase(get(), get(), get()) }
         single<HomeRepository> { ApiHomeRepository(get()) }
-        single<LibraryRepository> { ApiLibraryRepository(get()) }
+        single {
+            val registry = get<SessionRegistry>()
+            ListSnapshots(get<OfflineStore>(), { registry.current.value.session }) { getTimeMillis() }
+        }
+        single<LibraryRepository> { ApiLibraryRepository(get(), get()) }
         single<FeedRepository> { ApiFeedRepository(get()) }
         readerRepositories()
         single { MilaRepository(get()) }
