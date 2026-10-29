@@ -181,11 +181,51 @@ interface ScopeStore {
     suspend fun finishPurge(scope: String)
 }
 
+/** The list rows the server last sent to this phone, one list per key; writes are liveness-checked like enqueue. */
+interface ListSnapshotStore {
+    suspend fun replaceList(
+        session: Session,
+        key: String,
+        rows: List<SnapshotRow>,
+        at: Long,
+    )
+
+    suspend fun appendList(
+        session: Session,
+        key: String,
+        rows: List<SnapshotRow>,
+        at: Long,
+    )
+
+    suspend fun list(
+        scope: String,
+        key: String,
+    ): List<SnapshotRow>
+
+    fun observeList(
+        scope: String,
+        key: String,
+    ): Flow<List<SnapshotRow>>
+
+    suspend fun lastSeen(
+        scope: String,
+        documentId: String,
+    ): SnapshotRow?
+
+    /** Drops the document [id] names (by row or document id) from every list whose key [keep] refuses. */
+    suspend fun forget(
+        session: Session,
+        id: String,
+        keep: (String) -> Boolean = { false },
+    )
+}
+
 interface OfflineStore :
     OutboxStore,
     OutboxObservation,
     CachedDocumentStore,
     CachedContentStore,
+    ListSnapshotStore,
     ScopeStore
 
 interface EnqueueTx {

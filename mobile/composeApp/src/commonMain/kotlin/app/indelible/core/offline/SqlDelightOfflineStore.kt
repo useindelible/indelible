@@ -45,6 +45,7 @@ class SqlDelightOfflineStore private constructor(
     OutboxObservation by SqlDelightOutboxObservation(context),
     CachedDocumentStore by SqlDelightCachedDocuments(context),
     CachedContentStore by SqlDelightCachedContent(context),
+    ListSnapshotStore by SqlDelightListSnapshots(context),
     ScopeStore by SqlDelightScopes(context) {
     constructor(
         database: OfflineDatabase,

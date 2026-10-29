@@ -74,6 +74,20 @@ CREATE TABLE document_revision (
     PRIMARY KEY (scope, document_id)
 );
 
+CREATE TABLE list_snapshot (
+    scope TEXT NOT NULL,
+    list_key TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    item_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    row_json TEXT NOT NULL,
+    seen_at INTEGER NOT NULL,
+    PRIMARY KEY (scope, list_key, position)
+);
+CREATE INDEX list_snapshot_document ON list_snapshot(scope, document_id);
+
 insertOutbox:
 INSERT INTO outbox(scope, id, kind, entity_id, document_id, payload_json, created_at, state)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
@@ -289,12 +303,41 @@ DELETE FROM cached_document WHERE scope = ? AND document_id = ? AND pinned = 0;
 changedRows:
 SELECT changes();
 
+snapshotRows:
+SELECT * FROM list_snapshot WHERE scope = ? AND list_key = ? ORDER BY position;
+
+nextSnapshotPosition:
+SELECT COALESCE(MAX(position) + 1, 0) AS next_position FROM list_snapshot WHERE scope = ? AND list_key = ?;
+
+insertSnapshotRow:
+INSERT INTO list_snapshot(scope, list_key, position, item_id, document_id, document_type, title, row_json, seen_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteSnapshotList:
+DELETE FROM list_snapshot WHERE scope = ? AND list_key = ?;
+
+-- A Library row carries its own entry id, a Home row only the document id; the Library row wins.
+lastSeenRow:
+SELECT * FROM list_snapshot WHERE scope = ? AND document_id = ?
+ORDER BY (item_id = document_id), seen_at DESC, position
+LIMIT 1;
+
+snapshotKeys:
+SELECT DISTINCT list_key FROM list_snapshot WHERE scope = ?;
+
+forgetSnapshotRows:
+DELETE FROM list_snapshot
+WHERE scope = :scope AND list_key IN :keys AND document_id IN (
+  SELECT document_id FROM list_snapshot WHERE scope = :scope AND (item_id = :id OR document_id = :id)
+);
+
 purgeRows {
   DELETE FROM cached_document WHERE scope = :scope;
   DELETE FROM cached_asset WHERE scope = :scope;
   DELETE FROM cached_highlight WHERE scope = :scope;
   DELETE FROM outbox WHERE scope = :scope;
   DELETE FROM document_revision WHERE scope = :scope;
+  DELETE FROM list_snapshot WHERE scope = :scope;
 }
 
 deleteClientState:
