@@ -125,9 +125,10 @@ internal val READER_BRIDGE_JS: String =
   document.addEventListener('click', function(e) {
     var t = e.target;
     // These carry their own response; revealing on top of them would fight the
-    // surface they raise.
+    // surface they raise. Only a[href] counts: a book's self-closed <a id="x" />
+    // parses as an open anchor that wraps the whole chapter.
     if (t && t.closest &&
-        t.closest('mark[data-highlight-id], .sum-toggle, .sum-ask, a, .t-seg')) {
+        t.closest('mark[data-highlight-id], .sum-toggle, .sum-ask, a[href], .t-seg')) {
       return;
     }
     var sel = window.getSelection();
