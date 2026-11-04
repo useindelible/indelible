@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { t, type MessageKey } from '$lib/i18n';
 	import { getLibrary, type SortOrder } from '$lib/stores/library.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	const lib = getLibrary();
 
 	let open = $state(false);
+
+	suppressShortcutsWhileOpen(() => open);
 	let buttonEl = $state<HTMLButtonElement | undefined>(undefined);
 
 	const options: { value: SortOrder; labelKey: MessageKey }[] = [

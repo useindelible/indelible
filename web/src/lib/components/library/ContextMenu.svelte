@@ -2,6 +2,7 @@
 	import type { DocumentListEntry, TriageModeDto } from '$lib/api';
 	import { t } from '$lib/i18n';
 	import { triageOptionsForMode, type TriageTab } from '$lib/stores/library.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -26,6 +27,9 @@
 	}: Props = $props();
 
 	let menuEl = $state<HTMLDivElement | undefined>(undefined);
+
+	// Mounted only while the menu is showing, so presence is the open state.
+	suppressShortcutsWhileOpen(() => true);
 
 	$effect(() => {
 		function handleClickOutside(e: MouseEvent) {

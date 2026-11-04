@@ -8,6 +8,13 @@
 	import AddRssFeedModal from '$lib/components/library/AddRssFeedModal.svelte';
 	import XPostModal from '$lib/components/library/XPostModal.svelte';
 	import YouTubeModal from '$lib/components/library/YouTubeModal.svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import ShortcutHost from '$lib/components/shortcuts/ShortcutHost.svelte';
+	import ShortcutHelpOverlay from '$lib/components/shortcuts/ShortcutHelpOverlay.svelte';
+	import { toggleTheme } from '$lib/styles/theme-toggle';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 	import {
 		addDomainEventHandler,
 		startDomainEventStream,
@@ -20,6 +27,7 @@
 	const auth = getAuth();
 	const modal = getModalStore();
 	const library = getLibrary();
+	let helpOpen = $state(false);
 
 	$effect(() => {
 		const userId = auth.user?.id;
@@ -34,29 +42,24 @@
 		stopDomainEventStream();
 	});
 
-	function handleKeydown(e: KeyboardEvent) {
-		if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-			e.preventDefault();
-			modal.open('url');
-			return;
+	registerShortcuts(() => ({
+		scope: 'global',
+		handlers: {
+			add_url: () => modal.open('url'),
+			add_rss: () => modal.open('rss'),
+			open_search: () => goto(resolve('/search')),
+			show_help: () => (helpOpen = true),
+			toggle_dark: (event) => {
+				if (!event.repeat) void toggleTheme();
+			}
 		}
-		const tag = (e.target as HTMLElement)?.tagName;
-		if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable)
-			return;
-		if (e.metaKey || e.ctrlKey || e.altKey) return;
-		if (e.key === 'a' || e.key === 'A') {
-			e.preventDefault();
-			modal.open('url');
-		} else if (e.key === 'r' || e.key === 'R') {
-			e.preventDefault();
-			modal.open('rss');
-		}
-	}
+	}));
+
+	suppressShortcutsWhileOpen(() => modal.overlayOpen);
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if !auth.loading && auth.isAuthenticated}
+	<ShortcutHost />
 	{@render children()}
 	<AddPopover />
 	{#if modal.active === 'url'}<SaveUrlModal />{/if}
@@ -65,4 +68,5 @@
 	{#if modal.active === 'rss'}<AddRssFeedModal />{/if}
 	{#if modal.active === 'x'}<XPostModal />{/if}
 	{#if modal.active === 'youtube'}<YouTubeModal />{/if}
+	{#if helpOpen}<ShortcutHelpOverlay onClose={() => (helpOpen = false)} />{/if}
 {/if}

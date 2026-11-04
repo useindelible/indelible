@@ -12,7 +12,9 @@ use ind_domain::{CollectionId, DomainError, LibraryEntryId, LibraryEntryWithDocu
 
 use super::{PgCollectionRepository, map_sqlx_error};
 use crate::cursor::{clamp_limit, decode_cursor_ts, encode_cursor_ts};
-use crate::repos::library_repo::rows::{LIBRARY_DOC_COLUMNS, LibraryEntryLinkRow};
+use crate::repos::library_repo::rows::{
+    LIBRARY_DOC_COLUMNS, LIBRARY_READ_STATE_JOIN, LibraryEntryLinkRow,
+};
 
 impl PgCollectionRepository {
     pub(super) async fn add_library_entry_link(
@@ -82,9 +84,10 @@ impl PgCollectionRepository {
             ", ce.added_at AS link_added_at \
              FROM collection_entries ce \
              JOIN library_entries le ON le.id = ce.library_entry_id \
-             JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
-             WHERE ce.collection_id = ",
+             JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id",
         );
+        builder.push(LIBRARY_READ_STATE_JOIN);
+        builder.push("WHERE ce.collection_id = ");
         builder.push_bind(collection_id.into_uuid());
         builder.push(" AND le.user_id = ");
         builder.push_bind(user_id.into_uuid());

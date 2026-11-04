@@ -6,6 +6,7 @@
 		type ReaderTypeface
 	} from '$lib/stores/reader-preferences.svelte';
 	import { t, type MessageKey } from '$lib/i18n';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		anchorEl: HTMLElement;
@@ -13,6 +14,9 @@
 	}
 
 	let { anchorEl, onClose }: Props = $props();
+
+	// Mounted only while open, so presence is the open state.
+	suppressShortcutsWhileOpen(() => true);
 
 	const prefs = getReaderPreferences();
 	let popoverEl = $state<HTMLDivElement | undefined>(undefined);
@@ -57,7 +61,6 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			e.preventDefault();
-			e.stopPropagation();
 			onClose();
 		}
 	}

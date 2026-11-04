@@ -40,8 +40,14 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="cmd-backdrop" onmousedown={handleBackdropClick}>
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="cmd-card" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="cmd-card"
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+		aria-label={$t('library_save_view_name')}
+		onclick={(e) => e.stopPropagation()}
+	>
 		<div class="cmd-input-zone">
 			<div class="cmd-input-wrap">
 				<svg class="cmd-icon" viewBox="0 0 24 24" aria-hidden="true">

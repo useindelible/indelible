@@ -5,6 +5,7 @@
 	import { getSearch, resultKey } from '$lib/stores/search.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { openSearchResult } from '$lib/components/search/open-result';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
 	import LibraryShell from '$lib/components/library/LibraryShell.svelte';
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
 	import DetailPanel from '$lib/components/library/DetailPanel.svelte';
@@ -180,38 +181,21 @@
 		setTimeout(() => search.hideSuggestions(), 200);
 	}
 
-	$effect(() => {
-		function onKeydown(e: KeyboardEvent) {
-			const target = e.target as HTMLElement;
-			if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-				return;
+	function moveSelection(offset: number) {
+		const items = search.results;
+		const idx = items.findIndex((r) => resultKey(r) === search.selectedId);
+		const next = offset > 0 ? Math.min(idx + 1, items.length - 1) : Math.max(idx - 1, 0);
+		const item = items[next];
+		search.setSelectedId(item ? resultKey(item) : null);
+	}
 
-			const items = search.results;
-			const idx = items.findIndex((r) => resultKey(r) === search.selectedId);
-
-			switch (e.key) {
-				case 'j':
-				case 'ArrowDown': {
-					e.preventDefault();
-					const next = idx < items.length - 1 ? idx + 1 : idx;
-					const nextItem = items[next];
-					search.setSelectedId(nextItem ? resultKey(nextItem) : null);
-					break;
-				}
-				case 'k':
-				case 'ArrowUp': {
-					e.preventDefault();
-					const prev = idx > 0 ? idx - 1 : 0;
-					const prevItem = items[prev];
-					search.setSelectedId(prevItem ? resultKey(prevItem) : null);
-					break;
-				}
-			}
+	registerShortcuts(() => ({
+		scope: 'search',
+		handlers: {
+			select_next: () => moveSelection(1),
+			select_prev: () => moveSelection(-1)
 		}
-
-		document.addEventListener('keydown', onKeydown);
-		return () => document.removeEventListener('keydown', onKeydown);
-	});
+	}));
 
 	function openResultDetail(id: string) {
 		search.setSelectedId(id);

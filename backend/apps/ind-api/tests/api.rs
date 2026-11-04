@@ -30,7 +30,9 @@ mod api {
     mod knowledge_settings_journey_tests;
     mod library_counts_journey_tests;
     mod library_ingest_failure_tests;
+    mod library_read_state_tests;
     mod library_route_permission_tests;
+    mod mark_unread_tests;
     mod media_journey_tests;
     mod mila_action_retry_journey_tests;
     mod mila_journey_tests;

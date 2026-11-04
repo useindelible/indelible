@@ -15,7 +15,7 @@
 		triageTab: TriageTab;
 		triageMode?: TriageModeDto;
 		onLoadMore: () => void;
-		onSelect: (id: string) => void;
+		onSelect: (id: string, event: MouseEvent) => void;
 		onOpen: (id: string) => void;
 		onTriage: (id: string, state: TriageTab) => void;
 		onDelete?: (id: string) => void;
@@ -42,6 +42,18 @@
 	}: Props = $props();
 
 	let sentinel = $state<HTMLDivElement | undefined>(undefined);
+	let listEl = $state<HTMLDivElement | undefined>(undefined);
+
+	// Enter opens whichever row has focus, so focus must track the selection while it is on a row.
+	$effect(() => {
+		if (!listEl || !selectedId) return;
+		const active = document.activeElement;
+		if (!(active instanceof HTMLElement) || active.getAttribute('role') !== 'option') return;
+		if (!listEl.contains(active)) return;
+		const rows = listEl.querySelectorAll<HTMLElement>('[data-item-id]');
+		const target = [...rows].find((row) => row.dataset.itemId === selectedId);
+		if (target && target !== active) target.focus();
+	});
 
 	$effect(() => {
 		if (!sentinel) return;
@@ -92,7 +104,7 @@
 	);
 </script>
 
-<div class="item-list" role="listbox" aria-label={$t('library_item_list')}>
+<div class="item-list" role="listbox" aria-label={$t('library_item_list')} bind:this={listEl}>
 	{#if loading && items.length === 0}
 		<ItemRowSkeleton count={6} />
 	{:else if isEmpty}
@@ -107,7 +119,7 @@
 					<ItemRow
 						{item}
 						selected={selectedId === item.id}
-						onSelect={() => onSelect(item.id)}
+						onSelect={(event) => onSelect(item.id, event)}
 						onOpen={() => onOpen(item.id)}
 						onTriage={(state) => onTriage(item.id, state)}
 						onDelete={onDelete ? () => onDelete(item.id) : undefined}
