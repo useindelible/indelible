@@ -115,6 +115,43 @@ class HighlightNoteSheetTest {
         }
 
     @Test
+    fun deletingTheNoteClosesTheSheet() =
+        runComposeUiTest {
+            var deleted: (() -> Unit)? = null
+            var dismissed = false
+            setContent {
+                AppTheme {
+                    HighlightNoteSheet(noted, { _, _ -> }, { done -> deleted = done }, onDismiss = { dismissed = true })
+                }
+            }
+
+            onNodeWithText("Delete note").performClick()
+            assertNotNull(deleted).invoke()
+            waitForIdle()
+
+            assertTrue(dismissed)
+        }
+
+    @Test
+    fun deleteThatCompletesAfterMoreTypingKeepsTheEditorOpen() =
+        runComposeUiTest {
+            var deleted: (() -> Unit)? = null
+            var dismissed = false
+            setContent {
+                AppTheme {
+                    HighlightNoteSheet(noted, { _, _ -> }, { done -> deleted = done }, onDismiss = { dismissed = true })
+                }
+            }
+
+            onNodeWithText("Delete note").performClick()
+            onNode(hasSetTextAction()).performTextInput("New ")
+            assertNotNull(deleted).invoke()
+            waitForIdle()
+
+            assertFalse(dismissed)
+        }
+
+    @Test
     fun longNoteKeepsSaveVisible() =
         runComposeUiTest {
             setContent {

@@ -83,7 +83,10 @@ fun HighlightNoteSheet(
             opened != null,
             changed,
             onSave = { trimmed -> onSave(trimmed) { closeIfStill(trimmed) } },
-            onDeleteNote = { onDeleteNote { closeIfStill("") } },
+            onDeleteNote = {
+                val pressedOn = body.trim()
+                onDeleteNote { closeIfStill(pressedOn) }
+            },
         )
     }
     if (askDiscard) {
