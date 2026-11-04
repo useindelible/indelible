@@ -429,6 +429,7 @@ class ReaderViewModel(
         viewModelScope.launch {
             repository
                 .triageItem(libraryEntryId, state)
+                .onSuccess { updateSuccessState { it.copy(item = it.item.copy(triageState = state)) } }
                 .onFailure {
                     _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_move)))
                 }

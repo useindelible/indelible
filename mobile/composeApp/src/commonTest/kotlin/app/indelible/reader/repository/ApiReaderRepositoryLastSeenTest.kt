@@ -11,6 +11,7 @@ import app.indelible.library.repository.libraryEntryJson
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -50,6 +51,33 @@ class ApiReaderRepositoryLastSeenTest {
             assertEquals(40, document.progressPercent)
             assertEquals("entry_1", document.libraryEntryId)
             assertTrue(document.lastSeen)
+        }
+
+    @Test
+    fun aLibraryRowGivesItsBucketAndSavedDate() =
+        runTest {
+            val harness = readerOfflineHarness()
+            val json = libraryEntryJson("entry_1", DL_DOC, "pdf", triage = "later")
+            harness.seen("triage:later:all", SnapshotRow("entry_1", DL_DOC, "pdf", "Title entry_1", json))
+            harness.goOffline()
+
+            val document = harness.document()
+
+            assertEquals("later", document.triageState)
+            assertEquals(Instant.parse("2026-01-01T00:00:00Z"), document.savedAt)
+        }
+
+    @Test
+    fun aHomeRowLeavesTheBucketAndSavedDateUnknown() =
+        runTest {
+            val harness = readerOfflineHarness()
+            harness.seen("home:recent", homeRow(DL_DOC, "pdf"))
+            harness.goOffline()
+
+            val document = harness.document()
+
+            assertNull(document.triageState)
+            assertNull(document.savedAt)
         }
 
     @Test

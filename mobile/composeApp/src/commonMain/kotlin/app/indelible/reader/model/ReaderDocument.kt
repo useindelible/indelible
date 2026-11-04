@@ -19,7 +19,7 @@ data class ReaderDocument(
     val language: String? = null,
     val chapterLocator: String? = null,
     val chapterOffset: Int? = null,
-    val triageState: String? = if (saved) "inbox" else null,
+    val triageState: String? = null,
     val canonicalUrl: String? = url,
     val thumbnailUrl: String? = null,
     val leadImageUrl: String? = null,
@@ -30,7 +30,7 @@ data class ReaderDocument(
     val readingTimeMinutes: Int? = null,
     val summary: String? = null,
     val wordCount: Int? = null,
-    val savedAt: Instant = lastReadAt ?: Instant.parse("1970-01-01T00:00:00Z"),
+    val savedAt: Instant? = null,
     /** Built from the list row the server last sent, because the server gave no answer and there is no copy. */
     val lastSeen: Boolean = false,
 ) {
@@ -56,7 +56,7 @@ fun DocumentReaderResponse.toReaderDocument(): ReaderDocument =
         language = language,
         chapterLocator = chapterLocator,
         chapterOffset = chapterOffset,
-        triageState = if (saved) "inbox" else null,
+        triageState = triageState,
         canonicalUrl = url,
         thumbnailUrl = thumbnailUrl,
         leadImageUrl = leadImageUrl,
@@ -66,5 +66,5 @@ fun DocumentReaderResponse.toReaderDocument(): ReaderDocument =
         readingTimeMinutes = readingTimeMinutes,
         summary = summary ?: excerpt,
         wordCount = wordCount,
-        savedAt = lastReadAt ?: Instant.parse("1970-01-01T00:00:00Z"),
+        savedAt = savedAt,
     )

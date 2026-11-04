@@ -254,6 +254,20 @@ class ReaderViewModelTest {
         }
 
     @Test
+    fun a_move_updates_the_bucket_the_panel_marks() =
+        runTest(testDispatcher) {
+            repository.getItemResult = Result.success(fakeItemDetail(triageState = "archive"))
+            viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events)
+            advanceUntilIdle()
+
+            viewModel.moveToTriage("later")
+            advanceUntilIdle()
+
+            val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
+            assertEquals("later", state.item.triageState)
+        }
+
+    @Test
     fun move_to_triage_rolls_back_on_failure() =
         runTest(testDispatcher) {
             repository.getItemResult = Result.success(fakeItemDetail())

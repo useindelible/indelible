@@ -5,6 +5,7 @@ import app.indelible.core.offline.Progress
 import app.indelible.core.offline.SnapshotRow
 import app.indelible.core.offline.offlineJson
 import app.indelible.reader.model.ReaderDocument
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -18,7 +19,6 @@ private val OPENS_ON_STATUS = setOf("pdf", "book")
 internal fun SnapshotRow.toLastSeenDocument(queued: LocalChanges): ReaderDocument? {
     if (documentType !in OPENS_ON_STATUS) return null
     val fields = runCatching { offlineJson.parseToJsonElement(rowJson).jsonObject }.getOrNull()
-    val triage = fields?.text("triage_state")
     val document = ReaderDocument(
         id = documentId,
         itemType = documentType,
@@ -28,7 +28,8 @@ internal fun SnapshotRow.toLastSeenDocument(queued: LocalChanges): ReaderDocumen
         availableAssets = emptyList(),
         libraryEntryId = fields?.text("library_entry_id"),
         progressPercent = fields?.get("progress_percent")?.jsonPrimitive?.doubleOrNull?.toInt(),
-        triageState = triage ?: "inbox",
+        triageState = fields?.text("triage_state"),
+        savedAt = fields?.text("saved_at")?.let { runCatching { Instant.parse(it) }.getOrNull() },
         lastSeen = true,
     )
     return document.withProgress(queued.progress(Progress(document.progressPercent, null, null)))

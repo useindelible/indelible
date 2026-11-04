@@ -78,10 +78,12 @@ internal fun InfoGrid(
             }
             InfoDivider()
         }
-        InfoRow(stringResource(Res.string.reader_info_saved)) {
-            InfoValueText(LocaleFormatters.date(item.savedAt, LocalizedDateStyle.MEDIUM))
+        item.savedAt?.let {
+            InfoRow(stringResource(Res.string.reader_info_saved)) {
+                InfoValueText(LocaleFormatters.date(it, LocalizedDateStyle.MEDIUM))
+            }
+            InfoDivider()
         }
-        InfoDivider()
         lengthValue(item)?.let { (lead, mut) ->
             InfoRow(stringResource(Res.string.reader_info_length)) { LengthValue(lead = lead, mut = mut) }
             InfoDivider()

@@ -1247,6 +1247,13 @@
           "saved": {
             "type": "boolean"
           },
+          "saved_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "summary": {
             "description": "Resolved short summary. Returns the stored AI summary when present,\nfalling back to `excerpt`. `null` when neither is available.",
             "type": [
@@ -1262,6 +1269,12 @@
           },
           "title": {
             "type": "string"
+          },
+          "triage_state": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "url": {
             "type": [

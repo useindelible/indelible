@@ -241,6 +241,7 @@ class FakeReaderRepository : ReaderRepository {
             itemType: String = "article",
             saved: Boolean = true,
             readableReady: Boolean = true,
+            triageState: String? = if (saved) "inbox" else null,
         ) = ReaderDocument(
             id = documentId,
             itemType = itemType,
@@ -254,6 +255,7 @@ class FakeReaderRepository : ReaderRepository {
             finishedAt = finishedAt,
             availableAssets = listOf("readable_html"),
             lastReadAt = Instant.parse("2024-01-01T00:00:00Z"),
+            triageState = triageState,
         )
 
         fun fakeHighlight(

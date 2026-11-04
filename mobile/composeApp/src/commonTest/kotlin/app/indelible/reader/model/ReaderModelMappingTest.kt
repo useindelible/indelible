@@ -93,6 +93,7 @@ class ReaderModelMappingTest {
     fun mapsGeneratedReaderDocumentIntoAppModel() {
         val lastReadAt = Instant.parse("2026-04-01T12:00:00Z")
         val publishedAt = Instant.parse("2026-03-30T12:00:00Z")
+        val savedAt = Instant.parse("2026-03-01T12:00:00Z")
         val response =
             DocumentReaderResponse(
                 assets = emptyList(),
@@ -109,9 +110,11 @@ class ReaderModelMappingTest {
                 readableReady = true,
                 readingTimeMinutes = 11,
                 saved = true,
+                savedAt = savedAt,
                 summary = "Summary",
                 thumbnailUrl = "https://example.com/thumb.jpg",
                 title = "Mapped Reader",
+                triageState = "later",
                 url = "https://example.com/reader",
                 wordCount = 2400,
             )
@@ -120,14 +123,35 @@ class ReaderModelMappingTest {
 
         assertEquals("doc_123", document.id)
         assertEquals("article", document.itemType)
-        assertEquals("inbox", document.triageState)
+        assertEquals("later", document.triageState)
         assertEquals("example.com", document.domain)
         assertEquals(publishedAt, document.publishedAt)
-        assertEquals(lastReadAt, document.savedAt)
+        assertEquals(savedAt, document.savedAt)
         assertEquals(11, document.readingTimeMinutes)
         assertEquals(2400, document.wordCount)
         assertEquals("https://example.com/thumb.jpg", document.thumbnailUrl)
         assertEquals("https://example.com/lead.jpg", document.leadImageUrl)
+    }
+
+    @Test
+    fun aServerWithoutTheFieldsLeavesTheBucketAndSavedDateUnknown() {
+        val response =
+            DocumentReaderResponse(
+                assets = emptyList(),
+                availableAssets = emptyList(),
+                documentId = "doc_123",
+                documentType = "article",
+                lastReadAt = Instant.parse("2026-04-01T12:00:00Z"),
+                libraryEntryId = "lib_123",
+                readableReady = true,
+                saved = true,
+                title = "Older server",
+            )
+
+        val document = response.toReaderDocument()
+
+        assertNull(document.triageState)
+        assertNull(document.savedAt)
     }
 
     @Test
