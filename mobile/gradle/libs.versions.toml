@@ -33,7 +33,7 @@ detekt = "1.23.8"
 fabrikt = "1.31.2"
 sqldelight = "2.3.2"
 
-pdfium = "1.0.35"
+pdfium = "1.0.35" # ci filter probe
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
