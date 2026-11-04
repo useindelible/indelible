@@ -325,6 +325,19 @@ LIMIT 1;
 snapshotKeys:
 SELECT DISTINCT list_key FROM list_snapshot WHERE scope = ?;
 
+-- A Home row carries no bucket, so only Library rows are rewritten after a move.
+libraryRowsOfDocument:
+SELECT * FROM list_snapshot WHERE scope = ? AND document_id = ? AND item_id != document_id;
+
+setSnapshotRowJson:
+UPDATE list_snapshot SET row_json = ? WHERE scope = ? AND list_key = ? AND position = ?;
+
+cachedReaderJson:
+SELECT reader_json FROM cached_document WHERE scope = ? AND document_id = ?;
+
+setCachedReaderJson:
+UPDATE cached_document SET reader_json = ? WHERE scope = ? AND document_id = ?;
+
 forgetSnapshotRows:
 DELETE FROM list_snapshot
 WHERE scope = :scope AND list_key IN :keys AND document_id IN (

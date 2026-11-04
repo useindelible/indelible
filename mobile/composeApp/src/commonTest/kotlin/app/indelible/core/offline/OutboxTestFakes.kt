@@ -235,6 +235,12 @@ private object UnreachableOfflineStore : OfflineStore {
         id: String,
         keep: (String) -> Boolean,
     ): Unit = unreachable()
+
+    override suspend fun setTriageState(
+        session: Session,
+        documentId: String,
+        state: String,
+    ): Unit = unreachable()
 }
 
 private fun unreachable(): Nothing = throw UnsupportedOperationException("offline store reached unexpectedly")

@@ -56,7 +56,7 @@ class ApiLibraryRepository(
         val session = snapshots.currentSession()
         return libraryApiService
             .triageItem(itemId, state)
-            .onSuccess { snapshots.forget(session, itemId, keepAfterTriage(it.triageState)) }
+            .onSuccess { snapshots.moved(session, it) }
             .map { it.toLibraryItem() }
     }
 
@@ -75,7 +75,7 @@ class ApiLibraryRepository(
         val session = snapshots.currentSession()
         return libraryApiService
             .rearchiveItem(itemId)
-            .onSuccess { snapshots.forget(session, itemId, keepAfterTriage(it.triageState)) }
+            .onSuccess { snapshots.moved(session, it) }
             .map { it.toLibraryItem() }
     }
 

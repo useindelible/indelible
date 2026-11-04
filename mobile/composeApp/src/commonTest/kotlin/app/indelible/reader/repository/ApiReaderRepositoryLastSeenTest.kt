@@ -195,4 +195,44 @@ class ApiReaderRepositoryLastSeenTest {
             assertTrue(harness.store.list(harness.download.session.scope, "triage:inbox:all").isEmpty())
             assertEquals(1, harness.store.list(harness.download.session.scope, "triage:all:pdf").size)
         }
+
+    private fun ReaderOfflineHarness.moveAnswers(triage: String) =
+        server.route("/api/v1/library/entry_1/triage") { json(libraryEntryJson("entry_1", DL_DOC, triage = triage)) }
+
+    @Test
+    fun aMovedItemOpensOfflineInItsNewBucketFromAKeptRow() =
+        runTest {
+            val harness = readerOfflineHarness()
+            harness.seen("triage:all:pdf", libraryRow())
+            harness.moveAnswers("later")
+            harness.repository.triageItem("entry_1", "later")
+            harness.goOffline()
+
+            assertEquals("later", harness.document().triageState)
+        }
+
+    @Test
+    fun aMovedItemOpensOfflineInItsNewBucketFromItsCopy() =
+        runTest {
+            val harness = readerOfflineHarness()
+            harness.keepCopy()
+            harness.seen("triage:inbox:all", libraryRow())
+            harness.moveAnswers("later")
+            harness.repository.triageItem("entry_1", "later")
+            harness.goOffline()
+
+            assertEquals("later", harness.document().triageState)
+        }
+
+    @Test
+    fun aFailedMoveLeavesTheStoredBucket() =
+        runTest {
+            val harness = readerOfflineHarness()
+            harness.seen("triage:all:pdf", libraryRow())
+            harness.server.route("/api/v1/library/entry_1/triage") { respond("", HttpStatusCode.InternalServerError) }
+            harness.repository.triageItem("entry_1", "later")
+            harness.goOffline()
+
+            assertEquals("inbox", harness.document().triageState)
+        }
 }

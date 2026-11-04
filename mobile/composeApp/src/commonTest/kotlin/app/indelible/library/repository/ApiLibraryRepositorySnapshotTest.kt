@@ -196,6 +196,34 @@ class ApiLibraryRepositorySnapshotTest {
         }
 
     @Test
+    fun aMovedItemSaysItsNewBucketInTheListsThatKeepIt() =
+        runTest {
+            val harness = harness()
+            harness.seed("triage:all:pdf", "collection:c1")
+            harness.server.route("/api/v1/library/entry_1/triage") { json(entry("entry_1", triage = "later")) }
+
+            harness.repository().triageItem("entry_1", "later")
+
+            listOf("triage:all:pdf", "collection:c1").forEach { key ->
+                val row = harness.store.list(harness.session.scope, key).single()
+                assertTrue("\"triage_state\":\"later\"" in row.rowJson, row.rowJson)
+            }
+        }
+
+    @Test
+    fun rearchivedItemSaysInboxInTheListsThatKeepIt() =
+        runTest {
+            val harness = harness()
+            harness.seed("triage:all:pdf")
+            harness.server.route("/api/v1/library/entry_1/restore") { json(entry("entry_1", triage = "inbox")) }
+
+            harness.repository().rearchiveItem("entry_1")
+
+            val row = harness.store.list(harness.session.scope, "triage:all:pdf").single()
+            assertTrue("\"triage_state\":\"inbox\"" in row.rowJson, row.rowJson)
+        }
+
+    @Test
     fun rearchivedItemLeavesArchiveAndStaysInAll() =
         runTest {
             val harness = harness()

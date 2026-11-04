@@ -59,6 +59,16 @@ class ListSnapshots(
         bestEffort { store.forget(session, id, keep) }
     }
 
+    /** What the phone keeps of a moved document says [state], for reopening it with no network. */
+    suspend fun setTriageState(
+        session: Session?,
+        documentId: String,
+        state: String,
+    ) {
+        session ?: return
+        bestEffort { store.setTriageState(session, documentId, state) }
+    }
+
     fun currentSession(): Session? = sessionProvider()
 
     private fun current(session: Session?): Session? = session?.takeIf { it === sessionProvider() }

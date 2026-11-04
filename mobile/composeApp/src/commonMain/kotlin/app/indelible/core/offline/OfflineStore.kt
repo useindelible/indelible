@@ -218,6 +218,13 @@ interface ListSnapshotStore {
         id: String,
         keep: (String) -> Boolean = { false },
     )
+
+    /** Rewrites the bucket in the document's Library rows and its reader copy, in one transaction. */
+    suspend fun setTriageState(
+        session: Session,
+        documentId: String,
+        state: String,
+    )
 }
 
 interface OfflineStore :

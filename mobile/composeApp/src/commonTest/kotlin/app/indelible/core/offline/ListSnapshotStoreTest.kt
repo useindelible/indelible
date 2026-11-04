@@ -138,4 +138,35 @@ class ListSnapshotStoreTest {
             }
             assertTrue(signedIn.store.list("origin|a", "home:recent").isEmpty())
         }
+
+    @Test
+    fun aMoveRewritesTheDocumentsLibraryRowsOnly() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val other = row("b", itemId = "entry_b")
+            val home = row("a")
+            store.replaceList(signedIn.session, "triage:all:all", listOf(row("a", itemId = "entry_a"), other), at = 1)
+            store.replaceList(signedIn.session, "home:recent", listOf(home), at = 1)
+
+            store.setTriageState(signedIn.session, "a", "later")
+
+            val rows = store.list(signedIn.scope, "triage:all:all")
+            assertTrue("""triage_state":"later""" in rows.first().rowJson, rows.first().rowJson)
+            assertEquals(other, rows.last())
+            assertEquals(listOf(home), store.list(signedIn.scope, "home:recent"))
+        }
+
+    @Test
+    fun aMoveFromAStaleSessionWritesNothing() =
+        runTest {
+            val signedIn = signedInTestStore("origin|a")
+            val moved = row("a", itemId = "entry_a")
+            signedIn.store.replaceList(signedIn.session, "triage:all:all", listOf(moved), at = 1)
+            val stale = signedIn.session
+            signedIn.switchTo("origin|a")
+
+            assertFailsWith<StaleWriteException> { signedIn.store.setTriageState(stale, "a", "later") }
+            assertEquals(listOf(moved), signedIn.store.list("origin|a", "triage:all:all"))
+        }
 }

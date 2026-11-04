@@ -5,6 +5,9 @@ import app.cash.sqldelight.coroutines.mapToList
 import app.indelible.db.List_snapshot
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 internal class SqlDelightListSnapshots(
     private val context: SqlDelightStoreContext,
@@ -89,6 +92,29 @@ internal class SqlDelightListSnapshots(
         }
     }
 
+    override suspend fun setTriageState(
+        session: Session,
+        documentId: String,
+        state: String,
+    ) {
+        context.write {
+            context.database.transaction {
+                context.requireLive(session)
+                val queries = context.queries
+                queries.libraryRowsOfDocument(session.scope, documentId).executeAsList().forEach { row ->
+                    row.row_json.withTriageState(state)?.let {
+                        queries.setSnapshotRowJson(it, row.scope, row.list_key, row.position)
+                    }
+                }
+                queries
+                    .cachedReaderJson(session.scope, documentId)
+                    .executeAsOneOrNull()
+                    ?.withTriageState(state)
+                    ?.let { queries.setCachedReaderJson(it, session.scope, documentId) }
+            }
+        }
+    }
+
     private fun insert(
         scope: String,
         key: String,
@@ -110,6 +136,11 @@ internal class SqlDelightListSnapshots(
             )
         }
     }
+}
+
+private fun String.withTriageState(state: String): String? {
+    val fields = runCatching { offlineJson.parseToJsonElement(this).jsonObject }.getOrNull() ?: return null
+    return JsonObject(fields + ("triage_state" to JsonPrimitive(state))).toString()
 }
 
 private fun snapshotRowFrom(row: List_snapshot): SnapshotRow =

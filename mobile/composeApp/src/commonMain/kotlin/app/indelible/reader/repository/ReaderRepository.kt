@@ -10,7 +10,7 @@ import app.indelible.core.offline.NoSessionException
 import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
-import app.indelible.library.repository.keepAfterTriage
+import app.indelible.library.repository.moved
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.EpubToc
@@ -138,7 +138,7 @@ class ApiReaderRepository internal constructor(
         val session = sessionProvider()
         return libraryApiService
             .triageItem(itemId, state)
-            .onSuccess { offlineCopy.lists.forget(session, itemId, keepAfterTriage(it.triageState)) }
+            .onSuccess { offlineCopy.lists.moved(session, it) }
             .map {}
     }
 
