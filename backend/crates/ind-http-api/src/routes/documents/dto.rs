@@ -65,6 +65,11 @@ pub struct DocumentReaderResponse {
     pub library_entry_id: Option<String>,
     pub saved: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub triage_state: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<String>, format = DateTime)]
+    pub saved_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub progress_percent: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_progress_percent: Option<i32>,
@@ -145,13 +150,16 @@ impl DocumentReaderResponse {
                 })
         });
         let state = view.state;
+        let entry = view.library_entry.as_ref();
         Self {
             document_id: view.document.id.to_string(),
             title: view.document.title,
             url: view.document.canonical_url.or(view.document.original_url),
             document_type: view.document.document_type.as_str().to_string(),
-            library_entry_id: view.library_entry_id.map(|id| id.to_string()),
-            saved: view.library_entry_id.is_some(),
+            library_entry_id: entry.map(|entry| entry.id.to_string()),
+            saved: entry.is_some(),
+            triage_state: entry.map(|entry| entry.triage_state.as_str().to_string()),
+            saved_at: entry.map(|entry| entry.saved_at),
             progress_percent: state.as_ref().and_then(|s| s.progress_percent),
             max_progress_percent: state.as_ref().and_then(|s| s.max_progress_percent),
             chapter_locator: state.as_ref().and_then(|s| s.chapter_locator.clone()),

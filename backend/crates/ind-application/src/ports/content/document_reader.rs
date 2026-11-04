@@ -1,13 +1,12 @@
 use super::*;
-use ind_domain::{Document, DocumentAsset, DocumentId, LibraryEntryId, UserDocumentState};
+use ind_domain::{Document, DocumentAsset, DocumentId, LibraryEntry, UserDocumentState};
 
 /// Reader read-model for a materialized document. Distinguishes a prepared-but-unsaved
-/// document (`library_entry_id` is `None`) from a saved Library entry (`Some`). See
-/// docs/document-feed-library-architecture.md (Document Reader).
+/// document (`library_entry` is `None`) from a saved Library entry (`Some`).
 pub struct DocumentReaderView {
     pub document: Document,
     pub state: Option<UserDocumentState>,
-    pub library_entry_id: Option<LibraryEntryId>,
+    pub library_entry: Option<LibraryEntry>,
     pub assets: Vec<DocumentAsset>,
 }
 
