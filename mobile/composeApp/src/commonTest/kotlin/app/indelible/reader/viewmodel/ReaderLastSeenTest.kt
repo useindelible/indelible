@@ -126,6 +126,38 @@ class ReaderLastSeenTest {
         }
 
     @Test
+    fun aReplacedOpensLateAnswersNeverOverwriteTheRetry() =
+        runTest(testDispatcher) {
+            val server = fakeItemDetail(id = "lib_1", itemType = "pdf")
+            val first = lastSeen("pdf").copy(libraryEntryId = "lib_1")
+            repository.getItemResults = listOf(Result.success(first), Result.success(server))
+            val oldAnswers = CompletableDeferred<Unit>()
+            repository.highlightsGate = oldAnswers
+            repository.metadataGate = oldAnswers
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            repository.highlightsGate = null
+            repository.metadataGate = null
+            repository.listHighlightsResult = Result.success(listOf(fakeHighlight(id = "hlt_new")))
+            repository.getItemNoteResult = Result.success("new note")
+            repository.getItemTagsResult = Result.success(listOf("new"))
+            viewModel.retryOpen()
+            advanceUntilIdle()
+
+            repository.listHighlightsResult = Result.success(listOf(fakeHighlight(id = "hlt_old")))
+            repository.getItemNoteResult = Result.success("old note")
+            repository.getItemTagsResult = Result.success(listOf("old"))
+            oldAnswers.complete(Unit)
+            advanceUntilIdle()
+
+            val state = viewModel.success()
+            assertEquals(listOf("hlt_new"), state.highlights.map { it.id })
+            assertEquals("new note", state.itemNote)
+            assertEquals(listOf("new"), state.itemTags)
+        }
+
+    @Test
     fun aSecondRetryWhileLoadingSendsNoSecondRequest() =
         runTest(testDispatcher) {
             val viewModel = viewModel()

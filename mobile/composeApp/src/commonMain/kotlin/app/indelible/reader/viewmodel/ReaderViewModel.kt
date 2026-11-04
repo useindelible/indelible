@@ -30,6 +30,7 @@ import indelible.composeapp.generated.resources.reader_error_save_note
 import indelible.composeapp.generated.resources.reader_error_save_tags
 import indelible.composeapp.generated.resources.reader_saved_library
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -224,8 +225,9 @@ class ReaderViewModel(
         }
     }
 
-    private fun loadHighlights() {
-        viewModelScope.launch {
+    // These reads are children of the open, so a Retry that replaces it also drops their late answers.
+    private fun CoroutineScope.loadHighlights() {
+        launch {
             val loaded = repository.listHighlights(documentId)
             updateSuccessState { state ->
                 state.copy(highlights = loaded.getOrDefault(state.highlights), highlightsLoaded = true)
@@ -234,22 +236,22 @@ class ReaderViewModel(
     }
 
     /** Entities are supplementary: a failed fetch leaves the list empty and the section hidden. */
-    private fun loadEntities() {
-        viewModelScope.launch {
+    private fun CoroutineScope.loadEntities() {
+        launch {
             repository
                 .listDocumentEntities(documentId)
                 .onSuccess { entities -> updateSuccessState { it.copy(entities = entities) } }
         }
     }
 
-    private fun loadItemNoteAndTags() {
-        viewModelScope.launch {
+    private fun CoroutineScope.loadItemNoteAndTags() {
+        launch {
             repository
                 .getItemNote(documentId)
                 .onSuccess { note -> updateSuccessState { it.copy(itemNote = note, itemNoteLoaded = true) } }
         }
         val libraryEntryId = (_uiState.value as? ReaderUiState.Success)?.item?.libraryEntryId ?: return
-        viewModelScope.launch {
+        launch {
             repository
                 .getItemTags(libraryEntryId)
                 .onSuccess { tags -> updateSuccessState { it.copy(itemTags = tags) } }
