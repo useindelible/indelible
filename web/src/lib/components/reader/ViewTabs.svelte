@@ -25,6 +25,8 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
 		e.preventDefault();
+		// The book reader binds the same arrows to chapters at the window level.
+		e.stopPropagation();
 
 		const enabledTabs = allTabs.filter((t) => isEnabled(t.value));
 		const currentIndex = enabledTabs.findIndex((t) => t.value === activeTab);

@@ -99,6 +99,13 @@ pub trait DocumentReaderOperations: Send + Sync {
         origin: EventOrigin,
     ) -> BoxFuture<'_, Result<UserDocumentState, AppError>>;
 
+    /// Resets read status while keeping the chapter position.
+    fn mark_unread(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<(), AppError>>;
+
     fn append_reading_events(
         &self,
         user_id: UserId,

@@ -200,4 +200,24 @@ impl UserDocumentStateRepository for PgUserDocumentStateRepository {
         projection::project_opened(&mut tx, user_id, document_id).await?;
         tx.commit().await.map_err(map_state_error)
     }
+
+    async fn clear_read_state(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> Result<(), AppError> {
+        sqlx::query!(
+            "UPDATE user_document_state \
+             SET progress_percent = NULL, max_progress_percent = NULL, last_read_at = NULL, \
+                 finished_at = NULL, updated_at = now() \
+             WHERE user_id = $1 AND document_id = $2",
+            user_id.into_uuid(),
+            document_id.into_uuid(),
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| super::map_sqlx_error("user_document_state", "state conflict", err))?;
+
+        Ok(())
+    }
 }

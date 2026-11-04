@@ -28,6 +28,7 @@
 	import { createProgressSaver } from '$lib/components/reader/progress-saver';
 	import { getReaderPreferences } from '$lib/stores/reader-preferences.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
 	import { applyTheme, getSavedTheme } from '$lib/styles/theme';
 	import { t } from '$lib/i18n';
 
@@ -568,34 +569,25 @@
 		return null;
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		const tag = (e.target as HTMLElement)?.tagName;
-		if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable)
-			return;
-
-		if (e.key === 'Escape') {
-			e.preventDefault();
-			if (showTypography) {
-				showTypography = false;
-			} else if (mobileTocOpen) {
-				mobileTocOpen = false;
-			} else if (compactDetailOpen) {
-				compactDetailOpen = false;
-			} else {
-				handleBack();
-			}
-		}
-
-		if (e.key === 'ArrowLeft' && !e.metaKey && !e.ctrlKey) {
-			handlePrevChapter();
-		}
-		if (e.key === 'ArrowRight' && !e.metaKey && !e.ctrlKey) {
-			handleNextChapter();
+	function handleEscape() {
+		if (mobileTocOpen) {
+			mobileTocOpen = false;
+		} else if (compactDetailOpen) {
+			compactDetailOpen = false;
+		} else {
+			handleBack();
 		}
 	}
-</script>
 
-<svelte:window onkeydown={handleKeydown} />
+	registerShortcuts(() => ({
+		scope: 'reader',
+		handlers: {
+			reader_back: handleEscape,
+			chapter_prev: handlePrevChapter,
+			chapter_next: handleNextChapter
+		}
+	}));
+</script>
 
 <div class="book-reader" class:sepia-bg={sepiaActive}>
 	{#if initError}

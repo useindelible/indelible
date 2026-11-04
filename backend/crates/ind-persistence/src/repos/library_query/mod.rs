@@ -6,7 +6,7 @@ use ind_application::AppError;
 use ind_application::repos::{Cursor, Page};
 use ind_domain::{FilterNode, LibraryEntryWithDocument, UserId};
 
-use super::library_repo::rows::{LIBRARY_DOC_COLUMNS, LibraryWithDocRow};
+use super::library_repo::rows::{LIBRARY_DOC_COLUMNS, LIBRARY_READ_STATE_JOIN, LibraryWithDocRow};
 use crate::cursor::{clamp_limit, decode_cursor_ts, encode_cursor_ts};
 
 mod filters;
@@ -34,9 +34,10 @@ pub(crate) async fn query_library_entries_page(
     builder.push(LIBRARY_DOC_COLUMNS);
     builder.push(
         " FROM library_entries le \
-         JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id \
-         WHERE le.user_id = ",
+         JOIN documents d ON d.id = le.document_id AND d.user_id = le.user_id",
     );
+    builder.push(LIBRARY_READ_STATE_JOIN);
+    builder.push("WHERE le.user_id = ");
     builder.push_bind(user_id.into_uuid());
 
     if filter.trashed_only {

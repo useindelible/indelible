@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_document_state SET progress_percent = NULL, max_progress_percent = NULL, last_read_at = NULL, finished_at = NULL, updated_at = now() WHERE user_id = $1 AND document_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f34696e5d5af8817ad6ff04581bd389aed8b26656a5d1560c8fdb487fc80b861"
+}

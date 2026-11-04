@@ -344,6 +344,15 @@ impl DocumentReaderService {
             .append_reading_events(user_id, document_id, &events)
             .await
     }
+
+    pub async fn mark_unread(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> Result<(), AppError> {
+        self.require_document(user_id, document_id).await?;
+        self.state_repo.clear_read_state(user_id, document_id).await
+    }
 }
 
 impl DocumentReaderOperations for DocumentReaderService {
@@ -424,6 +433,14 @@ impl DocumentReaderOperations for DocumentReaderService {
         events: Vec<NewReadingEvent>,
     ) -> BoxFuture<'_, Result<AppendOutcome, AppError>> {
         Box::pin(self.append_reading_events(user_id, document_id, events))
+    }
+
+    fn mark_unread(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<(), AppError>> {
+        Box::pin(self.mark_unread(user_id, document_id))
     }
 }
 

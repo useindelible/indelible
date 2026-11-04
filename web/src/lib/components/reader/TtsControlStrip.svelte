@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { VoicePersonaResponse } from '$lib/api/generated/types.gen';
 	import { t } from '$lib/i18n';
+	import { suppressShortcutsWhileOpen } from '$lib/shortcuts/modal.svelte';
 
 	interface Props {
 		playing: boolean;
@@ -42,6 +43,8 @@
 
 	let showSpeedPopover = $state(false);
 	let showVoicePopover = $state(false);
+
+	suppressShortcutsWhileOpen(() => showSpeedPopover || showVoicePopover);
 
 	let speedWrapperEl = $state<HTMLDivElement | undefined>(undefined);
 	let voiceWrapperEl = $state<HTMLDivElement | undefined>(undefined);
@@ -186,8 +189,10 @@
 			onclick={handleSeekClick}
 			onkeydown={(e) => {
 				if (e.key === 'ArrowLeft') {
+					e.stopPropagation();
 					onSeek(Math.max(0, currentTime - 5));
 				} else if (e.key === 'ArrowRight') {
+					e.stopPropagation();
 					onSeek(Math.min(duration, currentTime + 5));
 				}
 			}}

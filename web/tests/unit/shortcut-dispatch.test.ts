@@ -1,0 +1,216 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import { resolveShortcut, type ResolvableEvent, type ScopeLayer } from '$lib/shortcuts/dispatch';
+
+function press(key: string, modifiers: Partial<ResolvableEvent> = {}): ResolvableEvent {
+	return { key, metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, ...modifiers };
+}
+
+const globalLayer: ScopeLayer = {
+	scope: 'global',
+	handlers: {
+		add_url: vi.fn(),
+		add_rss: vi.fn(),
+		open_search: vi.fn(),
+		show_help: vi.fn(),
+		toggle_dark: vi.fn()
+	}
+};
+
+const libraryLayer: ScopeLayer = {
+	scope: 'library',
+	handlers: {
+		triage_archive: vi.fn(),
+		triage_inbox: vi.fn(),
+		triage_later: vi.fn(),
+		open_item: vi.fn(),
+		mark_unread: vi.fn(),
+		select_next: vi.fn(),
+		select_prev: vi.fn()
+	}
+};
+
+const searchLayer: ScopeLayer = {
+	scope: 'search',
+	handlers: { select_next: vi.fn(), select_prev: vi.fn() }
+};
+
+const readerLayer: ScopeLayer = {
+	scope: 'reader',
+	handlers: {
+		reader_back: vi.fn(),
+		focus_toggle: vi.fn(),
+		chapter_prev: vi.fn(),
+		chapter_next: vi.fn()
+	}
+};
+
+function resolve(event: ResolvableEvent, layers: ScopeLayer[] = [globalLayer], typing = false) {
+	return resolveShortcut({ event, layers, typing });
+}
+
+describe('resolveShortcut', () => {
+	it('gives a to archive and never also to the add modal', () => {
+		expect(resolve(press('a'), [globalLayer, libraryLayer])?.id).toBe('triage_archive');
+	});
+
+	it('leaves a unclaimed outside the library', () => {
+		expect(resolve(press('a'))).toBeNull();
+	});
+
+	it('ignores cmd+a and ctrl+a so select-all still belongs to the browser', () => {
+		const layers = [globalLayer, libraryLayer];
+		expect(resolve(press('a', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('a', { ctrlKey: true }), layers)).toBeNull();
+	});
+
+	it('opens the add modal on n, bare or with mod', () => {
+		expect(resolve(press('n'))?.id).toBe('add_url');
+		expect(resolve(press('n', { metaKey: true }))?.id).toBe('add_url');
+		expect(resolve(press('n', { ctrlKey: true }))?.id).toBe('add_url');
+	});
+
+	it('claims nothing while the user is typing, modifiers included', () => {
+		const layers = [globalLayer, libraryLayer];
+		expect(resolve(press('a'), layers, true)).toBeNull();
+		expect(resolve(press('n'), layers, true)).toBeNull();
+		expect(resolve(press('n', { metaKey: true }), layers, true)).toBeNull();
+	});
+
+	it('treats letter chords as case-insensitive and shift-agnostic', () => {
+		const layers = [globalLayer, libraryLayer];
+		expect(resolve(press('A'), layers)?.id).toBe('triage_archive');
+		expect(resolve(press('J', { shiftKey: true }), layers)?.id).toBe('select_next');
+	});
+
+	it('binds the arrow aliases alongside j and k', () => {
+		const layers = [globalLayer, libraryLayer];
+		expect(resolve(press('ArrowDown'), layers)?.id).toBe('select_next');
+		expect(resolve(press('ArrowUp'), layers)?.id).toBe('select_prev');
+	});
+
+	it('rejects alt-modified chords that no binding declares', () => {
+		expect(resolve(press('n', { altKey: true }))).toBeNull();
+	});
+
+	it('lets an exclusive layer swallow everything beneath it', () => {
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			libraryLayer,
+			{ scope: 'modal', handlers: {}, exclusive: true }
+		];
+		expect(resolve(press('a'), layers)).toBeNull();
+		expect(resolve(press('n'), layers)).toBeNull();
+	});
+
+	it('stays silent during IME composition', () => {
+		expect(resolve({ ...press('n'), isComposing: true })).toBeNull();
+		expect(resolve({ ...press('n'), keyCode: 229 })).toBeNull();
+	});
+
+	it('binds the digit row and enter to triage and open in the library', () => {
+		const layers = [globalLayer, libraryLayer];
+		expect(resolve(press('1'), layers)?.id).toBe('triage_inbox');
+		expect(resolve(press('2'), layers)?.id).toBe('triage_later');
+		expect(resolve(press('3'), layers)?.id).toBe('triage_archive');
+		expect(resolve(press('Enter'), layers)?.id).toBe('open_item');
+		expect(resolve(press('u'), layers)?.id).toBe('mark_unread');
+		expect(resolve(press('u', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('1', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('Enter', { altKey: true }), layers)).toBeNull();
+	});
+
+	it('moves the search selection on bare j and k only', () => {
+		const layers = [globalLayer, searchLayer];
+		expect(resolve(press('j'), layers)?.id).toBe('select_next');
+		expect(resolve(press('ArrowUp'), layers)?.id).toBe('select_prev');
+		expect(resolve(press('j', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('k', { ctrlKey: true }), layers)?.id).toBe('open_search');
+		expect(resolve(press('k', { altKey: true }), layers)).toBeNull();
+	});
+
+	it('gives the reader escape, f, and the chapter arrows without modifiers', () => {
+		const layers = [globalLayer, readerLayer];
+		expect(resolve(press('Escape'), layers)?.id).toBe('reader_back');
+		expect(resolve(press('F', { shiftKey: true }), layers)?.id).toBe('focus_toggle');
+		expect(resolve(press('ArrowLeft'), layers)?.id).toBe('chapter_prev');
+		expect(resolve(press('ArrowRight'), layers)?.id).toBe('chapter_next');
+		expect(resolve(press('f', { metaKey: true }), layers)).toBeNull();
+		expect(resolve(press('ArrowLeft', { altKey: true }), layers)).toBeNull();
+		expect(resolve(press('ArrowRight', { ctrlKey: true }), layers)).toBeNull();
+	});
+
+	it('hands escape to an open popover instead of leaving the reader', () => {
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			readerLayer,
+			{ scope: 'modal', handlers: {}, exclusive: true }
+		];
+		expect(resolve(press('Escape'), layers)).toBeNull();
+	});
+
+	it('opens search on mod+k even while a scope binds bare k', () => {
+		const layers = [globalLayer, searchLayer];
+		expect(resolve(press('k', { metaKey: true }), layers)?.id).toBe('open_search');
+		expect(resolve(press('k', { ctrlKey: true }), layers)?.id).toBe('open_search');
+		expect(resolve(press('k'), layers)?.id).toBe('select_prev');
+		expect(resolve(press('k', { metaKey: true }), layers, true)).toBeNull();
+	});
+
+	it('shows help on ? however the layout produces it', () => {
+		expect(resolve(press('?', { shiftKey: true }))?.id).toBe('show_help');
+		expect(resolve(press('?'))?.id).toBe('show_help');
+		expect(resolve(press('/', { shiftKey: true }))).toBeNull();
+	});
+
+	it('toggles dark mode on bare d only, so browsers and extensions keep their chords', () => {
+		expect(resolve(press('d'))?.id).toBe('toggle_dark');
+		expect(resolve(press('D', { shiftKey: true }))?.id).toBe('toggle_dark');
+		expect(resolve(press('d', { metaKey: true }))).toBeNull();
+		expect(resolve(press('d', { altKey: true }))).toBeNull();
+		expect(resolve(press('d'), [globalLayer], true)).toBeNull();
+	});
+
+	it('steps between documents on j and k in the reader', () => {
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			{ scope: 'reader', handlers: { next_document: vi.fn(), prev_document: vi.fn() } }
+		];
+		expect(resolve(press('j'), layers)?.id).toBe('next_document');
+		expect(resolve(press('k'), layers)?.id).toBe('prev_document');
+		expect(resolve(press('k', { metaKey: true }), layers)?.id).toBe('open_search');
+	});
+
+	it('falls through a reader layer that lacks a handler to the one beneath it', () => {
+		const page: ScopeLayer = {
+			scope: 'reader',
+			handlers: { next_document: vi.fn(), prev_document: vi.fn() }
+		};
+		const book: ScopeLayer = { scope: 'reader', handlers: { reader_back: vi.fn() } };
+		const layers = [globalLayer, page, book];
+		expect(resolve(press('j'), layers)?.handler).toBe(page.handlers.next_document);
+		expect(resolve(press('Escape'), layers)?.handler).toBe(book.handlers.reader_back);
+	});
+
+	it('lets an exclusive dialog claim escape for itself and nothing else', () => {
+		const dismiss = vi.fn();
+		const layers: ScopeLayer[] = [
+			globalLayer,
+			readerLayer,
+			{ scope: 'modal', handlers: { dismiss }, exclusive: true }
+		];
+		expect(resolve(press('Escape'), layers)?.handler).toBe(dismiss);
+		expect(resolve(press('n'), layers)).toBeNull();
+	});
+
+	it('returns the handler belonging to the winning layer', () => {
+		const handler = vi.fn();
+		const resolved = resolve(press('a'), [
+			globalLayer,
+			{ scope: 'library', handlers: { triage_archive: handler } }
+		]);
+
+		resolved?.handler(new KeyboardEvent('keydown'));
+		expect(handler).toHaveBeenCalledOnce();
+	});
+});

@@ -1,49 +1,33 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import LibraryShell from '$lib/components/library/LibraryShell.svelte';
 	import LibrarySidebar from '$lib/components/library/LibrarySidebar.svelte';
-	import { getLibrary } from '$lib/stores/library.svelte';
+	import { getLibrarySelection } from '$lib/stores/library-selection.svelte';
+	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
 
 	let { children } = $props();
-	const lib = getLibrary();
+	const selection = getLibrarySelection();
 
-	$effect(() => {
-		function onKeydown(e: KeyboardEvent) {
-			const target = e.target as HTMLElement;
-			if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-				return;
-			}
+	function openSelected(): void {
+		const item = selection.selectedItem;
+		if (item) goto(resolve('/(app)/reader/[documentId]', { documentId: item.id }));
+	}
 
-			const { items, selectedId } = lib;
-			const idx = items.findIndex((i) => i.id === selectedId);
-
-			switch (e.key) {
-				case 'j':
-				case 'ArrowDown': {
-					e.preventDefault();
-					const next = idx < items.length - 1 ? idx + 1 : idx;
-					lib.setSelectedId(items[next]?.id ?? null);
-					break;
-				}
-				case 'k':
-				case 'ArrowUp': {
-					e.preventDefault();
-					const prev = idx > 0 ? idx - 1 : 0;
-					lib.setSelectedId(items[prev]?.id ?? null);
-					break;
-				}
-				case 'a': {
-					if (selectedId) {
-						e.preventDefault();
-						lib.triageAction(selectedId, 'archive');
-					}
-					break;
-				}
-			}
+	registerShortcuts(() => ({
+		scope: 'library',
+		handlers: {
+			select_next: () => selection.moveSelection(1),
+			select_prev: () => selection.moveSelection(-1),
+			triage_inbox: () => selection.triageSelected('inbox'),
+			triage_later: () => selection.triageSelected('later'),
+			triage_archive: () => selection.triageSelected('archive'),
+			mark_unread: (event) => {
+				if (!event.repeat) selection.markSelectedUnread();
+			},
+			open_item: openSelected
 		}
-
-		document.addEventListener('keydown', onKeydown);
-		return () => document.removeEventListener('keydown', onKeydown);
-	});
+	}));
 </script>
 
 {#snippet sidebar()}

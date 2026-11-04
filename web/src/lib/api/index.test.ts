@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./generated', () => ({
 	getDocumentReader: vi.fn(),
-	getLibraryEntry: vi.fn()
+	getLibraryEntry: vi.fn(),
+	markDocumentUnread: vi.fn(),
+	triageEntry: vi.fn()
 }));
 
 import * as generated from './generated';
-import { getDocumentEntry, listAssets } from './index';
+import { getDocumentEntry, listAssets, markDocumentUnread, triageLibraryEntry } from './index';
 
 const getDocumentReader = vi.mocked(generated.getDocumentReader);
 const getLibraryEntry = vi.mocked(generated.getLibraryEntry);
@@ -169,5 +171,32 @@ describe('listAssets reader metadata', () => {
 				failed_reason: 'no text layer'
 			}
 		]);
+	});
+});
+
+describe('markDocumentUnread', () => {
+	it('asks the client to throw so callers can roll back on a rejected request', async () => {
+		vi.mocked(generated.markDocumentUnread).mockResolvedValue({} as never);
+
+		await markDocumentUnread({ path: { document_id: 'doc_1' } });
+
+		expect(generated.markDocumentUnread).toHaveBeenCalledWith({
+			path: { document_id: 'doc_1' },
+			throwOnError: true
+		});
+	});
+});
+
+describe('triageLibraryEntry', () => {
+	it('asks the client to throw so a failed triage rolls the row back', async () => {
+		vi.mocked(generated.triageEntry).mockResolvedValue({ data: undefined } as never);
+
+		await triageLibraryEntry({ path: { document_id: 'lib_1' }, body: { state: 'archive' } });
+
+		expect(generated.triageEntry).toHaveBeenCalledWith({
+			path: { library_entry_id: 'lib_1' },
+			body: { triage_state: 'archive' },
+			throwOnError: true
+		});
 	});
 });
