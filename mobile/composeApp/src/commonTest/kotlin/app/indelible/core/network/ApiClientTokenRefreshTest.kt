@@ -9,6 +9,8 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -118,6 +120,8 @@ class ApiClientTokenRefreshTest {
             tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
 
             val bothRejectedRequestsStarted = CompletableDeferred<Unit>()
+            // The engine answers on several threads, and a lost count would leave both requests waiting.
+            val counts = Mutex()
             var rejectedRequestCount = 0
             var refreshRequestCount = 0
             val engine =
@@ -125,8 +129,8 @@ class ApiClientTokenRefreshTest {
                     when (request.url.encodedPath) {
                         "/api/v1/me" -> {
                             if (request.headers["Authorization"] == "Bearer rejected-token") {
-                                rejectedRequestCount++
-                                if (rejectedRequestCount == 2) {
+                                val rejected = counts.withLock { ++rejectedRequestCount }
+                                if (rejected == 2) {
                                     bothRejectedRequestsStarted.complete(Unit)
                                 }
                                 bothRejectedRequestsStarted.await()
@@ -144,7 +148,7 @@ class ApiClientTokenRefreshTest {
                             }
                         }
                         "/api/v1/auth/refresh" -> {
-                            refreshRequestCount++
+                            counts.withLock { refreshRequestCount++ }
                             respond(
                                 content = refreshResponseJson("access-new", "refresh-new", FAR_FUTURE_EXPIRY),
                                 status = HttpStatusCode.OK,
