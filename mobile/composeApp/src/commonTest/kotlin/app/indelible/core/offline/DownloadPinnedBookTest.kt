@@ -1,9 +1,13 @@
 package app.indelible.core.offline
 
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -17,6 +21,42 @@ class DownloadPinnedBookTest {
             documentType = "book"
             available = listOf("epub")
             route(EPUB_TOC_PATH) { json(epubToc(chapters = null, chapterList = chapterList)) }
+        }
+
+    private suspend fun TestScope.pinFailsWithAReadingRequestBehindIt(failure: Route): DownloadHarness {
+        val h = downloadHarness()
+        val release = CompletableDeferred<Unit>()
+        val served = h.server.routes.getValue(READER_PATH)
+        var answers = 0
+        h.server.route(READER_PATH) { request ->
+            if (answers++ > 0) return@route served(request)
+            release.await()
+            failure(request)
+        }
+        h.manager.keepOffline(h.session, DL_DOC)
+        runCurrent()
+        h.manager.requestForReading(h.session, DL_DOC)
+        runCurrent()
+        release.complete(Unit)
+        runCurrent()
+        return h
+    }
+
+    @Test
+    fun aPinThatLostItsConnectionStaysOnTheCopyAReaderThenGot() =
+        runTest {
+            val h = pinFailsWithAReadingRequestBehindIt { throw IOException("unreachable") }
+
+            assertTrue(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
+            assertNull(h.acquisition())
+        }
+
+    @Test
+    fun aPinTheServerRefusedStaysOnTheCopyAReaderThenGot() =
+        runTest {
+            val h = pinFailsWithAReadingRequestBehindIt { respond("", HttpStatusCode.InternalServerError) }
+
+            assertTrue(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
         }
 
     @Test

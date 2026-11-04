@@ -360,8 +360,18 @@ class DownloadManager(
             shown == null -> finish(key)
             request.forReading -> show(request, shown)
             isConnectionFailure(error) || keepsThePin(error) -> park(request, shown)
-            else -> settle(key, shown)
+            else -> {
+                lock.withLock { passOnThePin(request) }
+                settle(key, shown)
+            }
         }
+    }
+
+    // A request queued behind this run takes the pin on, so the copy it installs stays kept.
+    private fun passOnThePin(request: Request): Boolean {
+        val next = queue[request.key]?.takeIf { it.session === request.session } ?: return false
+        next.pin = next.pin || request.pin
+        return true
     }
 
     private suspend fun finish(key: DocumentKey) = settle(key, state = null)
@@ -395,11 +405,13 @@ class DownloadManager(
         acquisition: Acquisition,
     ) {
         lock.withLock {
-            // Only a network failure can clear on reconnect; any other failure waits for a new request.
-            request.retryOnReconnect =
-                acquisition !is Acquisition.Failed ||
-                acquisition.reason == DownloadFailure.NETWORK
-            parked[request.key] = request
+            if (!passOnThePin(request)) {
+                // Only a network failure can clear on reconnect; any other failure waits for a new request.
+                request.retryOnReconnect =
+                    acquisition !is Acquisition.Failed ||
+                    acquisition.reason == DownloadFailure.NETWORK
+                parked[request.key] = request
+            }
         }
         settle(request.key, acquisition)
     }
