@@ -29,9 +29,16 @@ class AndroidUserPreferencesStorage(
         return DefaultViewPreference.entries.firstOrNull { it.name == name } ?: DefaultViewPreference.LIBRARY
     }
 
+    override suspend fun saveOfflineCapBytes(bytes: Long) {
+        prefs.edit().putLong(KEY_OFFLINE_CAP_BYTES, bytes).commit()
+    }
+
+    override suspend fun getOfflineCapBytes(): Long = prefs.getLong(KEY_OFFLINE_CAP_BYTES, DEFAULT_OFFLINE_CAP_BYTES)
+
     companion object {
         private const val PREFS_NAME = "indelible_preferences"
         private const val KEY_THEME = "theme"
         private const val KEY_DEFAULT_VIEW = "default_view"
+        private const val KEY_OFFLINE_CAP_BYTES = "offline_cap_bytes"
     }
 }

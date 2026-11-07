@@ -7,6 +7,9 @@ import app.indelible.api.generated.client.NetworkResult
 import app.indelible.api.generated.models.RefreshResponse
 import app.indelible.api.generated.models.RefreshTokenRequest
 import app.indelible.core.model.ApiError
+import app.indelible.core.offline.Session
+import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.StaleSessionException
 import app.indelible.core.platform.platformClientType
 import app.indelible.core.storage.TokenStorage
 import io.ktor.client.HttpClient
@@ -15,18 +18,35 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import io.ktor.http.fromHttpToGmtDate
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.date.getTimeMillis
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 
+/** [bodyText] is empty on success; a caller that only needs the status pays nothing for the body. */
+data class RawApiResponse(
+    val status: Int,
+    val retryAfterSeconds: Long?,
+    val bodyText: String,
+)
+
 class AuthenticatedApiTransport(
     private val tokenStorage: TokenStorage,
-    private val onUnauthorized: suspend () -> Unit = {},
+    private val onUnauthorized: suspend (epoch: Long) -> Unit = {},
     engine: HttpClientEngine? = null,
+    private val registry: SessionRegistry = SessionRegistry(),
 ) {
     private val jsonConfig =
         Json {
@@ -40,9 +60,7 @@ class AuthenticatedApiTransport(
             install(ContentNegotiation) {
                 json(jsonConfig)
             }
-            // No default values: ordinary requests keep the engine's timeouts.
-            // Installed so long-lived calls (the Mila SSE stream) can widen
-            // their own budget per request.
+            // No default timeout, so long-lived calls (the Mila SSE stream) can widen their own budget.
             install(HttpTimeout)
             defaultRequest {
                 contentType(ContentType.Application.Json)
@@ -51,6 +69,12 @@ class AuthenticatedApiTransport(
         }
 
     private val refreshMutex = Mutex()
+
+    private val requestSucceededState =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** Emits once per call that reached the server and came back 2xx. */
+    val requestSucceeded: SharedFlow<Unit> = requestSucceededState.asSharedFlow()
 
     internal suspend fun baseUrl(): String = tokenStorage.resolvedServerUrl()
 
@@ -64,22 +88,61 @@ class AuthenticatedApiTransport(
         block: suspend (HttpClient, ApiConfiguration) -> NetworkResult<T>,
     ): Result<T> =
         runCatching {
-            authenticatedValue(retryOn401) { token ->
-                block(httpClient, configuration(token)).getOrThrow()
+            val origin = baseUrl()
+            authenticatedValue(retryOn401, origin, registry.current.value.epoch) { token ->
+                block(httpClient, configuration(origin, token)).getOrThrow()
             }
-        }
+        }.onSuccess { requestSucceededState.tryEmit(Unit) }
 
     internal suspend fun <T> directAuthenticatedRequest(
         retryOn401: Boolean = true,
         block: suspend (HttpClient, String, String) -> T,
     ): Result<T> =
         runCatching {
-            authenticatedValue(retryOn401) { token ->
-                block(httpClient, baseUrl(), token)
+            val origin = baseUrl()
+            authenticatedValue(retryOn401, origin, registry.current.value.epoch) { token ->
+                block(httpClient, origin, token)
             }
+        }.onSuccess { requestSucceededState.tryEmit(Unit) }
+
+    /** On a 401 from [block], refreshes once and retries; throws [StaleSessionException] if withdrawn. */
+    internal suspend fun <T> sessionRequest(
+        session: Session,
+        block: suspend (client: HttpClient, baseUrl: String, token: String) -> T,
+    ): T {
+        requireSession(session)
+        return authenticatedValue(retryOn401 = true, session.origin, session.epoch) { token ->
+            requireSession(session)
+            block(httpClient, session.origin, token)
+        }
+    }
+
+    /** Rethrows a 401 inside [block] to trigger the refresh; one reaching the caller already survived a refresh. */
+    suspend fun rawAuthenticatedRequest(
+        session: Session,
+        block: suspend (client: HttpClient, baseUrl: String, token: String) -> HttpResponse,
+    ): RawApiResponse =
+        try {
+            sessionRequest(session) { client, baseUrl, token ->
+                val response = block(client, baseUrl, token)
+                if (response.status.value == UNAUTHORIZED_STATUS) {
+                    throw ApiException(UNAUTHORIZED_STATUS, response.bodyAsText())
+                }
+                RawApiResponse(
+                    status = response.status.value,
+                    retryAfterSeconds = response.headers[HttpHeaders.RetryAfter]?.let(::retryAfterSeconds),
+                    bodyText = if (response.status.isSuccess()) "" else response.bodyAsText(),
+                )
+            }.also { if (it.status in SUCCESS_STATUS_RANGE) requestSucceededState.tryEmit(Unit) }
+        } catch (error: ApiException) {
+            RawApiResponse(error.statusCode, retryAfterSeconds = null, bodyText = error.message)
         }
 
-    internal suspend fun bearerToken(): String = ensureValidToken()
+    private fun requireSession(session: Session) {
+        if (registry.current.value.session !== session) throw StaleSessionException()
+    }
+
+    internal suspend fun bearerToken(): String = ensureValidToken(baseUrl(), registry.current.value.epoch)
 
     internal suspend fun refreshToken(): String? = tokenStorage.getRefreshToken()
 
@@ -92,7 +155,7 @@ class AuthenticatedApiTransport(
             return ResolvedImageRequest(url, bearerToken = null)
         }
         val reachableUrl = rewriteBackendOrigin(url)
-        val token = runCatching { ensureValidToken() }.getOrNull()
+        val token = runCatching { ensureValidToken(baseUrl(), registry.current.value.epoch) }.getOrNull()
         return ResolvedImageRequest(reachableUrl, bearerToken = token)
     }
 
@@ -102,34 +165,49 @@ class AuthenticatedApiTransport(
         return baseUrl().trimEnd('/') + url.substring(pathStart)
     }
 
-    private suspend fun configuration(token: String): ApiConfiguration =
+    private fun configuration(
+        origin: String,
+        token: String,
+    ): ApiConfiguration =
         ApiConfiguration(
-            basePath = baseUrl(),
+            basePath = origin,
             customHeaders = mapOf("Authorization" to "Bearer $token"),
         )
 
     private suspend fun <T> authenticatedValue(
         retryOn401: Boolean,
+        origin: String,
+        epoch: Long,
         block: suspend (token: String) -> T,
     ): T {
-        val token = ensureValidToken()
+        // The retry only uses a token minted under this epoch; a stored token after a transition is another account's.
+        val token = ensureValidToken(origin, epoch)
         if (!retryOn401) return block(token)
         return try {
             block(token)
         } catch (error: ApiException) {
             if (error.statusCode != UNAUTHORIZED_STATUS) throw error
+            val replacement = refreshUnderLock(origin, epoch, rejectedToken = token)
+            requireEpoch(epoch)
             try {
-                block(refreshUnderLock(rejectedToken = token))
+                block(replacement)
             } catch (retryError: ApiException) {
                 if (retryError.statusCode == UNAUTHORIZED_STATUS) {
-                    clearSession()
+                    clearSession(epoch)
                 }
                 throw retryError
             }
         }
     }
 
-    private suspend fun ensureValidToken(): String {
+    private fun requireEpoch(epoch: Long) {
+        if (registry.current.value.epoch != epoch) throw StaleSessionException()
+    }
+
+    private suspend fun ensureValidToken(
+        origin: String,
+        epoch: Long,
+    ): String {
         val token = tokenStorage.getToken()
         val expiresAt = tokenStorage.getExpiresAt()
         val now = currentEpochSeconds()
@@ -139,11 +217,17 @@ class AuthenticatedApiTransport(
         if (token != null && expiresAt == null) {
             return token
         }
-        return refreshUnderLock()
+        return refreshUnderLock(origin, epoch)
     }
 
-    private suspend fun refreshUnderLock(rejectedToken: String? = null): String =
+    // Rechecked after the lock, so a request queued behind another refresh never uses the next account's tokens.
+    private suspend fun refreshUnderLock(
+        origin: String,
+        epoch: Long,
+        rejectedToken: String? = null,
+    ): String =
         refreshMutex.withLock {
+            requireEpoch(epoch)
             val token = tokenStorage.getToken()
             val expiresAt = tokenStorage.getExpiresAt()
             val now = currentEpochSeconds()
@@ -154,10 +238,10 @@ class AuthenticatedApiTransport(
                 return token
             }
 
-            val failure = refreshTokens().exceptionOrNull()
+            val failure = refreshTokens(origin, epoch).exceptionOrNull()
             if (failure != null) {
                 if (failure is ApiException && failure.statusCode in SESSION_REJECTED_STATUSES) {
-                    clearSession()
+                    clearSession(epoch)
                     throw ApiException(UNAUTHORIZED_STATUS, "Session expired")
                 }
                 throw failure
@@ -166,36 +250,62 @@ class AuthenticatedApiTransport(
                 ?: throw ApiException(UNAUTHORIZED_STATUS, "Token missing after refresh")
         }
 
-    private suspend fun refreshTokens(): Result<RefreshResponse> {
-        val refreshToken =
-            tokenStorage.getRefreshToken()
-                ?: return Result.failure(ApiException(UNAUTHORIZED_STATUS, "No refresh token"))
-        return publicRequest { client, configuration ->
-            ApiV1AuthRefreshClient(client).refresh(
-                refreshTokenRequest = RefreshTokenRequest(refreshToken = refreshToken),
-                apiConfiguration = configuration,
-            )
-        }.onSuccess { response ->
-            tokenStorage.saveToken(response.accessToken)
-            tokenStorage.saveExpiresAt(response.expiresAt)
-            response.refreshToken?.let { tokenStorage.saveRefreshToken(it) }
+    // Bound to the epoch and origin it started under, so a result landing after a transition is discarded, not applied.
+    private suspend fun refreshTokens(
+        origin: String,
+        epoch: Long,
+    ): Result<RefreshResponse> {
+        val refreshToken = tokenStorage.getRefreshToken()
+        val state = registry.current.value
+        if (refreshToken == null || state.transitioning || state.epoch != epoch) {
+            val refusal =
+                if (refreshToken == null) {
+                    ApiException(UNAUTHORIZED_STATUS, "No refresh token")
+                } else {
+                    StaleSessionException()
+                }
+            return Result.failure(refusal)
+        }
+        return runCatching {
+            ApiV1AuthRefreshClient(httpClient)
+                .refresh(
+                    refreshTokenRequest = RefreshTokenRequest(refreshToken = refreshToken),
+                    apiConfiguration = ApiConfiguration(basePath = origin),
+                ).getOrThrow()
+        }.mapCatching { response ->
+            val accepted =
+                registry.publishRefreshed(epoch) {
+                    tokenStorage.saveToken(response.accessToken)
+                    tokenStorage.saveExpiresAt(response.expiresAt)
+                    response.refreshToken?.let { tokenStorage.saveRefreshToken(it) }
+                }
+            if (!accepted) throw StaleSessionException()
+            response
         }
     }
 
-    private suspend fun clearSession() {
-        tokenStorage.clearAll()
-        onUnauthorized()
+    /** Withdraws the session for the epoch that failed; clearing storage is the sign-out's job. */
+    private suspend fun clearSession(epoch: Long) {
+        if (registry.invalidate(epoch)) onUnauthorized(epoch)
     }
 
     companion object {
         const val DEFAULT_SERVER_URL = "http://localhost:38473"
         private const val UNAUTHORIZED_STATUS = 401
         private val SESSION_REJECTED_STATUSES = setOf(401, 403)
+        private val SUCCESS_STATUS_RANGE = 200..299
         private const val REFRESH_BUFFER_SECONDS = 120L
         private const val MS_PER_SECOND = 1000L
     }
 
     private fun currentEpochSeconds(): Long = getTimeMillis() / MS_PER_SECOND
+
+    // Retry-After is either delay-seconds or an HTTP-date; a date already in the past means retry now.
+    private fun retryAfterSeconds(header: String): Long? =
+        header.trim().toLongOrNull()?.takeIf { it >= 0 }
+            ?: runCatching { header.trim().fromHttpToGmtDate() }.getOrNull()?.let { date ->
+                ((date.timestamp - getTimeMillis()) / MS_PER_SECOND).coerceAtLeast(0)
+            }
 }
 
 internal fun <T> NetworkResult<T>.getOrThrow(): T =

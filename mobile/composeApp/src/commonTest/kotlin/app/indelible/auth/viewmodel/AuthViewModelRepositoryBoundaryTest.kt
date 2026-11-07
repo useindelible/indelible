@@ -5,6 +5,7 @@ import app.indelible.api.generated.models.OAuthProvidersResponse
 import app.indelible.auth.repository.AuthRepository
 import app.indelible.core.model.AuthUser
 import app.indelible.core.network.NativeOAuthTokenResponse
+import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -12,7 +13,14 @@ import kotlin.test.assertNotNull
 class AuthViewModelRepositoryBoundaryTest {
     @Test
     fun authViewModelIsConstructedFromRepository() {
-        val viewModel = AuthViewModel(FakeAuthRepository(), InMemoryTokenStorage())
+        val tokenStorage = InMemoryTokenStorage()
+        val viewModel =
+            AuthViewModel(
+                FakeAuthRepository(),
+                tokenStorage,
+                testOfflineAccount(tokenStorage),
+                testSessionTransitions(tokenStorage),
+            )
 
         assertNotNull(viewModel)
     }

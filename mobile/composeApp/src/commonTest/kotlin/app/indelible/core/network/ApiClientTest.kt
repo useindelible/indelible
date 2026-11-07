@@ -17,7 +17,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ApiClientTest {
@@ -259,7 +258,7 @@ class ApiClientTest {
         }
 
     @Test
-    fun refreshFailureClearsTokensAndCallsCallback() =
+    fun refreshRejectionReportsUnauthorizedAndLeavesStorageToTheSignOut() =
         runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("expired-token")
@@ -290,9 +289,7 @@ class ApiClientTest {
 
             assertTrue(result.isFailure)
             assertTrue(callbackCalled)
-            assertNull(tokenStorage.getToken())
-            assertNull(tokenStorage.getRefreshToken())
-            assertNull(tokenStorage.getExpiresAt())
+            assertNotNull(tokenStorage.getRefreshToken())
         }
 
     @Test

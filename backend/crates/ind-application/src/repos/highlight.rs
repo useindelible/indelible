@@ -8,6 +8,14 @@ use ind_domain::{
     DocumentId, Highlight, HighlightId, HighlightNote, NewHighlight, Tag, TagId, UserId,
 };
 
+/// Result of a create keyed on a caller-supplied id. `IdTaken` means the row already existed
+/// and no side effects were applied, so a replay never re-emits events or reindex work.
+#[derive(Debug)]
+pub enum HighlightWrite {
+    Inserted(Box<Highlight>),
+    IdTaken,
+}
+
 #[async_trait::async_trait]
 pub trait HighlightRepository: Send + Sync {
     async fn create(
@@ -15,14 +23,16 @@ pub trait HighlightRepository: Send + Sync {
         highlight: &NewHighlight,
         effects: MutationSideEffects,
     ) -> Result<Highlight, AppError>;
-    /// Create a document-keyed highlight (`item_id` NULL) and commit any `effects` (the
-    /// `document.highlighted` event plus document search reindex / embed outbox rows) atomically
-    /// with the annotation.
+    /// Create a highlight and commit any `effects` (the `document.highlighted` event plus
+    /// document search reindex / embed outbox rows) atomically with the annotation. An id
+    /// already present yields `IdTaken` with nothing written, so a retry is safe; callers
+    /// resolving `IdTaken` compare against the stored row, which a later mutation such as
+    /// `update_color` can move out from under a still-queued retry.
     async fn create_for_document(
         &self,
         highlight: &NewHighlight,
         effects: MutationSideEffects,
-    ) -> Result<Highlight, AppError>;
+    ) -> Result<HighlightWrite, AppError>;
     async fn list_by_document(
         &self,
         document_id: DocumentId,
@@ -99,7 +109,7 @@ pub trait HighlightRepository: Send + Sync {
         user_id: UserId,
     ) -> Result<HashMap<HighlightId, Vec<Tag>>, AppError>;
 
-    /// Cursor-paginated highlights for a document, used by the Notion export job (TASK-236).
+    /// Cursor-paginated highlights for a document, ordered by `(created_at, id)` ascending.
     async fn list_by_document_after_cursor(
         &self,
         document_id: DocumentId,

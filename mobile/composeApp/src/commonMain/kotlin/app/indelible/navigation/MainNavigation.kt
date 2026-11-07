@@ -53,6 +53,7 @@ object MainRoutes {
     const val PROFILE_CHANGE_PASSWORD = "profile/change-password"
     const val PROFILE_FEED_MANAGEMENT = "profile/feed-management"
     const val PROFILE_ACCOUNT = "profile/account"
+    const val PROFILE_STORAGE = "profile/storage"
     const val PROFILE_AI_PRESET_NEW = "profile/ai/presets/new"
     const val PROFILE_AI_PRESET_EDIT = "profile/ai/presets/{presetId}"
 
@@ -231,10 +232,12 @@ fun MainNavigation(
                     navController = navController,
                     libraryRepository = appContainer.libraryRepository,
                     readerRepository = appContainer.readerRepository,
+                    readingEventWriter = appContainer.readingEventWriter,
                     milaRepository = appContainer.milaRepository,
                     collectionsRepository = appContainer.collectionsRepository,
                     tagsRepository = appContainer.tagsRepository,
                     trashRepository = appContainer.trashRepository,
+                    documentOffline = appContainer.documentOffline,
                 )
                 profileRoutes(
                     navController = navController,
@@ -245,6 +248,7 @@ fun MainNavigation(
                     addFeedViewModel = appContainer.addFeedViewModel,
                     feedManagementViewModel = appContainer.feedManagementViewModel,
                     accountViewModel = appContainer.accountViewModel,
+                    storageViewModel = appContainer.storageViewModel,
                     accountRepository = appContainer.accountRepository,
                     milaSettingsRepository = appContainer.milaSettingsRepository,
                     ingestEmail = ingestEmail,

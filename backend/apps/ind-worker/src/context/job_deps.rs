@@ -13,6 +13,7 @@ use ind_application::repos::email_ingest::EmailIngestLogRepository;
 use ind_application::repos::email_sender::EmailSenderRepository;
 use ind_application::repos::email_unsubscribe_target::EmailUnsubscribeTargetRepository;
 use ind_application::repos::embedding_backfill::EmbeddingBackfillRepository;
+use ind_application::repos::epub_format::EpubFormatRepository;
 use ind_application::repos::feed::FeedRepository;
 use ind_application::repos::feed_delivery::FeedDeliveryRepository;
 use ind_application::repos::highlight::HighlightRepository;
@@ -52,6 +53,7 @@ pub struct CaptureJobDeps {
     pub document_repo: Arc<dyn DocumentRepository>,
     pub document_asset_repo: Arc<dyn DocumentAssetRepository>,
     pub document_reprocess_repo: Arc<dyn DocumentReprocessRepository>,
+    pub epub_format_repo: Arc<dyn EpubFormatRepository>,
     pub object_storage: Option<Arc<dyn ObjectStorage>>,
     pub outbox_repo: Arc<dyn JobOutboxRepository>,
     pub egress_policy: ind_egress::EgressPolicy,
@@ -187,6 +189,7 @@ impl WorkerContext {
             document_repo: self.document_repo.clone(),
             document_asset_repo: self.document_asset_repo.clone(),
             document_reprocess_repo: self.document_reprocess_repo.clone(),
+            epub_format_repo: self.epub_format_repo.clone(),
             object_storage: self.object_storage.clone(),
             outbox_repo: self.outbox_repo.clone(),
             egress_policy: self.egress_policy.clone(),

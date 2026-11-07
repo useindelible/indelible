@@ -6,6 +6,8 @@ import app.indelible.auth.server.ServerHealthChecker
 import app.indelible.auth.server.ServerUrlForm
 import app.indelible.auth.server.ServerUrlValidation
 import app.indelible.core.i18n.UiMessage
+import app.indelible.core.offline.SessionTransitions
+import app.indelible.core.offline.TransitionResult
 import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_server_unreachable
@@ -34,6 +36,7 @@ sealed interface ServerSetupState {
 class ConnectServerViewModel(
     private val tokenStorage: TokenStorage,
     private val healthChecker: ServerHealthChecker,
+    private val sessions: SessionTransitions,
     private val bakedDefaultUrl: String,
     private val devPrefillUrl: String,
 ) : ViewModel() {
@@ -96,13 +99,24 @@ class ConnectServerViewModel(
     private fun checkAndPersist(url: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isChecking = true, error = null)
+            val epoch = sessions.epoch()
             healthChecker
                 .check(url)
                 .onSuccess {
-                    tokenStorage.saveServerUrl(url)
-                    _setupState.value = ServerSetupState.Configured(url)
-                    _state.value = _state.value.copy(isChecking = false, url = url)
-                    _connectedUrl.value = url
+                    val result =
+                        sessions.transition(epoch) {
+                            // Credentials belong to the server that issued them.
+                            tokenStorage.clearAll()
+                            tokenStorage.saveServerUrl(url)
+                        }
+                    when (result) {
+                        TransitionResult.Applied -> {
+                            _setupState.value = ServerSetupState.Configured(url)
+                            _state.value = _state.value.copy(isChecking = false, url = url)
+                            _connectedUrl.value = url
+                        }
+                        TransitionResult.Rejected -> _state.value = _state.value.copy(isChecking = false)
+                    }
                 }.onFailure {
                     _state.value =
                         _state.value.copy(

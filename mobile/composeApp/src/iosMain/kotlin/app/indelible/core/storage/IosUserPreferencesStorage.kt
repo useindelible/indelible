@@ -25,8 +25,21 @@ class IosUserPreferencesStorage : UserPreferencesStorage {
         return DefaultViewPreference.entries.firstOrNull { it.name == name } ?: DefaultViewPreference.LIBRARY
     }
 
+    override suspend fun saveOfflineCapBytes(bytes: Long) {
+        defaults.setInteger(bytes, KEY_OFFLINE_CAP_BYTES)
+    }
+
+    // integerForKey answers 0 for a missing key, which would read as a zero cap.
+    override suspend fun getOfflineCapBytes(): Long =
+        if (defaults.objectForKey(KEY_OFFLINE_CAP_BYTES) == null) {
+            DEFAULT_OFFLINE_CAP_BYTES
+        } else {
+            defaults.integerForKey(KEY_OFFLINE_CAP_BYTES)
+        }
+
     companion object {
         private const val KEY_THEME = "pref_theme"
         private const val KEY_DEFAULT_VIEW = "pref_default_view"
+        private const val KEY_OFFLINE_CAP_BYTES = "pref_offline_cap_bytes"
     }
 }
