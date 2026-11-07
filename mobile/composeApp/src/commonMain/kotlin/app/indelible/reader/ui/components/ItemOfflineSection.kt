@@ -122,7 +122,12 @@ private fun AcquisitionLine(
         Acquisition.WaitingForConnection -> OfflineNote(stringResource(Res.string.offline_waiting_connection))
         is Acquisition.Downloading -> {
             OfflineNote(stringResource(Res.string.offline_badge_downloading))
-            LinearProgressIndicator(progress = { acquisition.fraction }, modifier = Modifier.fillMaxWidth())
+            val fraction = acquisition.fraction
+            if (fraction == null) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+            }
         }
         is Acquisition.Failed -> FailureLine(acquisition.reason, offline)
     }

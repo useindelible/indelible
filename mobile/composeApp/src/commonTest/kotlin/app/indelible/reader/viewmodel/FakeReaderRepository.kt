@@ -8,10 +8,15 @@ import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.HighlightRange
+import app.indelible.reader.model.HighlightTarget
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
+import app.indelible.reader.repository.PdfCopy
 import app.indelible.reader.repository.ReaderRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 
 class FakeReaderRepository : ReaderRepository {
@@ -20,6 +25,9 @@ class FakeReaderRepository : ReaderRepository {
     /** When set, successive getItem calls return these in order, repeating the last entry. */
     var getItemResults: List<Result<ReaderDocument>>? = null
     var getItemCallCount = 0
+
+    /** When set, getItem waits for it after counting the call. */
+    var getItemGate: CompletableDeferred<Unit>? = null
     var triageItemResult: Result<Unit> = Result.success(Unit)
     var fetchHtmlResult: Result<String> = Result.success("<p>Hello world</p>")
     var getArticleTocResult: Result<ArticleToc> =
@@ -32,14 +40,20 @@ class FakeReaderRepository : ReaderRepository {
     var epubChapterResult: suspend (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
     val epubChapterCalls = mutableListOf<Int>()
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
+    var highlightsGate: CompletableDeferred<Unit>? = null
+
+    /** When set, the note, tag and entity reads wait for it. */
+    var metadataGate: CompletableDeferred<Unit>? = null
     var listDocumentEntitiesResult: Result<List<DocumentEntity>> = Result.success(emptyList())
     var createHighlightResult: Result<HighlightData> = Result.success(fakeHighlight())
     var deleteHighlightResult: Result<Unit> = Result.success(Unit)
     var updateHighlightColorResult: Result<HighlightData> = Result.success(fakeHighlight())
     var upsertNoteResult: Result<HighlightNoteData> = Result.success(fakeNote())
+    val upsertedNotes = mutableListOf<String>()
     var deleteNoteResult: Result<Unit> = Result.success(Unit)
     var setHighlightTagsResult: Result<List<String>> = Result.success(emptyList())
     var listTagsResult: Result<List<TagData>> = Result.success(emptyList())
+    var pdfCopyFlow: Flow<PdfCopy> = flowOf(PdfCopy.Ready("/fake/document.pdf"))
     var reprocessDocumentResult: Result<ReaderReprocessResult> =
         Result.success(ReaderReprocessResult(queued = true, retryAfterSeconds = null))
     val contentCallLog = mutableListOf<String>()
@@ -53,7 +67,8 @@ class FakeReaderRepository : ReaderRepository {
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
     var createHighlightCallCount = 0
-    val createdRanges = mutableListOf<HighlightRange>()
+    val createdTargets = mutableListOf<HighlightTarget>()
+    val createdRanges: List<HighlightRange> get() = createdTargets.filterIsInstance<HighlightRange>()
     var deleteHighlightCallCount = 0
     var lastDeletedHighlightId: String? = null
     var lastHighlightMutationItemId: String? = null
@@ -73,6 +88,7 @@ class FakeReaderRepository : ReaderRepository {
                 getItemResult
             }
         getItemCallCount++
+        getItemGate?.await()
         return result
     }
 
@@ -90,6 +106,8 @@ class FakeReaderRepository : ReaderRepository {
     }
 
     override suspend fun getEpubToc(itemId: String): Result<EpubToc> = epubTocResult
+
+    override fun pdfCopy(itemId: String): Flow<PdfCopy> = pdfCopyFlow
 
     override suspend fun getEpubChapter(
         itemId: String,
@@ -125,18 +143,24 @@ class FakeReaderRepository : ReaderRepository {
         return saveToLibraryResult
     }
 
-    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> = listHighlightsResult
+    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> {
+        highlightsGate?.await()
+        return listHighlightsResult
+    }
 
-    override suspend fun listDocumentEntities(itemId: String): Result<List<DocumentEntity>> = listDocumentEntitiesResult
+    override suspend fun listDocumentEntities(itemId: String): Result<List<DocumentEntity>> {
+        metadataGate?.await()
+        return listDocumentEntitiesResult
+    }
 
     override suspend fun createHighlight(
         itemId: String,
         color: String,
         textContent: String,
-        range: HighlightRange,
+        target: HighlightTarget,
     ): Result<HighlightData> {
         createHighlightCallCount++
-        createdRanges += range
+        createdTargets += target
         return createHighlightResult
     }
 
@@ -165,6 +189,7 @@ class FakeReaderRepository : ReaderRepository {
         body: String,
     ): Result<HighlightNoteData> {
         lastHighlightMutationItemId = itemId
+        upsertedNotes += body
         return upsertNoteResult
     }
 
@@ -187,7 +212,10 @@ class FakeReaderRepository : ReaderRepository {
 
     override suspend fun listTags(): Result<List<TagData>> = listTagsResult
 
-    override suspend fun getItemNote(itemId: String): Result<String?> = getItemNoteResult
+    override suspend fun getItemNote(itemId: String): Result<String?> {
+        metadataGate?.await()
+        return getItemNoteResult
+    }
 
     override suspend fun upsertItemNote(
         itemId: String,
@@ -199,6 +227,7 @@ class FakeReaderRepository : ReaderRepository {
 
     override suspend fun getItemTags(itemId: String): Result<List<String>> {
         lastGetItemTagsId = itemId
+        metadataGate?.await()
         return getItemTagsResult
     }
 
@@ -222,6 +251,7 @@ class FakeReaderRepository : ReaderRepository {
             itemType: String = "article",
             saved: Boolean = true,
             readableReady: Boolean = true,
+            triageState: String? = if (saved) "inbox" else null,
         ) = ReaderDocument(
             id = documentId,
             itemType = itemType,
@@ -235,6 +265,7 @@ class FakeReaderRepository : ReaderRepository {
             finishedAt = finishedAt,
             availableAssets = listOf("readable_html"),
             lastReadAt = Instant.parse("2024-01-01T00:00:00Z"),
+            triageState = triageState,
         )
 
         fun fakeHighlight(

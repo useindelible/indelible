@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -257,11 +258,17 @@ kotlin {
             implementation(libs.androidx.browser)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android)
+            implementation(libs.pdfium.android)
         }
-        androidInstrumentedTest.dependencies {
-            implementation(libs.androidx.testExt.junit)
-            implementation(libs.androidx.test.runner)
-            implementation(libs.kotlin.test)
+        androidInstrumentedTest {
+            kotlin.srcDir("src/pdfContract/kotlin")
+            dependencies {
+                implementation(libs.androidx.testExt.junit)
+                implementation(libs.androidx.test.runner)
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlin.testJunit)
+                implementation(libs.kotlinx.coroutines.test)
+            }
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -311,7 +318,14 @@ kotlin {
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
         }
+        iosTest {
+            kotlin.srcDir("src/pdfContract/kotlin")
+        }
     }
+}
+
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    device.set("iPhone 16")
 }
 
 android {

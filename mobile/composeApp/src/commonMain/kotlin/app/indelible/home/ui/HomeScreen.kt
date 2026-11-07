@@ -42,6 +42,7 @@ import app.indelible.home.viewmodel.StatIcon
 import app.indelible.home.viewmodel.StatTile
 import app.indelible.ui.components.IndelibleButton
 import app.indelible.ui.theme.IndelibleSpacing
+import app.indelible.ui.theme.IndelibleTheme
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.common_retry
 import indelible.composeapp.generated.resources.home_jump_back
@@ -77,6 +78,9 @@ fun HomeScreen(
     ReloadWhenBack(shelf.net, viewModel::load)
     val firstName = userDisplayName?.trim()?.takeIf { it.isNotBlank() }?.substringBefore(' ')
 
+    val barColor =
+        if (shelf.net == ShelfNet.ONLINE) MaterialTheme.colorScheme.background else IndelibleTheme.monochrome.canvas
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
@@ -88,6 +92,7 @@ fun HomeScreen(
                 onProfileClick = onProfileClick,
                 avatarUrl = avatarUrl,
                 avatarBytes = avatarBytes,
+                containerColor = barColor,
             )
         },
     ) { paddingValues ->

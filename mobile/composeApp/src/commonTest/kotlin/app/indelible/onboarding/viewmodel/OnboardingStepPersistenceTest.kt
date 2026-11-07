@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -97,14 +99,17 @@ class OnboardingStepPersistenceTest {
      * Requests land from the engine's own dispatcher, so recording is
      * synchronized and every assertion reads a snapshot.
      */
+    @OptIn(ExperimentalAtomicApi::class)
     private class RequestLog {
-        private val entries = mutableListOf<RecordedRequest>()
+        private val entries = AtomicReference<List<RecordedRequest>>(emptyList())
 
         fun record(entry: RecordedRequest) {
-            synchronized(entries) { entries.add(entry) }
+            do {
+                val before = entries.load()
+            } while (!entries.compareAndSet(before, before + entry))
         }
 
-        fun snapshot(): List<RecordedRequest> = synchronized(entries) { entries.toList() }
+        fun snapshot(): List<RecordedRequest> = entries.load()
     }
 
     private fun routedEngine(

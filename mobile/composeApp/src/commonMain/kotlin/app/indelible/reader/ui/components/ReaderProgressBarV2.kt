@@ -9,10 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
-
-private const val PERCENT_MAX = 100f
 
 /**
  * Reading position, as a hairline within the reader's bottom shelf. The track is

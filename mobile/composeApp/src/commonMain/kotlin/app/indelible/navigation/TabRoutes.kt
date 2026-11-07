@@ -26,6 +26,7 @@ import app.indelible.sidebar.viewmodel.SidebarViewModel
 import app.indelible.stubs.TabStub
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.nav_daily_review
+import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -43,6 +44,8 @@ fun NavGraphBuilder.tabRoutes(
     feedViewModel: FeedViewModel,
     searchViewModel: SearchViewModel,
     openDrawer: () -> Unit,
+    online: Flow<Boolean>,
+    reachable: Flow<Boolean?>,
 ) {
     composable(TabItem.HOME.route) {
         val homeViewModel =
@@ -109,6 +112,8 @@ fun NavGraphBuilder.tabRoutes(
             userDisplayName = authUser?.displayName?.takeIf { it.isNotBlank() } ?: authUser?.email,
             avatarUrl = authUser?.avatarUrl,
             avatarBytes = avatarBytes,
+            online = online,
+            reachable = reachable,
         )
     }
     composable(TabItem.FEED.route) {

@@ -4,9 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 
 actual class DatabaseDriverFactory {
-    // One driver per factory, and the view controller remembers the factory: SqlDelightOfflineStore
-    // serializes its writes with a per-instance lock, so a second driver over the same file
-    // would let two stores write concurrently and lose that serialization.
+    // One driver per file: a second one would bypass SqlDelightOfflineStore's per-instance write lock.
     private val driver: SqlDriver by lazy {
         NativeSqliteDriver(OfflineDatabase.Schema, DATABASE_NAME)
     }

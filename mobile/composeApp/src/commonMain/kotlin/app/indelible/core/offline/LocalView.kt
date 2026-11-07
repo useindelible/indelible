@@ -24,39 +24,40 @@ data class CachedHighlightNote(
     val body: String,
 )
 
-/** Where a book was left: the chapter key and the character offset into that chapter's text. */
-data class ChapterPosition(
-    val chapter: String,
-    val offset: Int,
-)
-
 data class Progress(
     val percent: Int?,
     val maxPercent: Int?,
-    val position: ChapterPosition? = null,
+    val position: ReadingPosition? = null,
 )
 
 internal fun DocumentReaderResponse.progress(): Progress =
-    Progress(progressPercent, maxProgressPercent, chapterLocator?.let { ChapterPosition(it, chapterOffset ?: 0) })
+    Progress(progressPercent, maxProgressPercent, chapterLocator?.let { readingPositionOf(it, chapterOffset ?: 0) })
 
-/** The reading event position at [position], [fraction] `0..1` through the whole book. */
+/** The reading event position at [position], [fraction] `0..1` through the whole document. */
 internal fun readingPositionJson(
-    position: ChapterPosition,
+    position: ReadingPosition,
     fraction: Double,
-): String =
-    offlineJson.encodeToString(
+): String {
+    val anchor =
+        when (position) {
+            is ChapterPosition -> ReadingAnchorSchemaFlat(type = SPINE_ANCHOR, chapter = position.chapter)
+            is PagePosition -> ReadingAnchorSchemaFlat(type = PAGE_ANCHOR, page = position.page)
+        }
+    return offlineJson.encodeToString(
         ReadingPositionSchema.serializer(),
-        ReadingPositionSchema(
-            anchor = ReadingAnchorSchemaFlat(type = SPINE_ANCHOR, chapter = position.chapter),
-            offset = position.offset,
-            fraction = fraction,
-        ),
+        ReadingPositionSchema(anchor = anchor, offset = position.offset, fraction = fraction),
     )
+}
 
-internal fun chapterPositionOf(positionJson: String): ChapterPosition? {
+internal fun readingPositionOf(positionJson: String): ReadingPosition? {
     val position = offlineJson.decodeFromString(ReadingPositionSchema.serializer(), positionJson)
-    val chapter = position.anchor?.takeIf { it.type == SPINE_ANCHOR }?.chapter ?: return null
-    return ChapterPosition(chapter, position.offset ?: 0)
+    val anchor = position.anchor ?: return null
+    val offset = position.offset ?: 0
+    return when (anchor.type) {
+        SPINE_ANCHOR -> anchor.chapter?.let { ChapterPosition(it, offset) }
+        PAGE_ANCHOR -> anchor.page?.takeIf { it >= 1 }?.let { PagePosition(it, offset) }
+        else -> null
+    }
 }
 
 /** Moves on every enqueue and acknowledgement, so a response fetched across a move may be stale. */
@@ -99,7 +100,7 @@ data class LocalChanges(
         val latest = points.lastOrNull() ?: return server
         val percent = latest / BASIS_POINTS_PER_PERCENT
         val reached = points.max() / BASIS_POINTS_PER_PERCENT
-        val position = queued.lastOrNull { it.positionJson != null }?.positionJson?.let(::chapterPositionOf)
+        val position = queued.lastOrNull { it.positionJson != null }?.positionJson?.let(::readingPositionOf)
         return Progress(
             percent = percent,
             maxPercent = maxOf(server.maxPercent ?: percent, reached),
@@ -162,3 +163,4 @@ internal fun OutboxKind.isHighlight(): Boolean =
 
 private const val BASIS_POINTS_PER_PERCENT = 100
 private const val SPINE_ANCHOR = "spine"
+private const val PAGE_ANCHOR = "page"

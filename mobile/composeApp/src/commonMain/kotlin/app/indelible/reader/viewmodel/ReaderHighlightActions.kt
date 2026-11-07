@@ -3,6 +3,8 @@ package app.indelible.reader.viewmodel
 import app.indelible.core.i18n.UiMessage
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightRange
+import app.indelible.reader.model.HighlightTarget
+import app.indelible.reader.model.PdfHighlightTarget
 import app.indelible.reader.model.TagData
 import app.indelible.reader.repository.ReaderRepository
 import indelible.composeapp.generated.resources.Res
@@ -32,15 +34,29 @@ internal class ReaderHighlightActions(
         startOffset: Long,
         endOffset: Long,
         onCreated: (String) -> Unit = {},
+    ) = create(color, textContent, HighlightRange(startOffset, endOffset, chapterKey()), onCreated)
+
+    fun createPdfHighlight(
+        color: HighlightColor,
+        target: PdfHighlightTarget,
+        textContent: String,
+        onCreated: (String) -> Unit = {},
+    ) = create(color, textContent, target, onCreated)
+
+    // The target is complete before the launch, so a selection that moves meanwhile cannot change it.
+    private fun create(
+        color: HighlightColor,
+        textContent: String,
+        target: HighlightTarget,
+        onCreated: (String) -> Unit,
     ) {
-        val range = HighlightRange(startOffset, endOffset, chapterKey())
         scope.launch {
             repository
                 .createHighlight(
                     itemId = documentId,
                     color = color.apiValue,
                     textContent = textContent,
-                    range = range,
+                    target = target,
                 ).onSuccess { highlight ->
                     updateSuccessState { state ->
                         state.copy(highlights = state.highlights + highlight)
@@ -100,6 +116,7 @@ internal class ReaderHighlightActions(
     fun upsertHighlightNote(
         highlightId: String,
         body: String,
+        onSaved: () -> Unit = {},
     ) {
         scope.launch {
             repository
@@ -113,13 +130,17 @@ internal class ReaderHighlightActions(
                                 },
                         )
                     }
+                    onSaved()
                 }.onFailure {
                     effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_save_note)))
                 }
         }
     }
 
-    fun deleteHighlightNote(highlightId: String) {
+    fun deleteHighlightNote(
+        highlightId: String,
+        onDeleted: () -> Unit = {},
+    ) {
         scope.launch {
             repository
                 .deleteHighlightNote(documentId, highlightId)
@@ -132,6 +153,7 @@ internal class ReaderHighlightActions(
                                 },
                         )
                     }
+                    onDeleted()
                 }.onFailure {
                     effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_delete_note)))
                 }

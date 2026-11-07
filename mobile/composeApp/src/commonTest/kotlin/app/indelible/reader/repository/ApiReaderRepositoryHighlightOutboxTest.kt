@@ -5,6 +5,8 @@ import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightRange
+import app.indelible.reader.model.PdfHighlightTarget
+import app.indelible.reader.model.PdfRect
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -18,6 +20,17 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+private val PDF_TARGET =
+    PdfHighlightTarget(
+        page = 3,
+        x = 0.1,
+        y = 0.2,
+        width = 0.5,
+        height = 0.04,
+        textSnapshot = "quick brown",
+        rects = listOf(PdfRect(0.1, 0.2, 0.5, 0.02), PdfRect(0.1, 0.22, 0.3, 0.02)),
+    )
 
 class ApiReaderRepositoryHighlightOutboxTest {
     private fun cached(payloadJson: String): JsonObject = Json.parseToJsonElement(payloadJson).jsonObject
@@ -51,6 +64,45 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val listed = h.highlights().single { it.id == created.id }
 
             assertEquals("ch3", listed.locator?.chapter)
+        }
+
+    @Test
+    fun pdfHighlightQueuesAPdfLocator() =
+        runTest {
+            val harness = readerOutboxHarness()
+
+            val created =
+                harness.repository
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "yellow", "quick brown", PDF_TARGET)
+                    .getOrThrow()
+
+            assertEquals("pdf", created.locator?.type)
+            val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.HIGHLIGHT_CREATE).single()
+            val payload = assertIs<OutboxPayload.HighlightCreate>(row.payload)
+            val locator = Json.parseToJsonElement(assertNotNull(payload.locatorJson)).jsonObject
+
+            fun field(name: String) = locator.getValue(name).jsonPrimitive.content
+
+            assertEquals("pdf", field("type"))
+            assertEquals("3", field("page"))
+            assertEquals(listOf("0.1", "0.2", "0.5", "0.04"), listOf("x", "y", "width", "height").map(::field))
+            assertEquals("quick brown", field("text_snapshot"))
+            val rects = locator.getValue("rects").jsonArray
+            assertEquals(2, rects.size)
+            assertEquals("0.22", rects[1].jsonObject.getValue("y").let { it.jsonPrimitive.content })
+            assertNull(payload.sourceLocatorJson)
+        }
+
+    @Test
+    fun cachedPdfHighlightKeepsItsRects() =
+        runTest {
+            val h = readerOfflineHarness()
+            val created = h.repository.createHighlight(DL_DOC, "yellow", "quick brown", PDF_TARGET).getOrThrow()
+
+            val listed = h.highlights().single { it.id == created.id }
+
+            assertEquals(3, listed.locator?.page)
+            assertEquals(PDF_TARGET.rects, listed.locator?.rects)
         }
 
     @Test

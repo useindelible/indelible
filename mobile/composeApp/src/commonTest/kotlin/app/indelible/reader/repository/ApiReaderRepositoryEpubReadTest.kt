@@ -3,6 +3,7 @@ package app.indelible.reader.repository
 import app.indelible.core.offline.CAPABILITIES
 import app.indelible.core.offline.CapabilitiesUnknownException
 import app.indelible.core.offline.DL_DOC
+import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.EPUB_TOC_PATH
 import app.indelible.core.offline.FakeServer
 import app.indelible.core.offline.ServerTooOldException
@@ -12,10 +13,13 @@ import app.indelible.core.offline.json
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ApiReaderRepositoryEpubReadTest {
@@ -121,6 +125,45 @@ class ApiReaderRepositoryEpubReadTest {
 
             assertTrue(h.repository.getEpubToc(DL_DOC).isSuccess)
             assertEquals(asked, h.server.count(CAPABILITIES))
+        }
+
+    @Test
+    fun readyListFromTheServerRequestsTheCopy() =
+        runTest {
+            val h = book()
+
+            assertTrue(h.repository.getEpubToc(DL_DOC).isSuccess)
+            runCurrent()
+
+            assertNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC), "a ready book opened online is cached")
+        }
+
+    @Test
+    fun pendingListFromTheServerRequestsNothing() =
+        runTest {
+            val h = book { route(EPUB_TOC_PATH) { json(epubToc(chapters = null, chapterList = "pending")) } }
+
+            assertTrue(h.repository.getEpubToc(DL_DOC).isSuccess)
+            runCurrent()
+
+            assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+            assertNull(h.download.acquisition())
+            assertEquals(1, h.server.count(EPUB_TOC_PATH), "no download asked the server for the list again")
+        }
+
+    @Test
+    fun readyListAfterAPendingPinInstallsTheKeptCopy() =
+        runTest {
+            val h = book { route(EPUB_TOC_PATH) { json(epubToc(chapters = null, chapterList = "pending")) } }
+            h.download.manager.keepOffline(h.download.session, DL_DOC)
+            runCurrent()
+            h.server.route(EPUB_TOC_PATH) { json(epubToc()) }
+
+            assertTrue(h.repository.getEpubToc(DL_DOC).isSuccess)
+            runCurrent()
+
+            assertTrue(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
+            assertNull(h.download.acquisition())
         }
 
     @Test

@@ -200,6 +200,47 @@ private object UnreachableOfflineStore : OfflineStore {
     override suspend fun purgeRows(scope: String): Unit = unreachable()
 
     override suspend fun finishPurge(scope: String): Unit = unreachable()
+
+    override suspend fun replaceList(
+        session: Session,
+        key: String,
+        rows: List<SnapshotRow>,
+        at: Long,
+    ): Unit = unreachable()
+
+    override suspend fun appendList(
+        session: Session,
+        key: String,
+        rows: List<SnapshotRow>,
+        at: Long,
+    ): Unit = unreachable()
+
+    override suspend fun list(
+        scope: String,
+        key: String,
+    ): List<SnapshotRow> = unreachable()
+
+    override fun observeList(
+        scope: String,
+        key: String,
+    ): Flow<KeptList> = unreachable()
+
+    override suspend fun lastSeen(
+        scope: String,
+        documentId: String,
+    ): SnapshotRow? = unreachable()
+
+    override suspend fun forget(
+        session: Session,
+        id: String,
+        keep: (String) -> Boolean,
+    ): Unit = unreachable()
+
+    override suspend fun setTriageState(
+        session: Session,
+        documentId: String,
+        state: String,
+    ): Unit = unreachable()
 }
 
 private fun unreachable(): Nothing = throw UnsupportedOperationException("offline store reached unexpectedly")

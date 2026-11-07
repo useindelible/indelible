@@ -3,15 +3,18 @@ package app.indelible.reader.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
-import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.util.uuidV7
 import app.indelible.reader.model.ArticleTocEntry
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightColor
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderPreferences
 import app.indelible.reader.model.TagData
+import app.indelible.reader.pdf.PdfDocument
+import app.indelible.reader.pdf.PdfEngine
+import app.indelible.reader.pdf.PdfSelection
 import app.indelible.reader.playback.PlaybackState
 import app.indelible.reader.playback.ReaderPlaybackController
 import app.indelible.reader.playback.ReaderVoice
@@ -27,6 +30,8 @@ import indelible.composeapp.generated.resources.reader_error_save_note
 import indelible.composeapp.generated.resources.reader_error_save_tags
 import indelible.composeapp.generated.resources.reader_saved_library
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,6 +45,7 @@ class ReaderViewModel(
     private val repository: ReaderRepository,
     private val initialPreferences: ReaderPreferences = ReaderPreferences(),
     private val readingEvents: ReadingEventWriter,
+    openPdf: suspend (String) -> PdfDocument = PdfEngine::open,
 ) : ViewModel() {
     /** One sitting: every event this reader records is grouped under it. */
     private val sessionId = uuidV7()
@@ -59,18 +65,14 @@ class ReaderViewModel(
     val playbackState: StateFlow<PlaybackState> = playbackController.state
     val voices: List<ReaderVoice> get() = playbackController.voices
 
-    /** The open book's reading session; null for anything else. */
-    var epubSession: EpubReaderSession? = null
-        private set
-
     private var leaving = false
 
     private val bookChapterMissing: Boolean
-        get() = epubSession?.let { it.currentChapterKey() == null } == true
+        get() = epubSession?.let { it.currentChapterKey == null } == true
 
     private val highlightActions =
         ReaderHighlightActions(documentId, repository, viewModelScope, _uiState, _effects) {
-            epubSession?.currentChapterKey()
+            epubSession?.currentChapterKey
         }
 
     private val htmlLoader = ReaderHtmlLoader(documentId, repository, viewModelScope, _uiState)
@@ -79,79 +81,89 @@ class ReaderViewModel(
         ReaderProgressSync(viewModelScope) { percent, position ->
             readingEvents.recordProgress(documentId, percent, sessionId, position)
         }
+    private val sessions =
+        ReaderSessions(
+            documentId,
+            repository,
+            viewModelScope,
+            progressSync,
+            openPdf,
+            ReaderSessionOutput(::updateSuccessState, _effects),
+        )
+
+    /** The open book's reading session; null for anything else. */
+    val epubSession: EpubReaderSession? get() = sessions.epub
+
+    /** The open PDF's reading session; null for anything else. */
+    val pdfSession: PdfReaderSession? get() = sessions.pdf
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
+    private var loadJob: Job? = null
 
     init {
         _uiState.value = ReaderUiState.Loading
         load(initialPreferences)
     }
 
+    /**
+     * Retry from any reader screen. An item opened from its last seen list row is loaded again whole, so the
+     * server's document, resume point, highlights and tags replace what the row could tell.
+     */
     fun retryOpen() {
-        if (_uiState.value !is ReaderUiState.Error) return
+        val state = _uiState.value
+        if (state is ReaderUiState.Success && !state.item.lastSeen) return sessions.retry()
+        if (state !is ReaderUiState.Error && state !is ReaderUiState.Success) return
+        sessions.close()
         _uiState.value = ReaderUiState.Loading
-        load(initialPreferences)
+        load((state as? ReaderUiState.Success)?.preferences ?: initialPreferences)
     }
 
     private fun load(preferences: ReaderPreferences) {
-        viewModelScope.launch {
-            repository
-                .getItem(documentId)
-                .onSuccess { item ->
-                    val contentMode =
-                        when (item.itemType) {
-                            "pdf" -> ReaderContentMode.PDF_COMING_SOON
-                            "book" -> ReaderContentMode.EPUB
-                            else -> ReaderContentMode.HTML
+        loadJob?.cancel()
+        loadJob =
+            viewModelScope.launch {
+                repository
+                    .getItem(documentId)
+                    .onSuccess { item ->
+                        val contentMode =
+                            when (item.itemType) {
+                                "pdf" -> ReaderContentMode.PDF
+                                "book" -> ReaderContentMode.EPUB
+                                else -> ReaderContentMode.HTML
+                            }
+                        val finished = item.isFinished()
+                        val savedProgress = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
+                        val isPdf = contentMode == ReaderContentMode.PDF
+                        val toc = if (isPdf) TocPanelState(TocStatus.NONE) else TocPanelState()
+
+                        _uiState.value =
+                            ReaderUiState.Success(
+                                item = item,
+                                htmlContent = null,
+                                contentMode = contentMode,
+                                highlights = emptyList(),
+                                progress = savedProgress,
+                                preferences = preferences,
+                                toc = toc,
+                            )
+
+                        recordOpened()
+
+                        when (contentMode) {
+                            ReaderContentMode.HTML -> {
+                                htmlLoader.loadHtmlContent()
+                                htmlLoader.loadArticleToc()
+                            }
+                            ReaderContentMode.EPUB -> sessions.openBook(item, finished)
+                            ReaderContentMode.PDF -> sessions.openPdf(item, finished, savedProgress)
                         }
-                    val finished = item.isFinished()
-                    val savedProgress = if (finished) 0f else item.progressPercent?.toFloat() ?: 0f
-
-                    _uiState.value =
-                        ReaderUiState.Success(
-                            item = item,
-                            htmlContent = null,
-                            contentMode = contentMode,
-                            highlights = emptyList(),
-                            progress = savedProgress,
-                            preferences = preferences,
-                        )
-
-                    recordOpened()
-
-                    when (contentMode) {
-                        ReaderContentMode.HTML -> {
-                            htmlLoader.loadHtmlContent()
-                            htmlLoader.loadArticleToc()
-                        }
-                        ReaderContentMode.EPUB -> openBook(item, finished)
-                        ReaderContentMode.PDF_COMING_SOON -> Unit
+                        loadHighlights()
+                        loadItemNoteAndTags()
+                        loadEntities()
+                    }.onFailure {
+                        _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
                     }
-                    loadHighlights()
-                    loadItemNoteAndTags()
-                    loadEntities()
-                }.onFailure {
-                    _uiState.value = ReaderUiState.Error(UiMessage(Res.string.reader_error_load))
-                }
-        }
-    }
-
-    private fun openBook(
-        item: ReaderDocument,
-        finished: Boolean,
-    ) {
-        val locator = item.chapterLocator?.takeUnless { finished }
-        val resumeAt = locator?.let { ChapterPosition(it, item.chapterOffset ?: 0) }
-        val session = EpubReaderSession(documentId, repository, viewModelScope, progressSync, resumeAt)
-        epubSession = session
-        viewModelScope.launch {
-            session.state.collect { epub ->
-                updateSuccessState {
-                    it.copy(epub = epub, progress = epub.percent ?: it.progress, toc = epub.contentsPanel())
-                }
             }
-        }
-        session.open()
     }
 
     fun onTocEntryTapped(entry: ArticleTocEntry) {
@@ -213,33 +225,33 @@ class ReaderViewModel(
         }
     }
 
-    private fun loadHighlights() {
-        viewModelScope.launch {
-            repository
-                .listHighlights(documentId)
-                .onSuccess { highlights ->
-                    updateSuccessState { it.copy(highlights = highlights) }
-                }
+    // These reads are children of the open, so a Retry that replaces it also drops their late answers.
+    private fun CoroutineScope.loadHighlights() {
+        launch {
+            val loaded = repository.listHighlights(documentId)
+            updateSuccessState { state ->
+                state.copy(highlights = loaded.getOrDefault(state.highlights), highlightsLoaded = true)
+            }
         }
     }
 
     /** Entities are supplementary: a failed fetch leaves the list empty and the section hidden. */
-    private fun loadEntities() {
-        viewModelScope.launch {
+    private fun CoroutineScope.loadEntities() {
+        launch {
             repository
                 .listDocumentEntities(documentId)
                 .onSuccess { entities -> updateSuccessState { it.copy(entities = entities) } }
         }
     }
 
-    private fun loadItemNoteAndTags() {
-        viewModelScope.launch {
+    private fun CoroutineScope.loadItemNoteAndTags() {
+        launch {
             repository
                 .getItemNote(documentId)
                 .onSuccess { note -> updateSuccessState { it.copy(itemNote = note, itemNoteLoaded = true) } }
         }
         val libraryEntryId = (_uiState.value as? ReaderUiState.Success)?.item?.libraryEntryId ?: return
-        viewModelScope.launch {
+        launch {
             repository
                 .getItemTags(libraryEntryId)
                 .onSuccess { tags -> updateSuccessState { it.copy(itemTags = tags) } }
@@ -337,32 +349,21 @@ class ReaderViewModel(
         progressTrackingEnabled = true
     }
 
-    /** The app leaves the screen: a book writes where its reader is. */
+    /** The app leaves the screen: a book or PDF writes where its reader is. */
     fun onStop() {
-        val book = epubSession ?: return
-        viewModelScope.launch { book.captureAndFlush() }
+        if (epubSession == null && pdfSession == null) return
+        viewModelScope.launch { sessions.captureAndFlush() }
     }
 
     /** Leaves once the newest position is written; a book first asks its chapter where the reader is. */
     fun navigateBack() {
-        if (leaving) return
+        if (leaving || sessions.leaving) return
         leaving = true
-        val book = epubSession
-        if (book == null) progressSync.flush()
         viewModelScope.launch {
-            book?.captureAndFlush()
+            sessions.captureAndFlush()
             _effects.emit(ReaderEffect.NavigateBack)
             leaving = false
         }
-    }
-
-    fun createHighlight(
-        color: HighlightColor,
-        textContent: String,
-        startOffset: Long,
-        endOffset: Long,
-    ) {
-        if (!bookChapterMissing) highlightActions.createHighlight(color, textContent, startOffset, endOffset)
     }
 
     fun createHighlightForTag(
@@ -375,6 +376,16 @@ class ReaderViewModel(
         if (!bookChapterMissing) highlightActions.createHighlight(color, textContent, startOffset, endOffset, onCreated)
     }
 
+    /** A PDF selection becomes a highlight on its page; nothing is created when clipping leaves no box. */
+    fun createPdfHighlight(
+        color: HighlightColor,
+        selection: PdfSelection,
+        onCreated: (String) -> Unit = {},
+    ) {
+        val target = pdfSession?.highlightTarget(selection) ?: return
+        highlightActions.createPdfHighlight(color, target, selection.text.trim(), onCreated)
+    }
+
     fun deleteHighlight(highlightId: String) = highlightActions.deleteHighlight(highlightId)
 
     fun updateHighlightColor(
@@ -385,9 +396,13 @@ class ReaderViewModel(
     fun upsertHighlightNote(
         highlightId: String,
         body: String,
-    ) = highlightActions.upsertHighlightNote(highlightId, body)
+        onSaved: () -> Unit = {},
+    ) = highlightActions.upsertHighlightNote(highlightId, body, onSaved)
 
-    fun deleteHighlightNote(highlightId: String) = highlightActions.deleteHighlightNote(highlightId)
+    fun deleteHighlightNote(
+        highlightId: String,
+        onDeleted: () -> Unit = {},
+    ) = highlightActions.deleteHighlightNote(highlightId, onDeleted)
 
     fun setHighlightTags(
         highlightId: String,
@@ -416,6 +431,7 @@ class ReaderViewModel(
         viewModelScope.launch {
             repository
                 .triageItem(libraryEntryId, state)
+                .onSuccess { updateSuccessState { it.copy(item = it.item.copy(triageState = state)) } }
                 .onFailure {
                     _effects.emit(ReaderEffect.ShowSnackbar(UiMessage(Res.string.reader_error_move)))
                 }
@@ -447,12 +463,11 @@ class ReaderViewModel(
     }
 
     override fun onCleared() {
+        sessions.close()
         playbackController.release()
         super.onCleared()
     }
 }
-
-private const val PERCENT_MAX = 100f
 
 /** A finished item opens at its start, so a reread does not begin on the last page. */
 private fun ReaderDocument.isFinished(): Boolean =

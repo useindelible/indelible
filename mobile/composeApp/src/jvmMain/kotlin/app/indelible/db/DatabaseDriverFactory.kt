@@ -8,13 +8,11 @@ import java.util.Properties
 actual class DatabaseDriverFactory(
     private val directory: File = File(System.getProperty("user.home"), ".indelible"),
 ) {
-    // One driver per factory: a recreated window must reuse this pool rather than open a second
-    // one over the same file, which would defeat SqlDelightOfflineStore's per-instance write lock.
+    // One driver per file: a second one would bypass SqlDelightOfflineStore's per-instance write lock.
     private val lazyDriver =
         lazy {
             directory.mkdirs()
-            // Handing the schema to the driver lets SQLDelight own user_version, so an existing
-            // file is migrated instead of being treated as either new or already current.
+            // The schema lets SQLDelight own user_version, so an existing file is migrated.
             JdbcSqliteDriver(
                 "jdbc:sqlite:${File(directory, DATABASE_NAME).absolutePath}",
                 Properties(),

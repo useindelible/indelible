@@ -1,5 +1,6 @@
 package app.indelible.home.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.profile.ui.components.UserAvatar
 import app.indelible.ui.theme.AppTheme
@@ -29,8 +31,9 @@ import indelible.composeapp.generated.resources.home_search_cd
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Transparent home top bar: drawer menu on the left, search + profile avatar on
- * the right. Sits above the scrolling content and clears the status bar inset.
+ * Home top bar: drawer menu on the left, search + profile avatar on the right.
+ * Solid in [containerColor], so scrolled content cannot run under its icons or the
+ * status bar.
  */
 @Composable
 fun HomeAppBar(
@@ -41,11 +44,13 @@ fun HomeAppBar(
     modifier: Modifier = Modifier,
     avatarUrl: String? = null,
     avatarBytes: ByteArray? = null,
+    containerColor: Color = MaterialTheme.colorScheme.background,
 ) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
+                .background(containerColor)
                 .statusBarsPadding()
                 .padding(horizontal = IndelibleSpacing.step8, vertical = IndelibleSpacing.step6),
         verticalAlignment = Alignment.CenterVertically,

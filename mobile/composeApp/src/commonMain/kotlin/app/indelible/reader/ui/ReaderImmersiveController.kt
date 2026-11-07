@@ -68,8 +68,8 @@ internal fun isChromeSuppressed(
     activePanel: DataPanel,
     hasSelection: Boolean,
     hasTappedHighlight: Boolean,
-    hasOpenTagSheet: Boolean,
-): Boolean = activePanel != DataPanel.NONE || hasSelection || hasTappedHighlight || hasOpenTagSheet
+    hasOpenHighlightSheet: Boolean,
+): Boolean = activePanel != DataPanel.NONE || hasSelection || hasTappedHighlight || hasOpenHighlightSheet
 
 /**
  * Reveals and holds the chrome while a sheet, selection, or highlight is open,

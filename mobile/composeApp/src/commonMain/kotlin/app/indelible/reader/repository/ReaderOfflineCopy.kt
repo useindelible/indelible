@@ -2,13 +2,16 @@ package app.indelible.reader.repository
 
 import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentReaderResponse
+import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.HighlightListResponse
 import app.indelible.core.offline.CachedDocumentRow
 import app.indelible.core.offline.DocumentRevision
+import app.indelible.core.offline.ListSnapshots
 import app.indelible.core.offline.LocalChanges
 import app.indelible.core.offline.OfflineFiles
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.Progress
+import app.indelible.core.offline.ReadingCopies
 import app.indelible.core.offline.RefreshRequest
 import app.indelible.core.offline.ScopeNotLiveException
 import app.indelible.core.offline.ServerNote
@@ -16,6 +19,7 @@ import app.indelible.core.offline.ServerPart
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.StaleWriteException
 import app.indelible.core.offline.generationDir
+import app.indelible.core.offline.orFromDevice
 import app.indelible.core.offline.progress
 import app.indelible.core.offline.toCachedHighlight
 import app.indelible.reader.model.ArticleToc
@@ -28,6 +32,8 @@ import app.indelible.reader.model.toReaderDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okio.IOException
@@ -64,10 +70,12 @@ class ReaderOfflineCopy(
     private val files: OfflineFiles,
     private val sessionProvider: () -> Session?,
     private val clock: () -> Long,
-    private val requestCache: suspend (Session, String) -> Unit,
+    private val copies: ReadingCopies,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     val tags = OfflineTags(files, store, sessionProvider, FALLBACK_BUDGET_MS, dispatcher)
+    val lists = ListSnapshots(store, sessionProvider, clock)
+    private val pdf = PdfCopySource(store, files, copies)
 
     suspend fun document(
         documentId: String,
@@ -85,7 +93,10 @@ class ReaderOfflineCopy(
         // Progress is append-only; the server never lets an older event win, so an overtaken view still stands.
         return fromCopy ?: steady(session.scope, documentId, { it.position }, fetch)
             .map { it.server.toReaderDocument().withProgress(it.changes.progress(it.server.progress())) }
-            .onSuccess { requestCache(session, documentId) }
+            .onSuccess { copies.cacheOnOpen(session, documentId) }
+            .orFromDevice {
+                lists.lastSeen(session, documentId)?.toLastSeenDocument(store.localChanges(session.scope, documentId))
+            }
     }
 
     suspend fun highlights(
@@ -128,14 +139,25 @@ class ReaderOfflineCopy(
             json.decodeFromString(ArticleToc.serializer(), it)
         }
 
-    /** With a copy, the book's contents come from its file; the server only when that file is missing or unreadable. */
+    /**
+     * With a copy, the book's contents come from its file; the server only when that file is missing or
+     * unreadable. A ready list from the server asks for the copy, which also retries a kept book that waited.
+     */
     suspend fun epubToc(
         documentId: String,
         fetch: suspend (String) -> Result<EpubToc>,
-    ): Result<EpubToc> =
-        copyFirst(documentId, AssetSlot(EPUB_TOC, 0), { fetch(documentId) }) {
+    ): Result<EpubToc> {
+        val session = sessionProvider()
+        return copyFirst(documentId, AssetSlot(EPUB_TOC, 0), { fetch(documentId) }) {
             json.decodeFromString(EpubToc.serializer(), it)
+        }.onSuccess { toc ->
+            if (session == null || toc.chapterList != EpubChapterList.READY) return@onSuccess
+            if (store.cachedDocument(session.scope, documentId) == null) copies.cacheOnOpen(session, documentId)
         }
+    }
+
+    /** The copy's PDF, or the reading download that brings one; the document is held while collected. */
+    fun pdfCopy(documentId: String): Flow<PdfCopy> = pdf.pdfCopy(sessionProvider, documentId).flowOn(dispatcher)
 
     /** The chapter at [spineIndex], from the copy first, as [epubToc]. */
     suspend fun epubChapter(
@@ -271,16 +293,16 @@ class ReaderOfflineCopy(
         fun DocumentReaderResponse.readerPart(): ServerPart =
             ServerPart.Reader(title, json.encodeToString(DocumentReaderResponse.serializer(), this), progress())
 
-        fun ReaderDocument.withProgress(progress: Progress): ReaderDocument =
-            copy(
-                progressPercent = progress.percent,
-                maxProgressPercent = progress.maxPercent,
-                chapterLocator = progress.position?.chapter,
-                chapterOffset = progress.position?.offset,
-            )
-
         fun HighlightListResponse.toCached(documentId: String) = highlights.map { it.toCachedHighlight(documentId) }
 
         fun DocumentNoteResponse.toServerNote() = ServerNote(body, updatedAt.toEpochMilliseconds())
     }
 }
+
+internal fun ReaderDocument.withProgress(progress: Progress): ReaderDocument =
+    copy(
+        progressPercent = progress.percent,
+        maxProgressPercent = progress.maxPercent,
+        chapterLocator = progress.position?.locator,
+        chapterOffset = progress.position?.offset,
+    )

@@ -32,31 +32,29 @@ internal fun BoxScope.HighlightToolbarOverlay(
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onAvailableTagsChanged: (List<TagData>) -> Unit,
     onTagSheetHighlightIdChanged: (String?) -> Unit,
+    onNoteSheetHighlightIdChanged: (String?) -> Unit,
 ) {
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
-    // sel.rect.y is a CSS viewport-relative pixel from getBoundingClientRect().
-    // CSS pixels from a standard-viewport WebView equal dp, so use .dp
-    // directly — .toDp() would incorrectly divide by display density.
+    // Every reader reports the anchor in dp: the WebView's CSS pixels equal dp at the standard viewport,
+    // the PDF view converts.
     val yOffset = sel.rect.y.dp - IndelibleSpacing.step64
+    val create: (HighlightColor, (String) -> Unit) -> Unit = { color, onCreated ->
+        val pdf = sel.pdf
+        if (pdf != null) {
+            viewModel.createPdfHighlight(color, pdf, onCreated)
+        } else {
+            val (start, end) = sel.startOffset.toLong() to sel.endOffset.toLong()
+            viewModel.createHighlightForTag(color, sel.text, start, end, onCreated)
+        }
+    }
     HighlightToolbar(
         onColorSelected = { color ->
-            viewModel.createHighlight(
-                color = color,
-                textContent = sel.text,
-                startOffset = sel.startOffset.toLong(),
-                endOffset = sel.endOffset.toLong(),
-            )
+            create(color) {}
             onSelectedTextChanged(null)
         },
         onTagSelected = {
-            val selCopy = sel
             onSelectedTextChanged(null)
-            viewModel.createHighlightForTag(
-                color = defaultHighlightColor,
-                textContent = selCopy.text,
-                startOffset = selCopy.startOffset.toLong(),
-                endOffset = selCopy.endOffset.toLong(),
-            ) { highlightId ->
+            create(defaultHighlightColor) { highlightId ->
                 viewModel.loadTagsForPicker { tags ->
                     onAvailableTagsChanged(tags)
                     onTagSheetHighlightIdChanged(highlightId)
@@ -64,13 +62,8 @@ internal fun BoxScope.HighlightToolbarOverlay(
             }
         },
         onNoteSelected = {
-            viewModel.createHighlight(
-                color = defaultHighlightColor,
-                textContent = sel.text,
-                startOffset = sel.startOffset.toLong(),
-                endOffset = sel.endOffset.toLong(),
-            )
             onSelectedTextChanged(null)
+            create(defaultHighlightColor) { highlightId -> onNoteSheetHighlightIdChanged(highlightId) }
         },
         onCopySelected = {
             clipboardManager.setText(AnnotatedString(sel.text))

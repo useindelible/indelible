@@ -210,6 +210,7 @@
     <string name="home_offline_chip_offline">Hors ligne</string>
     <string name="home_offline_chip_synced">En ligne</string>
     <string name="home_offline_empty_body">Rien n’est encore enregistré sur ce téléphone. Les éléments que vous ouvrez sont gardés pour plus tard, et vous pouvez garder n’importe quel élément hors ligne.</string>
+    <string name="home_offline_empty_body_last_loaded">Rien n’est encore enregistré sur ce téléphone. Ce que vous avez vu en dernier reste consultable ; l’ouvrir demande une connexion tant qu’il n’est pas copié sur le téléphone.</string>
     <string name="home_offline_empty_next">La prochaine fois que vous êtes en ligne</string>
     <string name="home_offline_empty_shelf">Votre étagère sera ici</string>
     <string name="home_offline_empty_step_keep">Touchez Garder hors ligne dans sa fiche.</string>
@@ -222,6 +223,7 @@
         <item quantity="other">éléments à bord</item>
     </plurals>
     <string name="home_offline_kept">Gardé hors ligne</string>
+    <string name="home_offline_not_on_phone">Pas sur le téléphone</string>
     <plurals name="home_offline_on_phone">
         <item quantity="one">%1$d sur ce téléphone</item>
         <item quantity="other">%1$d sur ce téléphone</item>
@@ -469,6 +471,7 @@
     <string name="offline_key_cached">En cache %1$s</string>
     <string name="offline_key_free">Libre %1$s</string>
     <string name="offline_key_kept">Conservé %1$s</string>
+    <string name="offline_last_loaded">Affichage du dernier contenu chargé.</string>
     <string name="offline_limit">Limite de stockage</string>
     <string name="offline_manage_kept">Gérer les éléments conservés</string>
     <string name="offline_manage_kept_body">Les éléments conservés dépassent à eux seuls la limite. Retirez-en pour libérer de l’espace.</string>
@@ -696,10 +699,6 @@
     <string name="reader_color_pink">Rose</string>
     <string name="reader_color_purple">Violet</string>
     <string name="reader_color_yellow">Jaune</string>
-    <string name="reader_coming_contents_body">La navigation entre les titres d’un article arrivera dans une prochaine mise à jour.</string>
-    <string name="reader_coming_contents_title">Le sommaire arrive bientôt</string>
-    <string name="reader_coming_pdf_body">Nous développons un lecteur PDF dédié. Il arrivera dans une prochaine mise à jour.</string>
-    <string name="reader_coming_pdf_title">La lecture des PDF arrive bientôt</string>
     <string name="reader_contents">Sommaire</string>
     <string name="reader_contents_building_body">Le sommaire de cet article est en cours de préparation. Cela prend généralement quelques secondes.</string>
     <string name="reader_contents_building_title">Création du sommaire</string>
@@ -742,6 +741,13 @@
     <string name="reader_error_save_tags">Impossible d’enregistrer les étiquettes. Veuillez réessayer.</string>
     <string name="reader_error_update_highlight_color">Impossible de modifier la couleur du surlignage. Veuillez réessayer.</string>
     <string name="reader_highlight">Surlignage</string>
+    <string name="reader_highlight_note_delete">Supprimer la note</string>
+    <string name="reader_highlight_note_discard">Abandonner</string>
+    <string name="reader_highlight_note_discard_body">Votre note contient des modifications non enregistrées.</string>
+    <string name="reader_highlight_note_discard_title">Abandonner les modifications ?</string>
+    <string name="reader_highlight_note_keep">Continuer la modification</string>
+    <string name="reader_highlight_note_label">Note</string>
+    <string name="reader_highlight_note_title">Note du surlignage</string>
     <plurals name="reader_highlights_count">
         <item quantity="one">%1$d surlignage</item>
         <item quantity="other">%1$d surlignages</item>
@@ -782,6 +788,19 @@
     <string name="reader_note_saved_with_article">Enregistrée avec cet article</string>
     <string name="reader_notes_tags">Notes et étiquettes</string>
     <string name="reader_now_playing">Lecture en cours · %1$s</string>
+    <string name="reader_pdf_connection_body">Vérifiez votre connexion, puis réessayez.</string>
+    <string name="reader_pdf_connection_title">Impossible de joindre votre serveur</string>
+    <string name="reader_pdf_copy_removed">Ce PDF a été retiré de cet appareil</string>
+    <string name="reader_pdf_download_failed_body">Votre serveur n’a pas envoyé ce PDF. Réessayez dans un instant.</string>
+    <string name="reader_pdf_download_failed_title">Impossible de récupérer ce PDF</string>
+    <string name="reader_pdf_no_space_body">Cet appareil manque d’espace. Libérez-en, puis réessayez.</string>
+    <string name="reader_pdf_no_space_title">Espace insuffisant</string>
+    <string name="reader_pdf_open_highlight">Ouvrir le surlignage : %1$s</string>
+    <string name="reader_pdf_page">Page %1$d sur %2$d</string>
+    <string name="reader_pdf_unreadable_body">Ce fichier n’est pas un PDF que l’application peut ouvrir.</string>
+    <string name="reader_pdf_unreadable_title">Impossible d’ouvrir ce PDF</string>
+    <string name="reader_pdf_waiting_body">Il s’ouvrira dès qu’il sera sur cet appareil.</string>
+    <string name="reader_pdf_waiting_title">Récupération de ce PDF</string>
     <string name="reader_preparing_body">La version lisible prend un peu de temps à s’afficher. Réessayez bientôt.</string>
     <string name="reader_preparing_cooldown">Le retraitement est déjà en cours.</string>
     <string name="reader_preparing_cooling_down">En attente</string>

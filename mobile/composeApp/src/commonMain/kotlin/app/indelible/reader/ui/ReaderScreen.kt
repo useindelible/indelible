@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,6 @@ import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
-import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.model.TagData
 import app.indelible.reader.ui.components.ReaderOpenFailed
 import app.indelible.reader.ui.components.rememberItemOffline
@@ -60,7 +60,8 @@ fun ReaderScreen(
 
     var selectedText by remember { mutableStateOf<SelectedTextInfo?>(null) }
     var tappedHighlight by remember { mutableStateOf<HighlightData?>(null) }
-    var tagSheetHighlightId by remember { mutableStateOf<String?>(null) }
+    var tagSheetHighlightId by rememberSaveable { mutableStateOf<String?>(null) }
+    var noteSheetHighlightId by rememberSaveable { mutableStateOf<String?>(null) }
     var availableTags by remember { mutableStateOf<List<TagData>>(emptyList()) }
     var scrollToPercent by remember { mutableStateOf<Float?>(null) }
     var anchorScroll by remember { mutableStateOf<AnchorScrollRequest?>(null) }
@@ -74,7 +75,7 @@ fun ReaderScreen(
             activePanel = activePanel,
             hasSelection = selectedText != null,
             hasTappedHighlight = tappedHighlight != null,
-            hasOpenTagSheet = tagSheetHighlightId != null,
+            hasOpenHighlightSheet = listOfNotNull(tagSheetHighlightId, noteSheetHighlightId).isNotEmpty(),
         )
     ReaderChromeSuppressionEffect(chromeState, chromeSuppressed)
 
@@ -89,7 +90,8 @@ fun ReaderScreen(
     // the page resize under the reader every time the controls came and went.
     ImmersiveSystemBars(hidden = true)
 
-    ReaderExitEffects(viewModel, isBook = (uiState as? ReaderUiState.Success)?.contentMode == ReaderContentMode.EPUB)
+    val mode = (uiState as? ReaderUiState.Success)?.contentMode
+    ReaderExitEffects(viewModel, capturesPosition = mode?.capturesPosition == true)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -138,6 +140,7 @@ fun ReaderScreen(
                     selectedText = selectedText,
                     tappedHighlight = tappedHighlight,
                     tagSheetHighlightId = tagSheetHighlightId,
+                    noteSheetHighlightId = noteSheetHighlightId,
                     milaStarted = milaStarted,
                     scrollToPercent = scrollToPercent,
                     anchorScroll = anchorScroll,
@@ -160,6 +163,7 @@ fun ReaderScreen(
                         tappedHighlight = it
                     },
                     onTagSheetHighlightIdChanged = { tagSheetHighlightId = it },
+                    onNoteSheetHighlightIdChanged = { noteSheetHighlightId = it },
                     onAvailableTagsChanged = { availableTags = it },
                     onScrollToPercentConsumed = {
                         viewModel.onScrollRestored()
@@ -185,15 +189,15 @@ private fun ReaderLoadingState(modifier: Modifier = Modifier) {
     }
 }
 
-/** A book writes where its reader is before system Back leaves and when the app stops. */
+/** A book or PDF writes where its reader is before system Back leaves and when the app stops. */
 @Composable
 private fun ReaderExitEffects(
     viewModel: ReaderViewModel,
-    isBook: Boolean,
+    capturesPosition: Boolean,
 ) {
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
-        isBackEnabled = isBook,
+        isBackEnabled = capturesPosition,
         onBackCompleted = { viewModel.navigateBack() },
     )
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onStop() }

@@ -19,14 +19,15 @@ class OfflineFiles(
     val root: Path,
     private val fs: FileSystem,
 ) {
-    /** Streams [channel] into [path], creating its parents, and returns the bytes written. */
+    /** Streams [channel] into [path], creating its parents; returns the bytes written, which [onBytes] also sees. */
     suspend fun write(
         path: Path,
         channel: ByteReadChannel,
+        onBytes: (Long) -> Unit = {},
     ): Long =
         try {
             path.parent?.let(fs::createDirectories)
-            fs.sink(path).buffer().use { sink -> copy(channel, sink) }
+            fs.sink(path).buffer().use { sink -> copy(channel, sink, onBytes) }
         } catch (error: IOException) {
             throw if (error.isNoSpace()) NoSpaceException(error) else error
         }
@@ -34,6 +35,7 @@ class OfflineFiles(
     private suspend fun copy(
         channel: ByteReadChannel,
         sink: BufferedSink,
+        onBytes: (Long) -> Unit,
     ): Long {
         val buffer = ByteArray(COPY_BUFFER_BYTES)
         var total = 0L
@@ -42,6 +44,7 @@ class OfflineFiles(
             if (read == -1) return total
             sink.write(buffer, 0, read)
             total += read
+            onBytes(total)
         }
     }
 
@@ -70,8 +73,10 @@ class OfflineFiles(
         fs.deleteRecursively(path, mustExist = false)
     }
 
-    fun listDirectories(path: Path): List<Path> =
-        fs.listOrNull(path).orEmpty().filter { fs.metadataOrNull(it)?.isDirectory == true }
+    fun listDirectories(path: Path): List<Path> {
+        val entries = fs.listOrNull(path).orEmpty()
+        return entries.filter { fs.metadataOrNull(it)?.isDirectory == true }
+    }
 
     fun sizeOfTree(path: Path): Long {
         if (!fs.exists(path)) return 0L

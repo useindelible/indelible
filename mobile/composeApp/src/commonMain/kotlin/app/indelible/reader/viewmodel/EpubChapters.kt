@@ -6,6 +6,7 @@ import app.indelible.reader.model.EpubChapterList
 import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.EpubTocEntry
 import app.indelible.reader.model.HighlightData
+import app.indelible.reader.model.PERCENT_MAX
 
 /** [key] is the id of the chapter's first contents entry, as web keys it, else `spine:<n>`. */
 data class EpubChapter(
@@ -96,5 +97,3 @@ fun EpubReaderState.highlightsFor(all: List<HighlightData>): List<HighlightData>
     val key = chapterKey() ?: return emptyList()
     return all.filter { it.locator?.chapter == key }
 }
-
-private const val PERCENT_MAX = 100f

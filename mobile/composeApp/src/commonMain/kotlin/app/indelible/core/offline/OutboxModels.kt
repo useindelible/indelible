@@ -110,7 +110,7 @@ data class CachedDocumentRow(
     val noteServerUpdatedAt: Long? = null,
     val progressPercent: Int? = null,
     val maxProgressPercent: Int? = null,
-    val position: ChapterPosition? = null,
+    val position: ReadingPosition? = null,
 )
 
 data class CachedAssetRow(

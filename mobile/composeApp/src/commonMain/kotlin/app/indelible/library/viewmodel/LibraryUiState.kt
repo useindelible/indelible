@@ -61,6 +61,7 @@ sealed class LibraryUiState {
         val hasMore: Boolean,
         val isLoadingMore: Boolean = false,
         val isRefreshing: Boolean = false,
+        val fromDevice: Boolean = false,
     ) : LibraryUiState()
 
     data class Error(

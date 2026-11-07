@@ -27,6 +27,9 @@ object IndelibleShape {
     val full = RoundedCornerShape(980.dp)
     val drawerEnd = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
 
+    /** A highlight box drawn over PDF text; the web reader rounds its boxes by the same 3 px. */
+    val highlight = RoundedCornerShape(3.dp)
+
     /** Outgoing chat bubble — the corner nearest the sender stays sharp. */
     val chatBubbleEnd =
         RoundedCornerShape(

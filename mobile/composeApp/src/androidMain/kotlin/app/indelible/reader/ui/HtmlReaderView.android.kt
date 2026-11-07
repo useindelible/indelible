@@ -1,6 +1,7 @@
 package app.indelible.reader.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
@@ -12,21 +13,17 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderPreferences
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 actual fun HtmlReaderView(
     htmlContent: String,
@@ -56,189 +53,125 @@ actual fun HtmlReaderView(
     assets: ReaderAssets,
     scrollToCharOffset: CharOffsetRequest?,
     captureRequest: Long?,
+    clearSelection: Long?,
     onPositioned: () -> Unit,
     holdUntilPositioned: Boolean,
     onBookLink: (String) -> Unit,
     modifier: Modifier,
 ) {
-    // rememberUpdatedState ensures the JS interface always invokes the latest lambdas
-    // even though the interface itself is created once via remember.
-    val latestOnScrollProgress = rememberUpdatedState(onScrollProgress)
-    val latestOnTextSelected = rememberUpdatedState(onTextSelected)
-    val latestOnSelectionCleared = rememberUpdatedState(onSelectionCleared)
-    val latestOnHighlightTapped = rememberUpdatedState(onHighlightTapped)
-    val latestOnSummaryAction = rememberUpdatedState(onSummaryAction)
-    val latestOnReaderTap = rememberUpdatedState(onReaderTap)
-    val latestOnPositioned = rememberUpdatedState(onPositioned)
-    val latestOnBookLink = rememberUpdatedState(onBookLink)
-    val latestOnContentLoaded = rememberUpdatedState(onContentLoaded)
-
-    val jsInterface =
-        remember {
-            ReaderJsInterface(
-                ReaderBridgeCallbacks(
-                    onScroll = { latestOnScrollProgress.value(it) },
-                    onTextSelected = { t, s, e, r -> latestOnTextSelected.value(t, s, e, r) },
-                    onSelectionCleared = { latestOnSelectionCleared.value() },
-                    onHighlightTapped = { id, r -> latestOnHighlightTapped.value(id, r) },
-                    onSummaryAction = { latestOnSummaryAction.value(it) },
-                    onReaderTap = { latestOnReaderTap.value() },
-                    onPositioned = { latestOnPositioned.value() },
-                    onBookLink = { latestOnBookLink.value(it) },
-                ),
-            )
-        }
-
-    val fullHtml =
-        remember(
-            htmlContent,
-            preferences,
-            highlights,
-            isDarkMode,
+    val callbacks =
+        rememberReaderBridgeCallbacks(
+            onScrollProgress,
+            onTextSelected,
+            onSelectionCleared,
+            onHighlightTapped,
+            onSummaryAction,
+            onReaderTap,
+            onPositioned,
+            onBookLink,
+        )
+    val jsInterface = remember { ReaderJsInterface(callbacks) }
+    val options =
+        ReaderPageOptions(
             localization,
-            summaryHtml,
-            summaryPoints,
+            ReaderArticleMeta(articleTitle, articleAuthor, articleDomain),
+            ReaderSummary(summaryHtml, summaryPoints),
             topContentPaddingPx,
             assets,
             holdUntilPositioned,
-        ) {
-            ReaderHtmlTemplate.build(
-                articleHtml = htmlContent,
-                preferences = preferences,
-                highlights = highlights,
-                localization = localization,
-                isDarkMode = isDarkMode,
-                articleTitle = articleTitle,
-                articleAuthor = articleAuthor,
-                articleDomain = articleDomain,
-                summaryHtml = summaryHtml,
-                summaryPoints = summaryPoints,
-                topContentPaddingPx = topContentPaddingPx,
-                assets = assets,
-                holdUntilPositioned = holdUntilPositioned,
-            )
+        )
+    val fullHtml =
+        remember(htmlContent, preferences, highlights, options) {
+            ReaderHtmlTemplate.build(htmlContent, preferences, highlights, options)
         }
-
+    val latestOnContentLoaded = rememberUpdatedState(onContentLoaded)
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var pageLoaded by remember { mutableStateOf(false) }
 
     AndroidView(
         factory = { context ->
-            object : WebView(context) {
-                // Suppress Android's native text-selection toolbar (Copy / Select All / Share);
-                // it floats over the reader's own highlight pill. Selection and drag handles are
-                // kept alive, so the JS selectionchange bridge still drives our pill.
-                override fun startActionMode(callback: ActionMode.Callback?): ActionMode? =
-                    super.startActionMode(SuppressingActionModeCallback())
-
-                override fun startActionMode(
-                    callback: ActionMode.Callback?,
-                    type: Int,
-                ): ActionMode? = super.startActionMode(SuppressingActionModeCallback(), type)
-            }.apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
-                // Transparent so the native aura layer behind the WebView bleeds
-                // through the reader canvas (painted at < 1.0 alpha in the template).
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                addJavascriptInterface(jsInterface, "NativeBridge")
-                webViewClient =
-                    object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(
-                            view: WebView?,
-                            request: WebResourceRequest?,
-                        ): Boolean {
-                            val req = request ?: return false
-                            // Subframe loads (the YouTube embed iframe) proceed; top-level navigation
-                            // never replaces the reader, and web and mail links leave the app.
-                            val decision =
-                                ReaderNavigationPolicy.decide(
-                                    isMainFrame = req.isForMainFrame,
-                                    scheme = req.url?.scheme,
-                                    initialReaderDocumentPending = false,
-                                )
-                            if (decision == ReaderNavigationDecision.OpenExternally) {
-                                runCatching { view?.context?.startActivity(Intent(Intent.ACTION_VIEW, req.url)) }
-                            }
-                            return decision != ReaderNavigationDecision.Allow
-                        }
-
-                        override fun onPageFinished(
-                            view: WebView?,
-                            url: String?,
-                        ) {
-                            super.onPageFinished(view, url)
-                            pageLoaded = true
-                            latestOnContentLoaded.value()
-                        }
-                    }
-                loadDataWithBaseURL(null, fullHtml, "text/html", "utf-8", null)
-                webViewRef = this
-            }
+            readerWebView(context, jsInterface, fullHtml) {
+                pageLoaded = true
+                latestOnContentLoaded.value()
+            }.also { webViewRef = it }
         },
-        update = { webView ->
-            webViewRef = webView
-        },
+        update = { webView -> webViewRef = webView },
         modifier = modifier,
     )
 
-    LaunchedEffect(scrollToPercent) {
-        val percent = scrollToPercent ?: return@LaunchedEffect
-        webViewRef?.evaluateJavascript("window.scrollToPercent($percent);", null)
-        onScrollRestored()
+    ReaderBridgeEffects(
+        ReaderBridgeInputs(
+            pageLoaded,
+            scrollToPercent,
+            anchorScroll,
+            preferences,
+            highlights,
+            speakingSentenceIndex,
+            immersive,
+            scrollToCharOffset,
+            captureRequest,
+            clearSelection,
+        ),
+        onScrollRestored,
+        onAnchorScrolled,
+    ) { webViewRef?.evaluateJavascript(it, null) }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+private fun readerWebView(
+    context: Context,
+    jsInterface: ReaderJsInterface,
+    fullHtml: String,
+    onPageFinished: () -> Unit,
+): WebView =
+    object : WebView(context) {
+        // Android's own selection toolbar (Copy / Select All / Share) would float over the reader's
+        // highlight pill; the selection and its drag handles stay alive without it.
+        override fun startActionMode(callback: ActionMode.Callback?): ActionMode? =
+            super.startActionMode(SuppressingActionModeCallback())
+
+        override fun startActionMode(
+            callback: ActionMode.Callback?,
+            type: Int,
+        ): ActionMode? = super.startActionMode(SuppressingActionModeCallback(), type)
+    }.apply {
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        settings.loadWithOverviewMode = true
+        settings.useWideViewPort = true
+        // Transparent so the native aura layer behind the WebView shows through the reader canvas.
+        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        addJavascriptInterface(jsInterface, "NativeBridge")
+        webViewClient = ReaderWebViewClient(onPageFinished)
+        loadDataWithBaseURL(null, fullHtml, "text/html", "utf-8", null)
     }
 
-    BookBridgeEffects(pageLoaded, scrollToCharOffset, captureRequest) { webViewRef?.evaluateJavascript(it, null) }
-
-    LaunchedEffect(anchorScroll, pageLoaded) {
-        val anchor = anchorScroll ?: return@LaunchedEffect
-        if (!pageLoaded) return@LaunchedEffect
-        val escapedId = anchor.id.replace("\\", "\\\\").replace("'", "\\'")
-        webViewRef?.evaluateJavascript(
-            "window.scrollToAnchor('$escapedId', ${anchor.fallbackIndex});",
-            null,
-        )
-        onAnchorScrolled()
+private class ReaderWebViewClient(
+    private val onPageFinished: () -> Unit,
+) : WebViewClient() {
+    override fun shouldOverrideUrlLoading(
+        view: WebView?,
+        request: WebResourceRequest?,
+    ): Boolean {
+        val req = request ?: return false
+        val decision =
+            ReaderNavigationPolicy.decide(
+                isMainFrame = req.isForMainFrame,
+                scheme = req.url?.scheme,
+                initialReaderDocumentPending = false,
+            )
+        if (decision == ReaderNavigationDecision.OpenExternally) {
+            runCatching { view?.context?.startActivity(Intent(Intent.ACTION_VIEW, req.url)) }
+        }
+        return decision != ReaderNavigationDecision.Allow
     }
 
-    LaunchedEffect(preferences, isDarkMode) {
-        snapshotFlow { preferences }
-            .distinctUntilChanged()
-            .collect { prefs ->
-                val css = ReaderHtmlTemplate.buildTypographyCss(prefs, isDarkMode)
-                val escaped =
-                    css
-                        .replace("\\", "\\\\")
-                        .replace("'", "\\'")
-                        .replace("\n", "\\n")
-                val colorScheme = ReaderHtmlTemplate.colorSchemeFor(prefs, isDarkMode)
-                webViewRef?.evaluateJavascript(
-                    "window.updateTypography('$escaped', '$colorScheme');",
-                    null,
-                )
-            }
-    }
-
-    LaunchedEffect(highlights) {
-        snapshotFlow { highlights }
-            .distinctUntilChanged()
-            .collect { hl ->
-                val json = ReaderHtmlTemplate.buildHighlightJson(hl)
-                webViewRef?.evaluateJavascript(
-                    "window.applyHighlights($json);",
-                    null,
-                )
-            }
-    }
-
-    LaunchedEffect(speakingSentenceIndex) {
-        webViewRef?.evaluateJavascript("window.setSpeaking($speakingSentenceIndex);", null)
-    }
-
-    LaunchedEffect(immersive) {
-        webViewRef?.evaluateJavascript("window.setReaderImmersive($immersive);", null)
+    override fun onPageFinished(
+        view: WebView?,
+        url: String?,
+    ) {
+        super.onPageFinished(view, url)
+        onPageFinished()
     }
 }
 
@@ -314,11 +247,7 @@ private data class RectData(
     val height: Float,
 )
 
-/**
- * Keeps the text-selection ActionMode alive (so the selection and its drag handles persist)
- * while contributing no menu items, which prevents the native floating selection toolbar from
- * rendering over the reader's own highlight pill.
- */
+/** Keeps the selection ActionMode alive while contributing no menu items. */
 private class SuppressingActionModeCallback : ActionMode.Callback {
     override fun onCreateActionMode(
         mode: ActionMode?,
@@ -338,5 +267,5 @@ private class SuppressingActionModeCallback : ActionMode.Callback {
         item: MenuItem?,
     ): Boolean = false
 
-    override fun onDestroyActionMode(mode: ActionMode?) {}
+    override fun onDestroyActionMode(mode: ActionMode?) = Unit
 }

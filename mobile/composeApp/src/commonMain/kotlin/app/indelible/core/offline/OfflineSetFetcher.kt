@@ -18,6 +18,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -35,10 +36,16 @@ sealed interface FetchResult {
     data object Stale : FetchResult
 }
 
+// The same preference the web reader uses when a PDF was stored under more than one kind.
+internal val PDF_KINDS = listOf("pdf", "original_upload")
+
 /** The server keeps no chapter list for a book, so no copy of it could be known complete. */
 open class ChapterListUnavailableException(
     message: String,
 ) : IllegalStateException(message)
+
+/** The list is still being built; the server resolves this by itself, so a kept book waits for it. */
+class ChapterListPendingException : ChapterListUnavailableException("the chapter list is pending")
 
 /** The server predates the chapter list, so it can serve no book offline until it is updated. */
 class ServerTooOldException : ChapterListUnavailableException("the server does not list book chapters")
@@ -69,10 +76,12 @@ class OfflineSetFetcher(
         session: Session,
         documentId: String,
         pin: Boolean,
+        ignoreCap: Boolean = false,
         onProgress: (Float) -> Unit = {},
     ): FetchResult {
         val first = readerDocument(session, documentId)
-        if (!first.model.worthCaching(pin, capBytes())) return FetchResult.Skipped
+        val uncapped = pin || ignoreCap
+        if (!first.model.worthCaching(uncapped, capBytes())) return FetchResult.Skipped
         val scope = session.scope
         val previous = store.cachedDocument(scope, documentId)?.generation
         val generation = (previous ?: 0L) + 1
@@ -81,7 +90,7 @@ class OfflineSetFetcher(
         try {
             val assets = downloadAssets(session, first.model, dir, onProgress)
             val bytes = assets.sumOf { it.bytes }
-            val tooLarge = !pin && bytes > capBytes()
+            val tooLarge = !uncapped && bytes > capBytes()
             val installed =
                 !tooLarge &&
                     (1..INSTALL_ATTEMPTS).any {
@@ -143,7 +152,8 @@ class OfflineSetFetcher(
             TYPE_PDF -> {
                 val kind = PDF_KINDS.firstOrNull { it in available } ?: return emptyList()
                 val pdf = AssetFetch(kind, 0, assetRoute(documentId, kind), PDF_FILE)
-                listOf(fetchAsset(session, documentId, pdf, dir))
+                val announced = model.assets.firstOrNull { it.assetKind == kind }?.sizeBytes
+                listOf(fetchAsset(session, documentId, pdf, dir, ByteProgress(announced, onProgress)))
             }
             TYPE_BOOK -> if (EPUB in available) bookAssets(session, documentId, dir, onProgress) else emptyList()
             else ->
@@ -171,7 +181,10 @@ class OfflineSetFetcher(
         val outline = json.decodeFromString(EpubTocResponse.serializer(), tocJson)
         val listed =
             outline.metadata.chapters?.takeIf { outline.chapterList == EpubChapterList.READY }
-                ?: throw ChapterListUnavailableException("the chapter list is ${outline.chapterList}")
+                ?: throw when (outline.chapterList) {
+                    EpubChapterList.PENDING -> ChapterListPendingException()
+                    else -> ChapterListUnavailableException("the chapter list is ${outline.chapterList}")
+                }
         val chapters =
             listed.mapIndexed { done, chapter ->
                 val index = chapter.spineIndex
@@ -195,15 +208,48 @@ class OfflineSetFetcher(
         documentId: String,
         fetch: AssetFetch,
         dir: Path,
+        progress: ByteProgress? = null,
     ): CachedAssetRow {
         val bytes =
             transport.sessionRequest(session) { client, baseUrl, token ->
                 client.prepareGet(baseUrl + fetch.route) { bearer(token) }.execute { response ->
                     response.requireSuccess()
-                    files.write(dir / fetch.file, response.bodyAsChannel())
+                    val expected = response.contentLength()?.takeIf { it > 0 } ?: progress?.announced
+                    val total =
+                        files.write(dir / fetch.file, response.bodyAsChannel()) { written ->
+                            if (progress != null && expected != null && expected > 0) progress.report(written, expected)
+                        }
+                    progress?.finish()
+                    total
                 }
             }
         return CachedAssetRow(documentId, fetch.kind, fetch.idx, fetch.file, bytes)
+    }
+
+    /** Reports bytes written over the expected total, clamped to 1 and only when it has moved by [PROGRESS_STEP]. */
+    private class ByteProgress(
+        val announced: Long?,
+        private val onProgress: (Float) -> Unit,
+    ) {
+        private var last = -1f
+
+        fun report(
+            written: Long,
+            expected: Long,
+        ) {
+            val fraction = minOf(1f, written.toFloat() / expected)
+            if (fraction - last >= PROGRESS_STEP || (fraction == 1f && last < 1f)) {
+                last = fraction
+                onProgress(fraction)
+            }
+        }
+
+        fun finish() {
+            if (last >= 0f && last < 1f) {
+                last = 1f
+                onProgress(1f)
+            }
+        }
     }
 
     private suspend fun serverDocument(
@@ -262,6 +308,7 @@ class OfflineSetFetcher(
 
     private companion object {
         const val INSTALL_ATTEMPTS = 3
+        const val PROGRESS_STEP = 0.01f
         const val NOT_FOUND = 404
         const val ERROR_PREVIEW_CHARS = 200
         const val TYPE_PDF = "pdf"
@@ -275,9 +322,6 @@ class OfflineSetFetcher(
         const val ARTICLE_TOC_FILE = "article_toc.json"
         const val EPUB_TOC_FILE = "epub_toc.json"
         const val PDF_FILE = "document.pdf"
-
-        // The same preference the web reader uses when a PDF was stored under more than one kind.
-        val PDF_KINDS = listOf("pdf", "original", "original_upload")
 
         val json = Json { ignoreUnknownKeys = true }
 
@@ -298,11 +342,11 @@ class OfflineSetFetcher(
         // a book's chapters can unpack to more than its EPUB, so the downloaded total is checked
         // again before an auto-cache installs.
         fun DocumentReaderResponse.worthCaching(
-            pin: Boolean,
+            uncapped: Boolean,
             cap: Long,
         ): Boolean {
             val kind = readableKind()?.takeIf { it in availableAssets } ?: return false
-            return pin || assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
+            return uncapped || assets.filter { it.assetKind == kind }.sumOf { it.sizeBytes } <= cap
         }
 
         fun HttpRequestBuilder.bearer(token: String) {

@@ -26,11 +26,12 @@ class ReaderHtmlTemplateMastheadTest {
         articleHtml = "<p>body</p>",
         preferences = ReaderPreferences(),
         highlights = emptyList(),
-        articleTitle = title,
-        articleAuthor = author,
-        articleDomain = domain,
-        summaryHtml = summary,
-        localization = localization,
+        options =
+            ReaderPageOptions(
+                localization = localization,
+                article = ReaderArticleMeta(title, author, domain),
+                summary = ReaderSummary(html = summary),
+            ),
     )
 
     @Test

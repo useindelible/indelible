@@ -51,6 +51,7 @@ import indelible.composeapp.generated.resources.home_offline_chip_back
 import indelible.composeapp.generated.resources.home_offline_chip_offline
 import indelible.composeapp.generated.resources.home_offline_chip_synced
 import indelible.composeapp.generated.resources.home_offline_empty_body
+import indelible.composeapp.generated.resources.home_offline_empty_body_last_loaded
 import indelible.composeapp.generated.resources.home_offline_empty_subtitle
 import indelible.composeapp.generated.resources.home_offline_items_on_board
 import indelible.composeapp.generated.resources.home_offline_on_phone
@@ -154,7 +155,10 @@ private fun HeroBody(
                 stringResource(Res.string.home_offline_empty_subtitle),
                 mono,
             )
-            HeroText(stringResource(Res.string.home_offline_empty_body), mono)
+            val lastLoaded = shelf.continueReading.isNotEmpty() || shelf.recentlySaved.isNotEmpty()
+            val body =
+                if (lastLoaded) Res.string.home_offline_empty_body_last_loaded else Res.string.home_offline_empty_body
+            HeroText(stringResource(body), mono)
         }
         HeroVariant.SENDING -> {
             HeroTitle(

@@ -1,6 +1,6 @@
 package app.indelible.reader.viewmodel
 
-import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -10,11 +10,11 @@ import kotlinx.datetime.Clock
 
 internal class ReaderProgressSync(
     private val scope: CoroutineScope,
-    private val updateProgress: suspend (Float, ChapterPosition?) -> Unit,
+    private val updateProgress: suspend (Float, ReadingPosition?) -> Unit,
 ) {
     private class Pending(
         val percent: Float,
-        val position: ChapterPosition?,
+        val position: ReadingPosition?,
     )
 
     private var syncJob: Job? = null
@@ -26,7 +26,7 @@ internal class ReaderProgressSync(
 
     fun schedule(
         percent: Float,
-        position: ChapterPosition? = null,
+        position: ReadingPosition? = null,
     ) {
         pendingProgress = Pending(percent, position)
         val now = Clock.System.now().toEpochMilliseconds()

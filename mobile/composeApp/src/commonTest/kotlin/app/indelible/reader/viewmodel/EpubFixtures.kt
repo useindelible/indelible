@@ -3,6 +3,7 @@ package app.indelible.reader.viewmodel
 import app.indelible.api.generated.models.EpubMetadata
 import app.indelible.api.generated.models.EpubStoredChapter
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.reader.model.EpubChapterList
 import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.EpubTocEntry
@@ -47,7 +48,7 @@ internal fun bookToc(
 
 internal class EpubHarness(
     val repository: FakeReaderRepository,
-    val written: MutableList<Pair<Float, ChapterPosition?>>,
+    val written: MutableList<Pair<Float, ReadingPosition?>>,
     val session: EpubReaderSession,
 ) {
     val state: EpubReaderState get() = session.state.value
@@ -64,7 +65,7 @@ internal fun TestScope.epubHarness(
     toc: Result<EpubToc> = Result.success(bookToc()),
 ): EpubHarness {
     val repository = FakeReaderRepository().apply { epubTocResult = toc }
-    val written = mutableListOf<Pair<Float, ChapterPosition?>>()
+    val written = mutableListOf<Pair<Float, ReadingPosition?>>()
     val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + SupervisorJob())
     val progress = ReaderProgressSync(scope) { percent, position -> written += percent to position }
     return EpubHarness(repository, written, EpubReaderSession("doc_book", repository, scope, progress, resumeAt))

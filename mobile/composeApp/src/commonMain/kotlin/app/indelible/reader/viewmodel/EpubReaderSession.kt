@@ -170,7 +170,12 @@ class EpubReaderSession internal constructor(
         }
     }
 
-    fun currentChapterKey(): String? = _state.value.chapterKey()
+    /** Stops the table-of-contents or chapter fetch in flight; a replaced book asks the server nothing more. */
+    fun close() {
+        loadJob?.cancel()
+    }
+
+    val currentChapterKey: String? get() = _state.value.chapterKey()
 
     /** The server rebuilds the chapter list only when its reprocess job has run, so the book waits for it. */
     fun onReprocessQueued() {

@@ -1,26 +1,18 @@
 package app.indelible.reader.repository
 
-import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 
-/**
- * Reading events carry the session that groups one continuous sitting, which only the open reader
- * knows. [ReaderRepository]'s writes are document-scoped and cannot express it, so a reader records
- * its own events here and keeps its session id out of every other caller's way.
- *
- * Recording is best-effort: an implementation reports what it can and never throws, because a
- * reader that cannot record where it is must still show what it is reading.
- */
+/** The open reader's own event writer, keyed by its sitting's session id; best-effort, never throws. */
 interface ReadingEventWriter {
     suspend fun recordOpened(
         documentId: String,
         sessionId: String,
     )
 
-    /** [percent] is `0..100` through the document; [position] is where a book was left, when it is one. */
     suspend fun recordProgress(
         documentId: String,
         percent: Float,
         sessionId: String,
-        position: ChapterPosition? = null,
+        position: ReadingPosition? = null,
     )
 }

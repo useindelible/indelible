@@ -49,8 +49,6 @@ data class RawApiResponse(
     val bodyText: String,
 )
 
-private val GATEWAY_GONE = 502..504
-
 class AuthenticatedApiTransport(
     private val tokenStorage: TokenStorage,
     private val onUnauthorized: suspend (epoch: Long) -> Unit = {},

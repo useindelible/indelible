@@ -4,16 +4,22 @@ import app.indelible.api.generated.models.DocumentAssetResponse
 import app.indelible.api.generated.models.HighlightNoteResponse
 import app.indelible.api.generated.models.HighlightWithNoteResponse
 import app.indelible.api.generated.models.LocatorSchemaFlat
+import app.indelible.api.generated.models.PdfRectSchema
 import app.indelible.api.generated.models.TagResponse
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 /**
- * What the reader renders for the current item. The reader is HTML-only; PDF
- * items and EPUB books (item type `book`) show a coming-soon placeholder until
- * their dedicated readers ship.
+ * What the reader renders for the current item: an article's HTML, a PDF's pages, or a book's chapters.
+ * Paged and chaptered content writes its exact place before the reader leaves; an article's percent is enough.
  */
-enum class ReaderContentMode { HTML, PDF_COMING_SOON, EPUB }
+enum class ReaderContentMode(
+    val capturesPosition: Boolean,
+) {
+    HTML(capturesPosition = false),
+    PDF(capturesPosition = true),
+    EPUB(capturesPosition = true),
+}
 
 enum class ReaderTheme { LIGHT, DARK, SEPIA, AUTO }
 
@@ -47,18 +53,26 @@ data class ReaderPreferences(
 )
 
 @Serializable
+data class PdfRect(
+    val x: Double,
+    val y: Double,
+    val width: Double,
+    val height: Double,
+)
+
+@Serializable
 data class HighlightLocator(
     val type: String,
     val startOffset: Long? = null,
     val endOffset: Long? = null,
     val chapter: String? = null,
-)
-
-/** A selection's character offsets; [chapter] is the book chapter's key, null in an article. */
-data class HighlightRange(
-    val startOffset: Long,
-    val endOffset: Long,
-    val chapter: String? = null,
+    val page: Int? = null,
+    val x: Double? = null,
+    val y: Double? = null,
+    val width: Double? = null,
+    val height: Double? = null,
+    val textSnapshot: String? = null,
+    val rects: List<PdfRect>? = null,
 )
 
 @Serializable
@@ -130,6 +144,13 @@ fun LocatorSchemaFlat.toHighlightLocator(): HighlightLocator =
         startOffset = startOffset,
         endOffset = endOffset,
         chapter = chapter,
+        page = page,
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        textSnapshot = textSnapshot,
+        rects = rects?.map { PdfRect(it.x, it.y, it.width, it.height) },
     )
 
 fun HighlightLocator.toLocatorSchemaFlat(): LocatorSchemaFlat =
@@ -138,6 +159,13 @@ fun HighlightLocator.toLocatorSchemaFlat(): LocatorSchemaFlat =
         startOffset = startOffset,
         endOffset = endOffset,
         chapter = chapter,
+        page = page,
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        textSnapshot = textSnapshot,
+        rects = rects?.map { PdfRectSchema(height = it.height, width = it.width, x = it.x, y = it.y) },
     )
 
 fun DocumentAssetResponse.toAssetWithUrlResponse(): AssetWithUrlResponse =

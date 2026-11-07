@@ -42,6 +42,7 @@ actual fun HtmlReaderView(
     assets: ReaderAssets,
     scrollToCharOffset: CharOffsetRequest?,
     captureRequest: Long?,
+    clearSelection: Long?,
     onPositioned: () -> Unit,
     holdUntilPositioned: Boolean,
     onBookLink: (String) -> Unit,
