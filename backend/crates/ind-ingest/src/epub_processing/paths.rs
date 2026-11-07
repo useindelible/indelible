@@ -32,3 +32,7 @@ pub(super) fn normalize_path(path: &str) -> String {
     }
     parts.join("/")
 }
+
+pub(super) fn href_basename(href: &str) -> &str {
+    href.rsplit('/').next().unwrap_or(href)
+}

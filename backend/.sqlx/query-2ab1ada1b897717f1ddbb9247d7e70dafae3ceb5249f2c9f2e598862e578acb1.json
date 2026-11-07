@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO reading_events (id, user_id, document_id, origin, origin_seq, event_kind, cause, session_id, attempt, progress_basis_points, position, position_version, asset_kind, active_ms, recorded_at, effective_at) VALUES ($1, $2, $3, $4, COALESCE($5, nextval('reading_events_surface_seq')), $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, LEAST($15, now())) ON CONFLICT DO NOTHING RETURNING received_at, effective_at, origin_seq",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "received_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 1,
+        "name": "effective_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "origin_seq",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8",
+        "Text",
+        "Text",
+        "Uuid",
+        "Int2",
+        "Int4",
+        "Jsonb",
+        "Int2",
+        "Text",
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2ab1ada1b897717f1ddbb9247d7e70dafae3ceb5249f2c9f2e598862e578acb1"
+}
