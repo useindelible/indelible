@@ -16,13 +16,21 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.Dp
 import app.indelible.mila.viewmodel.MilaChatViewModel
 import app.indelible.offline.ui.PendingSyncDot
 import app.indelible.reader.model.DataPanel
@@ -30,7 +38,9 @@ import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.TagData
+import app.indelible.reader.pdf.PdfSelection
 import app.indelible.reader.playback.PlaybackState
+import app.indelible.reader.ui.components.HighlightNoteSheet
 import app.indelible.reader.ui.components.HighlightSheet
 import app.indelible.reader.ui.components.HighlightTagSheet
 import app.indelible.reader.ui.components.ItemOffline
@@ -61,6 +71,7 @@ internal data class SelectedTextInfo(
     val startOffset: Int,
     val endOffset: Int,
     val rect: SelectionRect,
+    val pdf: PdfSelection? = null,
 )
 
 @Composable
@@ -74,6 +85,7 @@ internal fun ReaderSuccessContent(
     selectedText: SelectedTextInfo?,
     tappedHighlight: HighlightData?,
     tagSheetHighlightId: String?,
+    noteSheetHighlightId: String?,
     milaStarted: Boolean,
     scrollToPercent: Float?,
     anchorScroll: AnchorScrollRequest?,
@@ -87,6 +99,7 @@ internal fun ReaderSuccessContent(
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onTappedHighlightChanged: (HighlightData?) -> Unit,
     onTagSheetHighlightIdChanged: (String?) -> Unit,
+    onNoteSheetHighlightIdChanged: (String?) -> Unit,
     onAvailableTagsChanged: (List<TagData>) -> Unit,
     onScrollToPercentConsumed: () -> Unit,
     onAnchorScrollConsumed: () -> Unit,
@@ -96,6 +109,17 @@ internal fun ReaderSuccessContent(
 ) {
     val uriHandler = LocalUriHandler.current
     val clipboardManager = LocalClipboardManager.current
+    val density = LocalDensity.current
+    val showMiniBar = isMiniBarShown(playbackState, activePanel)
+    var miniBarClearance by remember { mutableStateOf<Dp?>(null) }
+    // The toolbar is done with the words; the page drops its selection so the handles go too.
+    var clearSelection by remember { mutableStateOf<Long?>(null) }
+    val onToolbarDone: (SelectedTextInfo?) -> Unit = { info ->
+        if (info == null) clearSelection = (clearSelection ?: 0L) + 1L
+        onSelectedTextChanged(info)
+    }
+    // The bar keeps reporting its place through its exit animation, so the clearance is gated by visibility.
+    val chapterClearance = if (showMiniBar) miniBarClearance else null
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
     val linkCopiedMessage = stringResource(Res.string.reader_link_copied)
     val linkMissingMessage = stringResource(Res.string.reader_link_missing)
@@ -138,7 +162,11 @@ internal fun ReaderSuccessContent(
                         onTappedHighlightChanged = onTappedHighlightChanged,
                         onReaderTap = onReaderTap,
                         immersive = immersive,
+                        miniBarClearance = chapterClearance,
                         uriHandler = uriHandler,
+                        onOpenStorage = { itemOffline?.onOpenStorage?.invoke() },
+                        selectedText = selectedText,
+                        clearSelection = clearSelection,
                         viewModel = viewModel,
                     )
 
@@ -151,9 +179,10 @@ internal fun ReaderSuccessContent(
                             coroutineScope = coroutineScope,
                             clipboardManager = clipboardManager,
                             viewModel = viewModel,
-                            onSelectedTextChanged = onSelectedTextChanged,
+                            onSelectedTextChanged = onToolbarDone,
                             onAvailableTagsChanged = onAvailableTagsChanged,
                             onTagSheetHighlightIdChanged = onTagSheetHighlightIdChanged,
+                            onNoteSheetHighlightIdChanged = onNoteSheetHighlightIdChanged,
                         )
                     }
                 }
@@ -205,9 +234,6 @@ internal fun ReaderSuccessContent(
                 }
             }
 
-            val showMiniBar =
-                (playbackState.isPlaying || playbackState.positionMs > 0L) &&
-                    activePanel != DataPanel.LISTEN
             val miniBarBottom by animateDpAsState(
                 targetValue = if (immersive) IndelibleSpacing.step16 else IndelibleSpacing.step80,
                 label = "ttsMiniBarBottom",
@@ -221,7 +247,12 @@ internal fun ReaderSuccessContent(
                         .align(Alignment.BottomCenter)
                         .navigationBarsPadding()
                         .padding(horizontal = IndelibleSpacing.step12)
-                        .padding(bottom = miniBarBottom),
+                        .padding(bottom = miniBarBottom)
+                        .onGloballyPositioned { coordinates ->
+                            val rootHeight = coordinates.findRootCoordinates().size.height
+                            val top = coordinates.positionInRoot().y
+                            miniBarClearance = with(density) { (rootHeight - top).toDp() }
+                        },
             ) {
                 TtsMiniBar(
                     title = state.item.title,
@@ -283,6 +314,7 @@ internal fun ReaderSuccessContent(
                 },
                 onEditNote = {
                     onTappedHighlightChanged(null)
+                    onNoteSheetHighlightIdChanged(highlight.id)
                 },
                 onTagsSelected = {
                     val hlId = highlight.id
@@ -307,8 +339,23 @@ internal fun ReaderSuccessContent(
             )
         }
 
+        val noteId = noteSheetHighlightId
+        val noteHighlight = if (noteId != null) state.highlights.find { it.id == noteId } else null
+        CloseSheetWhenHighlightGone(noteId, noteHighlight, state.highlightsLoaded) {
+            onNoteSheetHighlightIdChanged(null)
+        }
+        if (noteHighlight != null) {
+            HighlightNoteSheet(
+                highlight = noteHighlight,
+                onSave = { body, saved -> viewModel.upsertHighlightNote(noteHighlight.id, body, saved) },
+                onDeleteNote = { deleted -> viewModel.deleteHighlightNote(noteHighlight.id, deleted) },
+                onDismiss = { onNoteSheetHighlightIdChanged(null) },
+            )
+        }
+
         val hlId = tagSheetHighlightId
         val tagHighlight = if (hlId != null) state.highlights.find { it.id == hlId } else null
+        CloseSheetWhenHighlightGone(hlId, tagHighlight, state.highlightsLoaded) { onTagSheetHighlightIdChanged(null) }
         if (tagHighlight != null) {
             HighlightTagSheet(
                 appliedTags = tagHighlight.tags,
@@ -332,4 +379,16 @@ internal fun ReaderSuccessContent(
             )
         }
     }
+}
+
+/** A sheet whose highlight left the state closes, so a stale id cannot keep the chrome pinned open. */
+@Composable
+internal fun CloseSheetWhenHighlightGone(
+    highlightId: String?,
+    highlight: HighlightData?,
+    highlightsLoaded: Boolean,
+    onClose: () -> Unit,
+) {
+    val gone = highlightId != null && highlightsLoaded && highlight == null
+    LaunchedEffect(highlightId, gone) { if (gone) onClose() }
 }

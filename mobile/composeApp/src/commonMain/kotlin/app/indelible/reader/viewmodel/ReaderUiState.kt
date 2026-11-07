@@ -31,6 +31,8 @@ sealed class ReaderUiState {
         val htmlContent: String?,
         val contentMode: ReaderContentMode,
         val highlights: List<HighlightData>,
+        /** False until the highlight list has been fetched once, so an empty list is not yet a deletion. */
+        val highlightsLoaded: Boolean = false,
         val progress: Float,
         val preferences: ReaderPreferences,
         val itemNote: String? = null,
@@ -43,6 +45,7 @@ sealed class ReaderUiState {
         val retryAfterSeconds: Long? = null,
         val toc: TocPanelState = TocPanelState(),
         val epub: EpubReaderState? = null,
+        val pdf: PdfReaderState? = null,
     ) : ReaderUiState()
 
     data class Error(

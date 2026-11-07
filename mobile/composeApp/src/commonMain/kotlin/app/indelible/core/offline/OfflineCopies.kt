@@ -23,24 +23,44 @@ class OfflineCopies(
         files.deleteTree(files.scopeDir(scope))
     }
 
-    /** Evicts unpinned copies, least recently opened first, down to the cap; true if it freed any. */
+    /** Evicts unpinned copies to the cap, oversize then oldest opened; [evict] runs each removal or refuses it. */
     suspend fun enforceCap(
         scope: String,
-        keep: String?,
+        evict: suspend (documentId: String, remove: suspend () -> Boolean) -> Boolean,
     ): Boolean {
         val cap = capBytes()
         var total = store.totalBytes(scope)
         var evicted = false
-        val candidates = store.unpinnedLru(scope).filter { it.documentId != keep }.iterator()
+        val unpinned = store.unpinnedLru(scope)
+        val candidates = (unpinned.filter { it.bytes > cap } + unpinned.filter { it.bytes <= cap }).iterator()
         while (total > cap && candidates.hasNext()) {
             val copy = candidates.next()
-            if (store.evictCachedDocument(scope, copy.documentId)) {
+            if (evict(copy.documentId) { store.evictCachedDocument(scope, copy.documentId) }) {
                 deleteQuietly(files.documentDir(scope, copy.documentId))
                 total -= copy.bytes
                 evicted = true
             }
         }
         return evicted
+    }
+
+    /** True when every file the copy's catalog lists is present at its recorded size. */
+    suspend fun isComplete(
+        scope: String,
+        documentId: String,
+    ): Boolean = store.cachedDocument(scope, documentId)?.let { isIntact(scope, it) } == true
+
+    /** A file that cannot be read counts as missing, so the copy is repaired rather than trusted. */
+    internal suspend fun isIntact(
+        scope: String,
+        copy: CachedDocumentRow,
+    ): Boolean {
+        val dir = files.generationDir(scope, copy.documentId, copy.generation)
+        return try {
+            store.assetsForDocument(scope, copy.documentId).all { files.size(dir / it.path) == it.bytes }
+        } catch (ignored: IOException) {
+            false
+        }
     }
 
     internal fun deleteQuietly(path: Path) {

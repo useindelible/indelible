@@ -3,6 +3,7 @@ package app.indelible.reader.viewmodel
 import app.indelible.api.generated.models.EpubStoredChapter
 import app.indelible.core.offline.CapabilitiesUnknownException
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.ServerTooOldException
 import app.indelible.reader.model.EpubChapterList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -78,7 +79,7 @@ class EpubReaderSessionTest {
             h.onSample(sample(percent = 50f, offset = 30))
             advanceUntilIdle()
 
-            val expected: Pair<Float, ChapterPosition?> = bookPercent(0, 50f, 3) to ChapterPosition("e0", 30)
+            val expected: Pair<Float, ReadingPosition?> = bookPercent(0, 50f, 3) to ChapterPosition("e0", 30)
             assertEquals(listOf(expected), h.written)
         }
 

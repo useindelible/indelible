@@ -94,6 +94,22 @@ class OfflineStorePurgeTest {
         }
 
     @Test
+    fun purgeRowsDropsTheScopesListsOnly() =
+        runTest {
+            val signedIn = signedInStore("origin|a")
+            val store = signedIn.store
+            val row = SnapshotRow("doc_1", "doc_1", "pdf", "Title", "{}")
+            store.replaceList(signedIn.session, "home:recent", listOf(row), at = 1)
+            val other = signedIn.switchTo("origin|b")
+            store.replaceList(other, "home:recent", listOf(row), at = 1)
+
+            store.purgeRows("origin|a")
+
+            assertTrue(store.list("origin|a", "home:recent").isEmpty())
+            assertEquals(listOf(row), store.list("origin|b", "home:recent"))
+        }
+
+    @Test
     fun finishPurgeRemovesTheClientStateRow() =
         runTest {
             val store = store()

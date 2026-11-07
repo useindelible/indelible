@@ -26,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.i18n.LocalizedDateStyle
+import app.indelible.reader.model.PERCENT_MAX
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
@@ -77,10 +78,12 @@ internal fun InfoGrid(
             }
             InfoDivider()
         }
-        InfoRow(stringResource(Res.string.reader_info_saved)) {
-            InfoValueText(LocaleFormatters.date(item.savedAt, LocalizedDateStyle.MEDIUM))
+        item.savedAt?.let {
+            InfoRow(stringResource(Res.string.reader_info_saved)) {
+                InfoValueText(LocaleFormatters.date(it, LocalizedDateStyle.MEDIUM))
+            }
+            InfoDivider()
         }
-        InfoDivider()
         lengthValue(item)?.let { (lead, mut) ->
             InfoRow(stringResource(Res.string.reader_info_length)) { LengthValue(lead = lead, mut = mut) }
             InfoDivider()
@@ -150,8 +153,6 @@ private fun LengthValue(
         textAlign = TextAlign.End,
     )
 }
-
-private const val PERCENT_MAX = 100f
 
 @Composable
 private fun ProgressValue(progress: Float) {

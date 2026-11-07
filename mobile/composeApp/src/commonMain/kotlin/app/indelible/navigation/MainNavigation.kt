@@ -228,6 +228,8 @@ fun MainNavigation(
                     feedViewModel = appContainer.feedViewModel,
                     searchViewModel = appContainer.searchViewModel,
                     openDrawer = openDrawer,
+                    online = appContainer.connectivityObserver.online,
+                    reachable = appContainer.apiTransport.reachable,
                 )
                 contentRoutes(
                     navController = navController,

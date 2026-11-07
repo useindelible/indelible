@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.LibraryCounts
 import app.indelible.core.model.LibraryItem
+import app.indelible.core.model.PaginatedItems
 import app.indelible.library.repository.LibraryRepository
 import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import indelible.composeapp.generated.resources.Res
@@ -12,6 +13,8 @@ import indelible.composeapp.generated.resources.library_error_delete
 import indelible.composeapp.generated.resources.library_error_load
 import indelible.composeapp.generated.resources.library_error_load_more
 import indelible.composeapp.generated.resources.library_error_triage
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,6 +59,9 @@ class LibraryViewModel(
 
     private var nextCursor: String? = null
 
+    private var loadJob: Job? = null
+    private var appendJob: Job? = null
+
     fun setScope(scope: LibraryScope) {
         _scope.value = scope
         nextCursor = null
@@ -79,19 +85,24 @@ class LibraryViewModel(
         loadCounts()
     }
 
-    fun refresh() {
-        val current = _uiState.value
-        if (current is LibraryUiState.Success) {
-            _uiState.value = current.copy(isRefreshing = true)
+    /**
+     * [withCounts] false reloads the list alone and fetches counts only once the server sends the list: a counts
+     * answer marks the server reachable, and on a list it could not load that would start the next reload.
+     */
+    fun refresh(withCounts: Boolean = true) {
+        when (val current = _uiState.value) {
+            is LibraryUiState.Success -> _uiState.value = current.copy(isRefreshing = true)
+            is LibraryUiState.Error -> _uiState.value = LibraryUiState.Loading
+            LibraryUiState.Loading -> Unit
         }
         nextCursor = null
-        loadItems(isRefresh = true)
-        loadCounts()
+        loadItems(isRefresh = true, countsAfterServerList = !withCounts)
+        if (withCounts) loadCounts()
     }
 
     fun loadNextPage() {
         val current = _uiState.value as? LibraryUiState.Success ?: return
-        if (!current.hasMore || current.isLoadingMore) return
+        if (!current.hasMore || current.isLoadingMore || current.isRefreshing) return
         _uiState.value = current.copy(isLoadingMore = true)
         loadItems(append = true)
     }
@@ -172,57 +183,67 @@ class LibraryViewModel(
     private fun loadItems(
         append: Boolean = false,
         isRefresh: Boolean = false,
+        countsAfterServerList: Boolean = false,
     ) {
-        viewModelScope.launch {
-            if (!append && !isRefresh) {
-                _uiState.value = LibraryUiState.Loading
-            }
-
-            val cursor = if (append) nextCursor else null
-            val result =
-                when (val scope = _scope.value) {
-                    is LibraryScope.Triage ->
-                        repository.listItems(
-                            triageState = _triageFilter.value.apiValue,
-                            itemType = _contentTypeFilter.value.apiValue,
-                            cursor = cursor,
-                        )
-                    is LibraryScope.Collection ->
-                        repository.listCollectionItems(scope.id, cursor = cursor)
-                    is LibraryScope.SmartList ->
-                        repository.listSmartListItems(scope.id, cursor = cursor)
-                }
-
-            result
-                .onSuccess { paginated ->
-                    nextCursor = paginated.page.nextCursor
-                    val newItems =
-                        if (append) {
-                            val existing = (_uiState.value as? LibraryUiState.Success)?.items ?: emptyList()
-                            existing + paginated.data
-                        } else {
-                            paginated.data
-                        }
-                    _uiState.value =
-                        LibraryUiState.Success(
-                            items = newItems,
-                            hasMore = paginated.page.hasMore,
-                            isLoadingMore = false,
-                            isRefreshing = false,
-                        )
-                }.onFailure {
-                    if (append) {
-                        val current = _uiState.value as? LibraryUiState.Success
-                        if (current != null) {
-                            _uiState.value = current.copy(isLoadingMore = false)
-                        }
-                        _effects.emit(LibraryEffect.ShowSnackbar(UiMessage(Res.string.library_error_load_more)))
-                    } else {
-                        _uiState.value = LibraryUiState.Error(UiMessage(Res.string.library_error_load))
-                    }
-                }
+        // Newest first page wins: an older page, first or appended, must never land on a newer list or its snapshot.
+        if (!append) {
+            loadJob?.cancel()
+            appendJob?.cancel()
         }
+        val job =
+            viewModelScope.launch {
+                if (!append && !isRefresh) {
+                    _uiState.value = LibraryUiState.Loading
+                }
+
+                val result = fetchPage(cursor = if (append) nextCursor else null)
+                ensureActive()
+
+                result
+                    .onSuccess { paginated ->
+                        nextCursor = paginated.page.nextCursor
+                        val newItems =
+                            if (append) {
+                                val existing = (_uiState.value as? LibraryUiState.Success)?.items ?: emptyList()
+                                existing + paginated.data
+                            } else {
+                                paginated.data
+                            }
+                        _uiState.value =
+                            LibraryUiState.Success(
+                                items = newItems,
+                                hasMore = paginated.page.hasMore,
+                                isLoadingMore = false,
+                                isRefreshing = false,
+                                fromDevice = paginated.fromDevice,
+                            )
+                        if (countsAfterServerList && !paginated.fromDevice) loadCounts()
+                    }.onFailure {
+                        if (append) {
+                            val current = _uiState.value as? LibraryUiState.Success
+                            if (current != null) {
+                                _uiState.value = current.copy(isLoadingMore = false)
+                            }
+                            _effects.emit(LibraryEffect.ShowSnackbar(UiMessage(Res.string.library_error_load_more)))
+                        } else {
+                            _uiState.value = LibraryUiState.Error(UiMessage(Res.string.library_error_load))
+                        }
+                    }
+            }
+        if (append) appendJob = job else loadJob = job
     }
+
+    private suspend fun fetchPage(cursor: String?): Result<PaginatedItems> =
+        when (val scope = _scope.value) {
+            is LibraryScope.Triage ->
+                repository.listItems(
+                    triageState = _triageFilter.value.apiValue,
+                    itemType = _contentTypeFilter.value.apiValue,
+                    cursor = cursor,
+                )
+            is LibraryScope.Collection -> repository.listCollectionItems(scope.id, cursor = cursor)
+            is LibraryScope.SmartList -> repository.listSmartListItems(scope.id, cursor = cursor)
+        }
 
     private companion object {
         const val STOP_TIMEOUT_MS = 5_000L

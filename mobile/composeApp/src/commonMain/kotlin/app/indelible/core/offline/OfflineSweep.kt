@@ -10,8 +10,10 @@ internal suspend fun OfflineCopies.sweep() {
 
 private suspend fun OfflineCopies.sweepScope(scope: String) {
     val (intact, broken) = store.cachedDocuments(scope).partition { isIntact(scope, it) }
-    broken.forEach { remove(scope, it.documentId) }
-    val generations = intact.associate { it.documentId to it.generation.toString() }
+    // A kept copy with a missing file is repaired on its next open; dropping it here would lose the pin.
+    val (kept, garbage) = broken.partition { it.pinned }
+    garbage.forEach { remove(scope, it.documentId) }
+    val generations = (intact + kept).associate { it.documentId to it.generation.toString() }
     for (documentDir in files.listDirectories(files.scopeDir(scope))) {
         val generation = generations[documentDir.name]
         val unreferenced =
@@ -23,12 +25,4 @@ private suspend fun OfflineCopies.sweepScope(scope: String) {
         unreferenced.forEach(::deleteQuietly)
     }
     store.dropOrphanHighlights(scope)
-}
-
-private suspend fun OfflineCopies.isIntact(
-    scope: String,
-    copy: CachedDocumentRow,
-): Boolean {
-    val dir = files.generationDir(scope, copy.documentId, copy.generation)
-    return store.assetsForDocument(scope, copy.documentId).all { files.size(dir / it.path) == it.bytes }
 }

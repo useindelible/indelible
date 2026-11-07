@@ -15,8 +15,9 @@ sealed interface Acquisition {
     /** A pin made while offline; it starts when connectivity returns. */
     data object WaitingForConnection : Acquisition
 
+    /** [fraction] is null while the total size is unknown. */
     data class Downloading(
-        val fraction: Float,
+        val fraction: Float?,
     ) : Acquisition
 
     data class Failed(

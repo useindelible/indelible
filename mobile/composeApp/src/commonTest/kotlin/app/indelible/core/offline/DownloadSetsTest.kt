@@ -212,14 +212,14 @@ class DownloadSetsTest {
         }
 
     @Test
-    fun notReadyChapterListInstallsNothing() =
+    fun notReadyChapterListInstallsNothingAndWaits() =
         runTest {
             val h = book { route(EPUB_TOC_PATH) { json(epubToc(chapterList = "pending")) } }
 
             h.manager.keepOffline(h.session, DL_DOC)
             runCurrent()
 
-            assertEquals(Acquisition.Failed(DownloadFailure.SERVER), h.acquisition())
+            assertEquals(Acquisition.Waiting, h.acquisition())
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertFalse(h.fs.exists(h.generationDir(1)))
             assertTrue(h.server.calls.none { "/epub/chapters/" in it.path })

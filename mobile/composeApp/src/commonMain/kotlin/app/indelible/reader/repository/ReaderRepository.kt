@@ -6,10 +6,11 @@ import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.offline.CapabilitiesUnknownException
-import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.NoSessionException
+import app.indelible.core.offline.ReadingPosition
 import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
+import app.indelible.library.repository.moved
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.EpubToc
@@ -17,11 +18,14 @@ import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.HighlightRange
+import app.indelible.reader.model.HighlightTarget
+import app.indelible.reader.model.PdfHighlightTarget
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
 import app.indelible.reader.model.toTagData
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 
 interface ReaderRepository {
     suspend fun getItem(itemId: String): Result<ReaderDocument>
@@ -44,6 +48,9 @@ interface ReaderRepository {
 
     suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult>
 
+    /** The PDF's offline copy, downloaded for reading when there is none; the copy is held while collected. */
+    fun pdfCopy(itemId: String): Flow<PdfCopy>
+
     suspend fun saveToLibrary(
         url: String,
         title: String?,
@@ -58,7 +65,7 @@ interface ReaderRepository {
         itemId: String,
         color: String,
         textContent: String,
-        range: HighlightRange,
+        target: HighlightTarget,
     ): Result<HighlightData>
 
     suspend fun deleteHighlight(
@@ -110,6 +117,7 @@ private const val KIND_OPENED = "opened"
 private const val KIND_PROGRESS = "progress"
 private const val LOCATOR_HTML = "html"
 private const val LOCATOR_EPUB = "epub"
+private const val LOCATOR_PDF = "pdf"
 
 class ApiReaderRepository internal constructor(
     private val readerApiService: ReaderApiService,
@@ -126,7 +134,13 @@ class ApiReaderRepository internal constructor(
     override suspend fun triageItem(
         itemId: String,
         state: String,
-    ): Result<Unit> = libraryApiService.triageItem(itemId, state).map {}
+    ): Result<Unit> {
+        val session = sessionProvider()
+        return libraryApiService
+            .triageItem(itemId, state)
+            .onSuccess { offlineCopy.lists.moved(session, it) }
+            .map {}
+    }
 
     override suspend fun fetchReadableHtml(itemId: String): Result<String> =
         offlineCopy.readableHtml(itemId) { readerApiService.streamAsset(itemId, "readable_html") }
@@ -149,6 +163,8 @@ class ApiReaderRepository internal constructor(
         itemId: String,
         spineIndex: Int,
     ) = offlineCopy.epubChapter(itemId, spineIndex) { readerApiService.fetchEpubChapter(itemId, spineIndex) }
+
+    override fun pdfCopy(itemId: String): Flow<PdfCopy> = offlineCopy.pdfCopy(itemId)
 
     override suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult> =
         readerApiService.reprocessDocument(itemId).map { response ->
@@ -179,7 +195,7 @@ class ApiReaderRepository internal constructor(
         documentId: String,
         percent: Float,
         sessionId: String,
-        position: ChapterPosition?,
+        position: ReadingPosition?,
     ) {
         recordEvent(documentId, KIND_PROGRESS, sessionId, EventProgress(basisPoints(percent), position))
     }
@@ -204,17 +220,10 @@ class ApiReaderRepository internal constructor(
         itemId: String,
         color: String,
         textContent: String,
-        range: HighlightRange,
+        target: HighlightTarget,
     ): Result<HighlightData> {
-        val locator =
-            HighlightLocator(
-                type = if (range.chapter == null) LOCATOR_HTML else LOCATOR_EPUB,
-                startOffset = range.startOffset,
-                endOffset = range.endOffset,
-                chapter = range.chapter,
-            )
         val session = sessionProvider() ?: return Result.failure(NoSessionException())
-        return offlineResult { outbox.createHighlight(session, itemId, color, textContent, locator) }
+        return offlineResult { outbox.createHighlight(session, itemId, color, textContent, target.toLocator()) }
     }
 
     override suspend fun deleteHighlight(
@@ -300,3 +309,25 @@ class ApiReaderRepository internal constructor(
         return result
     }
 }
+
+private fun HighlightTarget.toLocator(): HighlightLocator =
+    when (this) {
+        is HighlightRange ->
+            HighlightLocator(
+                type = if (chapter == null) LOCATOR_HTML else LOCATOR_EPUB,
+                startOffset = startOffset,
+                endOffset = endOffset,
+                chapter = chapter,
+            )
+        is PdfHighlightTarget ->
+            HighlightLocator(
+                type = LOCATOR_PDF,
+                page = page,
+                x = x,
+                y = y,
+                width = width,
+                height = height,
+                textSnapshot = textSnapshot,
+                rects = rects,
+            )
+    }

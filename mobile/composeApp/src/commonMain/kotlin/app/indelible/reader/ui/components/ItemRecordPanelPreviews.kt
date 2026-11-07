@@ -29,6 +29,7 @@ private fun sampleRecordItem(): ReaderDocument =
         readableReady = true,
         availableAssets = listOf("readable_html"),
         lastReadAt = sampleInstant,
+        savedAt = sampleInstant,
     )
 
 private fun sampleHighlight(

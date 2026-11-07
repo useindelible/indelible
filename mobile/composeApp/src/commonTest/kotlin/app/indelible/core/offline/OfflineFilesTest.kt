@@ -2,6 +2,7 @@ package app.indelible.core.offline
 
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.test.runTest
+import okio.FileMetadata
 import okio.FileSystem
 import okio.ForwardingFileSystem
 import okio.IOException
@@ -31,6 +32,19 @@ internal class FailingWriteFileSystem(
         file: Path,
         mustCreate: Boolean,
     ): Sink = if (failing) throw failure() else super.sink(file, mustCreate)
+}
+
+/** Refuses to describe anything under [failUnder], as a damaged storage area does. */
+internal class UnreadableMetadataFileSystem(
+    delegate: FileSystem,
+) : ForwardingFileSystem(delegate) {
+    var failUnder: Path? = null
+
+    override fun metadataOrNull(path: Path): FileMetadata? {
+        val blocked = failUnder
+        if (blocked != null && path.toString().startsWith("$blocked/")) throw IOException("metadata refused")
+        return super.metadataOrNull(path)
+    }
 }
 
 class OfflineFilesTest {

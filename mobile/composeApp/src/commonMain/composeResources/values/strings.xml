@@ -210,6 +210,7 @@
     <string name="home_offline_chip_offline">Offline</string>
     <string name="home_offline_chip_synced">Online</string>
     <string name="home_offline_empty_body">Nothing is saved on this phone yet. Items you open are kept for later, and you can keep any item offline on purpose.</string>
+    <string name="home_offline_empty_body_last_loaded">Nothing is saved on this phone yet. What you saw last is still here to look through; opening it needs a network until it has a copy.</string>
     <string name="home_offline_empty_next">Next time you are online</string>
     <string name="home_offline_empty_shelf">Your shelf will sit here</string>
     <string name="home_offline_empty_step_keep">Tap Keep offline in its info sheet.</string>
@@ -222,6 +223,7 @@
         <item quantity="other">items on board</item>
     </plurals>
     <string name="home_offline_kept">Kept offline</string>
+    <string name="home_offline_not_on_phone">Not on phone</string>
     <plurals name="home_offline_on_phone">
         <item quantity="one">%1$d on this phone</item>
         <item quantity="other">%1$d on this phone</item>
@@ -469,6 +471,7 @@
     <string name="offline_key_cached">Cached %1$s</string>
     <string name="offline_key_free">Free %1$s</string>
     <string name="offline_key_kept">Kept %1$s</string>
+    <string name="offline_last_loaded">Showing what was last loaded.</string>
     <string name="offline_limit">Storage limit</string>
     <string name="offline_manage_kept">Manage kept items</string>
     <string name="offline_manage_kept_body">Kept items alone use more than the limit. Remove some to free space.</string>
@@ -696,10 +699,6 @@
     <string name="reader_color_pink">Pink</string>
     <string name="reader_color_purple">Purple</string>
     <string name="reader_color_yellow">Yellow</string>
-    <string name="reader_coming_contents_body">Jumping between an article’s headings will arrive in an upcoming update.</string>
-    <string name="reader_coming_contents_title">Contents is coming soon</string>
-    <string name="reader_coming_pdf_body">We’re building a dedicated PDF reader. It will arrive in an upcoming update.</string>
-    <string name="reader_coming_pdf_title">PDF reading is coming soon</string>
     <string name="reader_contents">Contents</string>
     <string name="reader_contents_building_body">The table of contents is being prepared for this article. It usually takes a few seconds.</string>
     <string name="reader_contents_building_title">Building the outline</string>
@@ -742,6 +741,13 @@
     <string name="reader_error_save_tags">Couldn’t save the tags. Please try again.</string>
     <string name="reader_error_update_highlight_color">Couldn’t update the highlight color. Please try again.</string>
     <string name="reader_highlight">Highlight</string>
+    <string name="reader_highlight_note_delete">Delete note</string>
+    <string name="reader_highlight_note_discard">Discard</string>
+    <string name="reader_highlight_note_discard_body">Your note has changes that are not saved.</string>
+    <string name="reader_highlight_note_discard_title">Discard changes?</string>
+    <string name="reader_highlight_note_keep">Keep editing</string>
+    <string name="reader_highlight_note_label">Note</string>
+    <string name="reader_highlight_note_title">Highlight note</string>
     <plurals name="reader_highlights_count">
         <item quantity="one">%1$d highlight</item>
         <item quantity="other">%1$d highlights</item>
@@ -782,6 +788,19 @@
     <string name="reader_note_saved_with_article">Saved with this article</string>
     <string name="reader_notes_tags">Notes &amp; Tags</string>
     <string name="reader_now_playing">Now playing · %1$s</string>
+    <string name="reader_pdf_connection_body">Check your connection, then try again.</string>
+    <string name="reader_pdf_connection_title">Couldn’t reach your server</string>
+    <string name="reader_pdf_copy_removed">This PDF was removed from this device</string>
+    <string name="reader_pdf_download_failed_body">Your server didn’t send this PDF. Try again in a moment.</string>
+    <string name="reader_pdf_download_failed_title">Couldn’t get this PDF</string>
+    <string name="reader_pdf_no_space_body">This device is out of space. Free some up, then try again.</string>
+    <string name="reader_pdf_no_space_title">Not enough space</string>
+    <string name="reader_pdf_open_highlight">Open highlight: %1$s</string>
+    <string name="reader_pdf_page">Page %1$d of %2$d</string>
+    <string name="reader_pdf_unreadable_body">This file isn’t a PDF the app can open.</string>
+    <string name="reader_pdf_unreadable_title">Couldn’t open this PDF</string>
+    <string name="reader_pdf_waiting_body">It opens as soon as it’s on this device.</string>
+    <string name="reader_pdf_waiting_title">Getting this PDF</string>
     <string name="reader_preparing_body">The readable version is taking a moment to render. Try again shortly.</string>
     <string name="reader_preparing_cooldown">Reprocessing is already running.</string>
     <string name="reader_preparing_cooling_down">Cooling down</string>

@@ -4,6 +4,7 @@ import app.indelible.core.network.AuthenticatedApiTransport
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.ServerCapabilities
+import app.indelible.core.offline.Acquisition
 import app.indelible.core.offline.CachedHighlightRow
 import app.indelible.core.offline.EnqueueTx
 import app.indelible.core.offline.OfflineFiles
@@ -12,6 +13,7 @@ import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxSender
+import app.indelible.core.offline.ReadingCopies
 import app.indelible.core.offline.SendOutcome
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.SessionRegistry
@@ -28,6 +30,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -51,6 +55,30 @@ internal class StuckOutboxSender : OutboxSender {
         calls++
         return SendOutcome.Http(status = 401, retryAfterSeconds = null, message = "unauthorized")
     }
+}
+
+private object NoReadingCopies : ReadingCopies {
+    override suspend fun cacheOnOpen(
+        session: Session,
+        documentId: String,
+    ) = Unit
+
+    override suspend fun requestForReading(
+        session: Session,
+        documentId: String,
+    ) = Unit
+
+    override fun observeAcquisitions(scope: String): Flow<Map<String, Acquisition>> = emptyFlow()
+
+    override suspend fun hold(
+        scope: String,
+        documentId: String,
+    ) = Unit
+
+    override suspend fun release(
+        scope: String,
+        documentId: String,
+    ) = Unit
 }
 
 /** Stands in for a local write that cannot commit: a full disk, a corrupt database. */
@@ -127,7 +155,7 @@ internal suspend fun TestScope.readerOutboxHarness(
                         files = OfflineFiles("/offline".toPath(), FakeFileSystem()),
                         sessionProvider = { registry.current.value.session },
                         clock = { testScheduler.currentTime },
-                        requestCache = { _, _ -> },
+                        copies = NoReadingCopies,
                         dispatcher = StandardTestDispatcher(testScheduler),
                     ),
                 capabilities = ServerCapabilities(transport, clock = { testScheduler.currentTime }),

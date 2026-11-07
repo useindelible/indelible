@@ -19,6 +19,8 @@ class FakeLibraryRepository : LibraryRepository {
     var deleteItemResult: Result<Unit> = Result.success(Unit)
     var rearchiveItemResult: Result<ItemDetail> = Result.success(fakeItemDetail())
     var scopeCountsResult: Result<LibraryCounts> = Result.success(LibraryCounts.EMPTY)
+    var listItemsAnswer: (suspend (call: Int) -> Result<PaginatedItems>)? = null
+    var scopeCountsAnswer: (suspend (call: Int) -> Result<LibraryCounts>)? = null
 
     var lastTriagedItemId: String? = null
     var lastTriagedState: String? = null
@@ -43,7 +45,7 @@ class FakeLibraryRepository : LibraryRepository {
         lastListItemsTriageState = triageState
         lastListItemsItemType = itemType
         lastListItemsCursor = cursor
-        return listItemsResult
+        return listItemsAnswer?.invoke(listItemsCallCount) ?: listItemsResult
     }
 
     override suspend fun listCollectionItems(
@@ -69,7 +71,7 @@ class FakeLibraryRepository : LibraryRepository {
     override suspend fun scopeCounts(triageState: String?): Result<LibraryCounts> {
         scopeCountsCallCount++
         lastScopeCountsTriageState = triageState
-        return scopeCountsResult
+        return scopeCountsAnswer?.invoke(scopeCountsCallCount) ?: scopeCountsResult
     }
 
     override suspend fun getItem(itemId: String): Result<ItemDetail> = getItemResult

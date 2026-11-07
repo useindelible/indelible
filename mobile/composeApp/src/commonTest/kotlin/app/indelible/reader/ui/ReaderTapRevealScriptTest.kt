@@ -36,6 +36,11 @@ class ReaderTapRevealScriptTest {
     }
 
     @Test
+    fun revealYieldsToLinksButNotToAnchorsWithoutOne() {
+        assertContains(READER_BRIDGE_JS, ".sum-ask, a[href], .t-seg")
+    }
+
+    @Test
     fun scrollReportingIsCoalescedToOneCallPerFrame() {
         // Every scroll tick re-arms a native retire timer, and a WebView emits many per frame.
         assertContains(READER_BRIDGE_JS, "requestAnimationFrame(paintScroll)")

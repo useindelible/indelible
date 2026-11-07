@@ -37,6 +37,7 @@ expect fun HtmlReaderView(
     assets: ReaderAssets = ReaderAssets.NONE,
     scrollToCharOffset: CharOffsetRequest? = null,
     captureRequest: Long? = null,
+    clearSelection: Long? = null,
     onPositioned: () -> Unit = {},
     holdUntilPositioned: Boolean = false,
     onBookLink: (href: String) -> Unit = {},
@@ -54,6 +55,7 @@ internal data class ReaderBridgeInputs(
     val immersive: Boolean,
     val scrollToCharOffset: CharOffsetRequest?,
     val captureRequest: Long?,
+    val clearSelection: Long? = null,
 )
 
 /** Forwards every change in [inputs] to the page; one-shot requests report back through the two callbacks. */
@@ -95,6 +97,9 @@ internal fun ReaderBridgeEffects(
     }
     LaunchedEffect(inputs.captureRequest) {
         if (inputs.captureRequest != null && pageLoaded) evaluate("window.captureSample();")
+    }
+    LaunchedEffect(inputs.clearSelection) {
+        if (inputs.clearSelection != null && pageLoaded) evaluate("window.clearSelection();")
     }
 }
 

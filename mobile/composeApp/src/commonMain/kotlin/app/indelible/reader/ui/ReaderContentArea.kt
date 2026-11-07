@@ -10,14 +10,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.unit.Dp
 import app.indelible.core.i18n.LocaleFormatters
 import app.indelible.core.i18n.LocalizedDateStyle
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderContentMode
 import app.indelible.reader.playback.PlaybackState
-import app.indelible.reader.ui.components.ReaderComingSoonContent
-import app.indelible.reader.ui.components.ReaderComingSoonFormat
 import app.indelible.reader.ui.components.ReaderPreparingContent
 import app.indelible.reader.ui.components.YouTubeVideoHeader
 import app.indelible.reader.viewmodel.ReaderContentStatus
@@ -46,7 +45,11 @@ internal fun ReaderContentArea(
     onTappedHighlightChanged: (HighlightData?) -> Unit,
     onReaderTap: () -> Unit,
     immersive: Boolean,
+    miniBarClearance: Dp?,
     uriHandler: UriHandler,
+    onOpenStorage: () -> Unit,
+    selectedText: SelectedTextInfo?,
+    clearSelection: Long?,
     viewModel: ReaderViewModel,
 ) {
     when (state.contentMode) {
@@ -66,13 +69,21 @@ internal fun ReaderContentArea(
                 onReaderTap = onReaderTap,
                 immersive = immersive,
                 uriHandler = uriHandler,
+                clearSelection = clearSelection,
                 viewModel = viewModel,
             )
 
-        ReaderContentMode.PDF_COMING_SOON ->
-            ReaderComingSoonContent(
-                format = ReaderComingSoonFormat.PDF,
-                modifier = Modifier.fillMaxSize(),
+        ReaderContentMode.PDF ->
+            PdfContent(
+                state = state,
+                viewModel = viewModel,
+                selectedText = selectedText,
+                topChromeInsetPx = topChromeInsetPx,
+                onSelectedTextChanged = onSelectedTextChanged,
+                onTappedHighlightChanged = onTappedHighlightChanged,
+                onReaderTap = onReaderTap,
+                handleScrollProgress = handleScrollProgress,
+                onOpenStorage = onOpenStorage,
             )
 
         ReaderContentMode.EPUB -> {
@@ -90,10 +101,44 @@ internal fun ReaderContentArea(
                     onReaderTap = onReaderTap,
                     handleScrollProgress = handleScrollProgress,
                     immersive = immersive,
+                    miniBarClearance = miniBarClearance,
+                    clearSelection = clearSelection,
                     viewModel = viewModel,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PdfContent(
+    state: ReaderUiState.Success,
+    viewModel: ReaderViewModel,
+    selectedText: SelectedTextInfo?,
+    topChromeInsetPx: Int,
+    onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
+    onTappedHighlightChanged: (HighlightData?) -> Unit,
+    onReaderTap: () -> Unit,
+    handleScrollProgress: (Float, Float) -> Unit,
+    onOpenStorage: () -> Unit,
+) {
+    val pdf = state.pdf
+    val session = viewModel.pdfSession
+    if (pdf != null && session != null) {
+        ReaderPdfBody(
+            state = state,
+            pdf = pdf,
+            session = session,
+            selectedText = selectedText,
+            topChromeInsetPx = topChromeInsetPx,
+            onSelectedTextChanged = onSelectedTextChanged,
+            onTappedHighlightChanged = onTappedHighlightChanged,
+            onReaderTap = onReaderTap,
+            handleScrollProgress = handleScrollProgress,
+            onOpenStorage = onOpenStorage,
+            onRetry = viewModel::retryOpen,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
@@ -113,6 +158,7 @@ private fun ReaderHtmlBody(
     onReaderTap: () -> Unit,
     immersive: Boolean,
     uriHandler: UriHandler,
+    clearSelection: Long?,
     viewModel: ReaderViewModel,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -154,6 +200,7 @@ private fun ReaderHtmlBody(
                 onTappedHighlightChanged = onTappedHighlightChanged,
                 onReaderTap = onReaderTap,
                 immersive = immersive,
+                clearSelection = clearSelection,
                 viewModel = viewModel,
                 modifier = Modifier.weight(1f).fillMaxSize(),
             )
@@ -206,6 +253,7 @@ private fun ReaderArticleWebView(
     onTappedHighlightChanged: (HighlightData?) -> Unit,
     onReaderTap: () -> Unit,
     immersive: Boolean,
+    clearSelection: Long?,
     viewModel: ReaderViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -242,6 +290,7 @@ private fun ReaderArticleWebView(
         onHighlightTapped = { highlightId, _ ->
             onTappedHighlightChanged(state.highlights.find { it.id == highlightId })
         },
+        clearSelection = clearSelection,
         onContentLoaded = { viewModel.onContentLoaded() },
         onScrollRestored = { onScrollToPercentConsumed() },
         onAnchorScrolled = { onAnchorScrollConsumed() },

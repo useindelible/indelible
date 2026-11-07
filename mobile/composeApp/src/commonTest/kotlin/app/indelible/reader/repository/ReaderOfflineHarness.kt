@@ -16,7 +16,9 @@ import app.indelible.reader.model.ReaderDocument
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import okio.FileSystem
 import okio.IOException
+import okio.fakefilesystem.FakeFileSystem
 
 internal const val READER_PATH = "/api/v1/documents/$DL_DOC"
 internal const val HIGHLIGHTS_PATH = "/api/v1/documents/$DL_DOC/highlights"
@@ -90,8 +92,11 @@ internal class ReaderOfflineHarness(
     }
 }
 
-internal suspend fun TestScope.readerOfflineHarness(configure: FakeServer.() -> Unit = {}): ReaderOfflineHarness {
-    val download = downloadHarness(configure = configure)
+internal suspend fun TestScope.readerOfflineHarness(
+    fs: FileSystem = FakeFileSystem(),
+    configure: FakeServer.() -> Unit = {},
+): ReaderOfflineHarness {
+    val download = downloadHarness(fs = fs, configure = configure)
     val registry = download.signedIn.registry
     val session = { registry.current.value.session }
     val offlineCopy =
@@ -100,7 +105,7 @@ internal suspend fun TestScope.readerOfflineHarness(configure: FakeServer.() -> 
             files = download.files,
             sessionProvider = session,
             clock = { testScheduler.currentTime },
-            requestCache = { live, documentId -> download.manager.cacheOnOpen(live, documentId) },
+            copies = download.manager,
             dispatcher = StandardTestDispatcher(testScheduler),
         )
     val repository =

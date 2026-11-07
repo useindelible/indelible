@@ -164,11 +164,48 @@ jobs:
     # The Xcode project is format 77, which needs Xcode 16.3+; macos-14 tops
     # out at Xcode 15.4.
     runs-on: macos-15
+    # paths-filter lists a pull request's files through the API.
+    permissions:
+      contents: read
+      pull-requests: read
     defaults:
       run:
         working-directory: mobile
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # The path filter and the pdfium diff compare against the base commit.
+          fetch-depth: 0
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        with:
+          filters: |
+            engine:
+              - 'mobile/composeApp/src/commonMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/androidMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/iosMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/jvmMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/pdfContract/**'
+              - 'mobile/composeApp/build.gradle.kts'
+              - '.github/workflows/ci.yml'
+      - name: Did an engine toolchain version change
+        id: pdfium
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        working-directory: .
+        run: |
+          git diff --unified=0 "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- mobile/gradle/libs.versions.toml \
+            | grep -qE '^[+-][[:space:]]*(pdfium|agp|composeMultiplatform|kotlin)[[:space:]]*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
+      - name: Decide whether the engine contract runs
+        id: gate
+        # The weekly run never drives a simulator; a manual run always does.
+        if: github.event_name != 'schedule'
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ] \
+            || [ "${{ steps.filter.outputs.engine }}" = true ] \
+            || [ "${{ steps.pdfium.outputs.changed }}" = true ]; then
+            echo run=true >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: temurin
@@ -185,3 +222,73 @@ jobs:
           FRAMEWORK_SEARCH_PATHS='${{ github.workspace }}/mobile/composeApp/build/bin/iosSimulatorArm64/debugFramework'
           CODE_SIGNING_ALLOWED=NO
           build
+      - name: Engine contract (iOS simulator)
+        if: steps.gate.outputs.run == 'true'
+        run: ./gradlew --no-daemon :composeApp:iosSimulatorArm64Test --tests 'app.indelible.reader.pdf.PdfEngineContractTest'
+
+  mobile-android-engine:
+    name: Mobile (Android engine contract)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        with:
+          filters: |
+            engine:
+              - 'mobile/composeApp/src/commonMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/androidMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/iosMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/jvmMain/kotlin/app/indelible/reader/pdf/**'
+              - 'mobile/composeApp/src/pdfContract/**'
+              - 'mobile/composeApp/build.gradle.kts'
+              - '.github/workflows/ci.yml'
+      - name: Did an engine toolchain version change
+        id: pdfium
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        working-directory: .
+        run: |
+          git diff --unified=0 "${{ github.event.pull_request.base.sha || github.event.before }}" HEAD -- mobile/gradle/libs.versions.toml \
+            | grep -qE '^[+-][[:space:]]*(pdfium|agp|composeMultiplatform|kotlin)[[:space:]]*=' && echo changed=true >> "$GITHUB_OUTPUT" || true
+      - name: Decide whether the engine contract runs
+        id: gate
+        if: github.event_name != 'schedule'
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ] \
+            || [ "${{ steps.filter.outputs.engine }}" = true ] \
+            || [ "${{ steps.pdfium.outputs.changed }}" = true ]; then
+            echo run=true >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Enable KVM
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Engine contract (Android emulator, 16 KB pages)
+        if: steps.gate.outputs.run == 'true'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          target: google_apis_ps16k
+          arch: x86_64
+          disable-animations: true
+          working-directory: mobile
+          script: |
+            adb shell getconf PAGE_SIZE
+            ./gradlew --no-daemon :composeApp:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=app.indelible.reader.pdf.PdfEngineContractTest

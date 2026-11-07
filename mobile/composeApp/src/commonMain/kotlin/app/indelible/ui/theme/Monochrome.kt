@@ -38,6 +38,10 @@ data class MonochromeColors(
     val glossEnd: Float,
     val specular: Color,
     val dropShadow: Color,
+    val paper: Color,
+    val paperBack: Color,
+    val paperInk: Color,
+    val paperRule: Color,
 )
 
 val DarkMonochrome =
@@ -67,6 +71,10 @@ val DarkMonochrome =
         glossEnd = 0.7f,
         specular = Color.White.copy(alpha = 0.085f),
         dropShadow = Color.Black.copy(alpha = 0.95f),
+        paper = Color(0xFFE6E2D8),
+        paperBack = Color(0xFFD5D0C4),
+        paperInk = Color(0xFF1F1D19),
+        paperRule = Color.Black.copy(alpha = 0.16f),
     )
 
 val LightMonochrome =
@@ -96,6 +104,10 @@ val LightMonochrome =
         glossEnd = 0.6f,
         specular = Color.White,
         dropShadow = Color.Black.copy(alpha = 0.28f),
+        paper = Color(0xFFF6F3EC),
+        paperBack = Color(0xFFE8E3D8),
+        paperInk = Color(0xFF1F1D19),
+        paperRule = Color.Black.copy(alpha = 0.14f),
     )
 
 val LocalMonochrome = staticCompositionLocalOf { LightMonochrome }
@@ -206,6 +218,34 @@ object CoverArt {
     val bone = hex(0xECECEC) to hex(0xCFCFCF)
     val tide = listOf(hex(0x2A2A2A), hex(0x0D0D0D)) to Color.White.copy(alpha = 0.2f)
     val pages = hex(0xE4E4E4)
+}
+
+/** Book cloth for a spine on the offline ledge: a three-stop ramp across the spine, its title ink and its bands. */
+@Immutable
+data class LedgeCloth(
+    val ramp: List<Color>,
+    val ink: Color,
+    val band: Color,
+)
+
+object LedgeArt {
+    private val lightBand = Color.White.copy(alpha = 0.35f)
+    private val darkBand = Color.Black.copy(alpha = 0.25f)
+    val cloths =
+        listOf(
+            LedgeCloth(listOf(hex(0x2A2A2A), hex(0x111111), hex(0x050505)), hex(0xF5F5F5), lightBand),
+            LedgeCloth(listOf(hex(0x5E2A21), hex(0x3A1711), hex(0x220C09)), hex(0xF5F5F5), lightBand),
+            LedgeCloth(listOf(hex(0x4B4B4B), hex(0x2C2C2C), hex(0x1C1C1C)), hex(0xF5F5F5), lightBand),
+            LedgeCloth(listOf(hex(0x26303F), hex(0x141B27), hex(0x0C1017)), hex(0xF5F5F5), lightBand),
+            LedgeCloth(listOf(hex(0xEFEBE3), hex(0xD9D3C7), hex(0xC7C0B2)), hex(0x1F1D19), darkBand),
+        )
+    val pictures =
+        listOf(
+            listOf(hex(0x9AA7B8), hex(0x3A4454)),
+            listOf(hex(0xB9B2A4), hex(0x5A5244)),
+            listOf(hex(0x6E8A94), hex(0x243338)),
+        )
+    val reflection = Color.Black.copy(alpha = 0.35f)
 }
 
 private fun hex(rgb: Int): Color = Color(0xFF000000 or rgb.toLong())
