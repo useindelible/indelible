@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use ind_application::AppError;
 use ind_application::repos::event::MutationSideEffects;
-use ind_application::repos::highlight::HighlightRepository;
+use ind_application::repos::highlight::{HighlightRepository, HighlightWrite};
 use ind_domain::{
     DocumentId, DomainError, Highlight, HighlightId, HighlightNote, NewHighlight, Tag, TagId,
     UserId,
@@ -80,7 +80,7 @@ impl HighlightRepository for PgHighlightRepository {
         &self,
         highlight: &NewHighlight,
         effects: MutationSideEffects,
-    ) -> Result<Highlight, AppError> {
+    ) -> Result<HighlightWrite, AppError> {
         self.create_for_document_impl(highlight, effects).await
     }
 
