@@ -341,6 +341,7 @@ pub use ui::{scalar_ui, swagger_ui};
             crate::routes::documents::ReadingAnchorSchemaFlat,
             crate::routes::epub::EpubTocResponse,
             crate::routes::epub::EpubMetadata,
+            crate::routes::epub::EpubStoredChapter,
             crate::routes::epub::EpubTocEntry,
             crate::routes::home::HomeDashboardParams,
             crate::routes::home::HomeDashboardResponse,
