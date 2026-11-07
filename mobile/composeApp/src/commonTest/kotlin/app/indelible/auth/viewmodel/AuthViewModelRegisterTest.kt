@@ -2,6 +2,7 @@ package app.indelible.auth.viewmodel
 
 import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
+import app.indelible.testing.TestViewModels
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -23,6 +23,7 @@ import kotlin.test.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelRegisterTest {
+    private val viewModels = TestViewModels()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
@@ -38,7 +39,7 @@ class AuthViewModelRegisterTest {
 
     @Test
     fun registerSuccessTransitionsToNeedsVerificationAndSavesTokens() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -61,7 +62,7 @@ class AuthViewModelRegisterTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateRegisterDisplayName("New User")
@@ -79,7 +80,7 @@ class AuthViewModelRegisterTest {
 
     @Test
     fun oauthProviderFailureFailsClosedForSignupState() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -95,7 +96,7 @@ class AuthViewModelRegisterTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             advanceUntilIdle()
 
             assertFalse(viewModel.signupsEnabled.value)
@@ -104,7 +105,7 @@ class AuthViewModelRegisterTest {
 
     @Test
     fun registerSuccessRefreshesFirstRunSignupState() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             var providerRequests = 0
             val engine =
@@ -140,7 +141,7 @@ class AuthViewModelRegisterTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             viewModel.setupRequired.first { it }
 
             viewModel.updateRegisterDisplayName("First Owner")

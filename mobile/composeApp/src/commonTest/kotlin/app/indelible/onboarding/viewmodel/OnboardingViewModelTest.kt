@@ -5,6 +5,7 @@ import app.indelible.core.network.ApiClient
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.share.FakePendingSaveRepository
 import app.indelible.share.SaveUrlUseCase
+import app.indelible.testing.TestViewModels
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -15,7 +16,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -27,6 +27,7 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
+    private val viewModels = TestViewModels()
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @BeforeTest
@@ -43,7 +44,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeFetchesOnboardingStatus() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine { request ->
@@ -64,7 +65,7 @@ class OnboardingViewModelTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.initialize()
             viewModel.state.first { !it.isLoading }
@@ -78,7 +79,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeResumesAtFirstIncompleteStep() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine { request ->
@@ -99,7 +100,7 @@ class OnboardingViewModelTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.initialize()
             viewModel.state.first { !it.isLoading }
@@ -114,7 +115,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun initializeHandlesApiFailure() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine {
@@ -131,7 +132,7 @@ class OnboardingViewModelTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.initialize()
             viewModel.state.first { !it.isLoading }

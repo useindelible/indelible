@@ -3,6 +3,7 @@ package app.indelible.auth.viewmodel
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
+import app.indelible.testing.TestViewModels
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_email_required
 import indelible.composeapp.generated.resources.auth_login_invalid_credentials
@@ -29,6 +30,7 @@ import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
+    private val viewModels = TestViewModels()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
@@ -61,10 +63,10 @@ class AuthViewModelTest {
 
     @Test
     fun unauthenticatedWhenNoStoredAuth() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
 
             // Await the terminal init state deterministically instead of pinning the
             // test to the shared Main dispatcher via runTest(testDispatcher), which
@@ -77,7 +79,7 @@ class AuthViewModelTest {
 
     @Test
     fun authenticatedAfterSuccessfulLoginSavesAllTokens() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -97,7 +99,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -114,7 +116,7 @@ class AuthViewModelTest {
 
     @Test
     fun loginErrorSetsServerError() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             val engine =
                 MockEngine { request ->
@@ -130,7 +132,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -147,7 +149,7 @@ class AuthViewModelTest {
 
     @Test
     fun initializeWithRefreshTokenOnlyRestoresSession() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveRefreshToken("refresh-only")
 
@@ -175,7 +177,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
 
             viewModel.authState.first { it is AuthState.Authenticated }
 
@@ -185,7 +187,7 @@ class AuthViewModelTest {
 
     @Test
     fun loginValidationPreventsApiCall() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             var loginRequests = 0
             val engine =
@@ -195,7 +197,7 @@ class AuthViewModelTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             // Await init settling deterministically; counting only login-path requests
             // keeps this immune to the unconditional OAuth-providers fetch on construction.
             viewModel.authState.first { it is AuthState.Unauthenticated }

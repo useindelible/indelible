@@ -1,6 +1,5 @@
 package app.indelible.auth.viewmodel
 
-import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.network.ApiClient
 import app.indelible.core.offline.ScopePurger
@@ -12,6 +11,7 @@ import app.indelible.core.offline.enqueueNote
 import app.indelible.core.offline.testOutboxWorker
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.db.testOfflineDatabase
+import app.indelible.testing.TestViewModels
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -22,17 +22,13 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
@@ -51,7 +47,7 @@ private const val FAILURE_SETTLE_MS = 200L
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelSessionTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-    private val viewModels = mutableListOf<AuthViewModel>()
+    private val viewModels = TestViewModels()
 
     @AfterTest
     fun tearDown() {
@@ -60,15 +56,9 @@ class AuthViewModelSessionTest {
 
     /** The store and the engine answer from their own threads; an unconfined Main refuses that resume. */
     private fun sessionTest(body: suspend TestScope.() -> Unit): TestResult =
-        runTest {
+        viewModels.runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                body()
-            } finally {
-                withContext(NonCancellable) {
-                    viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
-                }
-            }
+            body()
         }
 
     /** Requests for user A wait on [gateA], whose value is the status A's profile fetch gets; B answers at once. */
@@ -126,7 +116,7 @@ class AuthViewModelSessionTest {
                 tokenStorage,
                 testOfflineAccount(tokenStorage, store, worker, ScopePurger(store)),
                 sessions,
-            ).also(viewModels::add)
+            ).also(viewModels::keep)
         return Fixture(registry, tokenStorage, store, sessions, viewModel, Gates(gateA, profileGate))
     }
 

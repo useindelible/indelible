@@ -6,6 +6,7 @@ import app.indelible.core.network.ApiClient
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.share.FakePendingSaveRepository
 import app.indelible.share.SaveUrlUseCase
+import app.indelible.testing.TestViewModels
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.onboarding_add_content_invalid_url
 import io.ktor.client.engine.mock.MockEngine
@@ -19,7 +20,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -32,6 +32,7 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingStepPersistenceTest {
+    private val viewModels = TestViewModels()
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @BeforeTest
@@ -135,7 +136,7 @@ class OnboardingStepPersistenceTest {
                 ApiOnboardingRepository(apiClient.onboardingApiService),
                 ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                 SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-            )
+            ).also(viewModels::keep)
         viewModel.initialize()
         viewModel.state.first { !it.isLoading }
         return viewModel
@@ -143,7 +144,7 @@ class OnboardingStepPersistenceTest {
 
     @Test
     fun accountStepPersistsDisplayNameAndThemeBeforeAdvancing() =
-        runTest {
+        viewModels.runTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateDisplayName("Momo")
@@ -173,7 +174,7 @@ class OnboardingStepPersistenceTest {
 
     @Test
     fun accountStepMapsAutoThemeToSystem() =
-        runTest {
+        viewModels.runTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateSelectedTheme(ThemeChoice.AUTO)
@@ -188,7 +189,7 @@ class OnboardingStepPersistenceTest {
 
     @Test
     fun accountStepFailureStaysVisibleAndDoesNotAdvance() =
-        runTest {
+        viewModels.runTest {
             val log = RequestLog()
             val viewModel =
                 buildViewModel(routedEngine(log, profileStatus = HttpStatusCode.InternalServerError))
@@ -205,7 +206,7 @@ class OnboardingStepPersistenceTest {
 
     @Test
     fun addContentStepSavesTheUrlBeforeAdvancing() =
-        runTest {
+        viewModels.runTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateUrlInput("https://example.com/article")
@@ -229,7 +230,7 @@ class OnboardingStepPersistenceTest {
 
     @Test
     fun addContentStepWithBlankUrlJustAdvances() =
-        runTest {
+        viewModels.runTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             var advanced = false
@@ -245,7 +246,7 @@ class OnboardingStepPersistenceTest {
 
     @Test
     fun addContentStepWithInvalidUrlStaysVisibleAndDoesNotAdvance() =
-        runTest {
+        viewModels.runTest {
             val log = RequestLog()
             val viewModel = buildViewModel(routedEngine(log))
             viewModel.updateUrlInput("not a url")

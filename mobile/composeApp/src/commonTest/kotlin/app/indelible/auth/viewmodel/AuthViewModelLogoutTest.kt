@@ -3,6 +3,7 @@ package app.indelible.auth.viewmodel
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
+import app.indelible.testing.TestViewModels
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_logout_revoke_failed
 import io.ktor.client.engine.mock.MockEngine
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -27,6 +27,7 @@ import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelLogoutTest {
+    private val viewModels = TestViewModels()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
@@ -42,7 +43,7 @@ class AuthViewModelLogoutTest {
 
     @Test
     fun logoutClearsAllStoredAuth() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("existing-token")
             tokenStorage.saveRefreshToken("existing-refresh")
@@ -64,7 +65,7 @@ class AuthViewModelLogoutTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             viewModel.authState.first { it is AuthState.Authenticated }
 
             viewModel.logout()
@@ -78,7 +79,7 @@ class AuthViewModelLogoutTest {
 
     @Test
     fun logoutKeepsLocalWipeButReportsRevocationFailure() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("existing-token")
             tokenStorage.saveRefreshToken("existing-refresh")
@@ -104,7 +105,7 @@ class AuthViewModelLogoutTest {
                 }
 
             val apiClient = ApiClient(tokenStorage, engine = engine)
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
             viewModel.authState.first { it is AuthState.Authenticated }
 
             viewModel.logout()
@@ -121,14 +122,14 @@ class AuthViewModelLogoutTest {
 
     @Test
     fun forceLogoutClearsWithoutServerCall() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("existing-token")
             tokenStorage.saveRefreshToken("existing-refresh")
             tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
 
             val apiClient = ApiClient(tokenStorage, engine = MockEngine { respond("", HttpStatusCode.OK) })
-            val viewModel = testAuthViewModel(apiClient, tokenStorage)
+            val viewModel = viewModels.keep(testAuthViewModel(apiClient, tokenStorage))
 
             viewModel.forceLogout()
             advanceUntilIdle()

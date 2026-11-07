@@ -4,6 +4,7 @@ import app.indelible.core.network.ApiClient
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.share.viewmodel.ShareUiState
 import app.indelible.share.viewmodel.ShareViewModel
+import app.indelible.testing.TestViewModels
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.share_error
 import io.ktor.client.engine.mock.MockEngine
@@ -16,7 +17,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -26,6 +26,7 @@ import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareViewModelTest {
+    private val viewModels = TestViewModels()
     private val validUrl = "https://example.com/article"
 
     @BeforeTest
@@ -64,7 +65,7 @@ class ShareViewModelTest {
 
     @Test
     fun uiStateTransitionsLoadingToSuccess() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("valid-token")
 
@@ -83,7 +84,7 @@ class ShareViewModelTest {
             val apiClient = ApiClient(tokenStorage, engine = engine)
             val repo = FakePendingSaveRepository()
             val useCase = SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, repo)
-            val viewModel = ShareViewModel(useCase)
+            val viewModel = viewModels.keep(ShareViewModel(useCase))
 
             assertIs<ShareUiState.Idle>(viewModel.uiState.value)
 
@@ -95,14 +96,14 @@ class ShareViewModelTest {
 
     @Test
     fun uiStateAuthRequiredOnNullToken() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
 
             val engine = MockEngine { respond("", HttpStatusCode.OK) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
             val repo = FakePendingSaveRepository()
             val useCase = SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, repo)
-            val viewModel = ShareViewModel(useCase)
+            val viewModel = viewModels.keep(ShareViewModel(useCase))
 
             viewModel.save(validUrl)
             val terminal = viewModel.uiState.first { it !is ShareUiState.Idle && it !is ShareUiState.Saving }
@@ -112,7 +113,7 @@ class ShareViewModelTest {
 
     @Test
     fun uiStateQueuedOnOffline() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage()
             tokenStorage.saveToken("valid-token")
 
@@ -127,7 +128,7 @@ class ShareViewModelTest {
                     repo,
                     networkExceptionDetector = { it === fakeNetworkException || it.cause === fakeNetworkException },
                 )
-            val viewModel = ShareViewModel(useCase)
+            val viewModel = viewModels.keep(ShareViewModel(useCase))
 
             viewModel.save(validUrl)
             val terminal = viewModel.uiState.first { it !is ShareUiState.Idle && it !is ShareUiState.Saving }
@@ -137,12 +138,12 @@ class ShareViewModelTest {
 
     @Test
     fun uiStateUsesLocalizedFallbackForServerFailure() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = InMemoryTokenStorage().apply { saveToken("valid-token") }
             val engine = MockEngine { respond("upstream details", HttpStatusCode.InternalServerError) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
             val useCase = SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository())
-            val viewModel = ShareViewModel(useCase)
+            val viewModel = viewModels.keep(ShareViewModel(useCase))
 
             viewModel.save(validUrl)
             val terminal = viewModel.uiState.first { it !is ShareUiState.Idle && it !is ShareUiState.Saving }
