@@ -9,7 +9,7 @@ use futures::TryStreamExt;
 use http::{HeaderValue, StatusCode};
 use ind_domain::ArchiveAssetKind;
 
-pub use dto::{EpubMetadata, EpubTocEntry, EpubTocResponse};
+pub use dto::{EpubMetadata, EpubStoredChapter, EpubTocEntry, EpubTocResponse};
 
 use crate::error::ApiError;
 use crate::middleware::RequireLibraryRead;
