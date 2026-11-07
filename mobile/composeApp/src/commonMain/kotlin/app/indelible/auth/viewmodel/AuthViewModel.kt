@@ -6,32 +6,30 @@ import app.indelible.auth.oauth.NoopOAuthBrowserLauncher
 import app.indelible.auth.oauth.OAuthBrowserLauncher
 import app.indelible.auth.oauth.OAuthCallbackBus
 import app.indelible.auth.oauth.OAuthProviderUi
-import app.indelible.auth.oauth.PendingOAuthFlow
 import app.indelible.auth.oauth.codeChallenge
 import app.indelible.auth.oauth.generateAppState
 import app.indelible.auth.oauth.generateCodeVerifier
-import app.indelible.auth.oauth.isExpired
-import app.indelible.auth.oauth.parseOAuthCallback
-import app.indelible.auth.oauth.pendingFlowExpiry
 import app.indelible.auth.repository.AuthRepository
 import app.indelible.core.i18n.UiMessage
 import app.indelible.core.model.AuthUser
 import app.indelible.core.model.toAuthUser
 import app.indelible.core.network.ApiException
-import app.indelible.core.network.resolvedServerUrl
+import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.ScopePurger
+import app.indelible.core.offline.SessionTransitions
+import app.indelible.core.offline.TransitionResult
+import app.indelible.core.offline.currentOfflineScope
 import app.indelible.core.storage.TokenStorage
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.auth_login_failed
 import indelible.composeapp.generated.resources.auth_login_invalid_credentials
 import indelible.composeapp.generated.resources.auth_logout_revoke_failed
 import indelible.composeapp.generated.resources.auth_oauth_browser_failed
-import indelible.composeapp.generated.resources.auth_oauth_code_missing
-import indelible.composeapp.generated.resources.auth_oauth_expired
 import indelible.composeapp.generated.resources.auth_oauth_failed
-import indelible.composeapp.generated.resources.auth_oauth_state_mismatch
 import indelible.composeapp.generated.resources.auth_password_reset_failed
 import indelible.composeapp.generated.resources.auth_register_failed
 import indelible.composeapp.generated.resources.auth_session_load_failed
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,23 +41,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-private sealed class OAuthValidationResult {
-    data object ParseFailed : OAuthValidationResult()
-
-    data class Rejected(
-        val message: UiMessage,
-    ) : OAuthValidationResult()
-
-    data class Proceed(
-        val code: String,
-        val verifier: String,
-    ) : OAuthValidationResult()
-}
-
 @Suppress("TooManyFunctions")
 class AuthViewModel(
     private val repository: AuthRepository,
     private val tokenStorage: TokenStorage,
+    private val outboxWorker: OutboxWorker,
+    private val scopePurger: ScopePurger,
+    private val sessions: SessionTransitions,
     private val oauthBrowserLauncher: OAuthBrowserLauncher = NoopOAuthBrowserLauncher,
 ) : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -110,10 +98,11 @@ class AuthViewModel(
                 _authState.value = AuthState.Unauthenticated
                 return@launch
             }
+            val epoch = sessions.epoch()
             repository
                 .getSession()
-                .onSuccess { user -> handleAuthenticatedUser(user) }
-                .onFailure { _authState.value = AuthState.Unauthenticated }
+                .onSuccess { user -> signIn(epoch, user) }
+                .onFailure { if (sessions.epoch() == epoch) _authState.value = AuthState.Unauthenticated }
         }
     }
 
@@ -132,14 +121,12 @@ class AuthViewModel(
 
         viewModelScope.launch {
             _loginState.value = _loginState.value.copy(isLoading = true, serverError = null)
+            val epoch = sessions.epoch()
             repository
                 .login(validated.email, validated.password)
                 .onSuccess { response ->
-                    response.accessToken?.let { tokenStorage.saveToken(it) }
-                    response.refreshToken?.let { tokenStorage.saveRefreshToken(it) }
-                    response.expiresAt?.let { tokenStorage.saveExpiresAt(it) }
                     _loginState.value = _loginState.value.copy(isLoading = false)
-                    handleAuthenticatedUser(response.toAuthUser())
+                    signIn(epoch, response.toAuthUser()) { tokenStorage.saveCredentials(response) }
                 }.onFailure { error ->
                     _loginState.value =
                         _loginState.value.copy(
@@ -177,15 +164,7 @@ class AuthViewModel(
             val challenge = codeChallenge(verifier)
             val startUrl = repository.nativeOAuthStartUrl(providerId, challenge, appState)
             lastHandledOAuthCallbackUrl = null
-            tokenStorage.savePendingOAuthFlow(
-                PendingOAuthFlow(
-                    providerId = providerId,
-                    verifier = verifier,
-                    appState = appState,
-                    serverUrl = tokenStorage.resolvedServerUrl(),
-                    expiresAtEpochSeconds = pendingFlowExpiry(),
-                ),
-            )
+            tokenStorage.beginOAuthFlow(providerId, verifier, appState)
             oauthBrowserLauncher
                 .launch(startUrl)
                 .onFailure {
@@ -210,7 +189,7 @@ class AuthViewModel(
             oauthCallbackMutex.withLock {
                 if (lastHandledOAuthCallbackUrl == url) return@withLock
 
-                when (val result = validateOAuthCallback(url)) {
+                when (val result = tokenStorage.validateOAuthCallback(url)) {
                     is OAuthValidationResult.Rejected -> {
                         lastHandledOAuthCallbackUrl = url
                         _loginState.value =
@@ -229,53 +208,41 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun validateOAuthCallback(url: String): OAuthValidationResult {
-        val callback = parseOAuthCallback(url) ?: return OAuthValidationResult.ParseFailed
-        val pending = tokenStorage.getPendingOAuthFlow()
-        if (pending == null || isExpired(pending)) {
-            tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_expired))
-        }
-        if (callback.state != pending.appState) {
-            tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_state_mismatch))
-        }
-        if (callback.error != null) {
-            tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_failed))
-        }
-        val code = callback.code
-        if (code.isNullOrBlank()) {
-            tokenStorage.clearPendingOAuthFlow()
-            return OAuthValidationResult.Rejected(UiMessage(Res.string.auth_oauth_code_missing))
-        }
-        return OAuthValidationResult.Proceed(code = code, verifier = pending.verifier)
-    }
-
     private suspend fun exchangeAndLoadSession(
         code: String,
         verifier: String,
         url: String,
     ) {
+        val epoch = sessions.epoch()
         repository
             .exchangeNativeOAuthCode(code, verifier)
             .onSuccess { tokenResponse ->
-                tokenStorage.saveToken(tokenResponse.accessToken)
-                tokenStorage.saveRefreshToken(tokenResponse.refreshToken)
-                tokenStorage.saveExpiresAt(tokenResponse.expiresAt)
-                tokenStorage.clearPendingOAuthFlow()
                 _loginState.value = _loginState.value.copy(isLoading = false)
                 lastHandledOAuthCallbackUrl = url
-                repository
-                    .getSession()
-                    .onSuccess { user -> handleAuthenticatedUser(user) }
-                    .onFailure {
+                var user: AuthUser? = null
+                val result =
+                    sessions.transition(epoch) {
+                        tokenStorage.saveToken(tokenResponse.accessToken)
+                        tokenStorage.saveRefreshToken(tokenResponse.refreshToken)
+                        tokenStorage.saveExpiresAt(tokenResponse.expiresAt)
+                        tokenStorage.clearPendingOAuthFlow()
+                        repository.getSession().onSuccess { fetched ->
+                            registerSession(fetched)
+                            user = fetched
+                        }
+                    }
+                val signedIn = user
+                when {
+                    result is TransitionResult.Rejected -> Unit
+                    signedIn != null -> publishAuthenticated(signedIn)
+                    else -> {
                         _authState.value = AuthState.Unauthenticated
                         _loginState.value =
                             _loginState.value.copy(
                                 serverError = UiMessage(Res.string.auth_session_load_failed),
                             )
                     }
+                }
             }.onFailure {
                 tokenStorage.clearPendingOAuthFlow()
                 _loginState.value =
@@ -326,14 +293,12 @@ class AuthViewModel(
                     isLoading = true,
                     serverError = null,
                 )
+            val epoch = sessions.epoch()
             repository
                 .register(validated.displayName, validated.email, validated.password)
                 .onSuccess { response ->
-                    response.accessToken?.let { tokenStorage.saveToken(it) }
-                    response.refreshToken?.let { tokenStorage.saveRefreshToken(it) }
-                    response.expiresAt?.let { tokenStorage.saveExpiresAt(it) }
                     _registerState.value = _registerState.value.copy(isLoading = false)
-                    handleAuthenticatedUser(response.toAuthUser())
+                    signIn(epoch, response.toAuthUser()) { tokenStorage.saveCredentials(response) }
                 }.onFailure {
                     _registerState.value =
                         _registerState.value.copy(
@@ -397,11 +362,12 @@ class AuthViewModel(
         viewModelScope.launch {
             while (true) {
                 delay(VERIFICATION_POLL_INTERVAL_MS)
+                val epoch = sessions.epoch()
                 repository
                     .getSession()
                     .onSuccess { user ->
                         if (user.emailVerified) {
-                            handleAuthenticatedUser(user)
+                            signIn(epoch, user)
                             return@launch
                         }
                     }
@@ -411,9 +377,23 @@ class AuthViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            val logoutResult = repository.logout()
-            clearAuthState()
-            logoutResult.exceptionOrNull()?.let {
+            val epoch = sessions.epoch()
+            var revocation: Result<Unit> = Result.success(Unit)
+            val result =
+                sessions.transition(epoch) { scope ->
+                    revocation = repository.logout()
+                    clearAuthState()
+                    // Signing out must survive a failed purge, and the token clear must land first:
+                    // purge() sets purge_pending before it deletes anything, so a crash the other way
+                    // round would leave a signed-in account whose next launch wipes its live queue.
+                    scope?.let {
+                        runCatching { scopePurger.purge(it) }
+                            .onFailure { failure -> if (failure is CancellationException) throw failure }
+                    }
+                }
+            if (result is TransitionResult.Rejected) return@launch
+            _authState.value = AuthState.Unauthenticated
+            revocation.exceptionOrNull()?.let {
                 _loginState.value =
                     LoginState(
                         serverError = UiMessage(Res.string.auth_logout_revoke_failed),
@@ -422,9 +402,12 @@ class AuthViewModel(
         }
     }
 
-    fun forceLogout() {
+    /** Local sign-out for the session of [epoch]; a newer sign-in since then makes it a no-op. */
+    fun forceLogout(epoch: Long = sessions.epoch()) {
         viewModelScope.launch {
-            clearAuthState()
+            if (sessions.transition(epoch) { clearAuthState() } is TransitionResult.Applied) {
+                _authState.value = AuthState.Unauthenticated
+            }
         }
     }
 
@@ -445,18 +428,51 @@ class AuthViewModel(
         onComplete: (Boolean) -> Unit,
     ) {
         viewModelScope.launch {
+            val epoch = sessions.epoch()
             repository
                 .updateProfile(displayName)
-                .onSuccess { user ->
-                    handleAuthenticatedUser(user)
-                    onComplete(true)
-                }.onFailure {
-                    onComplete(false)
-                }
+                .onSuccess { user -> onComplete(publishIfCurrent(epoch, user)) }
+                .onFailure { onComplete(false) }
         }
     }
 
-    private fun handleAuthenticatedUser(user: AuthUser) {
+    // A profile edit changes no credential or scope, so it must not open a transition: burning
+    // an epoch would fail every refresh in flight just to show a new display name.
+    private fun publishIfCurrent(
+        epoch: Long,
+        user: AuthUser,
+    ): Boolean {
+        val current = sessions.epoch() == epoch
+        if (current) publishAuthenticated(user)
+        return current
+    }
+
+    /** One transition per auth result: credentials and registration inside, state publication outside. */
+    private suspend fun signIn(
+        epoch: Long,
+        user: AuthUser,
+        saveCredentials: suspend () -> Unit = {},
+    ): Boolean {
+        val result =
+            sessions.transition(epoch) {
+                saveCredentials()
+                registerSession(user)
+            }
+        if (result is TransitionResult.Rejected) return false
+        publishAuthenticated(user)
+        return true
+    }
+
+    private suspend fun registerSession(user: AuthUser) {
+        tokenStorage.saveUserId(user.id)
+        // Sweeping stale scopes is housekeeping, so a failure must not strand the session on the
+        // splash: the scopes it could not clear keep purge_pending and are retried next launch.
+        runCatching { scopePurger.purgeInactive(tokenStorage.currentOfflineScope()) }
+            .onFailure { if (it is CancellationException) throw it }
+        outboxWorker.resumeAuth()
+    }
+
+    private fun publishAuthenticated(user: AuthUser) {
         val wasSetupRequired = _setupRequired.value
         _authState.value =
             when {
@@ -484,10 +500,11 @@ class AuthViewModel(
         }
     }
 
+    // The signed-out state is published by the caller once its transition has completed, so a
+    // sign-in started from that state captures the epoch the sign-out produced.
     private suspend fun clearAuthState() {
         tokenStorage.clearAll()
         lastHandledOAuthCallbackUrl = null
-        _authState.value = AuthState.Unauthenticated
         _avatarBytes.value = null
         _loginState.value = LoginState()
         _registerState.value = RegisterState()
