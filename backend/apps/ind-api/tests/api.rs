@@ -19,6 +19,7 @@ mod api {
     mod document_annotation_journey_tests;
     mod document_search_tests;
     mod entity_resolution_journey_tests;
+    mod epub_toc_chapter_list_tests;
     mod extension_auth_journey_tests;
     mod feed_route_permission_tests;
     mod feed_subscription_journey_tests;

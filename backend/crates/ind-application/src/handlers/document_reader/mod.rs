@@ -23,12 +23,13 @@ use crate::handlers::highlight::validation::{
 };
 use crate::ports::{
     CreateHighlightRequest, DocumentReaderOperations, DocumentReaderView, DocumentReprocessOutput,
-    HighlightCreation,
+    EpubTocAsset, HighlightCreation,
 };
 use crate::repos::document::DocumentRepository;
 use crate::repos::document_asset::DocumentAssetRepository;
 use crate::repos::document_note::DocumentNoteRepository;
 use crate::repos::document_reprocess::DocumentReprocessRepository;
+use crate::repos::epub_format::{EpubAssetFormat, EpubChapterListState, EpubFormatRepository};
 use crate::repos::event::MutationSideEffects;
 use crate::repos::highlight::{HighlightRepository, HighlightWrite};
 use crate::repos::library::LibraryRepository;
@@ -45,6 +46,7 @@ pub struct DocumentReaderService {
     note_repo: Arc<dyn DocumentNoteRepository>,
     asset_repo: Arc<dyn DocumentAssetRepository>,
     reprocess_repo: Arc<dyn DocumentReprocessRepository>,
+    epub_format_repo: Arc<dyn EpubFormatRepository>,
 }
 
 impl DocumentReaderService {
@@ -57,6 +59,7 @@ impl DocumentReaderService {
         note_repo: Arc<dyn DocumentNoteRepository>,
         asset_repo: Arc<dyn DocumentAssetRepository>,
         reprocess_repo: Arc<dyn DocumentReprocessRepository>,
+        epub_format_repo: Arc<dyn EpubFormatRepository>,
     ) -> Self {
         Self {
             document_repo,
@@ -66,6 +69,7 @@ impl DocumentReaderService {
             note_repo,
             asset_repo,
             reprocess_repo,
+            epub_format_repo,
         }
     }
 
@@ -157,6 +161,25 @@ impl DocumentReaderService {
                     id: format!("{document_id}/{kind}"),
                 })
             })
+    }
+
+    pub async fn get_epub_toc_asset(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> Result<EpubTocAsset, AppError> {
+        let asset = self
+            .get_completed_asset(user_id, document_id, ArchiveAssetKind::Epub)
+            .await?;
+        let chapter_list = self
+            .epub_format_repo
+            .find_epub_format(document_id)
+            .await?
+            .map_or(EpubChapterListState::Pending, EpubAssetFormat::chapter_list);
+        Ok(EpubTocAsset {
+            asset,
+            chapter_list,
+        })
     }
 
     pub async fn reprocess_document(
@@ -371,6 +394,14 @@ impl DocumentReaderOperations for DocumentReaderService {
         kind: ArchiveAssetKind,
     ) -> BoxFuture<'_, Result<DocumentAsset, AppError>> {
         Box::pin(self.get_completed_asset(user_id, document_id, kind))
+    }
+
+    fn get_epub_toc_asset(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<EpubTocAsset, AppError>> {
+        Box::pin(self.get_epub_toc_asset(user_id, document_id))
     }
 
     fn reprocess_document(

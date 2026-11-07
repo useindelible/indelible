@@ -1,10 +1,51 @@
+use ind_application::repos::epub_format::EpubChapterListState;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct EpubTocResponse {
     pub metadata: EpubMetadata,
     pub toc: Vec<EpubTocEntry>,
+    pub chapter_list: EpubChapterList,
+}
+
+/// Whether `metadata.chapters` is present, and what brings it when it is not: `pending` waits
+/// for the server's backfill, `needs_reprocess` for a reprocess, `needs_reupload` for a new upload.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum EpubChapterList {
+    Ready,
+    Pending,
+    NeedsReprocess,
+    NeedsReupload,
+}
+
+impl From<EpubChapterListState> for EpubChapterList {
+    fn from(state: EpubChapterListState) -> Self {
+        match state {
+            EpubChapterListState::Ready => Self::Ready,
+            EpubChapterListState::Pending => Self::Pending,
+            EpubChapterListState::NeedsReprocess => Self::NeedsReprocess,
+            EpubChapterListState::NeedsReupload => Self::NeedsReupload,
+        }
+    }
+}
+
+/// The TOC as stored in object storage.
+#[derive(Debug, Deserialize)]
+pub struct StoredEpubToc {
+    pub metadata: EpubMetadata,
+    pub toc: Vec<EpubTocEntry>,
+}
+
+impl EpubTocResponse {
+    pub fn from_stored(stored: StoredEpubToc, chapter_list: EpubChapterListState) -> Self {
+        Self {
+            metadata: stored.metadata,
+            toc: stored.toc,
+            chapter_list: chapter_list.into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]

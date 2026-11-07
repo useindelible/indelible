@@ -4,6 +4,7 @@ use ind_domain::{
     ReadingPosition, UserDocumentState,
 };
 
+use crate::repos::epub_format::EpubChapterListState;
 use crate::repos::user_document_state::AppendOutcome;
 
 /// Reader read-model for a materialized document. Distinguishes a prepared-but-unsaved
@@ -13,6 +14,11 @@ pub struct DocumentReaderView {
     pub state: Option<UserDocumentState>,
     pub library_entry_id: Option<LibraryEntryId>,
     pub assets: Vec<DocumentAsset>,
+}
+
+pub struct EpubTocAsset {
+    pub asset: DocumentAsset,
+    pub chapter_list: EpubChapterListState,
 }
 
 pub struct CreateHighlightRequest {
@@ -57,6 +63,13 @@ pub trait DocumentReaderOperations: Send + Sync {
         document_id: DocumentId,
         kind: ArchiveAssetKind,
     ) -> BoxFuture<'_, Result<DocumentAsset, AppError>>;
+
+    /// The completed EPUB TOC asset and whether its TOC lists every stored chapter.
+    fn get_epub_toc_asset(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<EpubTocAsset, AppError>>;
 
     fn reprocess_document(
         &self,
