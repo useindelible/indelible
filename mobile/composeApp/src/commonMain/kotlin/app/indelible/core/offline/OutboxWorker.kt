@@ -20,12 +20,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Owns the one coroutine that ever drains the outbox. Every trigger is [requestDrain]; requests
- * are conflated, so a burst costs one pass and a request that lands during a pass runs another.
- * A pass runs only while startup housekeeping is done, no session transition is open, the
- * session is not auth-paused and the platform reports a network; each of those has one owner,
- * and clearing one asks for a drain without touching the others. Holding the queue while there
- * is no network keeps offline changes from spending attempts that would delay them on reconnect.
+ * Owns the one coroutine that drains the outbox. Requests are conflated: a burst costs one pass
+ * and a request during a pass runs another. A pass needs startup done, no open transition, no
+ * auth pause and a network, so offline changes never spend attempts that would delay them later.
  */
 class OutboxWorker(
     store: OfflineStore,
@@ -45,8 +42,7 @@ class OutboxWorker(
     private val transitionCount = MutableStateFlow(0)
     private val authPausedState = MutableStateFlow(false)
 
-    // Held until the first sample: iOS reports it only after its monitor starts, and a pass sent
-    // before that would spend attempts and backoff on a phone that may be offline.
+    // Down until the first sample: iOS reports it only after its monitor starts.
     private val networkUp = MutableStateFlow(false)
 
     private var consecutiveFailures = 0

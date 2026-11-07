@@ -14,7 +14,6 @@ data class PendingChange(
     val status: ChangeStatus,
     val error: String?,
     val createdAt: Long,
-    /** The words the change carries: a highlight's quote, or a note's body. */
     val detail: String? = null,
     val blocked: List<PendingChange> = emptyList(),
     /** Its outbox rows in send order; a document's reading events are many rows but one change. */
@@ -37,7 +36,6 @@ data class StorageUiState(
 
     val itemCount: Int get() = kept.size + cached.size
 
-    /** Eviction only removes cached copies, so kept ones alone over the cap need the user. */
     val keptOverCap: Boolean get() = keptBytes > capBytes
 
     val queuedChanges: Int

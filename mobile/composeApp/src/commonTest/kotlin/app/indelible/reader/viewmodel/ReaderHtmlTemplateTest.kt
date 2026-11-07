@@ -7,8 +7,11 @@ import app.indelible.reader.model.ReaderBackground
 import app.indelible.reader.model.ReaderPreferences
 import app.indelible.reader.model.TextAlign
 import app.indelible.reader.model.Typeface
+import app.indelible.reader.ui.ReaderArticleMeta
 import app.indelible.reader.ui.ReaderHtmlLocalization
 import app.indelible.reader.ui.ReaderHtmlTemplate
+import app.indelible.reader.ui.ReaderPageOptions
+import app.indelible.reader.ui.ReaderSummary
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -35,13 +38,16 @@ class ReaderHtmlTemplateTest {
                 articleHtml = "<p>x</p>",
                 preferences = ReaderPreferences(),
                 highlights = emptyList(),
-                articleTitle = "Un article",
-                localization =
-                    ReaderHtmlLocalization(
-                        publishedDate = "5 mars 2024",
-                        readingTime = "1 minute",
-                        summaryLabel = "Résumé Mila",
-                        askFollowUpLabel = "Poser une question",
+                options =
+                    ReaderPageOptions(
+                        article = ReaderArticleMeta(title = "Un article"),
+                        localization =
+                            ReaderHtmlLocalization(
+                                publishedDate = "5 mars 2024",
+                                readingTime = "1 minute",
+                                summaryLabel = "Résumé Mila",
+                                askFollowUpLabel = "Poser une question",
+                            ),
                     ),
             )
         assertContains(html, "5 mars 2024")
@@ -65,7 +71,6 @@ class ReaderHtmlTemplateTest {
         val css =
             ReaderHtmlTemplate.buildTypographyCss(
                 ReaderPreferences(typeface = Typeface.SERIF, background = ReaderBackground.PAPER),
-                isDarkMode = false,
             )
         assertContains(css, "Newsreader")
         assertContains(css, ".pullquote")
@@ -159,7 +164,7 @@ class ReaderHtmlTemplateTest {
                 articleHtml = "<p>Test</p>",
                 preferences = ReaderPreferences(),
                 highlights = emptyList(),
-                topContentPaddingPx = 80,
+                options = ReaderPageOptions(topContentPaddingPx = 80),
             )
         // 80px native chrome + 26px base masthead gap.
         assertContains(html, "padding-top: 106px")
@@ -183,8 +188,14 @@ class ReaderHtmlTemplateTest {
                 articleHtml = "<p>Test</p>",
                 preferences = ReaderPreferences(),
                 highlights = emptyList(),
-                summaryHtml = "A concise overview of the article.",
-                summaryPoints = listOf("First key point", "Second key point"),
+                options =
+                    ReaderPageOptions(
+                        summary =
+                            ReaderSummary(
+                                html = "A concise overview of the article.",
+                                points = listOf("First key point", "Second key point"),
+                            ),
+                    ),
             )
         assertContains(html, "reader-summary")
         assertContains(html, "A concise overview of the article.")

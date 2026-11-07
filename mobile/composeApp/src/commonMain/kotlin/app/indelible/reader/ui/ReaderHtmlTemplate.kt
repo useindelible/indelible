@@ -15,52 +15,44 @@ object ReaderHtmlTemplate {
     // Used when a document renders without a drawing (video, which carries a native
     // poster instead). The veils still need a finite fade range.
     private const val DEFAULT_VEIL_RANGE = 60
+    private const val NONCE_BYTES = 16
+    private const val BYTE_MASK = 0xFF
+    private const val HEX_RADIX = 16
 
     // Per-render CSP nonce: the reader's own inline bridge script carries it so the strict
     // script-src can run it while blocking any injected inline script or event-handler attribute.
     private fun randomNonce(): String =
-        Random.nextBytes(16).joinToString("") {
-            (it.toInt() and 0xFF).toString(16).padStart(2, '0')
+        Random.nextBytes(NONCE_BYTES).joinToString("") {
+            (it.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0')
         }
 
     fun build(
         articleHtml: String,
         preferences: ReaderPreferences,
         highlights: List<HighlightData>,
-        localization: ReaderHtmlLocalization =
-            ReaderHtmlLocalization(
-                publishedDate = null,
-                readingTime = null,
-                summaryLabel = "",
-                askFollowUpLabel = "",
-            ),
-        isDarkMode: Boolean = false,
-        articleTitle: String = "",
-        articleAuthor: String? = null,
-        articleDomain: String? = null,
-        summaryHtml: String? = null,
-        summaryPoints: List<String> = emptyList(),
-        topContentPaddingPx: Int = 0,
-        assets: ReaderAssets = ReaderAssets.NONE,
-        holdUntilPositioned: Boolean = false,
+        options: ReaderPageOptions = ReaderPageOptions(),
     ): String {
-        val css = buildCss(preferences, isDarkMode)
-        val scrollerClass = if (holdUntilPositioned) "rscroll hold" else "rscroll"
+        val css = buildCss(preferences)
+        val scrollerClass = if (options.holdUntilPositioned) "rscroll hold" else "rscroll"
+        val assets = options.assets
         val veilRange = assets.artwork?.artwork?.veilRange ?: DEFAULT_VEIL_RANGE
         val cspNonce = randomNonce()
-        val colorScheme = colorSchemeFor(preferences, isDarkMode)
+        val colorScheme = colorSchemeFor(preferences)
         val highlightJson = buildHighlightJson(highlights)
+        val topContentPaddingPx = options.topContentPaddingPx
+        val summary = options.summary
+        val localization = options.localization
         val mastheadHtml =
             buildMasthead(
                 ReaderMastheadData(
-                    title = articleTitle,
-                    author = articleAuthor,
-                    domain = articleDomain,
-                    hasSummary = summaryHtml != null,
+                    title = options.article.title,
+                    author = options.article.author,
+                    domain = options.article.domain,
+                    hasSummary = summary.html != null,
                 ),
                 localization = localization,
             )
-        val summaryBlockHtml = buildSummaryBlock(summaryHtml, summaryPoints, localization.askFollowUpLabel)
+        val summaryBlockHtml = buildSummaryBlock(summary.html, summary.points, localization.askFollowUpLabel)
         return """
 <!DOCTYPE html>
 <html>
@@ -91,10 +83,7 @@ applyHighlights(_highlights);
             """.trimIndent()
     }
 
-    fun buildTypographyCss(
-        preferences: ReaderPreferences,
-        isDarkMode: Boolean = false,
-    ): String = buildCss(preferences, isDarkMode)
+    fun buildTypographyCss(preferences: ReaderPreferences): String = buildCss(preferences)
 
     fun buildHighlightJson(highlights: List<HighlightData>): String {
         if (highlights.isEmpty()) return "[]"
@@ -111,11 +100,7 @@ applyHighlights(_highlights);
         return "[$entries]"
     }
 
-    // Canvas colors are driven by ReaderBackground; isDarkMode is kept for call-site compatibility.
-    fun colorSchemeFor(
-        preferences: ReaderPreferences,
-        @Suppress("UNUSED_PARAMETER") isDarkMode: Boolean,
-    ): String =
+    fun colorSchemeFor(preferences: ReaderPreferences): String =
         when (preferences.background) {
             ReaderBackground.PAPER -> "only light"
             ReaderBackground.SEPIA -> "only light"
@@ -130,17 +115,14 @@ applyHighlights(_highlights);
         } ?: ""
 
     // Section order is load-bearing: later rules override earlier ones by cascade position.
-    private fun buildCss(
-        preferences: ReaderPreferences,
-        isDarkMode: Boolean,
-    ): String {
+    private fun buildCss(preferences: ReaderPreferences): String {
         val isDarkBg =
             preferences.background == ReaderBackground.SLATE ||
                 preferences.background == ReaderBackground.BLACK
         val palette = if (isDarkBg) DARK_READER_PALETTE else LIGHT_READER_PALETTE
         val colors = backgroundColors(preferences.background)
         return listOf(
-            buildReaderRootCss(preferences, colors, palette, colorSchemeFor(preferences, isDarkMode)),
+            buildReaderRootCss(preferences, colors, palette, colorSchemeFor(preferences)),
             READER_RESET_CSS,
             READER_YOUTUBE_CSS,
             READER_PROSE_CSS,

@@ -13,16 +13,7 @@ sealed interface TransitionResult {
     data object Rejected : TransitionResult
 }
 
-/**
- * The only way credentials or the server URL change. A transition is not reentrant: a block
- * never opens another transition. Under the transition lock it first checks the epoch the
- * caller captured, so a result that arrived after a newer sign-in is rejected before any side
- * effect; then it advances the epoch and withdraws the session in one swap, waits for the
- * running drain pass, lets every committed write land, runs the block, and publishes whatever
- * session the stored credentials now describe at that same epoch. Advancing the epoch when the
- * transition opens, not when it closes, is what makes a refresh that started before the
- * transition unable to write over the block's credentials.
- */
+/** The only credential change path; the epoch advances before the block, so no older refresh can overwrite it. */
 class SessionTransitions(
     private val registry: SessionRegistry,
     private val tokenStorage: TokenStorage,
@@ -33,7 +24,6 @@ class SessionTransitions(
 
     fun epoch(): Long = registry.current.value.epoch
 
-    /** [block] receives the scope that was signed in when the transition opened, if any. */
     suspend fun transition(
         expectedEpoch: Long,
         block: suspend (outgoingScope: String?) -> Unit,
@@ -48,30 +38,25 @@ class SessionTransitions(
                 worker.beginTransition()
                 store.quiesce()
                 val outgoingScope = tokenStorage.currentOfflineScope()
-                // Every block writes the user id last, so clearing it first means a crash inside
-                // the block leaves storage that restore() refuses instead of a mixed account.
+                // Blocks write the user id last, so a crash inside one leaves storage restore() refuses.
                 tokenStorage.clearUserId()
                 blockStarted = true
                 block(outgoingScope)
                 blockStarted = false
             } finally {
-                // A cancelled transition must still close: left open, it would refuse every
-                // refresh and every 401 until some later transition completed.
+                // A cancelled transition left open would refuse every refresh and 401 for good.
                 withContext(NonCancellable) { publishNext(next, failed = blockStarted) }
             }
             TransitionResult.Applied
         }
 
-    /** Cold start: publish the stored session without advancing the epoch a refresh may hold. */
     suspend fun restore() {
         val session = storedSession(epoch = 0) ?: return
         store.clientIdentity(session.scope)
         registry.restore(session)
     }
 
-    // A block that died after a partial credential write leaves storage no one can vouch for, so
-    // the credentials go and no session is published; a scope whose identity cannot be created
-    // publishes no session either, since nothing could be enqueued for it.
+    // Credentials from a block that died mid-write go, and no session is published.
     private suspend fun publishNext(
         epoch: Long,
         failed: Boolean,
@@ -89,8 +74,7 @@ class SessionTransitions(
         }
     }
 
-    // A partially cleared store (a crash between clears, or a user id saved before any token)
-    // must not come back as a session, so a credential is required alongside the user id.
+    // A user id without any credential is a half-cleared store, not a session.
     private suspend fun storedSession(epoch: Long): Session? {
         val serverUrl = tokenStorage.getServerUrl()
         val userId = tokenStorage.getUserId()
