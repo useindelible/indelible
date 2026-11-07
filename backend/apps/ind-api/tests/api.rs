@@ -22,6 +22,7 @@ mod api {
     mod extension_auth_journey_tests;
     mod feed_route_permission_tests;
     mod feed_subscription_journey_tests;
+    mod highlight_idempotency_tests;
     mod highlight_text_quote_tests;
     mod integration_availability_tests;
     mod integration_journey_tests;
