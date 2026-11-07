@@ -209,4 +209,36 @@ class PdfReaderViewLayoutTest {
             assertTrue(node.positionInRoot.x in -152f..-148f, "left ${node.positionInRoot.x}")
             assertTrue(node.positionInRoot.y in -302f..-298f, "top ${node.positionInRoot.y}")
         }
+
+    @Test
+    fun zoomingReportsNoScroll() =
+        runComposeUiTest {
+            val reports = show(Scripted().document)
+            val before = reports.samples.last().scrollTopDp
+
+            pinchOut()
+            waitForIdle()
+
+            val tops = reports.samples.map { it.scrollTopDp }
+            assertEquals(listOf(before), tops.distinct(), "scroll tops $tops")
+        }
+
+    @Test
+    fun scrollingWhileZoomedStillReportsTheScroll() =
+        runComposeUiTest {
+            val reports = show(Scripted().document)
+            pinchOut()
+            waitForIdle()
+            val before = reports.samples.last().scrollTopDp
+
+            onNodeWithTag(VIEW_TAG).performTouchInput {
+                down(Offset(150f, 500f))
+                repeat(10) { moveBy(Offset(0f, -20f)) }
+                up()
+            }
+            waitForIdle()
+
+            val moved = (reports.samples.last().scrollTopDp - before) * reports.density
+            assertTrue(moved > 100f, "moved $moved px")
+        }
 }

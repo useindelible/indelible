@@ -58,6 +58,7 @@ class PdfZoomState {
     var zoom by mutableFloatStateOf(MIN_ZOOM)
         internal set
     internal var preview by mutableStateOf<PinchPreview?>(null)
+    internal val travel = PdfScrollTravel()
 }
 
 private val ZoomSaver = Saver<PdfZoomState, Float>(save = { it.zoom }, restore = { PdfZoomState().apply { zoom = it } })

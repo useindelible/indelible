@@ -32,3 +32,34 @@ fun restoreOffsetPx(
     pageOffset: Float,
     pageHeightPx: Int,
 ): Int = (pageOffset.coerceIn(0f, 1f) * pageHeightPx).roundToInt()
+
+/** The scroll top the reader chrome follows: it moves with the reader's own scrolling, never with a zoom commit. */
+internal class PdfScrollTravel {
+    private var last: Float? = null
+    private var travel = 0f
+    private var holding = false
+    private var skipNext = false
+
+    /** Until [release], the list moves only because a zoom is being laid out. */
+    fun hold() {
+        holding = true
+    }
+
+    /** The frame that lands the zoom may arrive after this, so it does not count either. */
+    fun release() {
+        holding = false
+        skipNext = true
+    }
+
+    fun next(rawTopDp: Float): Float {
+        val previous = last
+        last = rawTopDp
+        when {
+            previous == null -> travel = rawTopDp
+            holding -> Unit
+            skipNext -> skipNext = false
+            else -> travel += rawTopDp - previous
+        }
+        return travel
+    }
+}

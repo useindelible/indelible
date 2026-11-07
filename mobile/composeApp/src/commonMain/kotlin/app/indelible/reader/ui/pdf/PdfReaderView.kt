@@ -122,7 +122,7 @@ internal fun PdfReaderView(
                     currentLayout.sample(info, document.pageCount)?.let { sample ->
                         latestPage = sample.page
                         latestOffset = sample.pageOffset
-                        currentOnSample(sample)
+                        currentOnSample(sample.copy(scrollTopDp = zoom.travel.next(sample.scrollTopDp)))
                     }
                 }
             }
