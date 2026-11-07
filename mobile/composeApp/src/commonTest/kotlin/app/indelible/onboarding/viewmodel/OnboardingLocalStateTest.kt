@@ -5,6 +5,7 @@ import app.indelible.core.network.ApiClient
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.share.FakePendingSaveRepository
 import app.indelible.share.SaveUrlUseCase
+import app.indelible.testing.TestViewModels
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.onboarding_step_account
 import io.ktor.client.engine.mock.MockEngine
@@ -17,7 +18,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -29,6 +29,7 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingLocalStateTest {
+    private val viewModels = TestViewModels()
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @BeforeTest
@@ -45,7 +46,7 @@ class OnboardingLocalStateTest {
 
     @Test
     fun updateDisplayNameUpdatesState() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
@@ -54,7 +55,7 @@ class OnboardingLocalStateTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.updateDisplayName("Test User")
 
@@ -63,7 +64,7 @@ class OnboardingLocalStateTest {
 
     @Test
     fun updateSelectedThemeUpdatesState() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
@@ -72,7 +73,7 @@ class OnboardingLocalStateTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.updateSelectedTheme(ThemeChoice.DARK)
 
@@ -81,7 +82,7 @@ class OnboardingLocalStateTest {
 
     @Test
     fun toggleFeedAddsAndRemoves() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
@@ -90,7 +91,7 @@ class OnboardingLocalStateTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             val feedUrl = "https://example.com/feed"
 
@@ -109,7 +110,7 @@ class OnboardingLocalStateTest {
 
     @Test
     fun updateAiProviderUpdatesState() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
@@ -118,7 +119,7 @@ class OnboardingLocalStateTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.updateSelectedAiProvider(AiProvider.OLLAMA)
 
@@ -127,7 +128,7 @@ class OnboardingLocalStateTest {
 
     @Test
     fun clearErrorResetsError() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine =
                 MockEngine {
@@ -144,7 +145,7 @@ class OnboardingLocalStateTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.initialize()
             viewModel.state.first { !it.isLoading }
@@ -166,7 +167,7 @@ class OnboardingLocalStateTest {
 
     @Test
     fun updateCurrentPageUpdatesState() =
-        runTest {
+        viewModels.runTest {
             val tokenStorage = createTokenStorageWithToken()
             val engine = MockEngine { respond("", HttpStatusCode.NotFound) }
             val apiClient = ApiClient(tokenStorage, engine = engine)
@@ -175,7 +176,7 @@ class OnboardingLocalStateTest {
                     ApiOnboardingRepository(apiClient.onboardingApiService),
                     ApiAuthRepository(apiClient.authApiService, apiClient.accountApiService),
                     SaveUrlUseCase(apiClient.libraryApiService, tokenStorage, FakePendingSaveRepository()),
-                )
+                ).also(viewModels::keep)
 
             viewModel.updateCurrentPage(3)
 

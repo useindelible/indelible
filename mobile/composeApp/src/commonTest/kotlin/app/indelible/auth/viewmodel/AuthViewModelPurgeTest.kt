@@ -1,6 +1,5 @@
 package app.indelible.auth.viewmodel
 
-import androidx.lifecycle.viewModelScope
 import app.indelible.auth.repository.ApiAuthRepository
 import app.indelible.core.network.ApiClient
 import app.indelible.core.network.normalizedOrigin
@@ -13,6 +12,7 @@ import app.indelible.core.offline.testOutboxWorker
 import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
 import app.indelible.db.testOfflineDatabase
+import app.indelible.testing.TestViewModels
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -21,18 +21,13 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.job
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,7 +39,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelPurgeTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
-    private val viewModels = mutableListOf<AuthViewModel>()
+    private val viewModels = TestViewModels()
 
     @AfterTest
     fun tearDown() {
@@ -53,15 +48,9 @@ class AuthViewModelPurgeTest {
 
     /** The store answers from its own dispatcher; an unconfined Main refuses that resume. */
     private fun purgeTest(body: suspend TestScope.() -> Unit): TestResult =
-        runTest {
+        viewModels.runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            try {
-                body()
-            } finally {
-                withContext(NonCancellable) {
-                    viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
-                }
-            }
+            body()
         }
 
     @Test
@@ -167,7 +156,7 @@ class AuthViewModelPurgeTest {
                         purger = ScopePurger(ThrowingScopesStore(SqlDelightOfflineStore(testOfflineDatabase()))),
                     ),
                     testSessionTransitions(tokenStorage, worker = worker),
-                ).also(viewModels::add)
+                ).also(viewModels::keep)
             viewModel.authState.first { it is AuthState.Unauthenticated }
 
             viewModel.updateLoginEmail("user@example.com")
@@ -291,7 +280,7 @@ class AuthViewModelPurgeTest {
             tokenStorage,
             testOfflineAccount(tokenStorage, purger = scopePurger),
             testSessionTransitions(tokenStorage),
-        ).also(viewModels::add)
+        ).also(viewModels::keep)
 
     /** Fails the first purge step that touches data, after purge_pending is already set. */
     private class ThrowingPurgeRowsStore(
