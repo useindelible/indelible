@@ -12,6 +12,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import app.indelible.auth.oauth.OAuthCallbackBus
 import app.indelible.core.i18n.AppLanguage
 import app.indelible.core.i18n.AppLanguageSettings
+import app.indelible.core.offline.ConnectivityObserver
 import app.indelible.core.storage.AndroidTokenStorage
 import app.indelible.core.storage.AndroidUserPreferencesStorage
 import app.indelible.share.repository.AndroidPendingSaveRepository
@@ -26,6 +27,8 @@ class MainActivity : ComponentActivity() {
         val tokenStorage = AndroidTokenStorage(applicationContext)
         val userPreferencesStorage = AndroidUserPreferencesStorage(applicationContext)
         val pendingSaveRepository = AndroidPendingSaveRepository(applicationContext)
+        val databaseDriverFactory = (application as IndelibleApplication).databaseDriverFactory
+        val connectivityObserver = ConnectivityObserver(applicationContext)
         val appLanguageSettings =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val localeManager = getSystemService(LocaleManager::class.java)
@@ -51,6 +54,8 @@ class MainActivity : ComponentActivity() {
                 tokenStorage = tokenStorage,
                 userPreferencesStorage = userPreferencesStorage,
                 pendingSaveRepository = pendingSaveRepository,
+                databaseDriverFactory = databaseDriverFactory,
+                connectivityObserver = connectivityObserver,
                 appLanguageSettings = appLanguageSettings,
             )
         }

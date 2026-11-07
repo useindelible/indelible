@@ -1,9 +1,13 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use ind_application::repos::user_document_state::UserDocumentStateRepository;
-use ind_domain::{DocumentId, UserDocumentState, UserId};
+use ind_domain::{
+    ClientType, DocumentId, EventOrigin, ReadingAnchor, ReadingPosition, UserDocumentState, UserId,
+};
 use ind_persistence::repos::PgUserDocumentStateRepository;
 use ind_test_support::{DocumentFactory, TestDb, UserFactory};
+
+const WEB: EventOrigin = EventOrigin::Surface(ClientType::Web);
 
 async fn state(
     repo: &PgUserDocumentStateRepository,
@@ -22,10 +26,18 @@ async fn clear_read_state_resets_read_status_and_keeps_the_chapter_position() {
     let finished = DocumentFactory::new(user.id).insert(&pool).await;
     let repo = PgUserDocumentStateRepository::new(pool.clone());
 
-    repo.record_progress(user.id, started.id, 60, Some("ch-2".into()), Some(12))
+    let chapter = ReadingPosition {
+        anchor: Some(ReadingAnchor::Spine {
+            chapter: "ch-2".into(),
+        }),
+        offset: Some(12),
+        fraction: None,
+        seconds: None,
+    };
+    repo.record_progress(user.id, started.id, 60, Some(chapter), WEB)
         .await
         .unwrap();
-    repo.record_progress(user.id, finished.id, 100, None, None)
+    repo.record_progress(user.id, finished.id, 100, None, WEB)
         .await
         .unwrap();
     assert!(
@@ -48,7 +60,7 @@ async fn clear_read_state_resets_read_status_and_keeps_the_chapter_position() {
 
     // The next autosave after unread must not resurrect the finished state.
     let reread = repo
-        .record_progress(user.id, finished.id, 10, None, None)
+        .record_progress(user.id, finished.id, 10, None, WEB)
         .await
         .unwrap();
     assert_eq!(reread.finished_at, None);

@@ -1,9 +1,7 @@
 //! Document reader read-model, content serving, and document-keyed authored capabilities
 //! (highlights, the single note, reading progress). Highlights and notes require the document
 //! to have its completed format-specific canonical asset; progress writes
-//! `user_document_state` without requiring a Library entry. See
-//! docs/document-feed-library-architecture.md (Document Reader; User highlights or notes an
-//! unsaved feed delivery; Reading progress).
+//! `user_document_state` without requiring a Library entry.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,8 +9,8 @@ use std::time::Duration;
 use chrono::Utc;
 use ind_domain::{
     ArchiveAssetKind, ArchiveAssetStatus, Document, DocumentAsset, DocumentId, DocumentNote,
-    DocumentType, DomainError, Highlight, HighlightId, HighlightLocator, HighlightSourceLocator,
-    NewHighlight, UserDocumentState, UserId,
+    DocumentType, DomainError, EventOrigin, Highlight, HighlightId, NewHighlight, NewReadingEvent,
+    ReadingPosition, UserDocumentState, UserId,
 };
 
 use futures::future::BoxFuture;
@@ -24,7 +22,8 @@ use crate::handlers::highlight::validation::{
     validate_color, validate_highlight_locators_for_document,
 };
 use crate::ports::{
-    DocumentReaderOperations, DocumentReaderView, DocumentReprocessOutput, EpubTocAsset,
+    CreateHighlightRequest, DocumentReaderOperations, DocumentReaderView, DocumentReprocessOutput,
+    EpubTocAsset, HighlightCreation,
 };
 use crate::repos::document::DocumentRepository;
 use crate::repos::document_asset::DocumentAssetRepository;
@@ -32,10 +31,10 @@ use crate::repos::document_note::DocumentNoteRepository;
 use crate::repos::document_reprocess::DocumentReprocessRepository;
 use crate::repos::epub_format::{EpubAssetFormat, EpubChapterListState, EpubFormatRepository};
 use crate::repos::event::MutationSideEffects;
-use crate::repos::highlight::HighlightRepository;
+use crate::repos::highlight::{HighlightRepository, HighlightWrite};
 use crate::repos::library::LibraryRepository;
 use crate::repos::lifecycle_outbox::search_reindex_document_outbox;
-use crate::repos::user_document_state::UserDocumentStateRepository;
+use crate::repos::user_document_state::{AppendOutcome, UserDocumentStateRepository};
 
 const REPROCESS_COOLDOWN: Duration = Duration::from_secs(5 * 60);
 
@@ -234,37 +233,56 @@ impl DocumentReaderService {
         &self,
         user_id: UserId,
         document_id: DocumentId,
-        color: String,
-        text_content: String,
-        locator: Option<HighlightLocator>,
-        source_locator: Option<HighlightSourceLocator>,
-    ) -> Result<Highlight, AppError> {
+        request: CreateHighlightRequest,
+    ) -> Result<HighlightCreation, AppError> {
         let document = self.require_document(user_id, document_id).await?;
         self.require_annotation_source(&document).await?;
-        validate_color(&color)?;
+        validate_color(&request.color)?;
         validate_highlight_locators_for_document(
             document.document_type,
-            locator.as_ref(),
-            source_locator.as_ref(),
+            request.locator.as_ref(),
+            request.source_locator.as_ref(),
         )?;
 
+        let requested_id = request.requested_id;
         let new_highlight = NewHighlight {
-            id: HighlightId::new(),
+            id: requested_id.unwrap_or_else(HighlightId::new),
             document_id,
             user_id,
-            color,
-            text_content,
-            locator,
-            source_locator,
+            color: request.color,
+            text_content: request.text_content,
+            locator: request.locator,
+            source_locator: request.source_locator,
         };
         let now = Utc::now();
         let effects = MutationSideEffects {
             events: vec![document_highlighted(user_id, document_id, new_highlight.id)],
             outbox: vec![search_reindex_document_outbox(document_id, now)],
         };
-        self.highlight_repo
+
+        match self
+            .highlight_repo
             .create_for_document(&new_highlight, effects)
-            .await
+            .await?
+        {
+            HighlightWrite::Inserted(highlight) => Ok(HighlightCreation {
+                highlight: *highlight,
+                created: true,
+            }),
+            HighlightWrite::IdTaken if requested_id.is_none() => {
+                Err(highlight_id_conflict(new_highlight.id))
+            }
+            HighlightWrite::IdTaken => {
+                match self
+                    .highlight_repo
+                    .get_by_id(new_highlight.id, user_id)
+                    .await?
+                {
+                    Some(existing) => replay_or_conflict(existing, &new_highlight),
+                    None => Err(highlight_id_conflict(new_highlight.id)),
+                }
+            }
+        }
     }
 
     pub async fn list_highlights(
@@ -329,18 +347,24 @@ impl DocumentReaderService {
         user_id: UserId,
         document_id: DocumentId,
         progress_percent: i32,
-        chapter_locator: Option<String>,
-        chapter_offset: Option<i32>,
+        position: Option<ReadingPosition>,
+        origin: EventOrigin,
     ) -> Result<UserDocumentState, AppError> {
         self.require_document(user_id, document_id).await?;
         self.state_repo
-            .record_progress(
-                user_id,
-                document_id,
-                progress_percent,
-                chapter_locator,
-                chapter_offset,
-            )
+            .record_progress(user_id, document_id, progress_percent, position, origin)
+            .await
+    }
+
+    pub async fn append_reading_events(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        events: Vec<NewReadingEvent>,
+    ) -> Result<AppendOutcome, AppError> {
+        self.require_document(user_id, document_id).await?;
+        self.state_repo
+            .append_reading_events(user_id, document_id, &events)
             .await
     }
 
@@ -392,19 +416,9 @@ impl DocumentReaderOperations for DocumentReaderService {
         &self,
         user_id: UserId,
         document_id: DocumentId,
-        color: String,
-        text_content: String,
-        locator: Option<HighlightLocator>,
-        source_locator: Option<HighlightSourceLocator>,
-    ) -> BoxFuture<'_, Result<Highlight, AppError>> {
-        Box::pin(self.create_highlight(
-            user_id,
-            document_id,
-            color,
-            text_content,
-            locator,
-            source_locator,
-        ))
+        request: CreateHighlightRequest,
+    ) -> BoxFuture<'_, Result<HighlightCreation, AppError>> {
+        Box::pin(self.create_highlight(user_id, document_id, request))
     }
 
     fn list_highlights(
@@ -437,16 +451,19 @@ impl DocumentReaderOperations for DocumentReaderService {
         user_id: UserId,
         document_id: DocumentId,
         progress_percent: i32,
-        chapter_locator: Option<String>,
-        chapter_offset: Option<i32>,
+        position: Option<ReadingPosition>,
+        origin: EventOrigin,
     ) -> BoxFuture<'_, Result<UserDocumentState, AppError>> {
-        Box::pin(self.update_progress(
-            user_id,
-            document_id,
-            progress_percent,
-            chapter_locator,
-            chapter_offset,
-        ))
+        Box::pin(self.update_progress(user_id, document_id, progress_percent, position, origin))
+    }
+
+    fn append_reading_events(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        events: Vec<NewReadingEvent>,
+    ) -> BoxFuture<'_, Result<AppendOutcome, AppError>> {
+        Box::pin(self.append_reading_events(user_id, document_id, events))
     }
 
     fn mark_unread(
@@ -456,4 +473,32 @@ impl DocumentReaderOperations for DocumentReaderService {
     ) -> BoxFuture<'_, Result<(), AppError>> {
         Box::pin(self.mark_unread(user_id, document_id))
     }
+}
+
+/// `created_at` and `updated_at` are stamped server-side, so comparing them would make every
+/// retry read as divergent; only client-supplied content decides replay versus conflict.
+fn replay_or_conflict(
+    existing: Highlight,
+    requested: &NewHighlight,
+) -> Result<HighlightCreation, AppError> {
+    let same = existing.document_id == requested.document_id
+        && existing.color == requested.color
+        && existing.text_content == requested.text_content
+        && existing.locator == requested.locator
+        && existing.source_locator == requested.source_locator;
+    if same {
+        Ok(HighlightCreation {
+            highlight: existing,
+            created: false,
+        })
+    } else {
+        Err(highlight_id_conflict(requested.id))
+    }
+}
+
+fn highlight_id_conflict(id: HighlightId) -> AppError {
+    AppError::Domain(DomainError::Conflict {
+        entity: "Highlight",
+        message: format!("highlight {id} already exists with different content"),
+    })
 }
