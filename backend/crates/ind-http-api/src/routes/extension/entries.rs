@@ -143,8 +143,11 @@ pub async fn extension_list_highlights(
     request_body = ExtensionCreateHighlightBody,
     responses(
         (status = 201, description = "Created highlight", body = HighlightResponse),
+        (status = 200, description = "Highlight already existed with identical content", body = HighlightResponse),
+        (status = 400, description = "Malformed body or highlight id"),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Saved entry not found"),
+        (status = 409, description = "Highlight id already used with different content"),
         (status = 422, description = "Validation error"),
         (status = 503, description = "Document reader service not configured"),
     ),
@@ -155,7 +158,7 @@ pub async fn extension_create_highlight(
     State(state): State<AppState>,
     RequireExtensionAccess(auth_user): RequireExtensionAccess,
     Path(library_entry_id): Path<String>,
-    axum::Json(body): axum::Json<ExtensionCreateHighlightBody>,
+    crate::extract::Json(body): crate::extract::Json<ExtensionCreateHighlightBody>,
 ) -> Result<(http::StatusCode, crate::extract::Json<HighlightResponse>), ApiError> {
     let entry_id = parse_extension_entry_id(&library_entry_id)?;
     let joined = library_entry_for_alias(&state, auth_user.user_id, entry_id).await?;
@@ -190,21 +193,29 @@ pub async fn extension_create_highlight(
             .ok_or(ApiError::ServiceUnavailable {
                 message: "document reader service not configured".into(),
             })?;
-    let highlight = document_reader_ops
+    let creation = document_reader_ops
         .create_highlight(
             auth_user.user_id,
             joined.document.id,
-            body.color,
-            body.text_content,
-            body.locator.map(Into::into),
-            body.source_locator.map(Into::into),
+            CreateHighlightRequest {
+                requested_id: body.id,
+                color: body.color,
+                text_content: body.text_content,
+                locator: body.locator.map(Into::into),
+                source_locator: body.source_locator.map(Into::into),
+            },
         )
         .await
         .map_err(ApiError::from)?;
 
+    let status = if creation.created {
+        http::StatusCode::CREATED
+    } else {
+        http::StatusCode::OK
+    };
     Ok((
-        http::StatusCode::CREATED,
-        crate::extract::Json(HighlightResponse::from_domain(highlight)),
+        status,
+        crate::extract::Json(HighlightResponse::from_domain(creation.highlight)),
     ))
 }
 
