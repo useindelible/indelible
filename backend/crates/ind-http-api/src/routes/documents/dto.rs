@@ -36,11 +36,27 @@ pub struct DocumentNoteResponse {
 }
 
 #[derive(Debug, Deserialize, validator::Validate, ToSchema)]
+/// `chapter_locator` and `chapter_offset` map onto `ReadingPositionSchema::anchor` / `offset`.
 pub struct UpdateDocumentProgressBody {
     #[validate(range(min = 0.0, max = 100.0))]
     pub progress_percent: f32,
     pub chapter_locator: Option<String>,
     pub chapter_offset: Option<i32>,
+}
+
+impl UpdateDocumentProgressBody {
+    pub(crate) fn position(&self) -> Option<ind_domain::ReadingPosition> {
+        let anchor = self
+            .chapter_locator
+            .as_deref()
+            .map(ind_domain::ReadingAnchor::from_locator);
+        let offset = self.chapter_offset;
+        (anchor.is_some() || offset.is_some()).then(|| ind_domain::ReadingPosition {
+            anchor,
+            offset,
+            ..Default::default()
+        })
+    }
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -72,6 +88,8 @@ pub struct DocumentReaderResponse {
     pub chapter_locator: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter_offset: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<ReadingPositionSchema>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<String>, format = DateTime)]
     pub last_read_at: Option<DateTime<Utc>>,
@@ -156,6 +174,11 @@ impl DocumentReaderResponse {
             max_progress_percent: state.as_ref().and_then(|s| s.max_progress_percent),
             chapter_locator: state.as_ref().and_then(|s| s.chapter_locator.clone()),
             chapter_offset: state.as_ref().and_then(|s| s.chapter_offset),
+            position: state
+                .as_ref()
+                .and_then(|s| s.scroll_position.clone())
+                .and_then(|v| serde_json::from_value::<ind_domain::ReadingPosition>(v).ok())
+                .map(Into::into),
             last_read_at: state.as_ref().and_then(|s| s.last_read_at),
             finished_at: state.as_ref().and_then(|s| s.finished_at),
             available_assets,
@@ -279,4 +302,280 @@ pub struct ArticleTocResponse {
     pub truncated: bool,
     /// Empty unless `status` is `ready`.
     pub entries: Vec<ArticleTocEntryResponse>,
+}
+
+/// The structural landmark a position sits on. A closed set: an unrecognised `type` is a
+/// malformed body, not a validation error.
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ReadingAnchorSchema {
+    Page { page: i32 },
+    Spine { chapter: String },
+    Cue { cue: String },
+    Section { section: String },
+}
+
+/// Schema-only flat representation of `ReadingAnchorSchema` for OpenAPI code generators, which
+/// map an undiscriminated `oneOf` to `Any`. Mirrors the `LocatorSchemaFlat` treatment.
+#[derive(Serialize, ToSchema)]
+pub struct ReadingAnchorSchemaFlat {
+    /// Discriminator: "page", "spine", "cue" or "section".
+    #[serde(rename = "type")]
+    pub anchor_type: String,
+    /// page: 1-based page number.
+    pub page: Option<i32>,
+    /// spine: EPUB spine key.
+    pub chapter: Option<String>,
+    /// cue: transcript cue id.
+    pub cue: Option<String>,
+    /// section: article, email or tweet section id.
+    pub section: Option<String>,
+}
+
+impl From<ReadingAnchorSchema> for ind_domain::ReadingAnchor {
+    fn from(v: ReadingAnchorSchema) -> Self {
+        match v {
+            ReadingAnchorSchema::Page { page } => Self::Page { page },
+            ReadingAnchorSchema::Spine { chapter } => Self::Spine { chapter },
+            ReadingAnchorSchema::Cue { cue } => Self::Cue { cue },
+            ReadingAnchorSchema::Section { section } => Self::Section { section },
+        }
+    }
+}
+
+impl From<ind_domain::ReadingAnchor> for ReadingAnchorSchema {
+    fn from(v: ind_domain::ReadingAnchor) -> Self {
+        use ind_domain::ReadingAnchor as A;
+        match v {
+            A::Page { page } => Self::Page { page },
+            A::Spine { chapter } => Self::Spine { chapter },
+            A::Cue { cue } => Self::Cue { cue },
+            A::Section { section } => Self::Section { section },
+        }
+    }
+}
+
+/// Where the reader stopped, in coordinates every artifact type can speak. The fields are
+/// independent, not a union keyed on document type: an article sends `anchor` + `offset`, a
+/// PDF `anchor` + `fraction`, a video or podcast adds `seconds`.
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema, Default)]
+pub struct ReadingPositionSchema {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<ReadingAnchorSchemaFlat>)]
+    pub anchor: Option<ReadingAnchorSchema>,
+    /// Units into `anchor` — characters for text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offset: Option<i32>,
+    /// `0..=1` through the whole artifact.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fraction: Option<f64>,
+    /// Media playhead in seconds, for video and podcast.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub seconds: Option<f64>,
+}
+
+impl From<ReadingPositionSchema> for ind_domain::ReadingPosition {
+    fn from(v: ReadingPositionSchema) -> Self {
+        Self {
+            anchor: v.anchor.map(Into::into),
+            offset: v.offset,
+            fraction: v.fraction,
+            seconds: v.seconds,
+        }
+    }
+}
+
+impl From<ind_domain::ReadingPosition> for ReadingPositionSchema {
+    fn from(v: ind_domain::ReadingPosition) -> Self {
+        Self {
+            anchor: v.anchor.map(Into::into),
+            offset: v.offset,
+            fraction: v.fraction,
+            seconds: v.seconds,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ReadingEventBody {
+    /// `rev_` prefixed, generated by the client so retries are idempotent.
+    #[schema(value_type = String)]
+    pub id: ind_domain::ReadingEventId,
+    /// Required when the batch carries a `client_id`; the server allocates it otherwise.
+    #[serde(default)]
+    pub origin_seq: Option<i64>,
+    #[schema(value_type = String, example = "progress")]
+    pub kind: ind_domain::ReadingEventKind,
+    /// Hundredths of a percent: 42.37% is 4237.
+    #[serde(default)]
+    pub progress_basis_points: Option<i32>,
+    /// Why the event happened. Defaults to `reader` telemetry.
+    #[serde(default)]
+    #[schema(value_type = Option<String>, example = "reader")]
+    pub cause: Option<ind_domain::ReadingCause>,
+    /// Groups one continuous sitting; omit if the client does not track sessions.
+    #[serde(default)]
+    #[schema(value_type = Option<String>)]
+    pub session_id: Option<uuid::Uuid>,
+    /// Which pass through the document. Increment to start a reread; a higher attempt
+    /// outranks a lower one regardless of arrival time.
+    #[serde(default)]
+    pub attempt: Option<i16>,
+    #[serde(default)]
+    pub position: Option<ReadingPositionSchema>,
+    /// Which readable representation `position` refers to.
+    #[serde(default)]
+    #[schema(value_type = Option<String>, example = "epub")]
+    pub asset_kind: Option<ind_domain::ArchiveAssetKind>,
+    #[serde(default)]
+    pub position_version: Option<i16>,
+    #[serde(default)]
+    pub active_ms: Option<i32>,
+    #[schema(value_type = String, format = DateTime)]
+    pub recorded_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct AppendReadingEventsBody {
+    /// Stable per-install id, `cli_` prefixed. Omitted by callers with no device
+    /// identity, who are attributed from their credential instead.
+    #[serde(default)]
+    #[schema(value_type = Option<String>)]
+    pub client_id: Option<ind_domain::ClientId>,
+    pub events: Vec<ReadingEventBody>,
+}
+
+pub const MAX_READING_EVENTS_PER_BATCH: usize = 200;
+
+impl Validate for AppendReadingEventsBody {
+    fn validate(&self) -> Result<(), Vec<crate::error::FieldError>> {
+        use ind_domain::ReadingEventKind as Kind;
+        let mut errors = Vec::new();
+        let mut push = |field: String, message: &str| {
+            errors.push(crate::error::FieldError {
+                field,
+                message: message.into(),
+            });
+        };
+        if self.events.is_empty() || self.events.len() > MAX_READING_EVENTS_PER_BATCH {
+            push("events".into(), "must contain between 1 and 200 events");
+        }
+        let device_batch = self.client_id.is_some();
+        let mut last_seq: Option<i64> = None;
+        for (i, e) in self.events.iter().enumerate() {
+            let f = |name: &str| format!("events[{i}].{name}");
+            match (device_batch, e.origin_seq) {
+                (true, None) => push(f("origin_seq"), "is required when client_id is set"),
+                (false, Some(_)) => push(
+                    f("origin_seq"),
+                    "is server-assigned when client_id is absent, so it must be omitted",
+                ),
+                (true, Some(seq)) => {
+                    if seq < 0 {
+                        push(f("origin_seq"), "must not be negative");
+                    }
+                    if last_seq.is_some_and(|prev| seq <= prev) {
+                        push(f("origin_seq"), "must strictly increase within a batch");
+                    }
+                    last_seq = Some(seq);
+                }
+                (false, None) => {}
+            }
+            let has_payload =
+                e.progress_basis_points.is_some() || e.position.is_some() || e.active_ms.is_some();
+            match e.kind {
+                Kind::Opened if has_payload => {
+                    push(f("kind"), "opened events carry no progress fields")
+                }
+                // `finished` deliberately carries no progress requirement: a reader who stops
+                // at 94% because the rest is appendices has finished the book, and forcing a
+                // fake 100 would write that falsehood into the log permanently.
+                Kind::Progress if e.progress_basis_points.is_none() => push(
+                    f("progress_basis_points"),
+                    "is required for progress events",
+                ),
+                _ => {}
+            }
+            if e.progress_basis_points
+                .is_some_and(|bp| !(0..=10_000).contains(&bp))
+            {
+                push(f("progress_basis_points"), "must be within 0..=10000");
+            }
+            if e.attempt.is_some_and(|a| a < 1) {
+                push(f("attempt"), "must be 1 or greater");
+            }
+            if e.position_version.is_some_and(|v| v < 1) {
+                push(f("position_version"), "must be 1 or greater");
+            }
+            if e.active_ms.is_some_and(|v| v < 0) {
+                push(f("active_ms"), "must not be negative");
+            }
+            if let Some(p) = &e.position {
+                match &p.anchor {
+                    Some(ReadingAnchorSchema::Page { page }) if *page < 1 => {
+                        push(f("position.anchor.page"), "must be 1 or greater")
+                    }
+                    Some(ReadingAnchorSchema::Spine { chapter }) if chapter.is_empty() => {
+                        push(f("position.anchor.chapter"), "must not be empty")
+                    }
+                    Some(ReadingAnchorSchema::Cue { cue }) if cue.is_empty() => {
+                        push(f("position.anchor.cue"), "must not be empty")
+                    }
+                    Some(ReadingAnchorSchema::Section { section }) if section.is_empty() => {
+                        push(f("position.anchor.section"), "must not be empty")
+                    }
+                    _ => {}
+                }
+                if p.offset.is_some_and(|v| v < 0) {
+                    push(f("position.offset"), "must not be negative");
+                }
+                if p.fraction.is_some_and(|v| !(0.0..=1.0).contains(&v)) {
+                    push(f("position.fraction"), "must be within 0..=1");
+                }
+                if p.seconds.is_some_and(|v| !v.is_finite() || v < 0.0) {
+                    push(f("position.seconds"), "must be a finite value of 0 or more");
+                }
+            }
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+}
+
+impl ReadingEventBody {
+    /// Validation has already bounded `progress_basis_points`, so the conversion cannot fail.
+    pub(crate) fn into_domain(
+        self,
+        origin: &ind_domain::EventOrigin,
+    ) -> ind_domain::NewReadingEvent {
+        let progress = self
+            .progress_basis_points
+            .and_then(|bp| ind_domain::BasisPoints::new(bp).ok());
+        ind_domain::NewReadingEvent {
+            id: self.id,
+            origin: origin.clone(),
+            origin_seq: self.origin_seq,
+            kind: self.kind,
+            cause: self.cause.unwrap_or_default(),
+            session_id: self.session_id,
+            attempt: self.attempt.unwrap_or(1),
+            progress,
+            position: self.position.map(Into::into),
+            asset_kind: self.asset_kind,
+            position_version: self
+                .position_version
+                .unwrap_or(ind_domain::NewReadingEvent::CURRENT_POSITION_VERSION),
+            active_ms: self.active_ms,
+            recorded_at: self.recorded_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AppendReadingEventsResponse {
+    pub accepted: usize,
+    pub replayed: usize,
 }
