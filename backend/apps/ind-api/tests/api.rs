@@ -43,6 +43,7 @@ mod api {
     mod oauth_journey_tests;
     mod platform_journey_tests;
     mod product_journey_tests;
+    mod reader_library_entry_tests;
     mod reading_events_journey_tests;
     mod reading_events_lifecycle_tests;
     mod reading_events_origin_tests;

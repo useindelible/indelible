@@ -1,6 +1,6 @@
 use super::*;
 use ind_domain::{
-    Document, DocumentAsset, DocumentId, EventOrigin, LibraryEntryId, NewReadingEvent,
+    Document, DocumentAsset, DocumentId, EventOrigin, LibraryEntry, NewReadingEvent,
     ReadingPosition, UserDocumentState,
 };
 
@@ -8,11 +8,11 @@ use crate::repos::epub_format::EpubChapterListState;
 use crate::repos::user_document_state::AppendOutcome;
 
 /// Reader read-model for a materialized document. Distinguishes a prepared-but-unsaved
-/// document (`library_entry_id` is `None`) from a saved Library entry (`Some`).
+/// document (`library_entry` is `None`) from a saved Library entry (`Some`).
 pub struct DocumentReaderView {
     pub document: Document,
     pub state: Option<UserDocumentState>,
-    pub library_entry_id: Option<LibraryEntryId>,
+    pub library_entry: Option<LibraryEntry>,
     pub assets: Vec<DocumentAsset>,
 }
 

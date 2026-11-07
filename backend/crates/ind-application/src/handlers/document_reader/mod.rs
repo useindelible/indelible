@@ -128,16 +128,15 @@ impl DocumentReaderService {
             tracing::warn!(%document_id, error = %err, "failed to record document open");
         }
         let state = self.state_repo.find(user_id, document_id).await?;
-        let library_entry_id = self
+        let library_entry = self
             .library_repo
             .find_active_by_document(user_id, document_id)
-            .await?
-            .map(|entry| entry.id);
+            .await?;
         let assets = self.asset_repo.find_by_document(document_id).await?;
         Ok(DocumentReaderView {
             document,
             state,
-            library_entry_id,
+            library_entry,
             assets,
         })
     }
