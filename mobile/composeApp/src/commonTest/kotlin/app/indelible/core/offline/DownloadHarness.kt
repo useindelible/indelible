@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import app.indelible.core.network.AuthenticatedApiTransport
+import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.storage.DEFAULT_OFFLINE_CAP_BYTES
 import app.indelible.core.storage.InMemoryTokenStorage
 import io.ktor.client.engine.mock.MockEngine
@@ -27,6 +28,11 @@ internal const val DL_DOC = "doc_1"
 private const val OFFLINE_ROOT = "/offline"
 private const val FAR_FUTURE_EXPIRY = 4_102_444_800L
 private const val WHEN = "2026-01-01T00:00:00Z"
+internal const val CAPABILITIES = "/api/v1/server/capabilities"
+internal const val EPUB_TOC_PATH = "/api/v1/documents/$DL_DOC/epub/toc"
+internal const val CHAPTER_LIST_SUPPORTED = """{"capabilities":["epub_chapter_list"]}"""
+
+internal fun chapterPath(index: Int) = "/api/v1/documents/$DL_DOC/epub/chapters/$index"
 
 internal class Call(
     val host: String,
@@ -56,9 +62,10 @@ internal class FakeServer {
             respond("", HttpStatusCode.Found, headersOf(HttpHeaders.Location, "http://s3.test/bucket/doc_1.pdf"))
         }
         route("/bucket/doc_1.pdf") { respond("%PDF-1.7", HttpStatusCode.OK) }
-        route("/api/v1/documents/$DL_DOC/epub/toc") { json(EPUB_TOC) }
+        route(CAPABILITIES) { json(CHAPTER_LIST_SUPPORTED) }
+        route(EPUB_TOC_PATH) { json(epubToc()) }
         for (index in 0..2) {
-            route("/api/v1/documents/$DL_DOC/epub/chapters/$index") { respond("<h1>$index</h1>", HttpStatusCode.OK) }
+            route(chapterPath(index)) { respond("<h1>$index</h1>", HttpStatusCode.OK) }
         }
     }
 
@@ -92,13 +99,25 @@ private val HIGHLIGHTS =
         """"created_at":"$WHEN","updated_at":"$WHEN"}]}"""
 private val NOTE = """{"id":"note_1","body":"server note","created_at":"$WHEN","updated_at":"$WHEN"}"""
 private const val ARTICLE_TOC = """{"entries":[],"status":"none","truncated":false}"""
-private val EPUB_TOC =
-    """{"metadata":{"estimated_pages":3,"total_chapters":3,"total_words":30},"toc":[""" +
-        listOf(0, 1, 1, 2)
-            .mapIndexed { i, spine ->
-                val depth = if (i == 2) 1 else 0
-                """{"id":"e$i","title":"T$i","depth":$depth,"spine_index":$spine,"start_page":1,"word_count":10}"""
-            }.joinToString(",") + "]}"
+
+/** A book outline of three chapters; [chapters] is the stored chapter list, absent when null. */
+internal fun epubToc(
+    chapters: List<Int>? = listOf(0, 1, 2),
+    chapterList: String = "ready",
+): String {
+    val toc =
+        (0..2).joinToString(",") {
+            """{"id":"e$it","title":"T$it","depth":0,"spine_index":$it,"start_page":1,"word_count":10}"""
+        }
+    val stored =
+        chapters
+            ?.let { list ->
+                val entries = list.joinToString(",") { """{"spine_index":$it,"href":"c$it.xhtml","title":"T$it"}""" }
+                ""","chapters":[$entries]"""
+            }.orEmpty()
+    return """{"chapter_list":"$chapterList","metadata":{"estimated_pages":3,"total_chapters":3,""" +
+        """"total_words":30$stored},"toc":[$toc]}"""
+}
 
 internal class DownloadHarness(
     val signedIn: SignedIn,
@@ -114,7 +133,14 @@ internal class DownloadHarness(
     val online = MutableStateFlow(true)
     val copies = OfflineCopies(backing, files) { capSource() }
     val fetcher =
-        OfflineSetFetcher(transport, backing, files, clock = { scheduler.currentTime }, capBytes = { capSource() })
+        OfflineSetFetcher(
+            transport,
+            ServerCapabilities(transport, clock = { scheduler.currentTime }),
+            backing,
+            files,
+            clock = { scheduler.currentTime },
+            capBytes = { capSource() },
+        )
     val manager =
         DownloadManager(signedIn.registry, fetcher, backing, copies, online, StandardTestDispatcher(scheduler))
     val store: SqlDelightOfflineStore get() = signedIn.store

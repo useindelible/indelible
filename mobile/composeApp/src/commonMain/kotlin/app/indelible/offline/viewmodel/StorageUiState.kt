@@ -17,6 +17,8 @@ data class PendingChange(
     /** The words the change carries: a highlight's quote, or a note's body. */
     val detail: String? = null,
     val blocked: List<PendingChange> = emptyList(),
+    /** Its outbox rows in send order; a document's reading events are many rows but one change. */
+    val rowIds: List<String> = listOf(id),
 ) {
     val canRetry: Boolean get() = status == ChangeStatus.FAILED
 }

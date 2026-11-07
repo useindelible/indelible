@@ -27,6 +27,7 @@ import app.indelible.core.network.MilaApiService
 import app.indelible.core.network.OnboardingApiService
 import app.indelible.core.network.ReaderApiService
 import app.indelible.core.network.SearchApiService
+import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.network.SettingsApiService
 import app.indelible.core.network.TagsApiService
 import app.indelible.core.network.TrashApiService
@@ -54,6 +55,7 @@ import app.indelible.feed.viewmodel.FeedManagementViewModel
 import app.indelible.feed.viewmodel.FeedViewModel
 import app.indelible.home.repository.ApiHomeRepository
 import app.indelible.home.repository.HomeRepository
+import app.indelible.home.viewmodel.OfflineShelfViewModel
 import app.indelible.library.repository.ApiLibraryRepository
 import app.indelible.library.repository.LibraryRepository
 import app.indelible.library.viewmodel.LibraryViewModel
@@ -78,6 +80,7 @@ import app.indelible.profile.viewmodel.AiSettingsViewModel
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import app.indelible.reader.repository.ApiReaderRepository
 import app.indelible.reader.repository.ReaderOfflineCopy
+import app.indelible.reader.repository.ReaderOutboxWrites
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.search.repository.ApiSearchRepository
@@ -130,6 +133,7 @@ data class AppContainer(
     val connectivityObserver: ConnectivityObserver,
     val downloads: DownloadManager,
     val storageViewModel: StorageViewModel,
+    val offlineShelf: OfflineShelfViewModel,
     val documentOffline: (String) -> DocumentOfflineViewModel,
 )
 
@@ -165,6 +169,7 @@ fun rememberAppContainer(
                                 registry = get(),
                             )
                         }
+                        single { ServerCapabilities(get(), clock = { getTimeMillis() }) }
                         single { LibraryApiService(get()) }
                         single { FeedApiService(get()) }
                         single { ReaderApiService(get()) }
@@ -200,10 +205,10 @@ fun rememberAppContainer(
                             ApiReaderRepository(
                                 readerApiService = get(),
                                 libraryApiService = get(),
-                                offlineStore = get(),
-                                worker = get(),
+                                outbox = ReaderOutboxWrites(get(), get()),
                                 sessionProvider = { registry.current.value.session },
                                 offlineCopy = get(),
+                                capabilities = get(),
                             )
                         }
                         single<ReaderRepository> { get<ApiReaderRepository>() }
@@ -248,6 +253,7 @@ fun rememberAppContainer(
                             val preferences = get<UserPreferencesStorage>()
                             OfflineSetFetcher(
                                 transport = get(),
+                                capabilities = get(),
                                 store = get(),
                                 files = get(),
                                 clock = { getTimeMillis() },
@@ -265,7 +271,11 @@ fun rememberAppContainer(
                         }
                         single {
                             val downloads = get<DownloadManager>()
-                            ScopePurger(get()) { scope -> downloads.removeAllDownloads(scope) }
+                            val tags = get<ReaderOfflineCopy>().tags
+                            ScopePurger(get()) { scope ->
+                                tags.quiesce()
+                                downloads.removeAllDownloads(scope)
+                            }
                         }
                         single { OfflineAccount(get(), get(), get(), get(), connectivityObserver.online) }
                         single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }
@@ -283,6 +293,11 @@ fun rememberAppContainer(
                         single { SidebarViewModel(get()) }
                         single {
                             StorageViewModel(get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
+                        }
+                        single {
+                            val transport = get<AuthenticatedApiTransport>()
+                            val home = get<HomeRepository>()
+                            OfflineShelfViewModel(get(), get(), transport.reachable) { home.getDashboard() }
                         }
                     },
                 )
@@ -339,6 +354,7 @@ fun rememberAppContainer(
             connectivityObserver = connectivityObserver,
             downloads = koin.get(),
             storageViewModel = koin.get(),
+            offlineShelf = koin.get(),
             documentOffline = { id -> DocumentOfflineViewModel(id, koin.get(), koin.get(), koin.get()) },
         )
     }

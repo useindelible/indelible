@@ -1,5 +1,6 @@
 package app.indelible.reader.viewmodel
 
+import app.indelible.core.offline.ChapterPosition
 import app.indelible.reader.repository.ReadingEventWriter
 
 /** Records what a reader would have queued; [failWith] makes every call fail instead. */
@@ -8,6 +9,7 @@ class RecordingReadingEventWriter(
 ) : ReadingEventWriter {
     val openedDocuments = mutableListOf<String>()
     val progressPercents = mutableListOf<Float>()
+    val positions = mutableListOf<ChapterPosition?>()
 
     override suspend fun recordOpened(
         documentId: String,
@@ -21,8 +23,10 @@ class RecordingReadingEventWriter(
         documentId: String,
         percent: Float,
         sessionId: String,
+        position: ChapterPosition?,
     ) {
         failWith?.let { throw it }
         progressPercents += percent
+        positions += position
     }
 }

@@ -1,5 +1,6 @@
 package app.indelible.reader.repository
 
+import app.indelible.reader.model.HighlightRange
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -11,7 +12,8 @@ class ReaderNoSessionTest {
             val harness = readerOutboxHarness(scope = null)
 
             val note = harness.repository.upsertItemNote(OFFLINE_DOCUMENT_ID, "body")
-            val highlight = harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "yellow", "text", 0, 4)
+            val highlight =
+                harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "yellow", "text", HighlightRange(0, 4))
             val color = harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, "hlt_1", "blue")
 
             assertTrue(note.isFailure)

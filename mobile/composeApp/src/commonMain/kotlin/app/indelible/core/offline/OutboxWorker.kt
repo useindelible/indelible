@@ -22,9 +22,10 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Owns the one coroutine that ever drains the outbox. Every trigger is [requestDrain]; requests
  * are conflated, so a burst costs one pass and a request that lands during a pass runs another.
- * A pass runs only while startup housekeeping is done, no session transition is open and the
- * session is not auth-paused; each of those has one owner, and clearing one asks for a drain
- * without touching the others.
+ * A pass runs only while startup housekeeping is done, no session transition is open, the
+ * session is not auth-paused and the platform reports a network; each of those has one owner,
+ * and clearing one asks for a drain without touching the others. Holding the queue while there
+ * is no network keeps offline changes from spending attempts that would delay them on reconnect.
  */
 class OutboxWorker(
     store: OfflineStore,
@@ -43,6 +44,11 @@ class OutboxWorker(
     private val startupReady = MutableStateFlow(false)
     private val transitionCount = MutableStateFlow(0)
     private val authPausedState = MutableStateFlow(false)
+
+    // Held until the first sample: iOS reports it only after its monitor starts, and a pass sent
+    // before that would spend attempts and backoff on a phone that may be offline.
+    private val networkUp = MutableStateFlow(false)
+
     private var consecutiveFailures = 0
     val authPaused: StateFlow<Boolean> = authPausedState.asStateFlow()
 
@@ -79,13 +85,18 @@ class OutboxWorker(
         requestDrain()
     }
 
+    fun setNetwork(up: Boolean) {
+        networkUp.value = up
+        if (up) requestDrain()
+    }
+
     fun resumeAuth() {
         authPausedState.value = false
         requestDrain()
     }
 
     private val runnable: Boolean
-        get() = startupReady.value && transitionCount.value == 0 && !authPausedState.value
+        get() = startupReady.value && transitionCount.value == 0 && !authPausedState.value && networkUp.value
 
     private suspend fun serve(owner: CoroutineScope) {
         val job =

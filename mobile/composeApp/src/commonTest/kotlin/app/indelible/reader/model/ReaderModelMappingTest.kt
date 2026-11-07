@@ -14,6 +14,16 @@ import kotlin.test.assertTrue
 
 class ReaderModelMappingTest {
     @Test
+    fun epubLocatorRoundTripsItsChapter() {
+        val server = LocatorSchemaFlat(type = "epub", chapter = "ch3", startOffset = 12, endOffset = 40)
+
+        val locator = server.toHighlightLocator()
+
+        assertEquals(HighlightLocator(type = "epub", startOffset = 12, endOffset = 40, chapter = "ch3"), locator)
+        assertEquals(server, locator.toLocatorSchemaFlat())
+    }
+
+    @Test
     fun mapsGeneratedReaderDocumentIntoAppModel() {
         val lastReadAt = Instant.parse("2026-04-01T12:00:00Z")
         val publishedAt = Instant.parse("2026-03-30T12:00:00Z")

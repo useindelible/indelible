@@ -36,9 +36,7 @@ fun SyncDrainEffect(
     }
 
     LaunchedEffect(connectivity, worker) {
-        connectivity.online.distinctUntilChanged().collect { online ->
-            if (online) worker.requestDrain()
-        }
+        connectivity.online.distinctUntilChanged().collect(worker::setNetwork)
     }
 
     LaunchedEffect(transport, worker) {

@@ -55,6 +55,10 @@ style:
       - "**/ui/theme/IndelibleIcons.kt"
       - "**/ui/theme/Color.kt"
       - "**/ui/components/IndelibleVaultMark.kt"
+      - "**/ui/theme/Monochrome.kt"
+      - "**/ui/theme/OfflineIcons.kt"
+      - "**/home/ui/offline/WindowSceneShapes.kt"
+      - "**/home/ui/offline/ShelfCoverArt.kt"
       # Test fixtures are literal by nature (expected counts, timestamps, sample ids).
       - "**/commonTest/**"
     # Preview-only sample data is dead at runtime.

@@ -75,11 +75,25 @@ internal fun ReaderContentArea(
                 modifier = Modifier.fillMaxSize(),
             )
 
-        ReaderContentMode.EPUB_COMING_SOON ->
-            ReaderComingSoonContent(
-                format = ReaderComingSoonFormat.EPUB,
-                modifier = Modifier.fillMaxSize(),
-            )
+        ReaderContentMode.EPUB -> {
+            val epub = state.epub
+            val session = viewModel.epubSession
+            if (epub != null && session != null) {
+                ReaderEpubBody(
+                    state = state,
+                    epub = epub,
+                    session = session,
+                    isDarkMode = isDarkMode,
+                    topChromeInsetPx = topChromeInsetPx,
+                    onSelectedTextChanged = onSelectedTextChanged,
+                    onTappedHighlightChanged = onTappedHighlightChanged,
+                    onReaderTap = onReaderTap,
+                    handleScrollProgress = handleScrollProgress,
+                    immersive = immersive,
+                    viewModel = viewModel,
+                )
+            }
+        }
     }
 }
 
@@ -117,11 +131,12 @@ private fun ReaderHtmlBody(
             )
         }
         // A video carries a native poster instead of a drawing. For everything else the
-        // web view waits for the artwork: rendering without it and swapping later would
-        // rebuild the document and drop the reader's scroll position.
+        // web view waits for the artwork, and every page waits for the font faces: rendering
+        // without them and swapping later would rebuild the document and drop the scroll position.
         val artwork = if (isVideo) null else rememberReaderArtwork(state.item.documentId)
+        val assets = rememberReaderFontCss()?.takeIf { isVideo || artwork != null }?.let { ReaderAssets(artwork, it) }
         val html = state.htmlContent
-        if (html != null && (isVideo || artwork != null)) {
+        if (html != null && assets != null) {
             ReaderArticleWebView(
                 html = html,
                 state = state,
@@ -131,7 +146,7 @@ private fun ReaderHtmlBody(
                 anchorScroll = anchorScroll,
                 topContentPaddingPx = if (isVideo) 0 else topChromeInsetPx,
                 isVideo = isVideo,
-                artwork = artwork,
+                assets = assets,
                 handleScrollProgress = handleScrollProgress,
                 onSelectedTextChanged = onSelectedTextChanged,
                 onScrollToPercentConsumed = onScrollToPercentConsumed,
@@ -183,7 +198,7 @@ private fun ReaderArticleWebView(
     anchorScroll: AnchorScrollRequest?,
     topContentPaddingPx: Int,
     isVideo: Boolean,
-    artwork: LoadedReaderArtwork?,
+    assets: ReaderAssets,
     handleScrollProgress: (Float, Float) -> Unit,
     onSelectedTextChanged: (SelectedTextInfo?) -> Unit,
     onScrollToPercentConsumed: () -> Unit,
@@ -217,7 +232,7 @@ private fun ReaderArticleWebView(
         isDarkMode = isDarkMode,
         scrollToPercent = scrollToPercent,
         anchorScroll = anchorScroll,
-        onScrollProgress = handleScrollProgress,
+        onScrollProgress = { handleScrollProgress(it.percent, it.scrollTopDp) },
         onTextSelected = { text, start, end, rect ->
             onSelectedTextChanged(
                 SelectedTextInfo(text = text, startOffset = start, endOffset = end, rect = rect),
@@ -248,7 +263,7 @@ private fun ReaderArticleWebView(
             if (playbackState.isPlaying) playbackState.currentSentenceIndex else -1,
         immersive = immersive,
         topContentPaddingPx = topContentPaddingPx,
-        artwork = artwork,
+        assets = assets,
         modifier = modifier,
     )
 }

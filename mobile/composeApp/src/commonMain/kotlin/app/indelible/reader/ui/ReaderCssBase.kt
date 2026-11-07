@@ -96,7 +96,7 @@ body::before {
 
 internal val READER_PROSE_CSS =
     """
-.article-body a {
+.article-body a[href] {
   color: var(--accent) !important; text-decoration: underline;
   text-decoration-thickness: 1.5px; text-underline-offset: 3px;
   text-decoration-color: var(--accent-line);

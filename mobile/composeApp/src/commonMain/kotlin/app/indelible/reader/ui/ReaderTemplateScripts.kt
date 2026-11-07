@@ -31,6 +31,22 @@ internal val READER_BRIDGE_JS: String =
   var scroller = document.querySelector('.rscroll') || document.scrollingElement;
   var painting = false;
 
+  window.readerTextOffset = function(container, offset) {
+    var body = document.getElementById('article-body');
+    var range = document.createRange();
+    range.setStart(body, 0);
+    range.setEnd(container, offset);
+    var count = range.toString().length;
+    body.querySelectorAll('.hl-tag-indicator').forEach(function(label) {
+      if (!range.intersectsNode(label)) return;
+      var part = document.createRange();
+      part.selectNodeContents(label);
+      if (label.contains(container)) part.setEnd(container, offset);
+      count -= part.toString().length;
+    });
+    return Math.max(0, count);
+  };
+
   function paintScroll() {
     painting = false;
     var y = scroller.scrollTop;
@@ -39,7 +55,8 @@ internal val READER_BRIDGE_JS: String =
     document.body.style.setProperty('--y', y.toFixed(1));
     document.body.style.setProperty('--p', p.toFixed(4));
     var percent = Math.min(100, Math.max(0, p * 100));
-    try { NativeBridge.onScroll(percent, y); } catch(e) {}
+    var atEnd = y + scroller.clientHeight >= scroller.scrollHeight - 2;
+    try { NativeBridge.onScroll(percent, y, -1, atEnd); } catch(e) {}
   }
 
   // Coalesced to one paint and one bridge call per frame. A WebView emits many
@@ -77,17 +94,10 @@ internal val READER_BRIDGE_JS: String =
     var range = sel.getRangeAt(0);
     var articleBody = document.getElementById('article-body');
     if (!articleBody) return;
-    var preRange = document.createRange();
-    preRange.setStart(articleBody, 0);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    var startOffset = preRange.toString().length;
-    // endOffset must share applyHighlights' raw text-node basis (Range.toString,
-    // not Selection.toString): the latter collapses inter-tag whitespace and
-    // would land short, truncating the highlight end.
-    var endRange = document.createRange();
-    endRange.setStart(articleBody, 0);
-    endRange.setEnd(range.endContainer, range.endOffset);
-    var endOffset = endRange.toString().length;
+    // Offsets share applyHighlights' raw text-node basis (Range.toString, not Selection.toString,
+    // which collapses inter-tag whitespace), without the tag labels applyHighlights inserts.
+    var startOffset = window.readerTextOffset(range.startContainer, range.startOffset);
+    var endOffset = window.readerTextOffset(range.endContainer, range.endOffset);
     var rect = range.getBoundingClientRect();
     var rectJson = JSON.stringify({x: rect.x, y: rect.y, width: rect.width, height: rect.height});
     try { NativeBridge.onTextSelected(text, startOffset, endOffset, rectJson); } catch(e) {}
@@ -127,7 +137,7 @@ internal val READER_BRIDGE_JS: String =
 
   document.addEventListener('click', function(e) {
     var mark = e.target.closest('mark[data-highlight-id]');
-    if (!mark) return;
+    if (!mark || e.target.closest('a[href]')) return;
     var hid = mark.getAttribute('data-highlight-id');
     var rect = mark.getBoundingClientRect();
     var rectJson = JSON.stringify({x: rect.x, y: rect.y, width: rect.width, height: rect.height});
@@ -147,6 +157,9 @@ internal val READER_BRIDGE_JS: String =
     var el = null;
     if (id) {
       try { el = root.querySelector('#' + CSS.escape(id)); } catch (e) { el = null; }
+      if (!el) {
+        try { el = root.querySelector('[name="' + CSS.escape(id) + '"]'); } catch (e) { el = null; }
+      }
     }
     if (!el) {
       var hs = root.querySelectorAll('h1,h2,h3,h4,h5,h6');

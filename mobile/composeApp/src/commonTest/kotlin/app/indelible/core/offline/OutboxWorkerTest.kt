@@ -11,6 +11,47 @@ class OutboxWorkerTest {
     private val scope = "scope"
 
     @Test
+    fun withoutANetworkTheQueueIsHeldAndSpendsNoAttempts() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            worker.setNetwork(false)
+            val rowId = signedIn.store.enqueueNote(signedIn.session, "doc_1")
+
+            worker.requestDrain()
+            runCurrent()
+            assertTrue(sender.calls.isEmpty())
+            val held = signedIn.store.rowsByState(scope, OutboxState.PENDING).single { it.id == rowId }
+            assertEquals(0, held.attempts)
+
+            sender.enqueueOutcome(SendOutcome.Success)
+            worker.setNetwork(true)
+            runCurrent()
+
+            assertTrue(signedIn.store.pendingOrdered(scope).isEmpty())
+        }
+
+    @Test
+    fun theQueueWaitsForTheFirstNetworkSample() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = testWorker(signedIn.store, sender, signedIn.registry, networkSample = null)
+            signedIn.store.enqueueNote(signedIn.session, "doc_1")
+
+            worker.start()
+            worker.markStartupReady()
+            runCurrent()
+            assertTrue(sender.calls.isEmpty())
+
+            sender.enqueueOutcome(SendOutcome.Success)
+            worker.setNetwork(true)
+            runCurrent()
+            assertTrue(signedIn.store.pendingOrdered(scope).isEmpty())
+        }
+
+    @Test
     fun http401PausesAuthAndResumeAuthAllowsTheRowToDrainAgain() =
         runTest {
             val signedIn = signedInTestStore()

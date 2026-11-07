@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
-enum class DownloadFailure { NO_SPACE, NETWORK, SERVER }
+enum class DownloadFailure { NO_SPACE, NETWORK, SERVER, SERVER_TOO_OLD }
 
 /** Where a requested download stands before its copy exists; a finished one leaves the map. */
 sealed interface Acquisition {

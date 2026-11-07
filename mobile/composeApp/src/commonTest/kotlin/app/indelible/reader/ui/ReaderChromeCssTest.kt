@@ -18,10 +18,18 @@ private fun html(
         articleHtml = "<p>Test</p>",
         preferences = ReaderPreferences(background = background),
         highlights = emptyList(),
-        artwork = artwork,
+        assets = ReaderAssets(artwork, fontFaceCss = ""),
     )
 
 class ReaderChromeCssTest {
+    @Test
+    fun onlyRealLinksAreStyledAsLinks() {
+        val out = html()
+
+        assertContains(out, ".article-body a[href] {")
+        assertFalse(".article-body a {" in out)
+    }
+
     @Test
     fun drawing_is_inlined_inside_the_aura_layer() {
         val out = html()

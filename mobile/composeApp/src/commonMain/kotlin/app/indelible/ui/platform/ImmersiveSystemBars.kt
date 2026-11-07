@@ -1,6 +1,7 @@
 package app.indelible.ui.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 
 /**
  * Hides or shows the OS system bars (status and navigation) to deepen the reader's
@@ -23,3 +24,7 @@ expect fun ImmersiveSystemBars(hidden: Boolean)
  */
 @Composable
 expect fun StatusBarAppearance(lightStatusBars: Boolean)
+
+/** The status bar's height whether or not [ImmersiveSystemBars] currently hides it. */
+@Composable
+expect fun statusBarHeightIgnoringVisibility(): Dp

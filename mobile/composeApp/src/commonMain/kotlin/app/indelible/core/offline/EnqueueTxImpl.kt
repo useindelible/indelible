@@ -61,6 +61,14 @@ internal class EnqueueTxImpl(
         checkOpen()
         queries.patchCachedProgress(percent = percent.toLong(), scope = scope, document_id = documentId)
     }
+
+    override fun patchCachedPosition(
+        documentId: String,
+        position: ChapterPosition,
+    ) {
+        checkOpen()
+        queries.patchCachedPosition(position.chapter, position.offset.toLong(), scope, documentId)
+    }
 }
 
 private fun cachedHighlightRowFrom(row: Cached_highlight): CachedHighlightRow =

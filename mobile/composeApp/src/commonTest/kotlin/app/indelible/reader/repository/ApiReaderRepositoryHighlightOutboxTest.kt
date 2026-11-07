@@ -1,7 +1,10 @@
 package app.indelible.reader.repository
 
+import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
+import app.indelible.reader.model.HighlightLocator
+import app.indelible.reader.model.HighlightRange
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -20,13 +23,44 @@ class ApiReaderRepositoryHighlightOutboxTest {
     private fun cached(payloadJson: String): JsonObject = Json.parseToJsonElement(payloadJson).jsonObject
 
     @Test
+    fun book_highlight_queues_an_epub_locator() =
+        runTest {
+            val harness = readerOutboxHarness()
+            val range = HighlightRange(12, 40, chapter = "ch3")
+
+            val created = harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "q", range).getOrThrow()
+
+            val epub = HighlightLocator(type = "epub", startOffset = 12, endOffset = 40, chapter = "ch3")
+            assertEquals(epub, created.locator)
+            val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.HIGHLIGHT_CREATE).single()
+            val payload = assertIs<OutboxPayload.HighlightCreate>(row.payload)
+            val locator = Json.parseToJsonElement(assertNotNull(payload.locatorJson)).jsonObject
+            assertEquals("epub", locator.getValue("type").jsonPrimitive.content)
+            assertEquals("ch3", locator.getValue("chapter").jsonPrimitive.content)
+        }
+
+    @Test
+    fun replayed_epub_highlight_keeps_its_chapter() =
+        runTest {
+            val h = readerOfflineHarness()
+            val created =
+                h.repository
+                    .createHighlight(DL_DOC, "yellow", "quoted", HighlightRange(1, 5, chapter = "ch3"))
+                    .getOrThrow()
+
+            val listed = h.highlights().single { it.id == created.id }
+
+            assertEquals("ch3", listed.locator?.chapter)
+        }
+
+    @Test
     fun create_enqueues_highlight_create_and_caches_the_highlight_in_one_transaction() =
         runTest {
             val harness = readerOutboxHarness()
 
             val created =
                 harness.repository
-                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 12, 40)
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(12, 40))
                     .getOrThrow()
 
             assertTrue(created.id.startsWith("hlt_"))
@@ -64,7 +98,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
         runTest {
             val harness = readerOutboxHarness()
 
-            harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+            harness.repository.createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(0, 5))
             runCurrent()
 
             assertEquals(1, harness.sender.calls)
@@ -76,7 +110,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val harness = readerOutboxHarness()
             val created =
                 harness.repository
-                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(0, 5))
                     .getOrThrow()
 
             val updated = harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, created.id, "Blue").getOrThrow()
@@ -109,7 +143,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val harness = readerOutboxHarness()
             val created =
                 harness.repository
-                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(0, 5))
                     .getOrThrow()
 
             val note = harness.repository.upsertHighlightNote(OFFLINE_DOCUMENT_ID, created.id, "my note").getOrThrow()
@@ -145,7 +179,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val harness = readerOutboxHarness()
             val created =
                 harness.repository
-                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(0, 5))
                     .getOrThrow()
 
             val tags =
@@ -174,7 +208,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val harness = readerOutboxHarness()
             val created =
                 harness.repository
-                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(0, 5))
                     .getOrThrow()
 
             harness.repository.updateHighlightColor(OFFLINE_DOCUMENT_ID, created.id, "Blue").getOrThrow()
@@ -194,7 +228,7 @@ class ApiReaderRepositoryHighlightOutboxTest {
             val harness = readerOutboxHarness()
             val created =
                 harness.repository
-                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", 0, 5)
+                    .createHighlight(OFFLINE_DOCUMENT_ID, "Yellow", "quoted text", HighlightRange(0, 5))
                     .getOrThrow()
 
             harness.repository.deleteHighlight(OFFLINE_DOCUMENT_ID, created.id).getOrThrow()

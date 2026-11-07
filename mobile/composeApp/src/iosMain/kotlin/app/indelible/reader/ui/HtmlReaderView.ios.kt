@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -41,7 +42,7 @@ actual fun HtmlReaderView(
     isDarkMode: Boolean,
     scrollToPercent: Float?,
     anchorScroll: AnchorScrollRequest?,
-    onScrollProgress: (Float, Float) -> Unit,
+    onScrollProgress: (ScrollSample) -> Unit,
     onTextSelected: (text: String, startOffset: Int, endOffset: Int, selectionRect: SelectionRect) -> Unit,
     onSelectionCleared: () -> Unit,
     onHighlightTapped: (highlightId: String, rect: SelectionRect) -> Unit,
@@ -59,7 +60,12 @@ actual fun HtmlReaderView(
     speakingSentenceIndex: Int,
     immersive: Boolean,
     topContentPaddingPx: Int,
-    artwork: LoadedReaderArtwork?,
+    assets: ReaderAssets,
+    scrollToCharOffset: CharOffsetRequest?,
+    captureRequest: Long?,
+    onPositioned: () -> Unit,
+    holdUntilPositioned: Boolean,
+    onBookLink: (String) -> Unit,
     modifier: Modifier,
 ) {
     val fullHtml =
@@ -72,7 +78,8 @@ actual fun HtmlReaderView(
             summaryHtml,
             summaryPoints,
             topContentPaddingPx,
-            artwork,
+            assets,
+            holdUntilPositioned,
         ) {
             ReaderHtmlTemplate.build(
                 articleHtml = htmlContent,
@@ -86,25 +93,44 @@ actual fun HtmlReaderView(
                 summaryHtml = summaryHtml,
                 summaryPoints = summaryPoints,
                 topContentPaddingPx = topContentPaddingPx,
-                artwork = artwork,
+                assets = assets,
+                holdUntilPositioned = holdUntilPositioned,
             )
         }
+
+    val latestOnScrollProgress = rememberUpdatedState(onScrollProgress)
+    val latestOnTextSelected = rememberUpdatedState(onTextSelected)
+    val latestOnSelectionCleared = rememberUpdatedState(onSelectionCleared)
+    val latestOnHighlightTapped = rememberUpdatedState(onHighlightTapped)
+    val latestOnSummaryAction = rememberUpdatedState(onSummaryAction)
+    val latestOnReaderTap = rememberUpdatedState(onReaderTap)
+    val latestOnPositioned = rememberUpdatedState(onPositioned)
+    val latestOnBookLink = rememberUpdatedState(onBookLink)
+    val latestOnContentLoaded = rememberUpdatedState(onContentLoaded)
+    var pageLoaded by remember { mutableStateOf(false) }
 
     val messageHandler =
         remember {
             IosMessageHandler(
-                onScroll = onScrollProgress,
-                onTextSelected = onTextSelected,
-                onSelectionCleared = onSelectionCleared,
-                onHighlightTapped = onHighlightTapped,
-                onSummaryAction = onSummaryAction,
-                onReaderTap = onReaderTap,
+                ReaderBridgeCallbacks(
+                    onScroll = { latestOnScrollProgress.value(it) },
+                    onTextSelected = { t, s, e, r -> latestOnTextSelected.value(t, s, e, r) },
+                    onSelectionCleared = { latestOnSelectionCleared.value() },
+                    onHighlightTapped = { id, r -> latestOnHighlightTapped.value(id, r) },
+                    onSummaryAction = { latestOnSummaryAction.value(it) },
+                    onReaderTap = { latestOnReaderTap.value() },
+                    onPositioned = { latestOnPositioned.value() },
+                    onBookLink = { latestOnBookLink.value(it) },
+                ),
             )
         }
 
     val navigationDelegate =
         remember {
-            IosNavigationDelegate(onContentLoaded)
+            IosNavigationDelegate {
+                pageLoaded = true
+                latestOnContentLoaded.value()
+            }
         }
 
     var webViewRef by remember { mutableStateOf<WKWebView?>(null) }
@@ -117,10 +143,16 @@ actual fun HtmlReaderView(
             val bridgeScript =
                 """
                 window.NativeBridge = {
-                    onScroll: function(percent, scrollTop) {
+                    onScroll: function(percent, scrollTop, offset, atEnd) {
                         window.webkit.messageHandlers.onScroll.postMessage(
-                            JSON.stringify({percent: percent, scrollTop: scrollTop})
+                            JSON.stringify({percent: percent, scrollTop: scrollTop, offset: offset, atEnd: atEnd})
                         );
+                    },
+                    onPositioned: function() {
+                        window.webkit.messageHandlers.onPositioned.postMessage("");
+                    },
+                    onBookLink: function(href) {
+                        window.webkit.messageHandlers.onBookLink.postMessage(href);
                     },
                     onTextSelected: function(text, startOffset, endOffset, rectJson) {
                         window.webkit.messageHandlers.onTextSelected.postMessage(
@@ -150,6 +182,8 @@ actual fun HtmlReaderView(
             controller.addScriptMessageHandler(messageHandler, "onHighlightTapped")
             controller.addScriptMessageHandler(messageHandler, "onSummaryAction")
             controller.addScriptMessageHandler(messageHandler, "onReaderTap")
+            controller.addScriptMessageHandler(messageHandler, "onPositioned")
+            controller.addScriptMessageHandler(messageHandler, "onBookLink")
 
             // Inject the native bridge as a document-start user script rather than a page
             // <script>. User-script injection is not subject to the document CSP, so the reader's
@@ -189,8 +223,11 @@ actual fun HtmlReaderView(
         onScrollRestored()
     }
 
-    LaunchedEffect(anchorScroll) {
+    BookBridgeEffects(pageLoaded, scrollToCharOffset, captureRequest) { webViewRef?.evaluateJavaScript(it, null) }
+
+    LaunchedEffect(anchorScroll, pageLoaded) {
         val anchor = anchorScroll ?: return@LaunchedEffect
+        if (!pageLoaded) return@LaunchedEffect
         val escapedId = anchor.id.replace("\\", "\\\\").replace("'", "\\'")
         webViewRef?.evaluateJavaScript(
             "window.scrollToAnchor('$escapedId', ${anchor.fallbackIndex});",
@@ -233,12 +270,7 @@ actual fun HtmlReaderView(
 }
 
 private class IosMessageHandler(
-    private val onScroll: (Float, Float) -> Unit,
-    private val onTextSelected: (String, Int, Int, SelectionRect) -> Unit,
-    private val onSelectionCleared: () -> Unit,
-    private val onHighlightTapped: (String, SelectionRect) -> Unit,
-    private val onSummaryAction: (String) -> Unit,
-    private val onReaderTap: () -> Unit,
+    private val callbacks: ReaderBridgeCallbacks,
 ) : NSObject(),
     WKScriptMessageHandlerProtocol {
     private val json = Json { ignoreUnknownKeys = true }
@@ -254,7 +286,7 @@ private class IosMessageHandler(
             "onScroll" -> {
                 try {
                     val data = json.decodeFromString<ScrollMessage>(body)
-                    onScroll(data.percent, data.scrollTop)
+                    callbacks.onScroll(ScrollSample(data.percent, data.scrollTop, data.offset, data.atEnd))
                 } catch (_: Exception) {
                 }
             }
@@ -262,21 +294,23 @@ private class IosMessageHandler(
                 try {
                     val data = json.decodeFromString<TextSelectionMessage>(body)
                     val rect = parseRectString(data.rect)
-                    onTextSelected(data.text, data.startOffset, data.endOffset, rect)
+                    callbacks.onTextSelected(data.text, data.startOffset, data.endOffset, rect)
                 } catch (_: Exception) {
                 }
             }
-            "onSelectionCleared" -> onSelectionCleared()
-            "onReaderTap" -> onReaderTap()
+            "onSelectionCleared" -> callbacks.onSelectionCleared()
+            "onReaderTap" -> callbacks.onReaderTap()
             "onHighlightTapped" -> {
                 try {
                     val data = json.decodeFromString<HighlightTapMessage>(body)
                     val rect = parseRectString(data.rect)
-                    onHighlightTapped(data.highlightId, rect)
+                    callbacks.onHighlightTapped(data.highlightId, rect)
                 } catch (_: Exception) {
                 }
             }
-            "onSummaryAction" -> onSummaryAction(body)
+            "onSummaryAction" -> callbacks.onSummaryAction(body)
+            "onPositioned" -> callbacks.onPositioned()
+            "onBookLink" -> callbacks.onBookLink(body)
         }
     }
 
@@ -342,6 +376,8 @@ private class IosNavigationDelegate(
 private data class ScrollMessage(
     val percent: Float,
     val scrollTop: Float,
+    val offset: Int = -1,
+    val atEnd: Boolean = false,
 )
 
 @kotlinx.serialization.Serializable

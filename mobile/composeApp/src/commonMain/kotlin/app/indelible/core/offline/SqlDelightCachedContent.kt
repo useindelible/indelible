@@ -135,6 +135,8 @@ internal class SqlDelightCachedContent(
             note_server_updated_at = server.note?.updatedAtEpochMs,
             progress_percent = progress.percent?.toLong(),
             max_progress_percent = progress.maxPercent?.toLong(),
+            chapter_locator = progress.position?.chapter,
+            chapter_offset = progress.position?.offset?.toLong(),
         )
         queries.deleteAssetsForDocument(scope, request.documentId)
         request.assets.forEach { asset ->
@@ -159,6 +161,8 @@ internal class SqlDelightCachedContent(
                         queries.setCachedProgress(
                             progress_percent = progress.percent?.toLong(),
                             max_progress_percent = progress.maxPercent?.toLong(),
+                            chapter_locator = progress.position?.chapter,
+                            chapter_offset = progress.position?.offset?.toLong(),
                             scope = scope,
                             document_id = documentId,
                         )

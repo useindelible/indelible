@@ -52,6 +52,7 @@ internal fun outboxRow(
 internal fun progressEvent(
     originSeq: Long,
     basisPoints: Int?,
+    positionJson: String? = null,
 ): OutboxPayload.ReadingEvent =
     OutboxPayload.ReadingEvent(
         eventId = "evt_$originSeq",
@@ -61,7 +62,7 @@ internal fun progressEvent(
         cause = "reader",
         sessionId = null,
         attempt = null,
-        positionJson = null,
+        positionJson = positionJson,
         assetKind = null,
         activeMs = null,
         recordedAtEpochMs = originSeq,

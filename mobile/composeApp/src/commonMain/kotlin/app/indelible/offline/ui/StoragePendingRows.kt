@@ -35,7 +35,7 @@ import indelible.composeapp.generated.resources.offline_change_highlight_delete
 import indelible.composeapp.generated.resources.offline_change_highlight_note
 import indelible.composeapp.generated.resources.offline_change_highlight_tags
 import indelible.composeapp.generated.resources.offline_change_note
-import indelible.composeapp.generated.resources.offline_change_progress
+import indelible.composeapp.generated.resources.offline_change_progress_updates
 import indelible.composeapp.generated.resources.offline_pending
 import indelible.composeapp.generated.resources.offline_pending_changes
 import indelible.composeapp.generated.resources.offline_pending_footnote
@@ -144,13 +144,23 @@ private fun StatusLine(change: PendingChange) {
     }
 }
 
-/** The kind, then the words the change carries, the way the queue reads them back to the user. */
+/** The kind, then the words the change carries; reading progress counts its updates instead. */
 @Composable
 private fun changeTitle(change: PendingChange): String {
-    val kind = stringResource(change.kind.label())
-    val detail = change.detail?.trim()?.takeIf { it.isNotEmpty() } ?: return kind
-    val quoted = if (detail.length > DETAIL_CHARS) detail.take(DETAIL_CHARS).trimEnd() + "\u2026" else detail
-    return "$kind \u00b7 \u201c$quoted\u201d"
+    val label = change.kind.label()
+    val updates = change.rowIds.size
+    val kind = label?.let { stringResource(it) }
+    val detail = change.detail?.trim()?.takeIf { it.isNotEmpty() }
+    return when {
+        kind == null -> pluralStringResource(Res.plurals.offline_change_progress_updates, updates, updates)
+        detail == null -> kind
+        else -> "$kind \u00b7 \u201c${quoted(detail)}\u201d"
+    }
+}
+
+private fun quoted(detail: String): String {
+    if (detail.length <= DETAIL_CHARS) return detail
+    return detail.take(DETAIL_CHARS).trimEnd() + "\u2026"
 }
 
 @Composable
@@ -171,9 +181,9 @@ private fun statusText(change: PendingChange): String =
                 ?: stringResource(Res.string.offline_queue_failed)
     }
 
-private fun OutboxKind.label(): StringResource =
+private fun OutboxKind.label(): StringResource? =
     when (this) {
-        OutboxKind.READING_EVENT -> Res.string.offline_change_progress
+        OutboxKind.READING_EVENT -> null
         OutboxKind.HIGHLIGHT_CREATE -> Res.string.offline_change_highlight_create
         OutboxKind.HIGHLIGHT_COLOR -> Res.string.offline_change_highlight_color
         OutboxKind.HIGHLIGHT_NOTE -> Res.string.offline_change_highlight_note

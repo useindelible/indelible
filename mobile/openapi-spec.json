@@ -1727,11 +1727,31 @@
         ],
         "type": "object"
       },
+      "EpubChapterList": {
+        "description": "Whether `metadata.chapters` is present, and what brings it when it is not: `pending` waits\nfor the server's backfill, `needs_reprocess` for a reprocess, `needs_reupload` for a new upload.",
+        "enum": [
+          "ready",
+          "pending",
+          "needs_reprocess",
+          "needs_reupload"
+        ],
+        "type": "string"
+      },
       "EpubMetadata": {
         "properties": {
           "author": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "chapters": {
+            "description": "Every chapter `/epub/chapters/{index}` serves, by spine index; absent on older books.",
+            "items": {
+              "$ref": "#/components/schemas/EpubStoredChapter"
+            },
+            "type": [
+              "array",
               "null"
             ]
           },
@@ -1778,6 +1798,28 @@
           "total_chapters",
           "total_words",
           "estimated_pages"
+        ],
+        "type": "object"
+      },
+      "EpubStoredChapter": {
+        "properties": {
+          "href": {
+            "description": "Basename of the spine item's href, the target of intra-book links (e.g. `ch02.xhtml`).",
+            "type": "string"
+          },
+          "spine_index": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Title of the first TOC entry for this spine item; empty when the TOC omits the chapter.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "spine_index",
+          "href",
+          "title"
         ],
         "type": "object"
       },
@@ -1833,6 +1875,9 @@
       },
       "EpubTocResponse": {
         "properties": {
+          "chapter_list": {
+            "$ref": "#/components/schemas/EpubChapterList"
+          },
           "metadata": {
             "$ref": "#/components/schemas/EpubMetadata"
           },
@@ -1845,7 +1890,8 @@
         },
         "required": [
           "metadata",
-          "toc"
+          "toc",
+          "chapter_list"
         ],
         "type": "object"
       },
@@ -3640,6 +3686,13 @@
               "null"
             ]
           },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "ingest_failure_reason": {
             "description": "Why readable-content ingestion terminally failed. Always serialized:\nnull means the entry is healthy (or still processing); a string is the\nrenderer's reason and the entry should render as failed.",
             "type": [
@@ -3659,6 +3712,13 @@
               "null"
             ]
           },
+          "last_read_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "lead_image_url": {
             "type": [
               "string",
@@ -3668,8 +3728,23 @@
           "library_entry_id": {
             "type": "string"
           },
+          "max_progress_percent": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "object": {
             "type": "string"
+          },
+          "progress_percent": {
+            "description": "Reader progress for the signed-in user. Always serialized so a client can tell\nunread (`null`) apart from unknown.",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "published_at": {
             "format": "date-time",
@@ -3747,7 +3822,11 @@
           "source",
           "saved_at",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "progress_percent",
+          "max_progress_percent",
+          "last_read_at",
+          "finished_at"
         ],
         "type": "object"
       },
@@ -7351,6 +7430,21 @@
         ],
         "type": "object"
       },
+      "ServerCapabilitiesResponse": {
+        "properties": {
+          "capabilities": {
+            "description": "Optional behaviours this server supports; clients treat an absent entry as unsupported.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "capabilities"
+        ],
+        "type": "object"
+      },
       "SessionManifestResponse": {
         "properties": {
           "chunks": {
@@ -10734,6 +10828,50 @@
           },
           "422": {
             "description": "Document not yet rendered, or validation error"
+          },
+          "503": {
+            "description": "Document reader service not configured"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "api_token": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "x-indelible-permissions": [
+          "library:write"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/mark-unread": {
+      "post": {
+        "operationId": "mark_document_unread",
+        "parameters": [
+          {
+            "description": "Document id with doc_ prefix",
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Read status reset; the chapter position is kept"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Document not found"
           },
           "503": {
             "description": "Document reader service not configured"
@@ -17351,6 +17489,27 @@
         ]
       }
     },
+    "/api/v1/server/capabilities": {
+      "get": {
+        "operationId": "get_capabilities",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerCapabilitiesResponse"
+                }
+              }
+            },
+            "description": "Capabilities this server supports"
+          }
+        },
+        "summary": "List the optional capabilities this server supports.",
+        "tags": [
+          "Server"
+        ]
+      }
+    },
     "/api/v1/settings/archival": {
       "get": {
         "operationId": "get_archival",
@@ -19020,6 +19179,10 @@
     {
       "description": "User settings pages and preferences",
       "name": "Settings"
+    },
+    {
+      "description": "Server capabilities",
+      "name": "Server"
     },
     {
       "description": "User onboarding flow",

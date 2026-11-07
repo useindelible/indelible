@@ -1,17 +1,22 @@
 package app.indelible.reader.repository
 
 import app.indelible.core.model.SaveItemRequest
+import app.indelible.core.network.EPUB_CHAPTER_LIST
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
+import app.indelible.core.network.ServerCapabilities
+import app.indelible.core.offline.CapabilitiesUnknownException
+import app.indelible.core.offline.ChapterPosition
 import app.indelible.core.offline.NoSessionException
-import app.indelible.core.offline.OfflineStore
-import app.indelible.core.offline.OutboxWorker
+import app.indelible.core.offline.ServerTooOldException
 import app.indelible.core.offline.Session
 import app.indelible.reader.model.ArticleToc
 import app.indelible.reader.model.DocumentEntity
+import app.indelible.reader.model.EpubToc
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightLocator
 import app.indelible.reader.model.HighlightNoteData
+import app.indelible.reader.model.HighlightRange
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.ReaderReprocessResult
 import app.indelible.reader.model.TagData
@@ -30,6 +35,13 @@ interface ReaderRepository {
 
     suspend fun getArticleToc(itemId: String): Result<ArticleToc>
 
+    suspend fun getEpubToc(itemId: String): Result<EpubToc>
+
+    suspend fun getEpubChapter(
+        itemId: String,
+        spineIndex: Int,
+    ): Result<String>
+
     suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult>
 
     suspend fun saveToLibrary(
@@ -46,8 +58,7 @@ interface ReaderRepository {
         itemId: String,
         color: String,
         textContent: String,
-        startOffset: Long,
-        endOffset: Long,
+        range: HighlightRange,
     ): Result<HighlightData>
 
     suspend fun deleteHighlight(
@@ -97,18 +108,18 @@ interface ReaderRepository {
 
 private const val KIND_OPENED = "opened"
 private const val KIND_PROGRESS = "progress"
+private const val LOCATOR_HTML = "html"
+private const val LOCATOR_EPUB = "epub"
 
-class ApiReaderRepository(
+class ApiReaderRepository internal constructor(
     private val readerApiService: ReaderApiService,
     private val libraryApiService: LibraryApiService,
-    offlineStore: OfflineStore,
-    worker: OutboxWorker,
+    private val outbox: ReaderOutboxWrites,
     private val sessionProvider: () -> Session?,
     private val offlineCopy: ReaderOfflineCopy,
+    private val capabilities: ServerCapabilities,
 ) : ReaderRepository,
     ReadingEventWriter {
-    private val outbox = ReaderOutboxWrites(offlineStore, worker)
-
     override suspend fun getItem(itemId: String): Result<ReaderDocument> =
         offlineCopy.document(itemId) { readerApiService.getDocumentReader(itemId) }
 
@@ -122,6 +133,22 @@ class ApiReaderRepository(
 
     override suspend fun getArticleToc(itemId: String): Result<ArticleToc> =
         offlineCopy.articleToc(itemId) { readerApiService.getArticleToc(itemId) }
+
+    /** Without a readable copy, only a server that lists book chapters is asked for the contents. */
+    override suspend fun getEpubToc(itemId: String) =
+        offlineCopy.epubToc(itemId) { id ->
+            val session = sessionProvider() ?: return@epubToc Result.failure(NoSessionException())
+            when (capabilities.supports(session, EPUB_CHAPTER_LIST)) {
+                true -> readerApiService.getEpubToc(id)
+                false -> Result.failure(ServerTooOldException())
+                null -> Result.failure(CapabilitiesUnknownException())
+            }
+        }
+
+    override suspend fun getEpubChapter(
+        itemId: String,
+        spineIndex: Int,
+    ) = offlineCopy.epubChapter(itemId, spineIndex) { readerApiService.fetchEpubChapter(itemId, spineIndex) }
 
     override suspend fun reprocessDocument(itemId: String): Result<ReaderReprocessResult> =
         readerApiService.reprocessDocument(itemId).map { response ->
@@ -145,15 +172,16 @@ class ApiReaderRepository(
         documentId: String,
         sessionId: String,
     ) {
-        recordEvent(documentId, KIND_OPENED, sessionId, progressBasisPoints = null)
+        recordEvent(documentId, KIND_OPENED, sessionId, progress = null)
     }
 
     override suspend fun recordProgress(
         documentId: String,
         percent: Float,
         sessionId: String,
+        position: ChapterPosition?,
     ) {
-        recordEvent(documentId, KIND_PROGRESS, sessionId, basisPoints(percent))
+        recordEvent(documentId, KIND_PROGRESS, sessionId, EventProgress(basisPoints(percent), position))
     }
 
     /** Recording is best-effort: a reader must keep reading when its event cannot be written. */
@@ -161,10 +189,10 @@ class ApiReaderRepository(
         documentId: String,
         kind: String,
         sessionId: String,
-        progressBasisPoints: Int?,
+        progress: EventProgress?,
     ) {
         val session = sessionProvider() ?: return
-        offlineResult { outbox.readingEvent(session, documentId, kind, sessionId, progressBasisPoints) }
+        offlineResult { outbox.readingEvent(session, documentId, kind, sessionId, progress) }
     }
 
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> =
@@ -176,10 +204,15 @@ class ApiReaderRepository(
         itemId: String,
         color: String,
         textContent: String,
-        startOffset: Long,
-        endOffset: Long,
+        range: HighlightRange,
     ): Result<HighlightData> {
-        val locator = HighlightLocator(type = "html", startOffset = startOffset, endOffset = endOffset)
+        val locator =
+            HighlightLocator(
+                type = if (range.chapter == null) LOCATOR_HTML else LOCATOR_EPUB,
+                startOffset = range.startOffset,
+                endOffset = range.endOffset,
+                chapter = range.chapter,
+            )
         val session = sessionProvider() ?: return Result.failure(NoSessionException())
         return offlineResult { outbox.createHighlight(session, itemId, color, textContent, locator) }
     }
@@ -226,11 +259,13 @@ class ApiReaderRepository(
         val session = sessionProvider() ?: return Result.failure(NoSessionException())
         return offlineResult {
             outbox.setHighlightTags(session, itemId, highlightId, tags)
+            offlineCopy.tags.keep(session, tags)
             tags
         }
     }
 
-    override suspend fun listTags(): Result<List<TagData>> = readerApiService.listTags().map { tags -> tags.map { it.toTagData() } }
+    override suspend fun listTags(): Result<List<TagData>> =
+        offlineCopy.tags.list { readerApiService.listTags().map { tags -> tags.map { it.toTagData() } } }
 
     override suspend fun getItemNote(itemId: String): Result<String?> =
         offlineCopy.note(itemId) {

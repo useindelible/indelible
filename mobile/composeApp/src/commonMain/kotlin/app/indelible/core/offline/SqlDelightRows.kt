@@ -44,6 +44,10 @@ internal fun cachedDocumentRowFrom(row: Cached_document): CachedDocumentRow =
         noteServerUpdatedAt = row.note_server_updated_at,
         progressPercent = row.progress_percent?.toInt(),
         maxProgressPercent = row.max_progress_percent?.toInt(),
+        position =
+            row.chapter_locator?.let { chapter ->
+                ChapterPosition(chapter, row.chapter_offset?.toInt() ?: 0)
+            },
     )
 
 internal fun cachedAssetRowFrom(row: Cached_asset): CachedAssetRow =

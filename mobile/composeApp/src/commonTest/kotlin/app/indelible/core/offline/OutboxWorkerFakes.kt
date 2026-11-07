@@ -58,6 +58,7 @@ fun TestScope.testWorker(
     sender: OutboxSender,
     registry: SessionRegistry,
     clock: () -> Long = { testScheduler.currentTime },
+    networkSample: Boolean? = true,
 ): OutboxWorker =
     OutboxWorker(
         store = store,
@@ -66,7 +67,10 @@ fun TestScope.testWorker(
         clock = clock,
         isNetwork = { it is FakeNetworkFailure },
         dispatcher = StandardTestDispatcher(testScheduler),
-    ).also { worker -> backgroundScope.coroutineContext.job.invokeOnCompletion { worker.stop() } }
+    ).also { worker ->
+        networkSample?.let(worker::setNetwork)
+        backgroundScope.coroutineContext.job.invokeOnCompletion { worker.stop() }
+    }
 
 /**
  * Started and past startup, with the pass that startup requests already run, so the rows and

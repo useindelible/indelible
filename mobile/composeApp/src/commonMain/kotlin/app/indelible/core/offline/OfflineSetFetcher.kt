@@ -2,10 +2,13 @@ package app.indelible.core.offline
 
 import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentReaderResponse
+import app.indelible.api.generated.models.EpubChapterList
 import app.indelible.api.generated.models.EpubTocResponse
 import app.indelible.api.generated.models.HighlightListResponse
 import app.indelible.core.network.ApiException
 import app.indelible.core.network.AuthenticatedApiTransport
+import app.indelible.core.network.EPUB_CHAPTER_LIST
+import app.indelible.core.network.ServerCapabilities
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
@@ -32,6 +35,17 @@ sealed interface FetchResult {
     data object Stale : FetchResult
 }
 
+/** The server keeps no chapter list for a book, so no copy of it could be known complete. */
+open class ChapterListUnavailableException(
+    message: String,
+) : IllegalStateException(message)
+
+/** The server predates the chapter list, so it can serve no book offline until it is updated. */
+class ServerTooOldException : ChapterListUnavailableException("the server does not list book chapters")
+
+/** The server could not say whether it lists book chapters; the download retries like a dropped connection. */
+class CapabilitiesUnknownException : Exception("server capabilities could not be read")
+
 /**
  * Fetches one document's offline set bound to a session and installs it. Files stream into a
  * fresh generation directory first; the reader JSON, highlights and note are fetched after the
@@ -40,6 +54,7 @@ sealed interface FetchResult {
  */
 class OfflineSetFetcher(
     private val transport: AuthenticatedApiTransport,
+    private val capabilities: ServerCapabilities,
     private val store: OfflineStore,
     private val files: OfflineFiles,
     private val clock: () -> Long,
@@ -149,49 +164,29 @@ class OfflineSetFetcher(
         dir: Path,
         onProgress: (Float) -> Unit,
     ): List<CachedAssetRow> {
+        requireChapterListSupport(session)
         val tocFetch = AssetFetch(EPUB_TOC, 0, "/api/v1/documents/$documentId/epub/toc", EPUB_TOC_FILE)
         val toc = fetchAsset(session, documentId, tocFetch, dir)
         val tocJson = checkNotNull(files.readText(dir / toc.path))
         val outline = json.decodeFromString(EpubTocResponse.serializer(), tocJson)
-        val total = outline.metadata.totalChapters
-        // Spine items that are not HTML leave gaps in the numbering, and the outline need not name every
-        // chapter, so the named ones come first and the rest are walked for by spine index.
-        val named = outline.toc.map { it.spineIndex }.toSet()
-        val chapters = mutableListOf<CachedAssetRow>()
-        val found = { chapter: CachedAssetRow ->
-            chapters += chapter
-            onProgress(chapters.size.toFloat() / total)
-        }
-        named.forEach { spine -> chapterAt(session, documentId, spine, dir)?.let(found) }
-        var index = 0
-        var gap = 0
-        while (chapters.size < total) {
-            check(gap <= MAX_SPINE_GAP) { "found ${chapters.size} of $total chapters" }
-            val current = index++
-            val chapter = if (current in named) null else chapterAt(session, documentId, current, dir)
-            when {
-                current in named -> gap = 0
-                chapter == null -> gap++
-                else -> {
-                    gap = 0
-                    found(chapter)
-                }
+        val listed =
+            outline.metadata.chapters?.takeIf { outline.chapterList == EpubChapterList.READY }
+                ?: throw ChapterListUnavailableException("the chapter list is ${outline.chapterList}")
+        val chapters =
+            listed.mapIndexed { done, chapter ->
+                val index = chapter.spineIndex
+                val route = "/api/v1/documents/$documentId/epub/chapters/$index"
+                val fetch = AssetFetch(EPUB_CHAPTER, index, route, "chapters/$index.html")
+                fetchAsset(session, documentId, fetch, dir).also { onProgress((done + 1f) / listed.size) }
             }
-        }
         return listOf(toc) + chapters
     }
 
-    private suspend fun chapterAt(
-        session: Session,
-        documentId: String,
-        index: Int,
-        dir: Path,
-    ): CachedAssetRow? {
-        val route = "/api/v1/documents/$documentId/epub/chapters/$index"
-        return try {
-            fetchAsset(session, documentId, AssetFetch(EPUB_CHAPTER, index, route, "chapters/$index.html"), dir)
-        } catch (error: ApiException) {
-            if (error.statusCode == NOT_FOUND) null else throw error
+    private suspend fun requireChapterListSupport(session: Session) {
+        when (capabilities.supports(session, EPUB_CHAPTER_LIST)) {
+            true -> Unit
+            false -> throw ServerTooOldException()
+            null -> throw CapabilitiesUnknownException()
         }
     }
 
@@ -221,7 +216,7 @@ class OfflineSetFetcher(
         return ServerDocument(
             title = reader.model.title,
             readerJson = reader.raw,
-            progress = Progress(reader.model.progressPercent, reader.model.maxProgressPercent),
+            progress = reader.model.progress(),
             highlights = highlights.highlights.map { it.toCachedHighlight(documentId) },
             note = note?.let { ServerNote(it.body, it.updatedAt.toEpochMilliseconds()) },
         )
@@ -267,7 +262,6 @@ class OfflineSetFetcher(
 
     private companion object {
         const val INSTALL_ATTEMPTS = 3
-        const val MAX_SPINE_GAP = 64
         const val NOT_FOUND = 404
         const val ERROR_PREVIEW_CHARS = 200
         const val TYPE_PDF = "pdf"

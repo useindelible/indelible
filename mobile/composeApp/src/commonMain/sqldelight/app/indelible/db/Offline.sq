@@ -13,6 +13,8 @@ CREATE TABLE cached_document (
     note_server_updated_at INTEGER,
     progress_percent INTEGER,
     max_progress_percent INTEGER,
+    chapter_locator TEXT,
+    chapter_offset INTEGER,
     PRIMARY KEY (scope, document_id)
 );
 
@@ -177,20 +179,25 @@ UPDATE cached_document SET bytes = ? WHERE scope = ? AND document_id = ?;
 installDocument:
 INSERT OR REPLACE INTO cached_document(
     scope, document_id, document_type, title, reader_json, pinned, last_opened_at, last_synced_at, bytes,
-    generation, note_body, note_server_updated_at, progress_percent, max_progress_percent
+    generation, note_body, note_server_updated_at, progress_percent, max_progress_percent, chapter_locator,
+    chapter_offset
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 refreshDocumentMeta:
 UPDATE cached_document SET title = ?, reader_json = ? WHERE scope = ? AND document_id = ?;
 
 setCachedProgress:
-UPDATE cached_document SET progress_percent = ?, max_progress_percent = ? WHERE scope = ? AND document_id = ?;
+UPDATE cached_document SET progress_percent = ?, max_progress_percent = ?, chapter_locator = ?, chapter_offset = ?
+WHERE scope = ? AND document_id = ?;
 
 patchCachedProgress:
 UPDATE cached_document
 SET progress_percent = :percent, max_progress_percent = MAX(COALESCE(max_progress_percent, :percent), :percent)
 WHERE scope = :scope AND document_id = :document_id;
+
+patchCachedPosition:
+UPDATE cached_document SET chapter_locator = ?, chapter_offset = ? WHERE scope = ? AND document_id = ?;
 
 setCachedNote:
 UPDATE cached_document SET note_body = ? WHERE scope = ? AND document_id = ?;

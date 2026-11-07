@@ -14,9 +14,11 @@ import app.indelible.core.platform.platformClientType
 import app.indelible.core.storage.TokenStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.plugin
 import io.ktor.client.request.header
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -27,12 +29,17 @@ import io.ktor.http.fromHttpToGmtDate
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.date.getTimeMillis
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 
 /** [bodyText] is empty on success; a caller that only needs the status pays nothing for the body. */
@@ -41,6 +48,8 @@ data class RawApiResponse(
     val retryAfterSeconds: Long?,
     val bodyText: String,
 )
+
+private val GATEWAY_GONE = 502..504
 
 class AuthenticatedApiTransport(
     private val tokenStorage: TokenStorage,
@@ -55,6 +64,14 @@ class AuthenticatedApiTransport(
             encodeDefaults = true
         }
 
+    private val reachableState = MutableStateFlow<Boolean?>(null)
+
+    /**
+     * Whether the last request that ended reached the server: null until one ends. Any answer counts,
+     * except a gateway's 502/503/504, which means the server behind it is gone.
+     */
+    val reachable: StateFlow<Boolean?> = reachableState.asStateFlow()
+
     internal val httpClient: HttpClient =
         (engine?.let { HttpClient(it) } ?: HttpClient()).config {
             install(ContentNegotiation) {
@@ -67,6 +84,22 @@ class AuthenticatedApiTransport(
                 header("X-Client-Type", platformClientType())
             }
         }
+
+    init {
+        httpClient.plugin(HttpSend).intercept { request ->
+            val call =
+                try {
+                    execute(request)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: IOException) {
+                    reachableState.value = false
+                    throw error
+                }
+            reachableState.value = call.response.status.value !in GATEWAY_GONE
+            call
+        }
+    }
 
     private val refreshMutex = Mutex()
 

@@ -2,6 +2,7 @@ package app.indelible.reader.repository
 
 import app.indelible.core.network.LibraryApiService
 import app.indelible.core.network.ReaderApiService
+import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.DownloadHarness
@@ -13,6 +14,7 @@ import app.indelible.core.offline.startedWorker
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderDocument
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import okio.IOException
 
@@ -27,6 +29,7 @@ internal const val READ_BUDGET_MS = 3_000L
 internal class ReaderOfflineHarness(
     val download: DownloadHarness,
     val repository: ApiReaderRepository,
+    val offlineCopy: ReaderOfflineCopy,
 ) {
     val server: FakeServer get() = download.server
     val store get() = download.store
@@ -97,17 +100,17 @@ internal suspend fun TestScope.readerOfflineHarness(configure: FakeServer.() -> 
             files = download.files,
             sessionProvider = session,
             clock = { testScheduler.currentTime },
-            budgetMs = READ_BUDGET_MS,
             requestCache = { live, documentId -> download.manager.cacheOnOpen(live, documentId) },
+            dispatcher = StandardTestDispatcher(testScheduler),
         )
     val repository =
         ApiReaderRepository(
             readerApiService = ReaderApiService(download.transport),
             libraryApiService = LibraryApiService(download.transport),
-            offlineStore = download.store,
-            worker = startedWorker(download.store, StuckOutboxSender(), registry),
+            outbox = ReaderOutboxWrites(download.store, startedWorker(download.store, StuckOutboxSender(), registry)),
             sessionProvider = session,
             offlineCopy = offlineCopy,
+            capabilities = ServerCapabilities(download.transport, clock = { testScheduler.currentTime }),
         )
-    return ReaderOfflineHarness(download, repository)
+    return ReaderOfflineHarness(download, repository, offlineCopy)
 }

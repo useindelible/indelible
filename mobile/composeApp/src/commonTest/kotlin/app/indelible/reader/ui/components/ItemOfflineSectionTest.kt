@@ -87,4 +87,25 @@ class ItemOfflineSectionTest {
             assertEquals(false, kept)
             assertTrue(removed)
         }
+
+    @Test
+    fun oldServerAsksForAnUpdate() =
+        runComposeUiTest {
+            val status = DocumentOfflineStatus(acquisition = Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD))
+            setContent { AppTheme { ItemOfflineSection(ItemOffline(status)) } }
+
+            onNodeWithText("Update your server to keep books on this device").assertIsDisplayed()
+        }
+
+    @Test
+    fun connectionFailureOffersRetry() =
+        runComposeUiTest {
+            var kept = false
+            val status = DocumentOfflineStatus(acquisition = Acquisition.Failed(DownloadFailure.NETWORK))
+            setContent { AppTheme { ItemOfflineSection(ItemOffline(status, onKeepOffline = { kept = it })) } }
+
+            onNodeWithText("Retry").performClick()
+
+            assertTrue(kept)
+        }
 }

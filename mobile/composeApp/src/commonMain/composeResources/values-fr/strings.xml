@@ -204,9 +204,52 @@
         <item quantity="other">Encore %1$d minutes</item>
     </plurals>
     <string name="home_nothing_in_progress">Aucune lecture en cours</string>
+    <string name="home_offline_body">Lisez, surlignez et prenez des notes comme d’habitude. Indelible envoie vos modifications quand vous êtes de nouveau en ligne.</string>
+    <string name="home_offline_cached">Sur ce téléphone</string>
+    <string name="home_offline_chip_back">Reconnecté</string>
+    <string name="home_offline_chip_offline">Hors ligne</string>
+    <string name="home_offline_chip_synced">En ligne</string>
+    <string name="home_offline_empty_body">Rien n’est encore enregistré sur ce téléphone. Les éléments que vous ouvrez sont gardés pour plus tard, et vous pouvez garder n’importe quel élément hors ligne.</string>
+    <string name="home_offline_empty_next">La prochaine fois que vous êtes en ligne</string>
+    <string name="home_offline_empty_shelf">Votre étagère sera ici</string>
+    <string name="home_offline_empty_step_keep">Touchez Garder hors ligne dans sa fiche.</string>
+    <string name="home_offline_empty_step_open">Ouvrez un article ou un livre pour le lire une fois.</string>
+    <string name="home_offline_empty_step_space">Choisissez l’espace qu’Indelible peut utiliser dans Profil › Stockage.</string>
+    <string name="home_offline_empty_subtitle">L’étagère est vide.</string>
+    <string name="home_offline_hint">Avant un voyage, ouvrez un élément et activez Garder hors ligne. Les éléments gardés restent sur ce téléphone et ne sont jamais supprimés pour libérer de l’espace.</string>
+    <plurals name="home_offline_items_on_board">
+        <item quantity="one">élément à bord</item>
+        <item quantity="other">éléments à bord</item>
+    </plurals>
+    <string name="home_offline_kept">Gardé hors ligne</string>
+    <plurals name="home_offline_on_phone">
+        <item quantity="one">%1$d sur ce téléphone</item>
+        <item quantity="other">%1$d sur ce téléphone</item>
+    </plurals>
+    <string name="home_offline_sending_body">Vos surlignages et votre position de lecture partent d’abord vers le serveur, dans l’ordre où vous les avez faits.</string>
+    <string name="home_offline_sending_progress">Envoi %1$d sur %2$d</string>
+    <string name="home_offline_sending_subtitle">Envoi de vos modifications.</string>
+    <string name="home_offline_sending_title">De nouveau en ligne.</string>
+    <string name="home_offline_shelf">Sur ce téléphone</string>
+    <plurals name="home_offline_shelf_count">
+        <item quantity="one">%1$d élément</item>
+        <item quantity="other">%1$d éléments</item>
+    </plurals>
+    <string name="home_offline_subtitle">Votre étagère vous a suivi.</string>
+    <plurals name="home_offline_synced_body">
+        <item quantity="one">%1$d modification a été envoyée.</item>
+        <item quantity="other">%1$d modifications ont été envoyées.</item>
+    </plurals>
+    <string name="home_offline_synced_pill">Synchronisé à l’instant</string>
+    <string name="home_offline_synced_title">Tout est à jour.</string>
+    <string name="home_offline_title">Vous êtes hors ligne.</string>
+    <plurals name="home_offline_to_send">
+        <item quantity="one">%1$d modification à envoyer</item>
+        <item quantity="other">%1$d modifications à envoyer</item>
+    </plurals>
     <string name="home_open_menu_cd">Ouvrir le menu</string>
     <string name="home_pick_up">Reprenez là où vous vous êtes arrêté</string>
-    <string name="home_progress_percent">%1$d %%</string>
+    <string name="home_progress_percent">%1$d %</string>
     <plurals name="home_reading_minutes">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
@@ -300,10 +343,10 @@
     <string name="library_pipeline_title">État du traitement</string>
     <string name="library_pipeline_unknown">Inconnu</string>
     <plurals name="library_progress_minutes_left">
-        <item quantity="one">%1$d %% · encore %2$d minute</item>
-        <item quantity="other">%1$d %% · encore %2$d minutes</item>
+        <item quantity="one">%1$d % · encore %2$d minute</item>
+        <item quantity="other">%1$d % · encore %2$d minutes</item>
     </plurals>
-    <string name="library_progress_percent">%1$d %%</string>
+    <string name="library_progress_percent">%1$d %</string>
     <plurals name="library_reading_count">
         <item quantity="one">%1$d en cours</item>
         <item quantity="other">%1$d en cours</item>
@@ -407,7 +450,10 @@
     <string name="offline_change_highlight_note">Note du surlignage</string>
     <string name="offline_change_highlight_tags">Étiquettes du surlignage</string>
     <string name="offline_change_note">Note du document</string>
-    <string name="offline_change_progress">Progression de lecture</string>
+    <plurals name="offline_change_progress_updates">
+        <item quantity="one">Progression de lecture</item>
+        <item quantity="other">Progression de lecture · %1$d mises à jour</item>
+    </plurals>
     <string name="offline_download_failed">Échec du téléchargement</string>
     <string name="offline_downloads">Téléchargements</string>
     <string name="offline_filter_all">Tout</string>
@@ -452,6 +498,7 @@
     <string name="offline_remove_downloads_none_queued">Toutes les copies téléchargées sont supprimées de cet appareil.</string>
     <string name="offline_remove_downloads_title">Supprimer %1$s de téléchargements de ce téléphone ?</string>
     <string name="offline_section">Hors ligne</string>
+    <string name="offline_server_too_old">Mettez à jour votre serveur pour garder les livres sur cet appareil</string>
     <string name="offline_size_gb">%1$s Go</string>
     <string name="offline_size_kb">%1$s Ko</string>
     <string name="offline_size_mb">%1$s Mo</string>
@@ -651,8 +698,6 @@
     <string name="reader_color_yellow">Jaune</string>
     <string name="reader_coming_contents_body">La navigation entre les titres d’un article arrivera dans une prochaine mise à jour.</string>
     <string name="reader_coming_contents_title">Le sommaire arrive bientôt</string>
-    <string name="reader_coming_epub_body">Nous développons un lecteur EPUB dédié. Il arrivera dans une prochaine mise à jour.</string>
-    <string name="reader_coming_epub_title">La lecture des EPUB arrive bientôt</string>
     <string name="reader_coming_pdf_body">Nous développons un lecteur PDF dédié. Il arrivera dans une prochaine mise à jour.</string>
     <string name="reader_coming_pdf_title">La lecture des PDF arrive bientôt</string>
     <string name="reader_contents">Sommaire</string>
@@ -660,7 +705,7 @@
     <string name="reader_contents_building_title">Création du sommaire</string>
     <string name="reader_contents_empty_body">Cet article ne contient pas assez de sections pour créer un sommaire.</string>
     <string name="reader_contents_empty_title">Aucun sommaire</string>
-    <string name="reader_contents_progress">Sommaire · %1$d %% lu</string>
+    <string name="reader_contents_progress">Sommaire · %1$d % lu</string>
     <string name="reader_copied_clipboard">Copié dans le presse-papiers</string>
     <string name="reader_create_tag">Créer « %1$s »</string>
     <string name="reader_display">Affichage</string>
@@ -668,6 +713,24 @@
     <string name="reader_entities_other">Autres</string>
     <string name="reader_entities_people">Personnes</string>
     <string name="reader_entities_topics">Sujets</string>
+    <string name="reader_epub_chapter_number">Chapitre %1$d</string>
+    <string name="reader_epub_connection_body">Vérifiez votre connexion, puis réessayez.</string>
+    <string name="reader_epub_connection_title">Impossible de joindre votre serveur</string>
+    <string name="reader_epub_empty_body">Votre serveur ne liste aucun chapitre pour ce livre.</string>
+    <string name="reader_epub_empty_title">Ce livre n’a encore rien à lire</string>
+    <string name="reader_epub_list_pending_body">Votre serveur liste encore ses chapitres. Réessayez dans un instant.</string>
+    <string name="reader_epub_list_pending_title">Ce livre est encore en préparation</string>
+    <string name="reader_epub_needs_reprocess_body">Certains de ses chapitres manquent sur votre serveur. Le traiter de nouveau les rétablit.</string>
+    <string name="reader_epub_needs_reprocess_title">Ce livre doit être traité de nouveau</string>
+    <string name="reader_epub_needs_reupload_body">Votre serveur n’a plus de copie lisible du fichier d’origine. Importez de nouveau le livre pour le lire.</string>
+    <string name="reader_epub_needs_reupload_title">Importez de nouveau ce livre</string>
+    <string name="reader_epub_next">Suivant : %1$s</string>
+    <string name="reader_epub_previous">Précédent : %1$s</string>
+    <string name="reader_epub_reprocess">Traiter de nouveau</string>
+    <string name="reader_epub_server_too_old_body">Votre serveur ne peut pas encore ouvrir les livres dans l’application. Mettez-le à jour vers la dernière version.</string>
+    <string name="reader_epub_server_too_old_title">Mettez à jour votre serveur</string>
+    <string name="reader_epub_unavailable_body">Ce chapitre n’est pas sur cet appareil, et votre serveur ne l’a pas envoyé.</string>
+    <string name="reader_epub_unavailable_title">Impossible d’ouvrir ce chapitre</string>
     <string name="reader_error_create_highlight">Impossible de créer le surlignage. Veuillez réessayer.</string>
     <string name="reader_error_delete_highlight">Impossible de supprimer le surlignage. Veuillez réessayer.</string>
     <string name="reader_error_delete_note">Impossible de supprimer la note. Veuillez réessayer.</string>
@@ -732,7 +795,7 @@
         <item quantity="other">Nouvelle tentative disponible dans %1$d secondes.</item>
     </plurals>
     <string name="reader_preparing_title">Préparation de cet article en cours</string>
-    <string name="reader_progress_percent">%1$d %%</string>
+    <string name="reader_progress_percent">%1$d %</string>
     <string name="reader_reading">Lecture</string>
     <string name="reader_saved_library">Enregistré dans la bibliothèque</string>
     <string name="reader_sleep">Minuteur</string>
