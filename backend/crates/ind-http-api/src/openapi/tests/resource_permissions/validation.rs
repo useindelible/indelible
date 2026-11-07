@@ -14,6 +14,7 @@ pub(super) const PUBLIC_LIFECYCLE_OPERATIONS: &[(&str, &str)] = &[
     ("post", "/api/v1/auth/password/reset"),
     ("post", "/api/v1/auth/email/verify"),
     ("get", "/api/v1/auth/providers"),
+    ("get", "/api/v1/server/capabilities"),
     ("get", "/api/v1/auth/oauth/{provider}/start"),
     ("get", "/api/v1/auth/oauth/{provider}/native/start"),
     ("post", "/api/v1/auth/oauth/native/token"),
