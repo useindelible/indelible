@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import app.indelible.core.i18n.resolve
 import app.indelible.core.i18n.resolveString
 import app.indelible.mila.viewmodel.MilaChatViewModel
+import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.model.DataPanel
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.TagData
+import app.indelible.reader.ui.components.rememberItemOffline
 import app.indelible.reader.viewmodel.ReaderEffect
 import app.indelible.reader.viewmodel.ReaderUiState
 import app.indelible.reader.viewmodel.ReaderViewModel
@@ -39,8 +41,11 @@ fun ReaderScreen(
     onNavigateToAiSettings: () -> Unit,
     onNavigateToItem: (String) -> Unit,
     modifier: Modifier = Modifier,
+    offline: DocumentOfflineViewModel? = null,
+    onOpenStorage: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val itemOffline = rememberItemOffline(offline, onOpenStorage)
     val activePanel by viewModel.activePanel.collectAsState()
     val defaultHighlightColor by viewModel.defaultHighlightColor.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
@@ -153,6 +158,7 @@ fun ReaderScreen(
                     onAnchorScrollConsumed = { anchorScroll = null },
                     handleScrollProgress = handleScrollProgress,
                     onReaderTap = { chromeState.reveal() },
+                    itemOffline = itemOffline,
                 )
             }
         }

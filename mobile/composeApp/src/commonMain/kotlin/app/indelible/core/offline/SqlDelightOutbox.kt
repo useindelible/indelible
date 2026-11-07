@@ -10,7 +10,6 @@ import kotlinx.serialization.encodeToString
 
 internal class SqlDelightOutbox(
     private val context: SqlDelightStoreContext,
-    private val registry: SessionRegistry,
     private val failCreateHook: () -> Unit,
 ) : OutboxStore {
     override suspend fun <T> enqueue(
@@ -25,9 +24,7 @@ internal class SqlDelightOutbox(
             val tx = EnqueueTxImpl(scope, context.queries)
             try {
                 context.database.transactionWithResult {
-                    if (registry.current.value.session !== session) throw StaleWriteException()
-                    val liveState = context.queries.getClientState(scope).executeAsOneOrNull()
-                    if (liveState == null || liveState.purge_pending != 0L) throw ScopeNotLiveException(scope)
+                    context.requireLive(session)
                     val (payload, result) = tx.buildPayload()
                     context.queries.insertOutbox(
                         scope = scope,
@@ -39,6 +36,7 @@ internal class SqlDelightOutbox(
                         created_at = Clock.System.now().toEpochMilliseconds(),
                         state = initialState(scope, kind, entityId).wireName(),
                     )
+                    context.queries.moveRevision(scope, documentId, payload)
                     result
                 }
             } finally {
@@ -81,7 +79,10 @@ internal class SqlDelightOutbox(
         id: String,
     ) {
         context.write {
-            context.queries.deleteOutboxRow(scope, id)
+            context.database.transaction {
+                val row = context.queries.outboxRow(scope, id).executeAsOneOrNull()
+                if (row != null) context.queries.acknowledge(outboxRowFrom(row))
+            }
         }
     }
 
@@ -136,11 +137,15 @@ internal class SqlDelightOutbox(
     override suspend fun retryRow(
         scope: String,
         id: String,
-    ) {
+    ): Boolean =
         context.write {
-            context.database.transaction {
-                val row = context.queries.outboxRow(scope, id).executeAsOneOrNull()
-                if (row != null && row.state == OutboxState.FAILED.wireName()) {
+            context.database.transactionWithResult {
+                val row =
+                    context.queries
+                        .outboxRow(scope, id)
+                        .executeAsOneOrNull()
+                        ?.takeIf { it.state == OutboxState.FAILED.wireName() && it.superseded == 0L }
+                if (row != null) {
                     context.queries.resetForRetry(scope, id)
                     context.queries.setStateForEntity(
                         OutboxState.PENDING.wireName(),
@@ -149,9 +154,9 @@ internal class SqlDelightOutbox(
                         OutboxState.BLOCKED.wireName(),
                     )
                 }
+                row != null
             }
         }
-    }
 }
 
 internal class SqlDelightOutboxObservation(
@@ -173,9 +178,26 @@ internal class SqlDelightOutboxObservation(
             .asFlow()
             .mapToList(context.dispatcher)
             .map { rows -> rows.map(::outboxRowFrom) }
+
+    override fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>> =
+        context.queries
+            .documentSyncCounts(scope)
+            .asFlow()
+            .mapToList(context.dispatcher)
+            .map { rows ->
+                rows.associate { row ->
+                    row.document_id to
+                        DocumentSyncCounts(
+                            pending = row.pending.orZero(),
+                            retrying = row.retrying.orZero(),
+                            failed = row.failed.orZero(),
+                            blocked = row.blocked.orZero(),
+                        )
+                }
+            }
 }
 
-private fun OutboxKind.wireName(): String = name.lowercase()
+private fun Long?.orZero(): Int = this?.toInt() ?: 0
 
 private fun OutboxKind.dependsOnCreate(): Boolean =
     when (this) {

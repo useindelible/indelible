@@ -45,6 +45,7 @@ import app.indelible.library.viewmodel.LibraryEffect
 import app.indelible.library.viewmodel.LibraryScope
 import app.indelible.library.viewmodel.LibraryUiState
 import app.indelible.library.viewmodel.LibraryViewModel
+import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import app.indelible.profile.viewmodel.AddLibraryEffect
 import app.indelible.profile.viewmodel.AddLibraryViewModel
 import app.indelible.sidebar.model.Collection
@@ -84,6 +85,7 @@ fun LibraryScreen(
     val contentTypeFilter by viewModel.contentTypeFilter.collectAsState()
     val counts by viewModel.counts.collectAsState()
     val scope by viewModel.scope.collectAsState()
+    val offline by viewModel.offline.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var popoverOpen by remember { mutableStateOf(false) }
@@ -189,6 +191,7 @@ fun LibraryScreen(
                             } else {
                                 ItemList(
                                     state = state,
+                                    offline = offline,
                                     onNavigateToItem = onNavigateToItem,
                                     onDelete = { viewModel.deleteItem(it) },
                                     onTriage = { item, triageState -> viewModel.triageItem(item, triageState) },
@@ -270,6 +273,7 @@ internal fun scopeCount(
 @Composable
 private fun ItemList(
     state: LibraryUiState.Success,
+    offline: Map<String, DocumentOfflineStatus>,
     onNavigateToItem: (String) -> Unit,
     onDelete: (app.indelible.core.model.LibraryItem) -> Unit,
     onTriage: (app.indelible.core.model.LibraryItem, String) -> Unit,
@@ -312,6 +316,7 @@ private fun ItemList(
                 onTriage = { triageState -> onTriage(item, triageState) },
                 showDivider = true,
                 modifier = Modifier.fillMaxWidth(),
+                offlineStatus = offline[item.documentId],
             )
         }
         if (state.isLoadingMore) {

@@ -5,8 +5,6 @@ import app.indelible.api.generated.models.OAuthProvidersResponse
 import app.indelible.auth.repository.AuthRepository
 import app.indelible.core.model.AuthUser
 import app.indelible.core.network.NativeOAuthTokenResponse
-import app.indelible.core.offline.testOutboxWorker
-import app.indelible.core.offline.testScopePurger
 import app.indelible.core.offline.testSessionTransitions
 import app.indelible.core.storage.InMemoryTokenStorage
 import kotlin.test.Test
@@ -20,8 +18,7 @@ class AuthViewModelRepositoryBoundaryTest {
             AuthViewModel(
                 FakeAuthRepository(),
                 tokenStorage,
-                testOutboxWorker(),
-                testScopePurger(),
+                testOfflineAccount(tokenStorage),
                 testSessionTransitions(tokenStorage),
             )
 

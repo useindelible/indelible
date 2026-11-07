@@ -1,5 +1,10 @@
 package app.indelible.core.offline
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
 internal class SqlDelightCachedDocuments(
     private val context: SqlDelightStoreContext,
 ) : CachedDocumentStore {
@@ -36,11 +41,13 @@ internal class SqlDelightCachedDocuments(
         scope: String,
         documentId: String,
         pinned: Boolean,
-    ) {
+    ): Boolean =
         context.write {
-            context.queries.setPinned(pinned.toLong(), scope, documentId)
+            context.database.transactionWithResult {
+                context.queries.setPinned(pinned.toLong(), scope, documentId)
+                context.queries.changedRows().executeAsOne() > 0
+            }
         }
-    }
 
     override suspend fun setDocumentBytes(
         scope: String,
@@ -86,4 +93,24 @@ internal class SqlDelightCachedDocuments(
                 .executeAsOne()
                 .SUM ?: 0L
         }
+
+    override fun observeCatalog(scope: String): Flow<List<CatalogEntry>> =
+        context.queries
+            .catalog(scope)
+            .asFlow()
+            .mapToList(context.dispatcher)
+            .map { rows ->
+                rows.map { row ->
+                    CatalogEntry(
+                        documentId = row.document_id,
+                        documentType = row.document_type,
+                        title = row.title,
+                        pinned = row.pinned != 0L,
+                        lastOpenedAt = row.last_opened_at,
+                        lastSyncedAt = row.last_synced_at,
+                        bytes = row.bytes,
+                        generation = row.generation,
+                    )
+                }
+            }
 }

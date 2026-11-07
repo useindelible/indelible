@@ -11,6 +11,8 @@ import app.indelible.feed.ui.AddFeedScreen
 import app.indelible.feed.ui.FeedManagementScreen
 import app.indelible.feed.viewmodel.AddFeedViewModel
 import app.indelible.feed.viewmodel.FeedManagementViewModel
+import app.indelible.offline.ui.StorageScreen
+import app.indelible.offline.viewmodel.StorageViewModel
 import app.indelible.profile.repository.AccountRepository
 import app.indelible.profile.repository.MilaSettingsRepository
 import app.indelible.profile.ui.AccountScreen
@@ -37,6 +39,7 @@ fun NavGraphBuilder.profileRoutes(
     addFeedViewModel: AddFeedViewModel,
     feedManagementViewModel: FeedManagementViewModel,
     accountViewModel: AccountViewModel,
+    storageViewModel: StorageViewModel,
     accountRepository: AccountRepository,
     milaSettingsRepository: MilaSettingsRepository,
     ingestEmail: String?,
@@ -141,6 +144,13 @@ fun NavGraphBuilder.profileRoutes(
             onNavigateToChangePassword = { navController.navigate(MainRoutes.PROFILE_CHANGE_PASSWORD) },
             onSignOut = { authViewModel.logout() },
             onAccountDeleted = { authViewModel.forceLogout() },
+        )
+    }
+    composable(MainRoutes.PROFILE_STORAGE) {
+        StorageScreen(
+            viewModel = storageViewModel,
+            onNavigateBack = { navController.popBackStack() },
+            onOpenReader = { documentId -> navController.navigate(MainRoutes.reader(documentId)) },
         )
     }
     composable(MainRoutes.PROFILE_CHANGE_PASSWORD) {

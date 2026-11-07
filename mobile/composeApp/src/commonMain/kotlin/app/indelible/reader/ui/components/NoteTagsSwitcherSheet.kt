@@ -81,6 +81,7 @@ fun NoteTagsSwitcherSheet(
     modifier: Modifier = Modifier,
     tagsEnabled: Boolean = true,
     onSaveToLibrary: () -> Unit = {},
+    noteEnabled: Boolean = true,
 ) {
     var selectedTab by remember { mutableStateOf(NoteTagsTab.NOTE) }
     val tabs = NoteTagsTab.entries
@@ -101,7 +102,7 @@ fun NoteTagsSwitcherSheet(
         Spacer(modifier = Modifier.height(IndelibleSpacing.sectionGap))
 
         when (selectedTab) {
-            NoteTagsTab.NOTE -> NoteEditor(note = note, onSaveNote = onSaveNote)
+            NoteTagsTab.NOTE -> NoteEditor(note = note, onSaveNote = onSaveNote, enabled = noteEnabled)
             NoteTagsTab.TAGS ->
                 if (tagsEnabled) {
                     TagEditor(
@@ -123,6 +124,7 @@ fun NoteTagsSwitcherSheet(
 private fun NoteEditor(
     note: String,
     onSaveNote: (String) -> Unit,
+    enabled: Boolean,
 ) {
     var draft by remember(note) { mutableStateOf(note) }
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -133,6 +135,7 @@ private fun NoteEditor(
             singleLine = false,
             minLines = 4,
             imeAction = ImeAction.Default,
+            enabled = enabled,
         )
         Spacer(modifier = Modifier.height(IndelibleSpacing.step10))
         Row(
@@ -149,7 +152,7 @@ private fun NoteEditor(
                 text = stringResource(Res.string.reader_action_save_note),
                 onClick = { onSaveNote(draft) },
                 compact = true,
-                enabled = draft != note,
+                enabled = enabled && draft != note,
             )
         }
     }

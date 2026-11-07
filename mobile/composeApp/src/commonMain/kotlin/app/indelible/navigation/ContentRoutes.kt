@@ -16,6 +16,7 @@ import app.indelible.library.viewmodel.ItemDetailViewModel
 import app.indelible.mila.data.ChatScope
 import app.indelible.mila.data.MilaRepository
 import app.indelible.mila.viewmodel.MilaChatViewModel
+import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.reader.ui.ReaderScreen
@@ -38,6 +39,7 @@ fun NavGraphBuilder.contentRoutes(
     collectionsRepository: CollectionsRepository,
     tagsRepository: TagsRepository,
     trashRepository: TrashRepository,
+    documentOffline: (String) -> DocumentOfflineViewModel,
 ) {
     composable(MainRoutes.ITEM_DETAIL) { backStackEntry ->
         val itemId: String =
@@ -65,6 +67,7 @@ fun NavGraphBuilder.contentRoutes(
             remember(documentId) {
                 ReaderViewModel(documentId, readerRepository, readingEvents = readingEventWriter)
             }
+        val offlineViewModel = remember(documentId) { documentOffline(documentId) }
         ReaderScreen(
             viewModel = readerViewModel,
             onNavigateBack = { navController.popBackStack() },
@@ -80,6 +83,8 @@ fun NavGraphBuilder.contentRoutes(
             onNavigateToItem = { id ->
                 navController.navigate(MainRoutes.reader(id))
             },
+            offline = offlineViewModel,
+            onOpenStorage = { navController.navigate(MainRoutes.PROFILE_STORAGE) },
         )
     }
     composable(MainRoutes.COLLECTIONS) {

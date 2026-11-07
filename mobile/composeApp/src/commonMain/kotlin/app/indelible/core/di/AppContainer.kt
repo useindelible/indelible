@@ -11,6 +11,7 @@ import app.indelible.auth.server.HttpServerHealthChecker
 import app.indelible.auth.server.ServerHealthChecker
 import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.auth.viewmodel.ConnectServerViewModel
+import app.indelible.auth.viewmodel.OfflineAccount
 import app.indelible.collections.repository.ApiCollectionsRepository
 import app.indelible.collections.repository.CollectionsRepository
 import app.indelible.core.config.ServerBuildConfig
@@ -31,6 +32,10 @@ import app.indelible.core.network.TagsApiService
 import app.indelible.core.network.TrashApiService
 import app.indelible.core.offline.ApiOutboxSender
 import app.indelible.core.offline.ConnectivityObserver
+import app.indelible.core.offline.DownloadManager
+import app.indelible.core.offline.OfflineCopies
+import app.indelible.core.offline.OfflineFilesRoot
+import app.indelible.core.offline.OfflineSetFetcher
 import app.indelible.core.offline.OfflineStore
 import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.OutboxWorker
@@ -53,6 +58,9 @@ import app.indelible.library.repository.ApiLibraryRepository
 import app.indelible.library.repository.LibraryRepository
 import app.indelible.library.viewmodel.LibraryViewModel
 import app.indelible.mila.data.MilaRepository
+import app.indelible.offline.viewmodel.DocumentOfflineViewModel
+import app.indelible.offline.viewmodel.OfflineStatuses
+import app.indelible.offline.viewmodel.StorageViewModel
 import app.indelible.onboarding.repository.ApiOnboardingRepository
 import app.indelible.onboarding.repository.OnboardingRepository
 import app.indelible.onboarding.viewmodel.OnboardingViewModel
@@ -69,6 +77,7 @@ import app.indelible.profile.viewmodel.AddLibraryViewModel
 import app.indelible.profile.viewmodel.AiSettingsViewModel
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
 import app.indelible.reader.repository.ApiReaderRepository
+import app.indelible.reader.repository.ReaderOfflineCopy
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.search.repository.ApiSearchRepository
@@ -119,6 +128,9 @@ data class AppContainer(
     val sessionTransitions: SessionTransitions,
     val scopePurger: ScopePurger,
     val connectivityObserver: ConnectivityObserver,
+    val downloads: DownloadManager,
+    val storageViewModel: StorageViewModel,
+    val documentOffline: (String) -> DocumentOfflineViewModel,
 )
 
 @Composable
@@ -128,11 +140,12 @@ fun rememberAppContainer(
     pendingSaveRepository: PendingSaveRepository,
     databaseDriverFactory: DatabaseDriverFactory,
     connectivityObserver: ConnectivityObserver,
+    offlineFilesRoot: OfflineFilesRoot,
 ): AppContainer {
     val oauthBrowserLauncher = rememberOAuthBrowserLauncher()
     val authViewModelRef = remember { mutableStateOf<AuthViewModel?>(null) }
     val koinApplication =
-        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher, databaseDriverFactory) {
+        remember(tokenStorage, userPreferencesStorage, oauthBrowserLauncher, databaseDriverFactory, offlineFilesRoot) {
             koinApplication {
                 modules(
                     module {
@@ -173,12 +186,24 @@ fun rememberAppContainer(
                         single<FeedRepository> { ApiFeedRepository(get()) }
                         single {
                             val registry = get<SessionRegistry>()
+                            val downloads = get<DownloadManager>()
+                            ReaderOfflineCopy(
+                                store = get(),
+                                files = get(),
+                                sessionProvider = { registry.current.value.session },
+                                clock = { getTimeMillis() },
+                                requestCache = { session, documentId -> downloads.cacheOnOpen(session, documentId) },
+                            )
+                        }
+                        single {
+                            val registry = get<SessionRegistry>()
                             ApiReaderRepository(
                                 readerApiService = get(),
                                 libraryApiService = get(),
                                 offlineStore = get(),
                                 worker = get(),
                                 sessionProvider = { registry.current.value.session },
+                                offlineCopy = get(),
                             )
                         }
                         single<ReaderRepository> { get<ApiReaderRepository>() }
@@ -214,11 +239,40 @@ fun rememberAppContainer(
                             )
                         }
                         single { SessionTransitions(get(), get(), get(), get()) }
-                        single { ScopePurger(get()) }
-                        single { AuthViewModel(get(), get(), get(), get(), get(), oauthBrowserLauncher) }
+                        single { offlineFilesRoot.offlineFiles() }
+                        single {
+                            val preferences = get<UserPreferencesStorage>()
+                            OfflineCopies(get(), get()) { preferences.getOfflineCapBytes() }
+                        }
+                        single {
+                            val preferences = get<UserPreferencesStorage>()
+                            OfflineSetFetcher(
+                                transport = get(),
+                                store = get(),
+                                files = get(),
+                                clock = { getTimeMillis() },
+                                capBytes = { preferences.getOfflineCapBytes() },
+                            )
+                        }
+                        single {
+                            DownloadManager(
+                                registry = get(),
+                                fetcher = get(),
+                                store = get(),
+                                copies = get(),
+                                online = connectivityObserver.online,
+                            )
+                        }
+                        single {
+                            val downloads = get<DownloadManager>()
+                            ScopePurger(get()) { scope -> downloads.removeAllDownloads(scope) }
+                        }
+                        single { OfflineAccount(get(), get(), get(), get(), connectivityObserver.online) }
+                        single { AuthViewModel(get(), get(), get(), get(), oauthBrowserLauncher) }
                         single { OnboardingViewModel(get(), get(), get()) }
                         single { UserPreferencesViewModel(get(), get()) }
-                        single { LibraryViewModel(get()) }
+                        single { OfflineStatuses(get(), get(), get<DownloadManager>().acquisitions) }
+                        single { LibraryViewModel(get(), get<OfflineStatuses>().observe()) }
                         single { FeedViewModel(get()) }
                         single { AddFeedViewModel(get()) }
                         single { AddLibraryViewModel(get()) }
@@ -227,6 +281,9 @@ fun rememberAppContainer(
                         single { AiSettingsViewModel(get()) }
                         single { SearchViewModel(get()) }
                         single { SidebarViewModel(get()) }
+                        single {
+                            StorageViewModel(get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
+                        }
                     },
                 )
             }
@@ -238,7 +295,9 @@ fun rememberAppContainer(
 
     DisposableEffect(koinApplication) {
         koin.get<OutboxWorker>().start()
+        koin.get<DownloadManager>().start()
         onDispose {
+            koin.get<DownloadManager>().stop()
             koin.get<OutboxWorker>().stop()
             koin.get<AuthenticatedApiTransport>().close()
             koinApplication.close()
@@ -278,6 +337,9 @@ fun rememberAppContainer(
             sessionTransitions = koin.get(),
             scopePurger = koin.get(),
             connectivityObserver = connectivityObserver,
+            downloads = koin.get(),
+            storageViewModel = koin.get(),
+            documentOffline = { id -> DocumentOfflineViewModel(id, koin.get(), koin.get(), koin.get()) },
         )
     }
 }

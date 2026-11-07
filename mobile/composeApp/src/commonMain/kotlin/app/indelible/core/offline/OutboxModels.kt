@@ -92,6 +92,8 @@ data class OutboxRow(
     val nextAttemptAt: Long,
     val state: OutboxState,
     val lastError: String?,
+    /** A newer change to the same field was acknowledged; this row is never sent or replayed. */
+    val superseded: Boolean = false,
 )
 
 data class CachedDocumentRow(
@@ -103,6 +105,11 @@ data class CachedDocumentRow(
     val lastOpenedAt: Long,
     val lastSyncedAt: Long?,
     val bytes: Long,
+    val generation: Long = 0,
+    val noteBody: String? = null,
+    val noteServerUpdatedAt: Long? = null,
+    val progressPercent: Int? = null,
+    val maxProgressPercent: Int? = null,
 )
 
 data class CachedAssetRow(

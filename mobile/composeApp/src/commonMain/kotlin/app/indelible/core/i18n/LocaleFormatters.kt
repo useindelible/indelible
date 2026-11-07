@@ -16,4 +16,7 @@ expect object LocaleFormatters {
     ): String
 
     fun number(value: Long): String
+
+    /** [value] in the current locale with at most one fraction digit. */
+    fun decimal(value: Double): String
 }

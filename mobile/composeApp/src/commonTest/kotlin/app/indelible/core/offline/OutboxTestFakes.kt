@@ -91,7 +91,7 @@ private object UnreachableOfflineStore : OfflineStore {
     override suspend fun retryRow(
         scope: String,
         id: String,
-    ): Unit = unreachable()
+    ): Boolean = unreachable()
 
     override fun observeOutbox(scope: String): Flow<List<OutboxRow>> = unreachable()
 
@@ -99,6 +99,8 @@ private object UnreachableOfflineStore : OfflineStore {
         scope: String,
         documentId: String,
     ): Flow<List<OutboxRow>> = unreachable()
+
+    override fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>> = unreachable()
 
     override suspend fun upsertCachedDocument(
         scope: String,
@@ -115,7 +117,7 @@ private object UnreachableOfflineStore : OfflineStore {
         scope: String,
         documentId: String,
         pinned: Boolean,
-    ): Unit = unreachable()
+    ): Boolean = unreachable()
 
     override suspend fun setDocumentBytes(
         scope: String,
@@ -134,11 +136,27 @@ private object UnreachableOfflineStore : OfflineStore {
 
     override suspend fun totalBytes(scope: String): Long = unreachable()
 
+    override fun observeCatalog(scope: String): Flow<List<CatalogEntry>> = unreachable()
+
     override suspend fun installCachedDocument(
+        session: Session,
+        request: InstallRequest,
+    ): InstallResult = unreachable()
+
+    override suspend fun refreshCachedCopy(
+        session: Session,
+        request: RefreshRequest,
+    ): RefreshResult = unreachable()
+
+    override suspend fun localChanges(
         scope: String,
-        row: CachedDocumentRow,
-        assets: List<CachedAssetRow>,
-    ): Unit = unreachable()
+        documentId: String,
+    ): LocalChanges = unreachable()
+
+    override suspend fun cachedHighlights(
+        scope: String,
+        documentId: String,
+    ): List<CachedHighlight> = unreachable()
 
     override suspend fun assetsForDocument(
         scope: String,
@@ -151,20 +169,26 @@ private object UnreachableOfflineStore : OfflineStore {
         at: Long,
     ): Unit = unreachable()
 
-    override suspend fun upsertCachedHighlight(
-        scope: String,
-        id: String,
-        documentId: String,
-        payloadJson: String,
-        updatedAt: Long,
-    ): Unit = unreachable()
-
     override suspend fun removeCachedDocument(
         scope: String,
         documentId: String,
     ): Unit = unreachable()
 
+    override suspend fun evictCachedDocument(
+        scope: String,
+        documentId: String,
+    ): Boolean = unreachable()
+
+    override suspend fun dropOrphanHighlights(scope: String): Unit = unreachable()
+
     override suspend fun clientIdentity(scope: String): ClientIdentity = unreachable()
+
+    override suspend fun profile(scope: String): String? = unreachable()
+
+    override suspend fun keepProfile(
+        scope: String,
+        json: String,
+    ): Unit = unreachable()
 
     override suspend fun scopesWithState(): List<Pair<String, Boolean>> = unreachable()
 
