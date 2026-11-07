@@ -13,6 +13,7 @@ pub struct StagedDocumentAsset {
     pub size_bytes: i64,
     pub status: ArchiveAssetStatus,
     pub failed_reason: Option<String>,
+    pub format_version: i32,
 }
 
 pub struct SaveUploadedDocumentRequest {

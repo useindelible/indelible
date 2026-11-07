@@ -180,6 +180,38 @@ async fn extension_check_url_annotations_share_the_saved_document_contract() {
     assert_eq!(listed["count"], 1);
     assert_eq!(listed["highlights"][0]["id"], highlight["id"]);
 
+    let queued = serde_json::json!({
+        "id": "hlt_018f5b1e-0000-7000-8000-0000000000e1",
+        "color": "yellow",
+        "text_content": "Queued while offline",
+        "locator": {"type": "html", "start_offset": 18, "end_offset": 38}
+    });
+    assert_eq!(
+        client.post_json(&highlights_path, &queued).await.status(),
+        StatusCode::CREATED
+    );
+    let replayed = assert_json_response(
+        client.post_json(&highlights_path, &queued).await,
+        StatusCode::OK,
+    )
+    .await;
+    assert_eq!(replayed["id"], queued["id"]);
+    assert_eq!(
+        client
+            .post_json(
+                &highlights_path,
+                &serde_json::json!({
+                    "id": "018f5b1e-0000-7000-8000-0000000000e1",
+                    "color": "yellow",
+                    "text_content": "unprefixed id",
+                    "locator": {"type": "html", "start_offset": 0, "end_offset": 4}
+                }),
+            )
+            .await
+            .status(),
+        StatusCode::BAD_REQUEST
+    );
+
     let note_path = format!("/api/v1/extension/entries/{entry_id}/note");
     let note = assert_json_response(
         client

@@ -347,6 +347,9 @@ pub async fn build_with_overrides(
                 Arc::new(ind_persistence::repos::PgDocumentReprocessRepository::new(
                     pool.clone(),
                 )),
+                Arc::new(ind_persistence::repos::PgEpubFormatRepository::new(
+                    pool.clone(),
+                )),
             )) as Arc<dyn ind_application::ports::DocumentReaderOperations>
         });
 
