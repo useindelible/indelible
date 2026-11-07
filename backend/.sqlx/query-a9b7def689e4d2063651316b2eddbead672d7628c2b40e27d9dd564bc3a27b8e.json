@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id, document_id, origin, origin_seq, event_kind, cause, session_id, attempt, progress_basis_points, position, position_version, asset_kind, active_ms, recorded_at FROM reading_events WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "document_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "origin",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "origin_seq",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "event_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "cause",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "session_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "attempt",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 8,
+        "name": "progress_basis_points",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "position",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 10,
+        "name": "position_version",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 11,
+        "name": "asset_kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "active_ms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "recorded_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "a9b7def689e4d2063651316b2eddbead672d7628c2b40e27d9dd564bc3a27b8e"
+}

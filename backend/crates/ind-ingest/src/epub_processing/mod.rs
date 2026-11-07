@@ -16,12 +16,13 @@ mod xml;
 mod tests;
 
 pub use types::{
-    EpubChapter, EpubError, EpubMetadata, EpubTocEntry, EpubTocResponse, ProcessedEpub,
+    EpubChapter, EpubError, EpubMetadata, EpubStoredChapter, EpubTocEntry, EpubTocResponse,
+    ProcessedEpub,
 };
 
 use io::read_zip_text;
 use opf::{parse_opf, parse_rootfile_path};
-use paths::resolve_path;
+use paths::{href_basename, resolve_path};
 use sanitize::sanitize_chapter_html;
 use text::count_words;
 use toc::extract_toc;
@@ -62,6 +63,7 @@ pub fn process_epub(data: &[u8]) -> Result<ProcessedEpub, EpubError> {
     let toc_points = extract_toc(&mut archive, &opf, opf_dir, &manifest_by_id, &mut budget);
 
     let mut chapters = Vec::new();
+    let mut stored_chapters = Vec::new();
     let spine_items: Vec<_> = opf
         .spine
         .iter()
@@ -93,6 +95,11 @@ pub fn process_epub(data: &[u8]) -> Result<ProcessedEpub, EpubError> {
             .map(|p| p.label.clone())
             .unwrap_or_default();
 
+        stored_chapters.push(EpubStoredChapter {
+            spine_index,
+            href: href_basename(&item.href).to_string(),
+            title: title.clone(),
+        });
         chapters.push(EpubChapter {
             id: item.id.clone(),
             title,
@@ -115,7 +122,7 @@ pub fn process_epub(data: &[u8]) -> Result<ProcessedEpub, EpubError> {
                 .map(|m| m.href.as_str())
                 .unwrap_or(&ch.id);
             let path = resolve_path(opf_dir, href);
-            let basename = href.split('/').next_back().unwrap_or(href).to_string();
+            let basename = href_basename(href).to_string();
             (
                 path,
                 (ch.spine_index, ch.id.clone(), ch.word_count, basename),
@@ -217,6 +224,7 @@ pub fn process_epub(data: &[u8]) -> Result<ProcessedEpub, EpubError> {
         total_chapters: chapters.len(),
         total_words,
         estimated_pages,
+        chapters: Some(stored_chapters),
     };
 
     Ok(ProcessedEpub {

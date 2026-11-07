@@ -27,7 +27,9 @@ pub mod prepared_content;
 pub use artifacts::build_document_assets;
 pub use canonicalize::{CanonicalUrl, CanonicalizationConfig, CanonicalizeError, canonicalize_url};
 pub use egress_guard::EgressUrlGuard;
-pub use epub_processing::{EpubError, EpubMetadata, EpubTocEntry, EpubTocResponse, ProcessedEpub};
+pub use epub_processing::{
+    EpubError, EpubMetadata, EpubStoredChapter, EpubTocEntry, EpubTocResponse, ProcessedEpub,
+};
 pub use feed_lead_image::extract_feed_lead_image;
 pub use feed_parser::FeedRsFeedParser;
 pub use file_upload::DocumentFileUploadProcessor;

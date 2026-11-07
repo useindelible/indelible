@@ -40,6 +40,7 @@ fn tags() -> Vec<Tag> {
         tag("Auth", "Authentication and session management"),
         tag("Account", "Profile and account management"),
         tag("Settings", "User settings pages and preferences"),
+        tag("Server", "Server capabilities"),
         tag("Onboarding", "User onboarding flow"),
         tag("API Tokens", "API token management"),
         tag("Extension", "Browser extension integration"),

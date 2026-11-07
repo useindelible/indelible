@@ -47,7 +47,7 @@ pub use routes::{
     document_routes, email_alias_routes, email_sender_routes, entity_routes, epub_routes,
     event_routes, export_routes, extension_routes, feed_delivery_routes, feed_routes,
     highlight_routes, home_routes, import_routes, integration_routes, library_routes, mila_routes,
-    onboarding_routes, rate_limited_auth_routes, search_routes, settings_routes, smart_list_routes,
-    tag_routes, token_routes, tts_routes, webhook_routes,
+    onboarding_routes, rate_limited_auth_routes, search_routes, server_routes, settings_routes,
+    smart_list_routes, tag_routes, token_routes, tts_routes, webhook_routes,
 };
 pub use state::{AppConfig, AppState, Environment, HighlightWithNote};

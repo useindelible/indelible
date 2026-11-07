@@ -1,14 +1,41 @@
 use super::*;
-use ind_domain::{Document, DocumentAsset, DocumentId, LibraryEntryId, UserDocumentState};
+use ind_domain::{
+    Document, DocumentAsset, DocumentId, EventOrigin, LibraryEntryId, NewReadingEvent,
+    ReadingPosition, UserDocumentState,
+};
+
+use crate::repos::epub_format::EpubChapterListState;
+use crate::repos::user_document_state::AppendOutcome;
 
 /// Reader read-model for a materialized document. Distinguishes a prepared-but-unsaved
-/// document (`library_entry_id` is `None`) from a saved Library entry (`Some`). See
-/// docs/document-feed-library-architecture.md (Document Reader).
+/// document (`library_entry_id` is `None`) from a saved Library entry (`Some`).
 pub struct DocumentReaderView {
     pub document: Document,
     pub state: Option<UserDocumentState>,
     pub library_entry_id: Option<LibraryEntryId>,
     pub assets: Vec<DocumentAsset>,
+}
+
+pub struct EpubTocAsset {
+    pub asset: DocumentAsset,
+    pub chapter_list: EpubChapterListState,
+}
+
+pub struct CreateHighlightRequest {
+    /// Caller-supplied id. `None` lets the server mint one, which is never a replay.
+    pub requested_id: Option<HighlightId>,
+    pub color: String,
+    pub text_content: String,
+    pub locator: Option<HighlightLocator>,
+    pub source_locator: Option<HighlightSourceLocator>,
+}
+
+/// Outcome of a highlight create. `created` is false when a caller-supplied id replayed an
+/// identical highlight, which the HTTP layer answers with 200 instead of 201.
+#[derive(Debug, Clone)]
+pub struct HighlightCreation {
+    pub highlight: Highlight,
+    pub created: bool,
 }
 
 pub struct DocumentReprocessOutput {
@@ -19,9 +46,7 @@ pub struct DocumentReprocessOutput {
 
 /// HTTP-facing port for the document reader and its authored capabilities. Highlights and notes
 /// require the document to have a completed readable asset (canonical rendered content); progress
-/// writes `user_document_state` without requiring a Library entry. See
-/// docs/document-feed-library-architecture.md (User opens canonical reader; User highlights or
-/// notes an unsaved feed delivery; Reading progress).
+/// writes `user_document_state` without requiring a Library entry.
 pub trait DocumentReaderOperations: Send + Sync {
     fn get_reader(
         &self,
@@ -39,6 +64,13 @@ pub trait DocumentReaderOperations: Send + Sync {
         kind: ArchiveAssetKind,
     ) -> BoxFuture<'_, Result<DocumentAsset, AppError>>;
 
+    /// The completed EPUB TOC asset and whether its TOC lists every stored chapter.
+    fn get_epub_toc_asset(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<EpubTocAsset, AppError>>;
+
     fn reprocess_document(
         &self,
         user_id: UserId,
@@ -49,11 +81,8 @@ pub trait DocumentReaderOperations: Send + Sync {
         &self,
         user_id: UserId,
         document_id: DocumentId,
-        color: String,
-        text_content: String,
-        locator: Option<HighlightLocator>,
-        source_locator: Option<HighlightSourceLocator>,
-    ) -> BoxFuture<'_, Result<Highlight, AppError>>;
+        request: CreateHighlightRequest,
+    ) -> BoxFuture<'_, Result<HighlightCreation, AppError>>;
 
     fn list_highlights(
         &self,
@@ -79,8 +108,8 @@ pub trait DocumentReaderOperations: Send + Sync {
         user_id: UserId,
         document_id: DocumentId,
         progress_percent: i32,
-        chapter_locator: Option<String>,
-        chapter_offset: Option<i32>,
+        position: Option<ReadingPosition>,
+        origin: EventOrigin,
     ) -> BoxFuture<'_, Result<UserDocumentState, AppError>>;
 
     /// Resets read status while keeping the chapter position.
@@ -89,4 +118,11 @@ pub trait DocumentReaderOperations: Send + Sync {
         user_id: UserId,
         document_id: DocumentId,
     ) -> BoxFuture<'_, Result<(), AppError>>;
+
+    fn append_reading_events(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+        events: Vec<NewReadingEvent>,
+    ) -> BoxFuture<'_, Result<AppendOutcome, AppError>>;
 }

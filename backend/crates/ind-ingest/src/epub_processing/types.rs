@@ -46,6 +46,18 @@ pub struct EpubMetadata {
     pub total_chapters: usize,
     pub total_words: u32,
     pub estimated_pages: u32,
+    /// Every stored chapter by spine index, gaps included; None for books processed before it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chapters: Option<Vec<EpubStoredChapter>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EpubStoredChapter {
+    pub spine_index: usize,
+    /// Basename of the spine item's manifest href (e.g. "ch02.xhtml").
+    pub href: String,
+    /// Title of the first TOC entry pointing at this spine item; empty when none does.
+    pub title: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

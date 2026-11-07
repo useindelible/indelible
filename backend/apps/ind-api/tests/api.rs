@@ -19,9 +19,11 @@ mod api {
     mod document_annotation_journey_tests;
     mod document_search_tests;
     mod entity_resolution_journey_tests;
+    mod epub_toc_chapter_list_tests;
     mod extension_auth_journey_tests;
     mod feed_route_permission_tests;
     mod feed_subscription_journey_tests;
+    mod highlight_idempotency_tests;
     mod highlight_text_quote_tests;
     mod integration_availability_tests;
     mod integration_journey_tests;
@@ -41,10 +43,15 @@ mod api {
     mod oauth_journey_tests;
     mod platform_journey_tests;
     mod product_journey_tests;
+    mod reading_events_journey_tests;
+    mod reading_events_lifecycle_tests;
+    mod reading_events_origin_tests;
+    mod reading_events_position_tests;
     mod realtime_journey_tests;
     mod resource_route_permission_support;
     mod save_pipeline_tests;
     mod search_api_journey_tests;
+    mod server_capabilities_tests;
     mod upload_import_journey_tests;
     mod webhook_route_permission_tests;
     mod youtube_identity_journey_tests;
