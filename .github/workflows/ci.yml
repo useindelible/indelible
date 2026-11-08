@@ -85,6 +85,9 @@ jobs:
           echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
           echo "using $BROWSER"
       - uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1
+        # mold only speeds up linking; when its download fails, the default
+        # linker still produces the same test binaries.
+        continue-on-error: true
       - uses: dtolnay/rust-toolchain@e43eeffd51aefeea929f4ea14e09fd077153e788 # 1.94.1
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
