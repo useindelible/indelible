@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import app.indelible.auth.oauth.rememberOAuthBrowserLauncher
 import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.auth.viewmodel.ConnectServerViewModel
+import app.indelible.auth.viewmodel.OfflineAccount
 import app.indelible.collections.repository.CollectionsRepository
 import app.indelible.core.network.AuthenticatedApiTransport
 import app.indelible.core.offline.ConnectivityObserver
@@ -53,6 +54,7 @@ data class AppContainer(
     val apiTransport: AuthenticatedApiTransport,
     val authViewModel: AuthViewModel,
     val connectServerViewModel: ConnectServerViewModel,
+    val offlineAccount: OfflineAccount,
     val onboardingViewModel: OnboardingViewModel,
     val userPreferencesViewModel: UserPreferencesViewModel,
     val homeRepository: HomeRepository,
@@ -142,6 +144,7 @@ private fun appContainer(
         apiTransport = koin.get(),
         authViewModel = authViewModel,
         connectServerViewModel = koin.get(),
+        offlineAccount = koin.get(),
         onboardingViewModel = koin.get(),
         userPreferencesViewModel = koin.get(),
         homeRepository = koin.get(),

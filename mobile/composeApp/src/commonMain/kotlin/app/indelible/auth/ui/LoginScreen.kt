@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,8 +30,10 @@ import indelible.composeapp.generated.resources.auth_forgot_password
 import indelible.composeapp.generated.resources.auth_password_label
 import indelible.composeapp.generated.resources.auth_sign_in
 import indelible.composeapp.generated.resources.auth_sign_in_prompt
+import indelible.composeapp.generated.resources.auth_sign_in_waiting
 import indelible.composeapp.generated.resources.auth_sign_up_prompt
 import indelible.composeapp.generated.resources.common_app_name
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -40,6 +43,7 @@ fun LoginScreen(
     onNavigateToForgotPassword: () -> Unit,
     serverHost: String? = null,
     onChangeServer: (() -> Unit)? = null,
+    waitingChanges: Int = 0,
 ) {
     val loginState by viewModel.loginState.collectAsState()
     val oauthProviders by viewModel.oauthProviders.collectAsState()
@@ -79,6 +83,7 @@ fun LoginScreen(
                 }
             }
         }
+        WaitingChangesNotice(waitingChanges, modifier = Modifier.align(Alignment.CenterHorizontally))
 
         Spacer(modifier = Modifier.height(IndelibleSpacing.step24))
 
@@ -149,4 +154,20 @@ fun LoginScreen(
             }
         }
     }
+}
+
+/** Changes this phone still holds for the server; signing in is what sends them, so the screen says so. */
+@Composable
+internal fun WaitingChangesNotice(
+    waitingChanges: Int,
+    modifier: Modifier = Modifier,
+) {
+    if (waitingChanges == 0) return
+    Text(
+        text = pluralStringResource(Res.plurals.auth_sign_in_waiting, waitingChanges, waitingChanges),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier.padding(top = IndelibleSpacing.step8),
+    )
 }

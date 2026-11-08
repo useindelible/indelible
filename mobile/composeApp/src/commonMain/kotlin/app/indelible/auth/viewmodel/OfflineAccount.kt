@@ -15,6 +15,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
 class OfflineAccount(
@@ -55,6 +56,12 @@ class OfflineAccount(
             if (user != null || !current()) return user
         }
     }
+
+    fun waitingChanges(): Flow<Int> =
+        store.observeWaitingByScope().map { byScope ->
+            val origin = tokenStorage.getServerUrl()?.let(::normalizedOrigin) ?: return@map 0
+            byScope.filterKeys { it.substringBeforeLast('|') == origin }.values.sum()
+        }
 
     /** Runs inside a sign-in transition, once the user id is saved. */
     suspend fun register() {

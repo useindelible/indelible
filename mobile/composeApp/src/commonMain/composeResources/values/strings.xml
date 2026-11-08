@@ -48,6 +48,10 @@
     <string name="auth_session_load_failed">You signed in, but your account could not be loaded. Please try again.</string>
     <string name="auth_sign_in">Sign in</string>
     <string name="auth_sign_in_prompt">Sign in to your account</string>
+    <plurals name="auth_sign_in_waiting">
+        <item quantity="one">Sign in to finish syncing · %1$d change waiting</item>
+        <item quantity="other">Sign in to finish syncing · %1$d changes waiting</item>
+    </plurals>
     <string name="auth_sign_up_prompt">Don’t have an account? Register</string>
     <string name="auth_verification_body">Open the link in the email to verify your account. This page will update automatically once verified.</string>
     <string name="auth_verification_sent_to">We sent a verification link to:</string>

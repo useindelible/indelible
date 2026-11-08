@@ -48,6 +48,10 @@
     <string name="auth_session_load_failed">Vous êtes connecté, mais votre compte n’a pas pu être chargé. Veuillez réessayer.</string>
     <string name="auth_sign_in">Se connecter</string>
     <string name="auth_sign_in_prompt">Connectez-vous à votre compte</string>
+    <plurals name="auth_sign_in_waiting">
+        <item quantity="one">Connectez-vous pour finir la synchronisation · %1$d modification en attente</item>
+        <item quantity="other">Connectez-vous pour finir la synchronisation · %1$d modifications en attente</item>
+    </plurals>
     <string name="auth_sign_up_prompt">Vous n’avez pas de compte ? S’inscrire</string>
     <string name="auth_verification_body">Ouvrez le lien reçu par e-mail pour vérifier votre compte. Cette page se mettra automatiquement à jour après la vérification.</string>
     <string name="auth_verification_sent_to">Nous avons envoyé un lien de vérification à :</string>
