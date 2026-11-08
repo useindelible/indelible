@@ -273,6 +273,13 @@ private fun Module.viewModels() {
     single {
         val transport = get<AuthenticatedApiTransport>()
         val home = get<HomeRepository>()
-        OfflineShelfViewModel(get(), get(), transport.reachable) { home.getDashboard() }
+        OfflineShelfViewModel(
+            registry = get(),
+            store = get(),
+            reachable = transport.reachable,
+            probe = { home.getDashboard() },
+            online = get<ConnectivityObserver>().online,
+            requestDrain = get<OutboxWorker>()::requestDrain,
+        )
     }
 }

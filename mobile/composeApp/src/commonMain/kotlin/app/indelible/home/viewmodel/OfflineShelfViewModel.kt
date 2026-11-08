@@ -15,11 +15,13 @@ import app.indelible.home.repository.HOME_CONTINUE_KEY
 import app.indelible.home.repository.HOME_RECENT_KEY
 import app.indelible.offline.viewmodel.ChangeStatus
 import app.indelible.offline.viewmodel.pendingChanges
+import io.ktor.http.parseUrl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -30,15 +32,12 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-
-/** How Home stands with the network: the shelf shows for every state but [ONLINE]. */
-enum class ShelfNet { OFFLINE, SENDING, SYNCED, ONLINE }
 
 /**
  * [progressPercent] is 0..100, null when the item was never read; [imageUrl] is the item's own artwork.
@@ -68,8 +67,6 @@ data class OfflineShelfState(
     val sent: Int get() = (sendTotal - queued).coerceAtLeast(0)
 }
 
-internal const val SYNCED_HOLD_MS = 4_000L
-internal const val SEND_STALL_MS = 20_000L
 internal const val PROBE_FIRST_MS = 2_000L
 internal const val PROBE_EVERY_MS = 30_000L
 
@@ -79,7 +76,8 @@ internal const val PROBE_EVERY_MS = 30_000L
  * "synced" for [SYNCED_HOLD_MS], then hands Home back to the server's dashboard. A queue that does not
  * move for [SEND_STALL_MS] (server down, rows retrying) hands Home back too; Storage keeps the rows.
  * Home is away once a request to the server got no answer ([reachable] is false), and the server is
- * asked again through [probe] until it answers. It works only while something watches [state].
+ * asked again through [probe] until it answers. The same run is published as [progress] for the Library
+ * banner. It works only while something watches [state] or [progress].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class OfflineShelfViewModel(
@@ -87,24 +85,42 @@ class OfflineShelfViewModel(
     private val store: OfflineStore,
     reachable: Flow<Boolean?>,
     private val probe: suspend () -> Unit,
+    online: Flow<Boolean> = flowOf(true),
+    private val requestDrain: () -> Unit = {},
 ) : ViewModel() {
     private val _state = MutableStateFlow(OfflineShelfState())
     val state: StateFlow<OfflineShelfState> = _state.asStateFlow()
+
+    private val _progress = MutableStateFlow(SyncProgress())
+    val progress: StateFlow<SyncProgress> = _progress.asStateFlow()
+
+    /** The signed-in server's host name, for "Can't reach <host>"; null when signed out. */
+    val host: StateFlow<String?> =
+        registry.current
+            .map { it.session?.origin?.let { origin -> parseUrl(origin)?.host } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private var timer: Job? = null
     private var scope: String? = null
 
     init {
-        val online = reachable.map { it != false }.distinctUntilChanged()
-        val watched = _state.subscriptionCount.map { it > 0 }.distinctUntilChanged()
+        val serverUp = reachable.map { it != false }.distinctUntilChanged()
+        val watched =
+            combine(_state.subscriptionCount, _progress.subscriptionCount) { a, b -> a + b > 0 }.distinctUntilChanged()
         viewModelScope.launch {
             watched
-                .flatMapLatest { if (it) combine(online, shelf()) { on, shelf -> on to shelf } else emptyFlow() }
-                .collect { (isOnline, shelf) -> update(isOnline, shelf) }
+                .flatMapLatest { if (it) combine(online, serverUp, shelf(), ::Triple) else emptyFlow() }
+                .collect { (isOnline, up, shelf) -> update(isOnline, up, shelf) }
         }
         viewModelScope.launch {
-            watched.flatMapLatest { if (it) online else flowOf(true) }.collectLatest { if (!it) probeUntilAnswered() }
+            watched.flatMapLatest { if (it) serverUp else flowOf(true) }.collectLatest { if (!it) probeUntilAnswered() }
         }
+    }
+
+    /** Asks the server again now and sends what is queued if it answers. */
+    fun retryNow() {
+        viewModelScope.launch { probe() }
+        requestDrain()
     }
 
     private suspend fun probeUntilAnswered() {
@@ -117,53 +133,45 @@ class OfflineShelfViewModel(
 
     private fun update(
         isOnline: Boolean,
+        serverUp: Boolean,
         shelf: Shelf,
     ) {
-        val previous = _state.value
+        val previous = _progress.value
         val switched = shelf.scope != scope
         scope = shelf.scope
-        val next =
-            when {
-                !isOnline -> OfflineShelfState(ShelfNet.OFFLINE, shelf.items, shelf.queued)
-                switched -> OfflineShelfState(ShelfNet.ONLINE, shelf.items, shelf.queued)
-                else -> previous.reconnected(shelf)
-            }
-        _state.value = next.copy(
-            continueReading = shelf.continueReading,
-            recentlySaved = shelf.recentlySaved,
-            loadedAt = shelf.loadedAt,
-        )
-        when {
-            next.net == ShelfNet.SYNCED && previous.net != ShelfNet.SYNCED -> leaveAfter(SYNCED_HOLD_MS)
-            next.net == ShelfNet.SENDING && (previous.net != next.net || next.queued != previous.queued) ->
-                leaveAfter(SEND_STALL_MS)
-            next.net == ShelfNet.OFFLINE || next.net == ShelfNet.ONLINE -> timer?.cancel()
+        val next = previous.step(SyncInputs(isOnline, serverUp, shelf.queued, shelf.attention, switched))
+        publish(next, shelf)
+        when (val hold = next.holdMillisAfter(previous)) {
+            null -> if (next.net == ShelfNet.OFFLINE || next.net == ShelfNet.ONLINE) timer?.cancel()
+            else -> leaveAfter(hold)
         }
     }
 
-    private fun OfflineShelfState.reconnected(shelf: Shelf): OfflineShelfState =
-        when {
-            net == ShelfNet.ONLINE -> OfflineShelfState(ShelfNet.ONLINE, shelf.items, shelf.queued)
-            net == ShelfNet.OFFLINE && shelf.queued > 0 ->
-                OfflineShelfState(ShelfNet.SENDING, shelf.items, shelf.queued, shelf.queued)
-            net == ShelfNet.OFFLINE -> OfflineShelfState(ShelfNet.ONLINE, shelf.items, shelf.queued)
-            net == ShelfNet.SENDING && shelf.queued == 0 ->
-                OfflineShelfState(ShelfNet.SYNCED, shelf.items, 0, sendTotal)
-            net == ShelfNet.SENDING ->
-                copy(
-                    items = shelf.items,
-                    queued = shelf.queued,
-                    sendTotal = sendTotal + (shelf.queued - queued).coerceAtLeast(0),
-                )
-            else -> copy(items = shelf.items, queued = shelf.queued)
-        }
+    private fun publish(
+        progress: SyncProgress,
+        shelf: Shelf,
+    ) {
+        _progress.value = progress
+        _state.value =
+            OfflineShelfState(
+                net = progress.net,
+                items = shelf.items,
+                queued = progress.queued,
+                sendTotal = progress.sendTotal,
+                continueReading = shelf.continueReading,
+                recentlySaved = shelf.recentlySaved,
+                loadedAt = shelf.loadedAt,
+            )
+    }
 
     private fun leaveAfter(millis: Long) {
         timer?.cancel()
         timer =
             viewModelScope.launch {
                 delay(millis)
-                _state.update { if (it.net == ShelfNet.OFFLINE) it else it.copy(net = ShelfNet.ONLINE, sendTotal = 0) }
+                val left = _progress.value.leave()
+                _progress.value = left
+                _state.value = _state.value.copy(net = left.net, sendTotal = left.sendTotal)
             }
     }
 
@@ -184,10 +192,12 @@ class OfflineShelfViewModel(
             val catalog = inputs.catalog
             val copies = store.cachedDocuments(scope).associateBy { it.documentId }
             val entries = catalog.associateBy { it.documentId }
+            val counts = queueCounts(inputs.rows, catalog)
             Shelf(
                 scope = scope,
                 items = catalog.toItems(copies),
-                queued = queued(inputs.rows, catalog),
+                queued = counts.queued,
+                attention = counts.attention,
                 continueReading = inputs.continued.rows.toLastLoaded(entries, copies),
                 recentlySaved = inputs.recent.rows.toLastLoaded(entries, copies),
                 loadedAt = listOfNotNull(inputs.continued.seenAt, inputs.recent.seenAt).maxOrNull(),
@@ -205,6 +215,7 @@ class OfflineShelfViewModel(
         val scope: String? = null,
         val items: List<ShelfItem> = emptyList(),
         val queued: Int = 0,
+        val attention: Int = 0,
         val continueReading: List<ShelfItem> = emptyList(),
         val recentlySaved: List<ShelfItem> = emptyList(),
         val loadedAt: Long? = null,
@@ -245,11 +256,19 @@ internal fun shelfImageOf(readerJson: String): String? {
         .firstNotNullOfOrNull { fields[it]?.jsonPrimitive?.contentOrNull }
 }
 
+private data class QueueCounts(
+    val queued: Int,
+    val attention: Int,
+)
+
 /** Counted the way Storage lists them, so a long read is one change, not thousands. */
-private fun queued(
+private fun queueCounts(
     rows: List<OutboxRow>,
     catalog: List<CatalogEntry>,
-): Int {
+): QueueCounts {
     val changes = pendingChanges(rows, catalog)
-    return changes.count { it.status != ChangeStatus.SUPERSEDED && it.status != ChangeStatus.FAILED }
+    return QueueCounts(
+        queued = changes.count { it.status != ChangeStatus.SUPERSEDED && it.status != ChangeStatus.FAILED },
+        attention = changes.count { it.status == ChangeStatus.FAILED },
+    )
 }
