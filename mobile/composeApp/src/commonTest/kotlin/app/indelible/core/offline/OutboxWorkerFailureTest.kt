@@ -27,7 +27,7 @@ class OutboxWorkerFailureTest {
             val secondEvent = store.enqueueReadingEvent(session, "doc_2", recordedAtEpochMs = 2L)
             store.enqueueNote(session, "doc_3")
             sender.enqueueOutcome(TOO_OLD)
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
 
             worker.requestDrain()
             runCurrent()
@@ -76,7 +76,7 @@ class OutboxWorkerFailureTest {
             store.markFailed(scope, tooOld, SyncFailure(SyncFailure.Kind.SERVER_TOO_OLD, status = 405))
             store.markFailed(scope, rejected, rejected("no"))
             val sender = FakeOutboxSender()
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
 
             startedWorker(store, sender, signedIn.registry)
             runCurrent()

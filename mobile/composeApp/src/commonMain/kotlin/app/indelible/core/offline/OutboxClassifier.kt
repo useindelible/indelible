@@ -1,7 +1,10 @@
 package app.indelible.core.offline
 
 sealed interface SendOutcome {
-    data object Success : SendOutcome
+    /** [noteUpdatedAtEpochMs] is the server's stamp on a saved document note, so the copy can carry it. */
+    data class Success(
+        val noteUpdatedAtEpochMs: Long? = null,
+    ) : SendOutcome
 
     /** 200 on a replay, or 404 on a delete that already applied. */
     data object ReplaySuccess : SendOutcome
@@ -15,6 +18,12 @@ sealed interface SendOutcome {
 
     data class Transport(
         val cause: Throwable,
+    ) : SendOutcome
+
+    /** The server's note moved past the base this edit was made on; nothing was sent. */
+    data class NoteConflict(
+        val serverBody: String,
+        val serverUpdatedAtEpochMs: Long,
     ) : SendOutcome
 
     /** The session changed before the request was dispatched; nothing reached the server. */
@@ -80,6 +89,14 @@ fun classify(
     when (outcome) {
         is SendOutcome.Success, is SendOutcome.ReplaySuccess -> Classification.Done
         SendOutcome.Stale -> Classification.Stale
+        is SendOutcome.NoteConflict ->
+            Classification.Terminal(
+                SyncFailure(
+                    SyncFailure.Kind.NOTE_CONFLICT,
+                    serverNoteBody = outcome.serverBody,
+                    serverNoteUpdatedAtEpochMs = outcome.serverUpdatedAtEpochMs,
+                ),
+            )
         is SendOutcome.Transport ->
             if (isNetwork(outcome.cause)) {
                 Classification.Retryable(now + backoffMs(attempts + 1))

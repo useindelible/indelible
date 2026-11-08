@@ -25,7 +25,7 @@ class OutboxWorkerTest {
             val held = signedIn.store.rowsByState(scope, OutboxState.PENDING).single { it.id == rowId }
             assertEquals(0, held.attempts)
 
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
             worker.setNetwork(true)
             runCurrent()
 
@@ -45,7 +45,7 @@ class OutboxWorkerTest {
             runCurrent()
             assertTrue(sender.calls.isEmpty())
 
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
             worker.setNetwork(true)
             runCurrent()
             assertTrue(signedIn.store.pendingOrdered(scope).isEmpty())
@@ -78,8 +78,8 @@ class OutboxWorkerTest {
             runCurrent()
             assertEquals(1, sender.calls.size)
 
-            sender.enqueueOutcome(SendOutcome.Success)
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
+            sender.enqueueOutcome(SendOutcome.Success())
             worker.resumeAuth()
             runCurrent()
             assertFalse(worker.authPaused.value)
@@ -99,7 +99,7 @@ class OutboxWorkerTest {
             val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             val otherEntityId = store.enqueueNote(session, "doc_2")
             sender.enqueueOutcome(SendOutcome.Http(422, null, "anchor invalid"))
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
 
             worker.requestDrain()
             runCurrent()
@@ -160,8 +160,8 @@ class OutboxWorkerTest {
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             store.markAttempt(scope, createId, now = 900, nextAttemptAt = 5_000, error = "500")
             val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
-            sender.enqueueOutcome(SendOutcome.Success)
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
+            sender.enqueueOutcome(SendOutcome.Success())
 
             worker.requestDrain()
             runCurrent()

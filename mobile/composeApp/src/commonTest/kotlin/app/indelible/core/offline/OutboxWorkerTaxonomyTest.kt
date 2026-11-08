@@ -22,8 +22,8 @@ class OutboxWorkerTaxonomyTest {
             store.enqueueNote(session, "doc_2")
             val thirdId = store.enqueueNote(session, "doc_3")
             val fourthId = store.enqueueNote(session, "doc_4")
-            sender.enqueueOutcome(SendOutcome.Success)
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
+            sender.enqueueOutcome(SendOutcome.Success())
             sender.enqueueOutcome(SendOutcome.Transport(FakeNetworkFailure()))
 
             worker.requestDrain()
@@ -46,7 +46,7 @@ class OutboxWorkerTaxonomyTest {
             val sender = FakeOutboxSender()
             val worker = startedWorker(store, sender, signedIn.registry)
             store.enqueueNote(session, "doc_1")
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
 
             worker.requestDrain()
             runCurrent()
@@ -114,7 +114,7 @@ class OutboxWorkerTaxonomyTest {
             assertEquals(1, store.rowsByState(scope, OutboxState.PENDING).size)
 
             val secondSender = FakeOutboxSender()
-            secondSender.enqueueOutcome(SendOutcome.Success)
+            secondSender.enqueueOutcome(SendOutcome.Success())
             startedWorker(store, secondSender, signedIn.registry) { Long.MAX_VALUE }
 
             assertTrue(store.pendingOrdered(scope).isEmpty())
@@ -131,7 +131,7 @@ class OutboxWorkerTaxonomyTest {
             val worker = startedWorker(store, sender, signedIn.registry)
             val skewedRecordedAt = 9_999_999_999_999L
             store.enqueueReadingEvent(session, "doc_1", skewedRecordedAt)
-            sender.enqueueOutcome(SendOutcome.Success)
+            sender.enqueueOutcome(SendOutcome.Success())
 
             worker.requestDrain()
             runCurrent()
@@ -154,7 +154,7 @@ class OutboxWorkerTaxonomyTest {
             val sender = FakeOutboxSender()
             val worker = startedWorker(spyStore, sender, signedIn.registry)
             repeat(250) { store.enqueueReadingEvent(session, "doc_1", it.toLong()) }
-            repeat(2) { sender.enqueueOutcome(SendOutcome.Success) }
+            repeat(2) { sender.enqueueOutcome(SendOutcome.Success()) }
 
             worker.requestDrain()
             runCurrent()

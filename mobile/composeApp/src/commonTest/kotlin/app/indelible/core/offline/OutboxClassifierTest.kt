@@ -187,4 +187,14 @@ class OutboxClassifierTest {
     fun backoffNeverExcludesARowEvenAtHighAttemptCounts() {
         assertEquals(3_600_000L, backoffMs(40))
     }
+
+    @Test
+    fun row9ANoteConflictIsTerminalWithTheServersNote() {
+        val conflict = SendOutcome.NoteConflict("theirs", 2_000L)
+        val classification = classify(NOTE, conflict, attempts = 0, now = 0L, isNetwork)
+
+        val expected =
+            SyncFailure(SyncFailure.Kind.NOTE_CONFLICT, serverNoteBody = "theirs", serverNoteUpdatedAtEpochMs = 2_000L)
+        assertEquals(expected, failureOf(classification))
+    }
 }

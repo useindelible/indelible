@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import app.indelible.db.OfflineQueries
+import kotlinx.serialization.encodeToString
 
 private val NO_REVISION = DocumentRevision(content = 0, position = 0, ackedProgressSeq = -1)
 
@@ -44,8 +45,14 @@ internal fun OfflineQueries.moveRevision(
 }
 
 // An older same-field row here failed or was retried after, so it is superseded, never replayed over the server value.
-internal fun OfflineQueries.acknowledge(row: OutboxRow) {
+internal fun OfflineQueries.acknowledge(
+    row: OutboxRow,
+    ackedNoteUpdatedAt: Long? = null,
+) {
     deleteOutboxRow(row.scope, row.id)
+    if (row.kind == OutboxKind.DOCUMENT_NOTE && ackedNoteUpdatedAt != null) {
+        rebaseNotes(row, ackedNoteUpdatedAt)
+    }
     when (row.kind) {
         OutboxKind.DOCUMENT_NOTE,
         OutboxKind.HIGHLIGHT_COLOR,
@@ -59,5 +66,17 @@ internal fun OfflineQueries.acknowledge(row: OutboxRow) {
     val event = row.payload as? OutboxPayload.ReadingEvent
     if (event?.progressBasisPoints != null) {
         raiseAckedProgressSeq(seq = event.originSeq, scope = row.scope, document_id = row.documentId)
+    }
+}
+
+private fun OfflineQueries.rebaseNotes(
+    acked: OutboxRow,
+    serverUpdatedAt: Long,
+) {
+    setCachedServerNoteUpdatedAt(serverUpdatedAt, acked.scope, acked.documentId)
+    for (later in laterLiveNotesForDocument(acked.scope, acked.documentId, acked.seq).executeAsList()) {
+        val note = offlineJson.decodeFromString<OutboxPayload>(later.payload_json) as OutboxPayload.DocumentNote
+        val rebased = note.copy(baseUpdatedAtEpochMs = serverUpdatedAt)
+        setPayloadJson(offlineJson.encodeToString<OutboxPayload>(rebased), acked.scope, later.id)
     }
 }

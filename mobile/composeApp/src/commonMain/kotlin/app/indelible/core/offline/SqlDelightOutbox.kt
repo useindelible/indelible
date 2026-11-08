@@ -77,11 +77,12 @@ internal class SqlDelightOutbox(
     override suspend fun remove(
         scope: String,
         id: String,
+        ackedNoteUpdatedAt: Long?,
     ) {
         context.write {
             context.database.transaction {
                 val row = context.queries.outboxRow(scope, id).executeAsOneOrNull()
-                if (row != null) context.queries.acknowledge(outboxRowFrom(row))
+                if (row != null) context.queries.acknowledge(outboxRowFrom(row), ackedNoteUpdatedAt)
             }
         }
     }

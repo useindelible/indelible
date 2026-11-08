@@ -165,7 +165,7 @@ internal class ReaderOutboxWrites(
     ) {
         store.enqueue(session, OutboxKind.DOCUMENT_NOTE, documentId, documentId) {
             setCachedNote(documentId, body)
-            OutboxPayload.DocumentNote(body = body, baseUpdatedAtEpochMs = null) to Unit
+            OutboxPayload.DocumentNote(body, baseUpdatedAtEpochMs = cachedServerNoteUpdatedAt(documentId)) to Unit
         }
         drain()
     }

@@ -54,6 +54,11 @@ internal class EnqueueTxImpl(
         queries.setCachedNote(body, scope, documentId)
     }
 
+    override fun cachedServerNoteUpdatedAt(documentId: String): Long? {
+        checkOpen()
+        return queries.cachedDocument(scope, documentId).executeAsOneOrNull()?.note_server_updated_at
+    }
+
     override fun patchCachedProgress(
         documentId: String,
         percent: Int,

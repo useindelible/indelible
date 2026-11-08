@@ -102,7 +102,7 @@ internal class OutboxPass(
                 null
             }
             Classification.Done -> {
-                applyDone(scope, batch, outcomeAt)
+                applyDone(scope, batch, outcome, outcomeAt)
                 null
             }
         }
@@ -168,10 +168,12 @@ internal class OutboxPass(
     private suspend fun applyDone(
         scope: String,
         batch: List<OutboxRow>,
+        outcome: SendOutcome,
         outcomeAt: Long,
     ) {
+        val noteUpdatedAt = (outcome as? SendOutcome.Success)?.noteUpdatedAtEpochMs
         for (row in batch) {
-            store.remove(scope, row.id)
+            store.remove(scope, row.id, noteUpdatedAt)
         }
         // Every row in a batch shares documentId by construction (batching only folds rows for
         // the same document), so one sync stamp per batch is enough.
@@ -182,7 +184,8 @@ internal class OutboxPass(
         when (outcome) {
             is SendOutcome.Http -> "HTTP ${outcome.status}: ${outcome.message}"
             is SendOutcome.Transport -> outcome.cause.message ?: outcome.cause.toString()
-            SendOutcome.Success, SendOutcome.ReplaySuccess -> "success"
+            is SendOutcome.Success, SendOutcome.ReplaySuccess -> "success"
+            is SendOutcome.NoteConflict -> "note changed on another device"
             SendOutcome.Stale -> "stale session"
         }
 }

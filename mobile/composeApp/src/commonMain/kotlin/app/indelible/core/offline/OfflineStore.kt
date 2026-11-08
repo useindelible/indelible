@@ -20,10 +20,11 @@ interface OutboxStore {
         state: OutboxState,
     ): List<OutboxRow>
 
-    /** Deletes the row, supersedes older same-field rows, moves the revision; never supersedes reading events. */
+    /** Acknowledges the row; [ackedNoteUpdatedAt] stamps the copy's note and rebases the later queued notes. */
     suspend fun remove(
         scope: String,
         id: String,
+        ackedNoteUpdatedAt: Long? = null,
     )
 
     suspend fun markAttempt(
@@ -253,6 +254,8 @@ interface EnqueueTx {
         documentId: String,
         body: String,
     )
+
+    fun cachedServerNoteUpdatedAt(documentId: String): Long?
 
     fun patchCachedProgress(
         documentId: String,

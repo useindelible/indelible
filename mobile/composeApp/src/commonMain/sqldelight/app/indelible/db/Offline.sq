@@ -99,6 +99,14 @@ SELECT * FROM outbox WHERE scope = ? AND state = 'pending' AND superseded = 0 OR
 liveOutboxForDocument:
 SELECT * FROM outbox WHERE scope = ? AND document_id = ? AND superseded = 0 ORDER BY seq;
 
+laterLiveNotesForDocument:
+SELECT * FROM outbox
+WHERE scope = ? AND document_id = ? AND kind = 'document_note' AND superseded = 0 AND seq > ?
+ORDER BY seq;
+
+setPayloadJson:
+UPDATE outbox SET payload_json = ? WHERE scope = ? AND id = ?;
+
 supersedeField:
 UPDATE outbox SET superseded = 1 WHERE scope = ? AND entity_id = ? AND kind = ? AND seq < ?;
 
@@ -222,6 +230,9 @@ UPDATE cached_document SET note_body = ? WHERE scope = ? AND document_id = ?;
 
 setCachedServerNote:
 UPDATE cached_document SET note_body = ?, note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
+
+setCachedServerNoteUpdatedAt:
+UPDATE cached_document SET note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
 
 catalog:
 SELECT document_id, document_type, title, pinned, last_opened_at, last_synced_at, bytes, generation

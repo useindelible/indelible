@@ -99,7 +99,7 @@ class ReadingEventsParityTest {
                     ),
                 )
 
-            assertEquals(SendOutcome.Success, outcome)
+            assertEquals(SendOutcome.Success(), outcome)
             assertEquals(HttpMethod.Post, sent.method)
             assertEquals("/api/v1/documents/$DOCUMENT_ID/reading-events", sent.path)
             assertEquals("Bearer test-token", sent.authorization)

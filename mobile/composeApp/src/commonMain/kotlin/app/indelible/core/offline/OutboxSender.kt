@@ -2,6 +2,7 @@ package app.indelible.core.offline
 
 import app.indelible.api.generated.models.AppendReadingEventsBody
 import app.indelible.api.generated.models.CreateHighlightBody
+import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentUpsertNoteBody
 import app.indelible.api.generated.models.HighlightTagsBody
 import app.indelible.api.generated.models.LocatorSchemaFlat
@@ -14,6 +15,7 @@ import app.indelible.core.network.AuthenticatedApiTransport
 import app.indelible.core.network.RawApiResponse
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
@@ -186,20 +188,65 @@ class ApiOutboxSender(
         return outcome(response, replayStatus = NOT_FOUND_STATUS)
     }
 
+    // The server keeps no precondition on a note, so the phone compares before it writes: an edit
+    // made on an older base than the server's note must not overwrite the other device's text.
     private suspend fun sendDocumentNote(
         session: Session,
         row: OutboxRow,
     ): SendOutcome {
         val payload = row.payload as OutboxPayload.DocumentNote
+        val path = "/api/v1/documents/${row.documentId}/note"
+        val settled = payload.baseUpdatedAtEpochMs?.let { base -> checkServerNote(session, path, payload.body, base) }
+        if (settled != null) return settled
         val response =
-            transport.rawAuthenticatedRequest(session) { client, baseUrl, token ->
-                client.put("$baseUrl/api/v1/documents/${row.documentId}/note") {
+            transport.rawAuthenticatedRequest(session, readSuccessBody = true) { client, baseUrl, token ->
+                client.put(baseUrl + path) {
                     authorize(token)
                     setBody(DocumentUpsertNoteBody(body = payload.body))
                 }
             }
-        return outcome(response)
+        return when {
+            response.status in SUCCESS_STATUS_RANGE -> SendOutcome.Success(noteStamp(response))
+            else -> outcome(response)
+        }
     }
+
+    /** The outcome that ends the send without a PUT, or null when the PUT may go ahead. */
+    private suspend fun checkServerNote(
+        session: Session,
+        path: String,
+        body: String,
+        base: Long,
+    ): SendOutcome? {
+        val current =
+            transport.rawAuthenticatedRequest(session, readSuccessBody = true) { client, baseUrl, token ->
+                client.get(baseUrl + path) { authorize(token) }
+            }
+        return when {
+            current.status == NOT_FOUND_STATUS -> null
+            current.status !in SUCCESS_STATUS_RANGE -> outcome(current)
+            else -> compareNote(json.decodeFromString<DocumentNoteResponse>(current.bodyText), body, base)
+        }
+    }
+
+    private fun compareNote(
+        server: DocumentNoteResponse,
+        body: String,
+        base: Long,
+    ): SendOutcome? {
+        val serverAt = server.updatedAt.toEpochMilliseconds()
+        return when {
+            server.body == body -> SendOutcome.Success(serverAt)
+            serverAt > base -> SendOutcome.NoteConflict(server.body, serverAt)
+            else -> null
+        }
+    }
+
+    private fun noteStamp(response: RawApiResponse): Long? =
+        runCatching { json.decodeFromString<DocumentNoteResponse>(response.bodyText) }
+            .getOrNull()
+            ?.updatedAt
+            ?.toEpochMilliseconds()
 
     private fun readingEventBody(payload: OutboxPayload.ReadingEvent): ReadingEventBody =
         ReadingEventBody(
@@ -222,7 +269,7 @@ class ApiOutboxSender(
     ): SendOutcome =
         when {
             response.status == replayStatus -> SendOutcome.ReplaySuccess
-            response.status in SUCCESS_STATUS_RANGE -> SendOutcome.Success
+            response.status in SUCCESS_STATUS_RANGE -> SendOutcome.Success()
             else ->
                 SendOutcome.Http(
                     response.status,

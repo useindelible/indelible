@@ -65,6 +65,7 @@ private object UnreachableOfflineStore : OfflineStore {
     override suspend fun remove(
         scope: String,
         id: String,
+        ackedNoteUpdatedAt: Long?,
     ): Unit = unreachable()
 
     override suspend fun markAttempt(
