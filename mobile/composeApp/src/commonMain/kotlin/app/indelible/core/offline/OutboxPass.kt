@@ -182,7 +182,8 @@ internal class OutboxPass(
 
     private fun describe(outcome: SendOutcome): String =
         when (outcome) {
-            is SendOutcome.Http -> "HTTP ${outcome.status}: ${outcome.message}"
+            is SendOutcome.Http ->
+                if (outcome.unpreparedContent) STILL_PREPARING_ERROR else "HTTP ${outcome.status}: ${outcome.message}"
             is SendOutcome.Transport -> outcome.cause.message ?: outcome.cause.toString()
             is SendOutcome.Success, SendOutcome.ReplaySuccess -> "success"
             is SendOutcome.NoteConflict -> "note changed on another device"

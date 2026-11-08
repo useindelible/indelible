@@ -3,7 +3,6 @@ package app.indelible.offline.viewmodel
 import app.indelible.core.offline.CAPABILITIES
 import app.indelible.core.offline.DL_DOC
 import app.indelible.core.offline.DL_SCOPE
-import app.indelible.core.offline.DownloadHarness
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.downloadHarness
@@ -20,7 +19,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -32,30 +30,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-private class Storage(
-    val h: DownloadHarness,
-    val preferences: InMemoryUserPreferencesStorage,
-) {
-    var drains = 0
-
-    init {
-        h.capSource = { preferences.getOfflineCapBytes() }
-    }
-
-    val viewModel =
-        StorageViewModel(
-            registry = h.signedIn.registry,
-            store = h.store,
-            downloads = h.manager,
-            preferences = preferences,
-            requestDrain = { drains++ },
-        )
-
-    val state: StorageUiState get() = viewModel.state.value
-
-    fun change(id: String): PendingChange = state.changes.single { it.id == id }
-}
-
 @OptIn(ExperimentalCoroutinesApi::class)
 class StorageViewModelTest {
     @BeforeTest
@@ -66,13 +40,6 @@ class StorageViewModelTest {
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
-    }
-
-    private suspend fun TestScope.storage(cap: Long = DEFAULT_OFFLINE_CAP_BYTES): Storage {
-        val preferences = InMemoryUserPreferencesStorage().apply { saveOfflineCapBytes(cap) }
-        return Storage(downloadHarness(), preferences).also { storage ->
-            backgroundScope.launch { storage.viewModel.state.collect {} }
-        }
     }
 
     @Test

@@ -142,6 +142,10 @@ internal class SqlDelightOutbox(
         }
     }
 
+    override suspend fun resetBackoff(scope: String) {
+        context.write { context.queries.resetBackoff(scope) }
+    }
+
     override suspend fun retryRow(
         scope: String,
         id: String,

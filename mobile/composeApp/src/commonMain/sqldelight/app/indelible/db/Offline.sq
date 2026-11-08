@@ -182,6 +182,9 @@ UPDATE outbox
 SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL, failure_json = NULL
 WHERE scope = ? AND id = ?;
 
+resetBackoff:
+UPDATE outbox SET next_attempt_at = 0 WHERE scope = ? AND state = 'pending' AND superseded = 0;
+
 outboxForScope:
 SELECT * FROM outbox WHERE scope = ? ORDER BY seq;
 

@@ -10,6 +10,8 @@ import kotlin.test.assertTrue
 
 private val TOO_OLD = SendOutcome.Http(405, null, "method not allowed")
 private val REJECTED = SendOutcome.Http(400, null, "bad request", ApiProblem(detail = "Note too long"))
+private val UNPREPARED =
+    SendOutcome.Http(422, null, "unprocessable", ApiProblem(errors = listOf(FieldError("document_id", "not ready"))))
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OutboxWorkerFailureTest {
@@ -83,5 +85,24 @@ class OutboxWorkerFailureTest {
 
             assertEquals(listOf(tooOld), sender.calls.map { it.single().id })
             assertEquals(listOf(rejected), store.rowsByState(scope, OutboxState.FAILED).map { it.id })
+        }
+
+    @Test
+    fun anUnpreparedItemIsRecordedAsStillPreparing() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(store, sender, signedIn.registry)
+            val id = store.enqueueHighlightCreate(signedIn.session, "hlt_1", "doc_1")
+            sender.enqueueOutcome(UNPREPARED)
+
+            worker.requestDrain()
+            runCurrent()
+
+            val row = store.pendingOrdered(scope).single()
+            assertEquals(id, row.id)
+            assertEquals(STILL_PREPARING_ERROR, row.lastError)
+            assertEquals(HOURLY_CAP_MS, row.nextAttemptAt)
         }
 }

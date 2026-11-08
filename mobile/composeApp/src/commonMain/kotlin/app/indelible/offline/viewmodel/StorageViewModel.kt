@@ -9,6 +9,7 @@ import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxState
+import app.indelible.core.offline.Session
 import app.indelible.core.offline.SessionRegistry
 import app.indelible.core.storage.UserPreferencesStorage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -33,8 +35,11 @@ class StorageViewModel(
     private val downloads: DownloadManager,
     private val preferences: UserPreferencesStorage,
     private val requestDrain: () -> Unit,
+    private val unreachable: Flow<Boolean> = flowOf(false),
 ) : ViewModel() {
     private val capBytes = MutableStateFlow<Long?>(null)
+    private val _notice = MutableStateFlow<StorageNotice?>(null)
+    val notice: StateFlow<StorageNotice?> = _notice.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<StorageUiState> =
@@ -60,10 +65,57 @@ class StorageViewModel(
     fun retry(changeId: String) {
         val scope = currentScope() ?: return
         val change = state.value.changes.firstOrNull { it.id == changeId }
+        if (change?.canRetry == false) return
         val rowIds = change?.rowIds ?: listOf(changeId)
         viewModelScope.launch {
             val retried = rowIds.map { store.retryRow(scope, it) }
             if (retried.any { it }) requestDrain()
+        }
+    }
+
+    /** Sends what is queued now, whatever backoff the rows were in. */
+    fun retryNow() {
+        val scope = currentScope() ?: return
+        viewModelScope.launch {
+            store.resetBackoff(scope)
+            requestDrain()
+        }
+    }
+
+    /** Deletes the change and the changes blocked behind it; nothing reaches the server. */
+    fun discard(changeId: String) {
+        val session = registry.current.value.session ?: return
+        val change = state.value.changes.firstOrNull { it.id == changeId } ?: return
+        val rowIds = change.rowIds + change.blocked.flatMap { it.rowIds }
+        viewModelScope.launch { store.discardRows(session, rowIds) }
+    }
+
+    fun keepMine(changeId: String) {
+        resolveNote(changeId, StorageNotice.KEPT_MINE) { session, id, seen ->
+            store.keepLocalNote(session, id, seen).also { if (it) requestDrain() }
+        }
+    }
+
+    fun keepOther(changeId: String) {
+        resolveNote(changeId, StorageNotice.KEPT_OTHER, store::keepServerNote)
+    }
+
+    fun dismissNotice() {
+        _notice.value = null
+    }
+
+    // The sheet showed one server version; a row that moved on since is refused and the list says why.
+    private fun resolveNote(
+        changeId: String,
+        kept: StorageNotice,
+        resolve: suspend (Session, String, Long) -> Boolean,
+    ) {
+        val session = registry.current.value.session ?: return
+        val change = state.value.changes.firstOrNull { it.id == changeId }
+        val seen = change?.failure?.serverNoteUpdatedAtEpochMs
+        viewModelScope.launch {
+            val done = seen != null && resolve(session, changeId, seen)
+            _notice.value = if (done) kept else StorageNotice.CHANGED_REFRESHED
         }
     }
 
@@ -99,12 +151,14 @@ class StorageViewModel(
             store.observeCatalog(scope),
             store.observeOutbox(scope),
             capBytes.filterNotNull(),
-        ) { catalog, rows, cap ->
+            unreachable,
+        ) { catalog, rows, cap, serverUnreachable ->
             StorageUiState(
                 capBytes = cap,
                 kept = catalog.filter { it.pinned },
                 cached = catalog.filterNot { it.pinned },
                 changes = pendingChanges(rows, catalog),
+                serverUnreachable = serverUnreachable,
             )
         }
 
@@ -138,6 +192,7 @@ internal fun pendingChanges(
         createdAt = row.createdAt,
         detail = row.payload.detail(),
         blocked = dependants,
+        failure = row.failure,
     )
     val progress = rows.filter { it.isLiveProgress() }.groupBy { it.documentId }
     return rows.mapNotNull { row ->
@@ -162,6 +217,7 @@ private fun List<OutboxRow>.progressChange(titles: Map<String, String?>): Pendin
         error = lastOrNull { it.lastError != null }?.lastError,
         createdAt = maxOf { it.createdAt },
         rowIds = map { it.id },
+        failure = firstOrNull { it.state == OutboxState.FAILED }?.failure,
     )
 
 private val STATUS_WEIGHT =

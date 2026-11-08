@@ -52,6 +52,7 @@ private const val BACKOFF_ATTEMPT_3_MS = 30_000L
 private const val BACKOFF_ATTEMPT_4_MS = 120_000L
 private const val BACKOFF_ATTEMPT_5_MS = 600_000L
 internal const val HOURLY_CAP_MS = 3_600_000L
+internal const val STILL_PREPARING_ERROR = "server_preparing_content"
 private const val MILLIS_PER_SECOND = 1_000L
 
 private const val HTTP_UNAUTHORIZED = 401
@@ -152,7 +153,7 @@ private fun terminalFailure(
     }
 
 // The server has no reader content for this item yet, so the change is kept until it has.
-private val SendOutcome.Http.unpreparedContent: Boolean
+internal val SendOutcome.Http.unpreparedContent: Boolean
     get() = problem?.errors?.any { it.field == "document_id" } == true
 
 private val SendOutcome.Http.locatorRejected: Boolean

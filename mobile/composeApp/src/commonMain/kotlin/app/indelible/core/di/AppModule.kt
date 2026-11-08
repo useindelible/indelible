@@ -40,6 +40,7 @@ import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.ScopePurger
 import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.serverUnreachable
 import app.indelible.core.offline.SessionTransitions
 import app.indelible.core.offline.SqlDelightOfflineStore
 import app.indelible.core.storage.TokenStorage
@@ -270,7 +271,15 @@ private fun Module.viewModels() {
     single { SearchViewModel(get()) }
     single { SidebarViewModel(get()) }
     single {
-        StorageViewModel(get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
+        val transport = get<AuthenticatedApiTransport>()
+        StorageViewModel(
+            registry = get(),
+            store = get(),
+            downloads = get(),
+            preferences = get(),
+            requestDrain = get<OutboxWorker>()::requestDrain,
+            unreachable = serverUnreachable(get<ConnectivityObserver>().online, transport.reachable),
+        )
     }
     single {
         val transport = get<AuthenticatedApiTransport>()

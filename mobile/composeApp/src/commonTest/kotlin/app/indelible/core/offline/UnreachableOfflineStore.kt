@@ -60,6 +60,8 @@ internal object UnreachableOfflineStore : OfflineStore {
         id: String,
     ): Boolean = unreachable()
 
+    override suspend fun resetBackoff(scope: String): Unit = unreachable()
+
     override suspend fun discardRows(
         session: Session,
         rowIds: List<String>,
