@@ -1,5 +1,8 @@
 use std::path::Path;
 
+use axum::Router;
+use axum::routing::any;
+use http::StatusCode;
 use tower_http::services::{ServeDir, ServeFile};
 
 /// Serves the built web app when its directory is present, so one container
@@ -10,15 +13,21 @@ use tower_http::services::{ServeDir, ServeFile};
 ///
 /// Returns `None` when there is no build to serve (source checkouts, tests),
 /// leaving the router API-only.
-pub fn spa_service(web_root: &Path) -> Option<ServeDir<ServeFile>> {
+pub fn spa_service(web_root: &Path) -> Option<Router> {
     let index = web_root.join("index.html");
     if !index.is_file() {
         return None;
     }
 
     // Unknown paths fall back to index.html so client-side routes survive a
-    // hard refresh; real files are still served from disk.
-    Some(ServeDir::new(web_root).fallback(ServeFile::new(index)))
+    // hard refresh; real files are still served from disk. An API path that no
+    // route matched stays a 404, so clients never read the web app as an answer.
+    Some(
+        Router::new()
+            .route("/api", any(StatusCode::NOT_FOUND))
+            .route("/api/{*rest}", any(StatusCode::NOT_FOUND))
+            .fallback_service(ServeDir::new(web_root).fallback(ServeFile::new(index))),
+    )
 }
 
 #[cfg(test)]
@@ -93,6 +102,18 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(body_of(response).await, "<html>indelible</html>");
+    }
+
+    #[tokio::test]
+    async fn unknown_api_paths_are_not_found() {
+        let root = TempWebRoot::new();
+
+        for path in ["/api", "/api/v1/missing", "/api/v1/server/capabilities"] {
+            let response = get_path(&root.0, path).await;
+
+            assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
+            assert_eq!(body_of(response).await, "", "{path}");
+        }
     }
 
     #[tokio::test]
