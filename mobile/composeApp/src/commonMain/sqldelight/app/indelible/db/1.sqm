@@ -1,0 +1,1 @@
+ALTER TABLE outbox ADD COLUMN failure_json TEXT;
