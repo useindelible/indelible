@@ -51,7 +51,8 @@ CREATE TABLE outbox (
     next_attempt_at INTEGER NOT NULL DEFAULT 0,
     state TEXT NOT NULL DEFAULT 'pending',
     last_error TEXT,
-    superseded INTEGER NOT NULL DEFAULT 0
+    superseded INTEGER NOT NULL DEFAULT 0,
+    failure_json TEXT
 );
 CREATE UNIQUE INDEX outbox_scope_id ON outbox(scope, id);
 CREATE INDEX outbox_drain ON outbox(scope, state, next_attempt_at, seq);
@@ -152,12 +153,15 @@ WHERE scope = ? AND id = ?;
 setState:
 UPDATE outbox SET state = ?, last_error = ? WHERE scope = ? AND id = ?;
 
+setFailed:
+UPDATE outbox SET state = 'failed', last_error = ?, failure_json = ? WHERE scope = ? AND id = ?;
+
 setStateForEntity:
 UPDATE outbox SET state = ? WHERE scope = ? AND entity_id = ? AND state = ?;
 
 resetForRetry:
 UPDATE outbox
-SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL
+SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL, failure_json = NULL
 WHERE scope = ? AND id = ?;
 
 outboxForScope:

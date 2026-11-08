@@ -78,14 +78,14 @@ private object UnreachableOfflineStore : OfflineStore {
     override suspend fun markFailed(
         scope: String,
         id: String,
-        error: String?,
+        failure: SyncFailure,
     ): Unit = unreachable()
 
     override suspend fun failCreateAndBlockDependants(
         scope: String,
         id: String,
         entityId: String,
-        error: String?,
+        failure: SyncFailure,
     ): Unit = unreachable()
 
     override suspend fun retryRow(
@@ -246,6 +246,8 @@ private object UnreachableOfflineStore : OfflineStore {
 private fun unreachable(): Nothing = throw UnsupportedOperationException("offline store reached unexpectedly")
 
 class FakeNetworkFailure : Exception("no network")
+
+fun rejected(message: String) = SyncFailure(SyncFailure.Kind.REJECTED, serverMessage = message)
 
 class MarkDocumentSyncedSpyStore(
     private val delegate: OfflineStore,

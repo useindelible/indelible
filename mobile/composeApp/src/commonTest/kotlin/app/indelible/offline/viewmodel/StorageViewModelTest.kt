@@ -10,6 +10,7 @@ import app.indelible.core.offline.downloadHarness
 import app.indelible.core.offline.enqueue
 import app.indelible.core.offline.enqueueProgress
 import app.indelible.core.offline.json
+import app.indelible.core.offline.rejected
 import app.indelible.core.offline.row
 import app.indelible.core.offline.seed
 import app.indelible.core.storage.DEFAULT_OFFLINE_CAP_BYTES
@@ -94,7 +95,7 @@ class StorageViewModelTest {
         runTest {
             val s = storage()
             val id = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("mine", null))
-            s.h.store.markFailed(DL_SCOPE, id, "rejected")
+            s.h.store.markFailed(DL_SCOPE, id, rejected("rejected"))
 
             s.viewModel.retry(id)
             advanceUntilIdle()
@@ -143,7 +144,7 @@ class StorageViewModelTest {
             s.h.signedIn.enqueue(OutboxPayload.DocumentNote("mine", null))
             val failed = s.h.signedIn.enqueueProgress(2_000)
             s.h.signedIn.enqueueProgress(3_000)
-            s.h.store.markFailed(DL_SCOPE, failed, "rejected")
+            s.h.store.markFailed(DL_SCOPE, failed, rejected("rejected"))
             advanceUntilIdle()
             assertEquals(2, s.state.queuedChanges)
             assertEquals(3, s.change(first).rowIds.size)
@@ -198,7 +199,7 @@ class StorageViewModelTest {
             val retrying = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("draft", null))
             s.h.store.markAttempt(DL_SCOPE, retrying, now = 1, nextAttemptAt = 2, error = "timeout")
             val failed = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("mine", null))
-            s.h.store.markFailed(DL_SCOPE, failed, "Note too long")
+            s.h.store.markFailed(DL_SCOPE, failed, rejected("Note too long"))
             advanceUntilIdle()
 
             assertEquals(ChangeStatus.PENDING, s.change(waiting).status)
@@ -219,7 +220,7 @@ class StorageViewModelTest {
         runTest {
             val s = storage()
             val older = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("older", null))
-            s.h.store.markFailed(DL_SCOPE, older, "rejected")
+            s.h.store.markFailed(DL_SCOPE, older, rejected("rejected"))
             val newer = s.h.signedIn.enqueue(OutboxPayload.DocumentNote("newer", null))
             s.h.store.remove(DL_SCOPE, newer)
             advanceUntilIdle()
@@ -246,7 +247,7 @@ class StorageViewModelTest {
             val s = storage()
             val create = s.h.signedIn.enqueue(OutboxPayload.HighlightCreate("hlt_9", "yellow", "quoted", null, null))
             val colour = s.h.signedIn.enqueue(OutboxPayload.HighlightColor("hlt_9", "blue"))
-            s.h.store.failCreateAndBlockDependants(DL_SCOPE, create, "hlt_9", "rejected")
+            s.h.store.failCreateAndBlockDependants(DL_SCOPE, create, "hlt_9", rejected("rejected"))
             advanceUntilIdle()
 
             val change = s.state.changes.single()

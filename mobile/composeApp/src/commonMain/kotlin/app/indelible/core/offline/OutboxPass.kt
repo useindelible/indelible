@@ -43,13 +43,14 @@ internal class OutboxPass(
         val plan = eligibleRows(store.pendingOrdered(scope), clock())
         val rows = plan.admitted
         val shielded = mutableSetOf<String>()
+        val tooOld = mutableSetOf<OutboxKind>()
         var skippedDue = false
         var stop: PassResult? = null
         var index = 0
         while (index < rows.size && stop == null) {
             val row = rows[index]
-            if (row.entityId in shielded) {
-                skippedDue = true
+            if (row.entityId in shielded || row.kind in tooOld) {
+                if (row.entityId in shielded) skippedDue = true
                 index++
                 continue
             }
@@ -59,7 +60,7 @@ internal class OutboxPass(
                 if (registry.current.value.session !== session) {
                     PassResult.Stale
                 } else {
-                    sendAndApply(session, clientId, batch, shielded)
+                    sendAndApply(session, clientId, batch, shielded, tooOld)
                 }
         }
         return when (stop) {
@@ -69,17 +70,26 @@ internal class OutboxPass(
         }
     }
 
+    /** Returns how many rows an old server refused were given another try. */
+    suspend fun reviveServerTooOld(scope: String): Int =
+        store
+            .rowsByState(scope, OutboxState.FAILED)
+            .filter { it.failure?.kind == SyncFailure.Kind.SERVER_TOO_OLD }
+            .count { store.retryRow(scope, it.id) }
+
     /** Returns the result that ends the pass, or null when the next batch may follow. */
     private suspend fun sendAndApply(
         session: Session,
         clientId: String,
         batch: List<OutboxRow>,
         shielded: MutableSet<String>,
+        tooOld: MutableSet<OutboxKind>,
     ): PassResult? {
         val scope = session.scope
+        val head = batch.first()
         val outcome = sender.send(session, clientId, batch)
         val outcomeAt = clock()
-        return when (val classification = classify(outcome, batch.first().attempts, outcomeAt, isNetwork)) {
+        return when (val classification = classify(head.kind, outcome, head.attempts, outcomeAt, isNetwork)) {
             is Classification.Retryable -> {
                 applyRetryable(scope, batch, classification, outcome, outcomeAt)
                 PassResult.RetryableStop(classification.nextAttemptAt)
@@ -88,6 +98,7 @@ internal class OutboxPass(
             Classification.Stale -> PassResult.Stale
             is Classification.Terminal -> {
                 applyTerminal(scope, batch, classification, shielded)
+                if (classification.failure.kind == SyncFailure.Kind.SERVER_TOO_OLD) tooOld += head.kind
                 null
             }
             Classification.Done -> {
@@ -146,9 +157,9 @@ internal class OutboxPass(
     ) {
         for (row in batch) {
             if (row.kind == OutboxKind.HIGHLIGHT_CREATE) {
-                store.failCreateAndBlockDependants(scope, row.id, row.entityId, classification.error)
+                store.failCreateAndBlockDependants(scope, row.id, row.entityId, classification.failure)
             } else {
-                store.markFailed(scope, row.id, classification.error)
+                store.markFailed(scope, row.id, classification.failure)
             }
             shielded += row.entityId
         }

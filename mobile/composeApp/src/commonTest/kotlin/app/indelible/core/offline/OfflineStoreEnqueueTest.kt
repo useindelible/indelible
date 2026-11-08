@@ -165,7 +165,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
 
             store.enqueueHighlightColor(session, "hlt_1", "doc_1")
 
@@ -181,7 +181,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
             store.retryRow(scope, createId)
 
             store.enqueueHighlightColor(session, "hlt_1", "doc_1")
@@ -198,7 +198,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
-            store.markFailed(scope, colorId, "400")
+            store.markFailed(scope, colorId, rejected("400"))
 
             store.enqueueHighlightDelete(session, "hlt_1", "doc_1")
 
@@ -214,7 +214,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
 
             store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
 

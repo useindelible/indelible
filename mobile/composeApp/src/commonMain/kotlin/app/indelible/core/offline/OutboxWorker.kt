@@ -65,9 +65,17 @@ class OutboxWorker(
         requests.trySend(Unit)
     }
 
+    /** Also gives every change an old server refused one more try, in case the server was upgraded since. */
     fun markStartupReady() {
         startupReady.value = true
         requestDrain()
+        workerScope.value?.launch {
+            val scope = registry.current.value.session?.scope ?: return@launch
+            val revived =
+                runCatching { pass.reviveServerTooOld(scope) }
+                    .getOrElse { if (it is CancellationException) throw it else 0 }
+            if (revived > 0) requestDrain()
+        }
     }
 
     /** Returns once no pass is running; passes stay blocked until [endTransition]. */

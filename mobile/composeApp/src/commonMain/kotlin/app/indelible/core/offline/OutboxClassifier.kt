@@ -10,6 +10,7 @@ sealed interface SendOutcome {
         val status: Int,
         val retryAfterSeconds: Long?,
         val message: String,
+        val problem: ApiProblem? = null,
     ) : SendOutcome
 
     data class Transport(
@@ -28,7 +29,7 @@ sealed interface Classification {
     data object AuthBlocked : Classification
 
     data class Terminal(
-        val error: String,
+        val failure: SyncFailure,
     ) : Classification
 
     data object Done : Classification
@@ -44,12 +45,11 @@ private const val BACKOFF_ATTEMPT_5_MS = 600_000L
 internal const val HOURLY_CAP_MS = 3_600_000L
 private const val MILLIS_PER_SECOND = 1_000L
 
-private const val HTTP_BAD_REQUEST = 400
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_FORBIDDEN = 403
 private const val HTTP_NOT_FOUND = 404
+private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val HTTP_TIMEOUT = 408
-private const val HTTP_CONFLICT = 409
 private const val HTTP_UNPROCESSABLE = 422
 private const val HTTP_TOO_MANY_REQUESTS = 429
 private const val HTTP_INSUFFICIENT_STORAGE = 507
@@ -71,6 +71,7 @@ fun backoffMs(attempts: Int): Long {
 }
 
 fun classify(
+    kind: OutboxKind,
     outcome: SendOutcome,
     attempts: Int,
     now: Long,
@@ -83,38 +84,96 @@ fun classify(
             if (isNetwork(outcome.cause)) {
                 Classification.Retryable(now + backoffMs(attempts + 1))
             } else {
-                Classification.Terminal(outcome.cause.message ?: outcome.cause.toString())
+                val message = outcome.cause.message ?: outcome.cause.toString()
+                Classification.Terminal(SyncFailure(SyncFailure.Kind.LOCAL_ERROR, serverMessage = message))
             }
-        is SendOutcome.Http -> classifyHttp(outcome, attempts, now)
+        is SendOutcome.Http -> classifyHttp(kind, outcome, attempts, now)
     }
 
 // 401/403 land here only post-refresh (the transport retries a pre-refresh 401 itself), so they
 // mean the session, not this row, is unauthorized.
 private fun classifyHttp(
+    kind: OutboxKind,
     outcome: SendOutcome.Http,
     attempts: Int,
     now: Long,
 ): Classification {
     val status = outcome.status
-    val isBadRequestOrConflict = status == HTTP_BAD_REQUEST || status == HTTP_CONFLICT
-    val isNotFoundOrUnprocessable = status == HTTP_NOT_FOUND || status == HTTP_UNPROCESSABLE
-    val isTerminalRejection = isBadRequestOrConflict || isNotFoundOrUnprocessable
-    val isRetryableFailure = status == HTTP_TIMEOUT || status == HTTP_TOO_MANY_REQUESTS || status in SERVER_ERROR_RANGE
     return when {
         status == HTTP_UNAUTHORIZED || status == HTTP_FORBIDDEN -> Classification.AuthBlocked
-        isTerminalRejection -> Classification.Terminal(outcome.message)
+        status == HTTP_UNPROCESSABLE && outcome.unpreparedContent -> Classification.Retryable(now + HOURLY_CAP_MS)
         // 507 always waits the hourly cap regardless of Retry-After or attempt count: it signals
         // server-side capacity, not a per-row problem that shorter backoff would resolve sooner.
         status == HTTP_INSUFFICIENT_STORAGE -> Classification.Retryable(now + HOURLY_CAP_MS)
-        // A server can ask for a long wait, but never for one longer than the schedule's own cap:
-        // a misconfigured header must not park a row for days.
-        isRetryableFailure -> {
-            val requested =
-                outcome.retryAfterSeconds
-                    ?.coerceIn(0, HOURLY_CAP_MS / MILLIS_PER_SECOND)
-                    ?.let { it * MILLIS_PER_SECOND }
-            Classification.Retryable(now + (requested ?: backoffMs(attempts + 1)))
-        }
-        else -> Classification.Terminal(outcome.message)
+        status.isRetryable -> Classification.Retryable(now + retryAfterOrBackoff(outcome, attempts))
+        else -> Classification.Terminal(terminalFailure(kind, outcome))
     }
 }
+
+private val Int.isRetryable: Boolean
+    get() = this == HTTP_TIMEOUT || this == HTTP_TOO_MANY_REQUESTS || this in SERVER_ERROR_RANGE
+
+// A server can ask for a long wait, but never for one longer than the schedule's own cap:
+// a misconfigured header must not park a row for days.
+private fun retryAfterOrBackoff(
+    outcome: SendOutcome.Http,
+    attempts: Int,
+): Long =
+    outcome.retryAfterSeconds
+        ?.coerceIn(0, HOURLY_CAP_MS / MILLIS_PER_SECOND)
+        ?.let { it * MILLIS_PER_SECOND }
+        ?: backoffMs(attempts + 1)
+
+private fun terminalFailure(
+    kind: OutboxKind,
+    outcome: SendOutcome.Http,
+): SyncFailure =
+    when (outcome.status) {
+        HTTP_NOT_FOUND -> notFound(kind, outcome)
+        HTTP_METHOD_NOT_ALLOWED -> serverTooOld(kind, outcome)
+        else -> rejection(kind, outcome)
+    }
+
+// The server has no reader content for this item yet, so the change is kept until it has.
+private val SendOutcome.Http.unpreparedContent: Boolean
+    get() = problem?.errors?.any { it.field == "document_id" } == true
+
+private val SendOutcome.Http.locatorRejected: Boolean
+    get() = problem?.errors?.any { it.field.startsWith("locator") || it.field.startsWith("source_locator") } == true
+
+private fun SendOutcome.Http.failure(
+    kind: SyncFailure.Kind,
+    feature: SyncFailure.Feature? = null,
+) = SyncFailure(
+    kind = kind,
+    status = status,
+    serverCode = problem?.code,
+    serverMessage = serverMessageOf(problem, message),
+    feature = feature,
+)
+
+private fun rejection(
+    kind: OutboxKind,
+    outcome: SendOutcome.Http,
+): SyncFailure =
+    if (kind == OutboxKind.HIGHLIGHT_CREATE && outcome.status == HTTP_UNPROCESSABLE && outcome.locatorRejected) {
+        outcome.failure(SyncFailure.Kind.ANCHOR_LOST)
+    } else {
+        outcome.failure(SyncFailure.Kind.REJECTED)
+    }
+
+// A bare 404 is a route the server does not have; a problem body is a document it no longer has.
+private fun notFound(
+    kind: OutboxKind,
+    outcome: SendOutcome.Http,
+): SyncFailure =
+    when (outcome.problem?.code) {
+        null -> serverTooOld(kind, outcome)
+        "not_found" -> outcome.failure(SyncFailure.Kind.DELETED_ELSEWHERE)
+        else -> outcome.failure(SyncFailure.Kind.REJECTED)
+    }
+
+private fun serverTooOld(
+    kind: OutboxKind,
+    outcome: SendOutcome.Http,
+): SyncFailure = outcome.failure(SyncFailure.Kind.SERVER_TOO_OLD, kind.feature())

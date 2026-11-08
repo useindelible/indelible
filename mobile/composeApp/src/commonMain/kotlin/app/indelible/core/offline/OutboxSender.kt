@@ -223,7 +223,13 @@ class ApiOutboxSender(
         when {
             response.status == replayStatus -> SendOutcome.ReplaySuccess
             response.status in SUCCESS_STATUS_RANGE -> SendOutcome.Success
-            else -> SendOutcome.Http(response.status, response.retryAfterSeconds, response.bodyText)
+            else ->
+                SendOutcome.Http(
+                    response.status,
+                    response.retryAfterSeconds,
+                    response.bodyText,
+                    parseProblem(response.bodyText),
+                )
         }
 }
 

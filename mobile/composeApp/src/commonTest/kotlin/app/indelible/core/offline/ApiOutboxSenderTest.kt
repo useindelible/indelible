@@ -283,7 +283,8 @@ class ApiOutboxSenderTest {
 
             val http = assertIs<SendOutcome.Http>(outcome)
             assertEquals(401, http.status)
-            assertEquals(Classification.AuthBlocked, classify(outcome, attempts = 0, now = 0) { false })
+            val classification = classify(OutboxKind.DOCUMENT_NOTE, outcome, attempts = 0, now = 0) { false }
+            assertEquals(Classification.AuthBlocked, classification)
         }
 
     @Test
@@ -302,4 +303,31 @@ class ApiOutboxSenderTest {
     private companion object {
         const val FAR_FUTURE_EXPIRY = 4_102_444_800L
     }
+
+    @Test
+    fun problemBodyIsParsedIntoTheOutcome() =
+        runTest {
+            val body =
+                """{"type":"about:blank","title":"Not Found","status":404,"detail":"document gone",""" +
+                    """"code":"not_found","errors":[{"field":"document_id","message":"gone"}]}"""
+            val sender = senderWith { respond(body, HttpStatusCode.NotFound, jsonHeaders) }
+
+            val outcome = assertIs<SendOutcome.Http>(sender.send(SESSION, CLIENT_ID, listOf(noteRow())))
+
+            assertEquals(404, outcome.status)
+            assertEquals("not_found", outcome.problem?.code)
+            assertEquals("document gone", outcome.problem?.detail)
+            assertEquals(listOf(FieldError("document_id", "gone")), outcome.problem?.errors)
+        }
+
+    @Test
+    fun nonJsonErrorBodyLeavesProblemNull() =
+        runTest {
+            val sender = senderWith { respond("<html>nope</html>", HttpStatusCode.NotFound) }
+
+            val outcome = assertIs<SendOutcome.Http>(sender.send(SESSION, CLIENT_ID, listOf(noteRow())))
+
+            assertEquals(null, outcome.problem)
+            assertEquals("<html>nope</html>", outcome.message)
+        }
 }

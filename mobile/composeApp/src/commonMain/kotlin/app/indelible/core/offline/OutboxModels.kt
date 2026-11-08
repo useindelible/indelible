@@ -94,6 +94,8 @@ data class OutboxRow(
     val lastError: String?,
     /** A newer change to the same field was acknowledged; this row is never sent or replayed. */
     val superseded: Boolean = false,
+    /** Set with the FAILED state; cleared by a retry. */
+    val failure: SyncFailure? = null,
 )
 
 data class CachedDocumentRow(

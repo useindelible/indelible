@@ -37,7 +37,7 @@ interface OutboxStore {
     suspend fun markFailed(
         scope: String,
         id: String,
-        error: String?,
+        failure: SyncFailure,
     )
 
     /** One transaction: the create becomes FAILED and every PENDING row for its entity becomes BLOCKED. */
@@ -45,7 +45,7 @@ interface OutboxStore {
         scope: String,
         id: String,
         entityId: String,
-        error: String?,
+        failure: SyncFailure,
     )
 
     /** Resets the row to PENDING, unblocks its BLOCKED rows, and returns true; false unless FAILED and unsuperseded. */
