@@ -6,3 +6,6 @@ typealias RecentSearch = app.indelible.api.generated.models.RecentSearchResponse
 typealias RecentSearchList = app.indelible.api.generated.models.RecentSearchListResponse
 typealias SearchSuggestion = app.indelible.api.generated.models.SearchSuggestionResponse
 typealias SearchSuggestionsResponse = app.indelible.api.generated.models.SearchSuggestionsResponse
+
+val SearchResult.rowKey: String
+    get() = (documentId ?: deliveryId ?: sourceEntryId ?: title) + "#" + section?.key.orEmpty()
