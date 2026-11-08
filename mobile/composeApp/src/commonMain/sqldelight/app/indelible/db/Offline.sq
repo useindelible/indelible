@@ -167,6 +167,16 @@ UPDATE outbox SET state = 'failed', last_error = ?, failure_json = ? WHERE scope
 setStateForEntity:
 UPDATE outbox SET state = ? WHERE scope = ? AND entity_id = ? AND state = ?;
 
+deleteBlockedRowsForEntity:
+DELETE FROM outbox WHERE scope = ? AND entity_id = ? AND state = 'blocked';
+
+liveRowCountsByScope:
+SELECT o.scope, COUNT(*) AS waiting
+FROM outbox o
+JOIN client_state c ON c.scope = o.scope
+WHERE o.superseded = 0 AND c.purge_pending = 0
+GROUP BY o.scope;
+
 resetForRetry:
 UPDATE outbox
 SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL, failure_json = NULL

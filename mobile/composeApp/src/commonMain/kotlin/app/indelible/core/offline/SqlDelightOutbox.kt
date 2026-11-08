@@ -187,6 +187,13 @@ internal class SqlDelightOutboxObservation(
             .mapToList(context.dispatcher)
             .map { rows -> rows.map(::outboxRowFrom) }
 
+    override fun observeWaitingByScope(): Flow<Map<String, Int>> =
+        context.queries
+            .liveRowCountsByScope()
+            .asFlow()
+            .mapToList(context.dispatcher)
+            .map { rows -> rows.associate { it.scope to it.waiting.toInt() } }
+
     override fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>> =
         context.queries
             .documentSyncCounts(scope)

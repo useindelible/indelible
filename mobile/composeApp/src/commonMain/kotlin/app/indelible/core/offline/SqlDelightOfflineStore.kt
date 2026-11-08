@@ -40,9 +40,11 @@ internal class SqlDelightStoreContext(
 class SqlDelightOfflineStore private constructor(
     context: SqlDelightStoreContext,
     failCreateHook: () -> Unit,
+    events: LocalChangeEvents,
 ) : OfflineStore,
     OutboxStore by SqlDelightOutbox(context, failCreateHook),
     OutboxObservation by SqlDelightOutboxObservation(context),
+    OutboxResolutionStore by SqlDelightResolutions(context, events),
     CachedDocumentStore by SqlDelightCachedDocuments(context),
     CachedContentStore by SqlDelightCachedContent(context),
     ListSnapshotStore by SqlDelightListSnapshots(context),
@@ -52,5 +54,6 @@ class SqlDelightOfflineStore private constructor(
         failCreateHook: () -> Unit = {},
         dispatcher: CoroutineDispatcher = Dispatchers.Default,
         registry: SessionRegistry = SessionRegistry(),
-    ) : this(SqlDelightStoreContext(database, dispatcher, registry), failCreateHook)
+        events: LocalChangeEvents = LocalChangeEvents(),
+    ) : this(SqlDelightStoreContext(database, dispatcher, registry), failCreateHook, events)
 }

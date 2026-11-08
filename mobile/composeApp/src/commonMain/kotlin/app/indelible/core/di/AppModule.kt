@@ -119,7 +119,7 @@ internal fun appModule(
         single { OfflineDatabase(deps.databaseDriverFactory.createDriver()) }
         single { SessionRegistry() }
         single { LocalChangeEvents() }
-        single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get()) }
+        single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get(), events = get()) }
         single {
             AuthenticatedApiTransport(
                 tokenStorage = get(),

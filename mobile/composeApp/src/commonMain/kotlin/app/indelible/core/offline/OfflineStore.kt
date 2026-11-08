@@ -65,6 +65,28 @@ interface OutboxObservation {
     ): Flow<List<OutboxRow>>
 
     fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>>
+
+    fun observeWaitingByScope(): Flow<Map<String, Int>>
+}
+
+/** Ends failed rows the way the user chose, and announces each document's change once it has committed. */
+interface OutboxResolutionStore {
+    suspend fun discardRows(
+        session: Session,
+        rowIds: List<String>,
+    ): Int
+
+    suspend fun keepLocalNote(
+        session: Session,
+        rowId: String,
+        seenServerUpdatedAt: Long,
+    ): Boolean
+
+    suspend fun keepServerNote(
+        session: Session,
+        rowId: String,
+        seenServerUpdatedAt: Long,
+    ): Boolean
 }
 
 interface CachedDocumentStore {
@@ -231,6 +253,7 @@ interface ListSnapshotStore {
 interface OfflineStore :
     OutboxStore,
     OutboxObservation,
+    OutboxResolutionStore,
     CachedDocumentStore,
     CachedContentStore,
     ListSnapshotStore,
