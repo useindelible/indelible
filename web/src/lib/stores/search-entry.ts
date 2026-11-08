@@ -5,6 +5,11 @@ export function resultKey(r: SearchResultResponse): string {
 	return r.document_id ?? r.delivery_id ?? r.source_entry_id ?? '';
 }
 
+/** One item can match in several sections, so a row is the item plus its section. */
+export function rowKey(r: SearchResultResponse): string {
+	return `${resultKey(r)}#${r.section?.key ?? ''}`;
+}
+
 export function getDomain(url: string): string {
 	try {
 		return new URL(url).hostname.replace('www.', '');

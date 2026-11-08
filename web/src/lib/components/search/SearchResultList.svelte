@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { SearchResultResponse } from '$lib/api/generated/types.gen';
-	import { resultKey } from '$lib/stores/search.svelte';
+	import { rowKey } from '$lib/stores/search.svelte';
 	import SearchResultRow from './SearchResultRow.svelte';
 	import ItemRowSkeleton from '$lib/components/library/ItemRowSkeleton.svelte';
 	import { t } from '$lib/i18n';
@@ -70,8 +70,8 @@
 			</div>
 		</div>
 	{:else}
-		{#each results as result (resultKey(result) + (result.section?.key ?? ''))}
-			{@const key = resultKey(result)}
+		{#each results as result (rowKey(result))}
+			{@const key = rowKey(result)}
 			<SearchResultRow
 				{result}
 				selected={selectedId === key}

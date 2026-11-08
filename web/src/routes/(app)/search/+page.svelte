@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import { getSearch, resultKey } from '$lib/stores/search.svelte';
+	import { getSearch, rowKey } from '$lib/stores/search.svelte';
 	import { getViewport } from '$lib/stores/viewport.svelte';
 	import { openSearchResult } from '$lib/components/search/open-result';
 	import { registerShortcuts } from '$lib/shortcuts/registry.svelte';
@@ -183,10 +183,10 @@
 
 	function moveSelection(offset: number) {
 		const items = search.results;
-		const idx = items.findIndex((r) => resultKey(r) === search.selectedId);
+		const idx = items.findIndex((r) => rowKey(r) === search.selectedId);
 		const next = offset > 0 ? Math.min(idx + 1, items.length - 1) : Math.max(idx - 1, 0);
 		const item = items[next];
-		search.setSelectedId(item ? resultKey(item) : null);
+		search.setSelectedId(item ? rowKey(item) : null);
 	}
 
 	registerShortcuts(() => ({
