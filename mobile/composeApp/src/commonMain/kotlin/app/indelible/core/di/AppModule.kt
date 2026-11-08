@@ -31,6 +31,7 @@ import app.indelible.core.offline.ApiOutboxSender
 import app.indelible.core.offline.ConnectivityObserver
 import app.indelible.core.offline.DownloadManager
 import app.indelible.core.offline.ListSnapshots
+import app.indelible.core.offline.LocalChangeEvents
 import app.indelible.core.offline.OfflineCopies
 import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.offline.OfflineSetFetcher
@@ -117,6 +118,7 @@ internal fun appModule(
         single { deps.connectivityObserver }
         single { OfflineDatabase(deps.databaseDriverFactory.createDriver()) }
         single { SessionRegistry() }
+        single { LocalChangeEvents() }
         single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get()) }
         single {
             AuthenticatedApiTransport(

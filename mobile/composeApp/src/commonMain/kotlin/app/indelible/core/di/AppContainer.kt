@@ -11,6 +11,7 @@ import app.indelible.collections.repository.CollectionsRepository
 import app.indelible.core.network.AuthenticatedApiTransport
 import app.indelible.core.offline.ConnectivityObserver
 import app.indelible.core.offline.DownloadManager
+import app.indelible.core.offline.LocalChangeEvents
 import app.indelible.core.offline.OfflineFilesRoot
 import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.ScopePurger
@@ -84,6 +85,7 @@ data class AppContainer(
     val storageViewModel: StorageViewModel,
     val offlineShelf: OfflineShelfViewModel,
     val documentOffline: (String) -> DocumentOfflineViewModel,
+    val localChangeEvents: LocalChangeEvents,
 )
 
 @Composable
@@ -172,4 +174,5 @@ private fun appContainer(
         storageViewModel = koin.get(),
         offlineShelf = koin.get(),
         documentOffline = { id -> DocumentOfflineViewModel(id, koin.get(), koin.get(), koin.get()) },
+        localChangeEvents = koin.get(),
     )

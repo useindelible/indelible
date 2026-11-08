@@ -46,6 +46,7 @@ class ReaderViewModel(
     private val initialPreferences: ReaderPreferences = ReaderPreferences(),
     private val readingEvents: ReadingEventWriter,
     openPdf: suspend (String) -> PdfDocument = PdfEngine::open,
+    triggers: ReaderTriggers = ReaderTriggers(),
 ) : ViewModel() {
     /** One sitting: every event this reader records is grouped under it. */
     private val sessionId = uuidV7()
@@ -103,6 +104,7 @@ class ReaderViewModel(
     init {
         _uiState.value = ReaderUiState.Loading
         load(initialPreferences)
+        viewModelScope.reconcileReader(documentId, repository, _uiState, triggers)
     }
 
     /**

@@ -61,7 +61,7 @@ class HighlightToolbarOverlayTest {
 
     private fun ComposeUiTest.showToolbar(): Opened {
         val events = RecordingReadingEventWriter()
-        val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events) { document }
+        val viewModel = ReaderViewModel("doc_test1", repository, readingEvents = events, openPdf = { document })
         val anchor = SelectionRect(0f, 64f, 10f, 10f)
         val opened = Opened()
         setContent {

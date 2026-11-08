@@ -40,6 +40,7 @@ class FakeReaderRepository : ReaderRepository {
     var epubChapterResult: suspend (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
     val epubChapterCalls = mutableListOf<Int>()
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
+    var listHighlightsCallCount = 0
     var highlightsGate: CompletableDeferred<Unit>? = null
 
     /** When set, the note, tag and entity reads wait for it. */
@@ -62,6 +63,7 @@ class FakeReaderRepository : ReaderRepository {
     var lastSavedUrl: String? = null
 
     var getItemNoteResult: Result<String?> = Result.success(null)
+    var getItemNoteCallCount = 0
     var upsertItemNoteResult: Result<String>? = null
     var getItemTagsResult: Result<List<String>> = Result.success(emptyList())
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
@@ -144,6 +146,7 @@ class FakeReaderRepository : ReaderRepository {
     }
 
     override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> {
+        listHighlightsCallCount++
         highlightsGate?.await()
         return listHighlightsResult
     }
@@ -213,6 +216,7 @@ class FakeReaderRepository : ReaderRepository {
     override suspend fun listTags(): Result<List<TagData>> = listTagsResult
 
     override suspend fun getItemNote(itemId: String): Result<String?> {
+        getItemNoteCallCount++
         metadataGate?.await()
         return getItemNoteResult
     }
