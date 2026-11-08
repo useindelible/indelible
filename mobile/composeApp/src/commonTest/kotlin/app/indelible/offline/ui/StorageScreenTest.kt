@@ -155,26 +155,6 @@ class StorageScreenTest {
             onNodeWithText("Queued").assertExists()
         }
 
-    private fun failed(
-        kind: OutboxKind,
-        failure: SyncFailure,
-        detail: String? = null,
-        blocked: List<PendingChange> = emptyList(),
-    ) = PendingChange(
-        id = "row_1",
-        kind = kind,
-        documentTitle = "The Patient Mind",
-        status = ChangeStatus.FAILED,
-        error = null,
-        createdAt = 1L,
-        detail = detail,
-        blocked = blocked,
-        failure = failure,
-    )
-
-    private fun blockedColour(id: String) =
-        PendingChange(id, OutboxKind.HIGHLIGHT_COLOR, "The Patient Mind", ChangeStatus.BLOCKED, null, 2L)
-
     @Test
     fun aDeletedItemShowsItsFullTextWithCopyAndDiscard() =
         runComposeUiTest {
@@ -285,26 +265,29 @@ class StorageScreenTest {
         }
 
     @Test
-    fun aNoteConflictOffersViewBoth() =
+    fun viewBothOpensTheConflictSheet() =
         runComposeUiTest {
             val conflict =
                 SyncFailure(SyncFailure.Kind.NOTE_CONFLICT, serverNoteBody = "theirs", serverNoteUpdatedAtEpochMs = 2L)
             val change = failed(OutboxKind.DOCUMENT_NOTE, conflict, detail = "mine")
-            var viewed: String? = null
+            var kept: String? = null
             setContent {
                 AppTheme {
                     StorageContent(
                         StorageUiState(changes = listOf(change)),
-                        StorageActions(sync = SyncActions(onViewBoth = { viewed = it })),
+                        StorageActions(sync = SyncActions(onKeepMine = { kept = it })),
                     )
                 }
             }
 
             onNodeWithText("This note changed on another device").assertExists()
             onNodeWithText("Retry").assertDoesNotExist()
+            onNodeWithText("Keep mine").assertDoesNotExist()
             onNodeWithText("View both").performClick()
+            onNodeWithText("theirs").assertExists()
+            onNodeWithText("Keep mine").performClick()
 
-            assertEquals("row_1", viewed)
+            assertEquals("row_1", kept)
         }
 
     @Test

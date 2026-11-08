@@ -53,11 +53,16 @@ import org.jetbrains.compose.resources.stringResource
 internal fun LazyListScope.failureRows(
     changes: List<PendingChange>,
     actions: SyncActions,
+    onViewBoth: (PendingChange) -> Unit,
 ) {
     val rows = changes.flatMap { change -> listOf(change to false) + change.blocked.map { it to true } }
     itemsIndexed(rows, key = { _, (change, _) -> "change:${change.id}" }) { index, (change, nested) ->
         val edges = CardEdges(first = index == 0, last = index == rows.lastIndex)
-        if (nested) ChangeRow(change, nested = true, edges, actions.onRetry) else FailureRow(change, edges, actions)
+        if (nested) {
+            ChangeRow(change, nested = true, edges, actions.onRetry)
+        } else {
+            FailureRow(change, edges, actions, onViewBoth)
+        }
     }
 }
 
@@ -66,6 +71,7 @@ private fun FailureRow(
     change: PendingChange,
     edges: CardEdges,
     actions: SyncActions,
+    onViewBoth: (PendingChange) -> Unit,
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
     if (confirmDiscard) {
@@ -105,7 +111,7 @@ private fun FailureRow(
                 modifier = Modifier.padding(top = IndelibleSpacing.step8),
             )
         }
-        FailureActions(change, actions, onDiscard = { confirmDiscard = true })
+        FailureActions(change, actions, onDiscard = { confirmDiscard = true }, onViewBoth = { onViewBoth(change) })
     }
 }
 
@@ -114,6 +120,7 @@ private fun FailureActions(
     change: PendingChange,
     actions: SyncActions,
     onDiscard: () -> Unit,
+    onViewBoth: () -> Unit,
 ) {
     val conflict = change.failure?.kind == SyncFailure.Kind.NOTE_CONFLICT
     if (change.copyText == null && !conflict && !change.canDiscard) return
@@ -125,8 +132,7 @@ private fun FailureActions(
             RowAction(stringResource(Res.string.offline_action_copy_text), onClick = { actions.onCopyText(text) })
         }
         if (conflict) {
-            val viewBoth = stringResource(Res.string.offline_action_view_both)
-            RowAction(viewBoth, onClick = { actions.onViewBoth(change.id) }, accent = true)
+            RowAction(stringResource(Res.string.offline_action_view_both), onClick = onViewBoth, accent = true)
         }
         if (change.canRetry) {
             RowAction(stringResource(Res.string.common_retry), onClick = { actions.onRetry(change.id) }, accent = true)

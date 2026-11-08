@@ -462,6 +462,11 @@
         <item quantity="one">Reading progress</item>
         <item quantity="other">Reading progress · %1$d updates</item>
     </plurals>
+    <string name="offline_conflict_body">Both versions are here. Keep one; the other is deleted.</string>
+    <string name="offline_conflict_keep_mine">Keep mine</string>
+    <string name="offline_conflict_keep_other">Keep other</string>
+    <string name="offline_conflict_other_device">Other device · %1$s</string>
+    <string name="offline_conflict_this_device">This device · written offline</string>
     <string name="offline_discard_body_alone">It is deleted from this phone. The server never had it.</string>
     <plurals name="offline_discard_body_dependants">
         <item quantity="one">It and the %1$d change waiting on it are deleted from this phone.</item>
@@ -504,6 +509,9 @@
     <string name="offline_note_cached">Cached automatically from what you open. Oldest first when the cap needs room; anything kept is skipped.</string>
     <string name="offline_note_kept">Unpinning leaves the copy cached. It deletes nothing.</string>
     <string name="offline_nothing_downloaded">Nothing is downloaded on this device yet.</string>
+    <string name="offline_notice_changed">This changed, the list is refreshed.</string>
+    <string name="offline_notice_kept_mine">Kept your version.</string>
+    <string name="offline_notice_kept_other">Kept the other version.</string>
     <string name="offline_pending">Pending sync</string>
     <plurals name="offline_pending_changes">
         <item quantity="one">%1$d change waiting to sync</item>

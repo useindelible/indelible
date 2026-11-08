@@ -462,6 +462,11 @@
         <item quantity="one">Progression de lecture</item>
         <item quantity="other">Progression de lecture · %1$d mises à jour</item>
     </plurals>
+    <string name="offline_conflict_body">Les deux versions sont ici. Gardez-en une ; l’autre est supprimée.</string>
+    <string name="offline_conflict_keep_mine">Garder la mienne</string>
+    <string name="offline_conflict_keep_other">Garder l’autre</string>
+    <string name="offline_conflict_other_device">Autre appareil · %1$s</string>
+    <string name="offline_conflict_this_device">Cet appareil · écrite hors ligne</string>
     <string name="offline_discard_body_alone">Elle est supprimée de ce téléphone. Le serveur ne l’a jamais reçue.</string>
     <plurals name="offline_discard_body_dependants">
         <item quantity="one">Elle et la %1$d modification qui l’attend sont supprimées de ce téléphone.</item>
@@ -504,6 +509,9 @@
     <string name="offline_note_cached">Mis en cache automatiquement à l’ouverture. Les plus anciens partent d’abord quand la limite manque de place ; les éléments conservés sont ignorés.</string>
     <string name="offline_note_kept">Désépingler laisse la copie en cache. Rien n’est supprimé.</string>
     <string name="offline_nothing_downloaded">Rien n’est encore téléchargé sur cet appareil.</string>
+    <string name="offline_notice_changed">Cela a changé, la liste est actualisée.</string>
+    <string name="offline_notice_kept_mine">Votre version a été gardée.</string>
+    <string name="offline_notice_kept_other">L’autre version a été gardée.</string>
     <string name="offline_pending">Synchronisation en attente</string>
     <plurals name="offline_pending_changes">
         <item quantity="one">%1$d modification en attente de synchronisation</item>

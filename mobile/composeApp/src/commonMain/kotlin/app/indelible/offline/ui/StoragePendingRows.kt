@@ -60,6 +60,7 @@ internal fun LazyListScope.pendingSection(
     changes: List<PendingChange>,
     serverUnreachable: Boolean,
     actions: SyncActions,
+    onViewBoth: (PendingChange) -> Unit,
 ) {
     if (changes.isEmpty()) return
     item {
@@ -81,12 +82,12 @@ internal fun LazyListScope.pendingSection(
     val waiting = changes - decisions.toSet() - tooOld.toSet()
     if (decisions.isNotEmpty()) {
         item { GroupLabel(stringResource(Res.string.offline_section_decision)) }
-        failureRows(decisions, actions)
+        failureRows(decisions, actions, onViewBoth)
         item { StorageNote(stringResource(Res.string.offline_section_decision_note)) }
     }
     if (tooOld.isNotEmpty()) {
         item { GroupLabel(stringResource(Res.string.offline_section_too_old)) }
-        failureRows(tooOld, actions)
+        failureRows(tooOld, actions, onViewBoth)
     }
     if (waiting.isNotEmpty()) {
         if (waiting.size != changes.size) item { GroupLabel(stringResource(Res.string.offline_section_keep_trying)) }
