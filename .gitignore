@@ -57,3 +57,7 @@ ARCHITECTURE.md
 /.history
 /.nodeterm
 /docs/
+
+# Local run configurations and helper scripts
+mobile/.run/
+mobile/scripts/
