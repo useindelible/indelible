@@ -114,6 +114,10 @@ fun NavGraphBuilder.tabRoutes(
             avatarBytes = avatarBytes,
             online = online,
             reachable = reachable,
+            syncProgress = offlineShelf.progress,
+            syncHost = offlineShelf.host,
+            onReview = { navController.navigate(MainRoutes.PROFILE_STORAGE) },
+            onRetryNow = offlineShelf::retryNow,
         )
     }
     composable(TabItem.FEED.route) {

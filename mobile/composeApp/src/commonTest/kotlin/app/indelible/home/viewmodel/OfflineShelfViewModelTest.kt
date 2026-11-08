@@ -282,7 +282,8 @@ class OfflineShelfViewModelTest {
             h.store.replaceList(h.session, "home:recent", listOf(homeRow("doc_z", progress = 62.5f)), at = 2)
             runCurrent()
 
-            val item = shelf.state.value.recentlySaved.single()
+            val state = shelf.state.value
+            val item = state.recentlySaved.single()
             assertEquals("doc_z", item.documentId)
             assertEquals(62, item.progressPercent)
         }
@@ -297,6 +298,7 @@ class OfflineShelfViewModelTest {
             h.signedIn.registry.publish(SessionState(own.epoch, own))
             runCurrent()
 
-            assertTrue(shelf.state.value.recentlySaved.isEmpty())
+            val state = shelf.state.value
+            assertTrue(state.recentlySaved.isEmpty())
         }
 }

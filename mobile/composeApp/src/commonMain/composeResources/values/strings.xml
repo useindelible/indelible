@@ -361,6 +361,33 @@
     <string name="library_scope_inbox">Inbox</string>
     <string name="library_scope_later">Later</string>
     <string name="library_sort_filter_cd">Sort and filter</string>
+    <string name="library_sync_banner_all_synced">All synced</string>
+    <plurals name="library_sync_banner_attention">
+        <item quantity="one">%1$d synced · 1 needs attention</item>
+        <item quantity="other">%1$d synced · %2$d need attention</item>
+    </plurals>
+    <plurals name="library_sync_banner_attention_only">
+        <item quantity="one">1 needs attention</item>
+        <item quantity="other">%1$d need attention</item>
+    </plurals>
+    <string name="library_sync_banner_key">%1$s · %2$s</string>
+    <string name="library_sync_banner_retry_now">Retry now</string>
+    <string name="library_sync_banner_review">Review</string>
+    <plurals name="library_sync_banner_sent">
+        <item quantity="one">%1$d sent</item>
+        <item quantity="other">%1$d sent</item>
+    </plurals>
+    <string name="library_sync_banner_syncing">Back online · syncing %1$d of %2$d</string>
+    <plurals name="library_sync_banner_to_go">
+        <item quantity="one">%1$d to go</item>
+        <item quantity="other">%1$d to go</item>
+    </plurals>
+    <string name="library_sync_banner_unreachable">Can’t reach %1$s</string>
+    <string name="library_sync_banner_unreachable_body">This phone is online. The server is not answering, so nothing has been lost.</string>
+    <plurals name="library_sync_banner_unreachable_queued">
+        <item quantity="one">This phone is online. The server is not answering, so nothing has been lost. %1$d change stays queued here.</item>
+        <item quantity="other">This phone is online. The server is not answering, so nothing has been lost. %1$d changes stay queued here.</item>
+    </plurals>
     <string name="library_triage">Triage</string>
     <plurals name="library_unread_count">
         <item quantity="one">%1$d unread</item>

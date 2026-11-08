@@ -91,5 +91,7 @@ fun SyncProgress.holdMillisAfter(previous: SyncProgress): Long? =
         else -> null
     }
 
-fun SyncProgress.leave(): SyncProgress =
-    if (net == ShelfNet.OFFLINE) this else copy(net = ShelfNet.ONLINE, sendTotal = 0)
+fun SyncProgress.leave(): SyncProgress {
+    if (net == ShelfNet.OFFLINE) return this
+    return copy(net = ShelfNet.ONLINE, sendTotal = 0)
+}
