@@ -366,10 +366,10 @@ async fn persist_polled_feed(
         };
 
         let source_entry = if let Some(mut existing) = existing {
-            // TASK-239: an entry created before the canonical_url column landed (or by a path that
-            // did not canonicalize) has a NULL canonical_url and can never be URL-adopted.
-            // Recompute it on reuse so this poll's adoption lookup below matches. A canonicalize
-            // failure leaves it NULL rather than failing the poll.
+            // An entry without a canonical_url (stored before entries recorded one, or by a path
+            // that did not canonicalize) can never be URL-adopted. Recompute it on reuse so this
+            // poll's adoption lookup below matches. A canonicalize failure leaves it NULL rather
+            // than failing the poll.
             if existing.canonical_url.is_none()
                 && let Some(canonical) = canonical_url.clone()
             {
