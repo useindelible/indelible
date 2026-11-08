@@ -2,6 +2,7 @@ package app.indelible.offline.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onAllNodesWithText
@@ -151,5 +152,23 @@ class StorageScreenTest {
 
             onNodeWithText("New highlight \u00b7 \u201cAttention is not a resource.\u201d").assertExists()
             onNodeWithText("Queued").assertExists()
+        }
+
+    @Test
+    fun reviewLandsOnThePendingSection() =
+        runComposeUiTest {
+            val many = (1..40).map { cached.copy(documentId = "doc_$it", title = "Cached $it") }
+            val failed = PendingChange("row_1", OutboxKind.DOCUMENT_NOTE, "Doc", ChangeStatus.FAILED, "Too long", 1L)
+            setContent {
+                AppTheme {
+                    StorageContent(
+                        StorageUiState(cached = many, changes = listOf(failed)),
+                        StorageActions(),
+                        scrollToPending = true,
+                    )
+                }
+            }
+
+            onNodeWithText("Pending sync").assertIsDisplayed()
         }
 }

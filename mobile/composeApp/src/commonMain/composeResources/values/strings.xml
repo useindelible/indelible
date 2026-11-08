@@ -363,11 +363,7 @@
     <string name="library_sort_filter_cd">Sort and filter</string>
     <string name="library_sync_banner_all_synced">All synced</string>
     <plurals name="library_sync_banner_attention">
-        <item quantity="one">%1$d synced · 1 needs attention</item>
-        <item quantity="other">%1$d synced · %2$d need attention</item>
-    </plurals>
-    <plurals name="library_sync_banner_attention_only">
-        <item quantity="one">1 needs attention</item>
+        <item quantity="one">%1$d needs attention</item>
         <item quantity="other">%1$d need attention</item>
     </plurals>
     <string name="library_sync_banner_key">%1$s · %2$s</string>
@@ -376,6 +372,10 @@
     <plurals name="library_sync_banner_sent">
         <item quantity="one">%1$d sent</item>
         <item quantity="other">%1$d sent</item>
+    </plurals>
+    <plurals name="library_sync_banner_synced">
+        <item quantity="one">%1$d synced</item>
+        <item quantity="other">%1$d synced</item>
     </plurals>
     <string name="library_sync_banner_syncing">Back online · syncing %1$d of %2$d</string>
     <plurals name="library_sync_banner_to_go">

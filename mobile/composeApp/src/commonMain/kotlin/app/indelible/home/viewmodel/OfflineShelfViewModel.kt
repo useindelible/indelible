@@ -97,30 +97,39 @@ class OfflineShelfViewModel(
     /** The signed-in server's host name, for "Can't reach <host>"; null when signed out. */
     val host: StateFlow<String?> =
         registry.current
-            .map { it.session?.origin?.let { origin -> parseUrl(origin)?.host } }
+            .map { it.session?.origin?.let(::hostOf) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private var timer: Job? = null
+    private var retry: Job? = null
     private var scope: String? = null
 
     init {
         val serverUp = reachable.map { it != false }.distinctUntilChanged()
+        val withItems = _state.subscriptionCount.map { it > 0 }.distinctUntilChanged()
         val watched =
             combine(_state.subscriptionCount, _progress.subscriptionCount) { a, b -> a + b > 0 }.distinctUntilChanged()
         viewModelScope.launch {
             watched
-                .flatMapLatest { if (it) combine(online, serverUp, shelf(), ::Triple) else emptyFlow() }
+                .flatMapLatest { if (it) combine(online, serverUp, shelf(withItems), ::Triple) else emptyFlow() }
                 .collect { (isOnline, up, shelf) -> update(isOnline, up, shelf) }
         }
         viewModelScope.launch {
-            watched.flatMapLatest { if (it) serverUp else flowOf(true) }.collectLatest { if (!it) probeUntilAnswered() }
+            watched
+                .flatMapLatest { if (it) combine(online, serverUp, ::Pair) else flowOf(false to true) }
+                .collectLatest { (isOnline, up) -> if (isOnline && !up) probeUntilAnswered() }
         }
     }
 
-    /** Asks the server again now and sends what is queued if it answers. */
+    /** Clears the backoff of every queued row, asks the server again, then sends what is queued. */
     fun retryNow() {
-        viewModelScope.launch { probe() }
-        requestDrain()
+        if (retry?.isActive == true) return
+        retry =
+            viewModelScope.launch {
+                scope?.let { store.resetBackoff(it) }
+                probe()
+                requestDrain()
+            }
     }
 
     private suspend fun probeUntilAnswered() {
@@ -175,24 +184,30 @@ class OfflineShelfViewModel(
             }
     }
 
-    private fun shelf(): Flow<Shelf> =
+    private fun shelf(withItems: Flow<Boolean>): Flow<Shelf> =
         registry.current
             .map { it.session?.scope }
             .distinctUntilChanged()
-            .flatMapLatest { scope -> scope?.let(::shelfOf) ?: flowOf(Shelf()) }
+            .flatMapLatest { scope -> scope?.let { shelfOf(it, withItems) } ?: flowOf(Shelf()) }
 
-    private fun shelfOf(scope: String): Flow<Shelf> =
+    // The banner only needs the counts; the copies' reader JSON is parsed only while Home shows the items.
+    private fun shelfOf(
+        scope: String,
+        withItems: Flow<Boolean>,
+    ): Flow<Shelf> =
         combine(
             store.observeCatalog(scope),
             store.observeOutbox(scope),
             store.observeList(scope, HOME_CONTINUE_KEY),
             store.observeList(scope, HOME_RECENT_KEY),
+            withItems,
             ::ShelfInputs,
         ).mapLatest { inputs ->
             val catalog = inputs.catalog
+            val counts = queueCounts(inputs.rows, catalog)
+            if (!inputs.withItems) return@mapLatest Shelf(scope, queued = counts.queued, attention = counts.attention)
             val copies = store.cachedDocuments(scope).associateBy { it.documentId }
             val entries = catalog.associateBy { it.documentId }
-            val counts = queueCounts(inputs.rows, catalog)
             Shelf(
                 scope = scope,
                 items = catalog.toItems(copies),
@@ -209,6 +224,7 @@ class OfflineShelfViewModel(
         val rows: List<OutboxRow>,
         val continued: KeptList,
         val recent: KeptList,
+        val withItems: Boolean,
     )
 
     private data class Shelf(
@@ -248,6 +264,13 @@ private fun List<SnapshotRow>.toLastLoaded(
             onPhone = entry != null,
         )
     }
+
+/** The server as the user named it: the host, plus the port when it is not the scheme's own. */
+internal fun hostOf(origin: String): String? {
+    val url = parseUrl(origin) ?: return null
+    val port = url.specifiedPort
+    return if (port == 0 || port == url.protocol.defaultPort) url.host else "${url.host}:$port"
+}
 
 /** The thumbnail, else the lead image, of a copy's stored reader response; null when it has neither. */
 internal fun shelfImageOf(readerJson: String): String? {

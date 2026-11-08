@@ -1,6 +1,7 @@
 package app.indelible.library.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.home.viewmodel.ShelfNet
 import app.indelible.home.viewmodel.SyncProgress
@@ -39,11 +43,11 @@ import app.indelible.ui.theme.IndelibleTheme
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.library_sync_banner_all_synced
 import indelible.composeapp.generated.resources.library_sync_banner_attention
-import indelible.composeapp.generated.resources.library_sync_banner_attention_only
 import indelible.composeapp.generated.resources.library_sync_banner_key
 import indelible.composeapp.generated.resources.library_sync_banner_retry_now
 import indelible.composeapp.generated.resources.library_sync_banner_review
 import indelible.composeapp.generated.resources.library_sync_banner_sent
+import indelible.composeapp.generated.resources.library_sync_banner_synced
 import indelible.composeapp.generated.resources.library_sync_banner_syncing
 import indelible.composeapp.generated.resources.library_sync_banner_to_go
 import indelible.composeapp.generated.resources.library_sync_banner_unreachable
@@ -121,7 +125,7 @@ private fun toneOf(banner: SyncBanner): Tone =
         is SyncBanner.Syncing, SyncBanner.AllSynced ->
             IndelibleTheme.colors.success.let { Tone(it, it.copy(alpha = WASH_ALPHA)) }
         is SyncBanner.Attention -> IndelibleTheme.colors.warning.let { Tone(it, it.copy(alpha = WASH_ALPHA)) }
-        is SyncBanner.Unreachable -> Tone(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.errorContainer)
+        is SyncBanner.Unreachable -> MaterialTheme.colorScheme.error.let { Tone(it, it.copy(alpha = WASH_ALPHA)) }
     }
 
 @Composable
@@ -133,7 +137,10 @@ private fun BannerContent(
     val tone = toneOf(banner)
     Surface(color = tone.bg, contentColor = tone.fg, modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(horizontal = IndelibleSpacing.step16, vertical = IndelibleSpacing.step10),
+            modifier =
+                Modifier
+                    .animateContentSize()
+                    .padding(horizontal = IndelibleSpacing.step16, vertical = IndelibleSpacing.step10),
             verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
         ) {
             Row(
@@ -144,7 +151,7 @@ private fun BannerContent(
                 Text(
                     text = headline(banner),
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
                 )
                 BannerAction(banner, onReview, onRetryNow)
             }
@@ -179,24 +186,19 @@ private fun headline(banner: SyncBanner): String =
                 (banner.sent + 1).coerceAtMost(banner.total),
                 banner.total,
             )
-        is SyncBanner.Attention ->
-            if (banner.synced > 0) {
-                pluralStringResource(
-                    Res.plurals.library_sync_banner_attention,
-                    banner.needAttention,
-                    banner.synced,
-                    banner.needAttention,
-                )
-            } else {
-                pluralStringResource(
-                    Res.plurals.library_sync_banner_attention_only,
-                    banner.needAttention,
-                    banner.needAttention,
-                )
-            }
+        is SyncBanner.Attention -> attentionHeadline(banner)
         SyncBanner.AllSynced -> stringResource(Res.string.library_sync_banner_all_synced)
         is SyncBanner.Unreachable -> stringResource(Res.string.library_sync_banner_unreachable, banner.host)
     }
+
+@Composable
+private fun attentionHeadline(banner: SyncBanner.Attention): String {
+    val attention =
+        pluralStringResource(Res.plurals.library_sync_banner_attention, banner.needAttention, banner.needAttention)
+    if (banner.synced == 0) return attention
+    val synced = pluralStringResource(Res.plurals.library_sync_banner_synced, banner.synced, banner.synced)
+    return stringResource(Res.string.library_sync_banner_key, synced, attention)
+}
 
 @Composable
 private fun BannerAction(

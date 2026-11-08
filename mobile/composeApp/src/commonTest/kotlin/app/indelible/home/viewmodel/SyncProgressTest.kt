@@ -123,4 +123,27 @@ class SyncProgressTest {
 
         assertEquals(offline, offline.leave())
     }
+
+    @Test
+    fun aRunOverOldFailuresEndsOnlineNotSynced() {
+        val offline = SyncProgress().step(inputs(isOnline = false, queued = 2, attention = 1))
+        val sending = offline.step(inputs(queued = 2, attention = 1))
+        assertEquals(ShelfNet.SENDING, sending.net)
+
+        val done = sending.step(inputs(queued = 0, attention = 1))
+
+        assertEquals(ShelfNet.ONLINE, done.net)
+        assertEquals(2, done.lastSent)
+        assertNull(done.holdMillisAfter(sending))
+    }
+
+    @Test
+    fun aRowThatFailedMidRunIsNotCountedAsSent() {
+        val sending = offlineWith(3).step(inputs(queued = 3))
+
+        val oneFailed = sending.step(inputs(queued = 2, attention = 1))
+
+        assertEquals(0, oneFailed.sent)
+        assertEquals(1, oneFailed.step(inputs(queued = 1, attention = 1)).sent)
+    }
 }

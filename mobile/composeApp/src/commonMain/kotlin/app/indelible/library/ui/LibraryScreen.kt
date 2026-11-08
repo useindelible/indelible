@@ -174,7 +174,8 @@ fun LibraryScreen(
                     onProfileClick = onProfileClick,
                 )
 
-                SyncBannerBar(syncBannerOf(progress, host), onReview = onReview, onRetryNow = onRetryNow)
+                val banner = syncBannerOf(progress, host)
+                SyncBannerBar(banner, onReview = onReview, onRetryNow = onRetryNow)
 
                 if (scope is LibraryScope.Triage) {
                     ContentTypeFilterRow(
@@ -191,6 +192,7 @@ fun LibraryScreen(
                     triageFilter = triageFilter,
                     offline = offline,
                     onNavigateToItem = onNavigateToItem,
+                    lastLoadedNotice = banner !is SyncBanner.Unreachable,
                 )
             }
 
@@ -240,6 +242,7 @@ private fun LibraryContent(
     triageFilter: TriageFilter,
     offline: Map<String, DocumentOfflineStatus>,
     onNavigateToItem: (String) -> Unit,
+    lastLoadedNotice: Boolean,
 ) {
     when (val state = uiState) {
         is LibraryUiState.Loading ->
@@ -270,7 +273,7 @@ private fun LibraryContent(
             }
 
         is LibraryUiState.Success -> {
-            if (state.fromDevice) {
+            if (state.fromDevice && lastLoadedNotice) {
                 LastLoadedNotice(
                     onRetry = { viewModel.refresh() },
                     modifier = Modifier.padding(bottom = IndelibleSpacing.step8),

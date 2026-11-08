@@ -103,4 +103,16 @@ class SyncBannerTest {
             onNodeWithText("This phone is online. The server is not answering, so nothing has been lost.")
                 .assertIsDisplayed()
         }
+
+    @Test
+    fun theSyncedCountIsPluralisedOnItsOwn() =
+        runComposeUiTest {
+            setContent {
+                AppTheme {
+                    SyncBannerBar(SyncBanner.Attention(synced = 1, needAttention = 2), onReview = {}, onRetryNow = {})
+                }
+            }
+
+            onNodeWithText("1 synced · 2 need attention").assertIsDisplayed()
+        }
 }

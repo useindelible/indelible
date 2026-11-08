@@ -53,13 +53,16 @@ object MainRoutes {
     const val PROFILE_CHANGE_PASSWORD = "profile/change-password"
     const val PROFILE_FEED_MANAGEMENT = "profile/feed-management"
     const val PROFILE_ACCOUNT = "profile/account"
-    const val PROFILE_STORAGE = "profile/storage"
+    const val PROFILE_STORAGE = "profile/storage?section={section}"
+    const val STORAGE_PENDING = "pending"
     const val PROFILE_AI_PRESET_NEW = "profile/ai/presets/new"
     const val PROFILE_AI_PRESET_EDIT = "profile/ai/presets/{presetId}"
 
     fun aiPresetEdit(presetId: String) = "profile/ai/presets/$presetId"
 
     fun itemDetail(itemId: String): String = "library/item/$itemId"
+
+    fun storage(section: String? = null): String = section?.let { "profile/storage?section=$it" } ?: "profile/storage"
 
     fun reader(documentId: String): String = "reader/$documentId"
 

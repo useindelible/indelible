@@ -19,7 +19,8 @@ data class SyncProgress(
     val lastSent: Int = 0,
     internal val attentionAtStart: Int = 0,
 ) {
-    val sent: Int get() = (sendTotal - queued).coerceAtLeast(0)
+    internal val failedThisRun: Int get() = (attention - attentionAtStart).coerceAtLeast(0)
+    val sent: Int get() = (sendTotal - queued - failedThisRun).coerceAtLeast(0)
 }
 
 data class SyncInputs(
@@ -73,13 +74,13 @@ private fun SyncProgress.reconnected(inputs: SyncInputs): SyncProgress =
 private fun SyncProgress.online(inputs: SyncInputs): SyncProgress =
     SyncProgress(ShelfNet.ONLINE, inputs.queued, attention = inputs.attention, lastSent = lastSent)
 
-// A run that failed anything never reads "all caught up": it ends online, and the failures carry the count.
+// Nothing reads "all caught up" while any failure remains, old or new: the run ends online and the count stays.
 private fun SyncProgress.finished(attention: Int): SyncProgress {
-    val failed = (attention - attentionAtStart).coerceAtLeast(0)
-    return if (failed > 0) {
-        SyncProgress(ShelfNet.ONLINE, attention = attention, lastSent = sendTotal - failed)
+    val run = copy(queued = 0, attention = attention)
+    return if (attention > 0) {
+        SyncProgress(ShelfNet.ONLINE, attention = attention, lastSent = run.sent)
     } else {
-        SyncProgress(ShelfNet.SYNCED, sendTotal = sendTotal, attention = attention, lastSent = sendTotal)
+        SyncProgress(ShelfNet.SYNCED, sendTotal = sendTotal, lastSent = sendTotal)
     }
 }
 

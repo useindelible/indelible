@@ -116,7 +116,7 @@ fun NavGraphBuilder.tabRoutes(
             reachable = reachable,
             syncProgress = offlineShelf.progress,
             syncHost = offlineShelf.host,
-            onReview = { navController.navigate(MainRoutes.PROFILE_STORAGE) },
+            onReview = { navController.navigate(MainRoutes.storage(MainRoutes.STORAGE_PENDING)) },
             onRetryNow = offlineShelf::retryNow,
         )
     }
@@ -163,7 +163,7 @@ fun NavGraphBuilder.tabRoutes(
             onNavigateToPreferences = { navController.navigate(MainRoutes.PROFILE_PREFERENCES) },
             onNavigateToAi = { navController.navigate(MainRoutes.PROFILE_AI) },
             onNavigateToIntegrations = { navController.navigate(MainRoutes.PROFILE_INTEGRATIONS) },
-            onNavigateToStorage = { navController.navigate(MainRoutes.PROFILE_STORAGE) },
+            onNavigateToStorage = { navController.navigate(MainRoutes.storage()) },
             onNavigateToAccount = { navController.navigate(MainRoutes.PROFILE_ACCOUNT) },
         )
     }
