@@ -10,6 +10,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import app.indelible.core.offline.CatalogEntry
 import app.indelible.core.offline.OutboxKind
+import app.indelible.core.offline.STILL_PREPARING_ERROR
+import app.indelible.core.offline.SyncFailure
 import app.indelible.offline.viewmodel.ChangeStatus
 import app.indelible.offline.viewmodel.PendingChange
 import app.indelible.offline.viewmodel.StorageUiState
@@ -60,7 +62,7 @@ class StorageScreenTest {
                 AppTheme {
                     StorageContent(
                         StorageUiState(changes = listOf(failed, superseded)),
-                        StorageActions(onRetry = { retried = it }),
+                        StorageActions(sync = SyncActions(onRetry = { retried = it })),
                     )
                 }
             }
@@ -151,5 +153,195 @@ class StorageScreenTest {
 
             onNodeWithText("New highlight \u00b7 \u201cAttention is not a resource.\u201d").assertExists()
             onNodeWithText("Queued").assertExists()
+        }
+
+    private fun failed(
+        kind: OutboxKind,
+        failure: SyncFailure,
+        detail: String? = null,
+        blocked: List<PendingChange> = emptyList(),
+    ) = PendingChange(
+        id = "row_1",
+        kind = kind,
+        documentTitle = "The Patient Mind",
+        status = ChangeStatus.FAILED,
+        error = null,
+        createdAt = 1L,
+        detail = detail,
+        blocked = blocked,
+        failure = failure,
+    )
+
+    private fun blockedColour(id: String) =
+        PendingChange(id, OutboxKind.HIGHLIGHT_COLOR, "The Patient Mind", ChangeStatus.BLOCKED, null, 2L)
+
+    @Test
+    fun aDeletedItemShowsItsFullTextWithCopyAndDiscard() =
+        runComposeUiTest {
+            val quote = "Attention is not a resource. It is a stance the whole body takes towards the world."
+            val change =
+                failed(
+                    OutboxKind.HIGHLIGHT_CREATE,
+                    SyncFailure(SyncFailure.Kind.DELETED_ELSEWHERE, status = 404, serverCode = "not_found"),
+                    detail = quote,
+                )
+            var copied: String? = null
+            setContent {
+                AppTheme {
+                    StorageContent(
+                        StorageUiState(changes = listOf(change)),
+                        StorageActions(sync = SyncActions(onCopyText = { copied = it })),
+                    )
+                }
+            }
+
+            onNodeWithText("This item was deleted on another device").assertExists()
+            onNodeWithText(quote).assertExists()
+            onNodeWithText("Discard").assertExists()
+            onNodeWithText("Retry").assertDoesNotExist()
+            onNodeWithText("Copy text").performClick()
+
+            assertEquals(quote, copied)
+        }
+
+    @Test
+    fun discardAsksBeforeDeletingAndNamesTheDependants() =
+        runComposeUiTest {
+            val change =
+                failed(
+                    OutboxKind.HIGHLIGHT_CREATE,
+                    SyncFailure(SyncFailure.Kind.ANCHOR_LOST, status = 422, serverCode = "validation_error"),
+                    detail = "quoted words",
+                    blocked = listOf(blockedColour("row_2"), blockedColour("row_3")),
+                )
+            var discarded: String? = null
+            setContent {
+                AppTheme {
+                    StorageContent(
+                        StorageUiState(changes = listOf(change)),
+                        StorageActions(sync = SyncActions(onDiscard = { discarded = it })),
+                    )
+                }
+            }
+
+            onNodeWithText("Couldn\u2019t place this highlight").assertExists()
+            onAllNodesWithText("Waiting on the highlight above").assertCountEquals(2)
+            onNodeWithText("Discard").performClick()
+            onNodeWithText("2 changes", substring = true).assertExists()
+            assertEquals(null, discarded)
+            onNodeWithText("Keep it").performClick()
+            onNodeWithText("Delete permanently").assertDoesNotExist()
+            onNodeWithText("Discard").performClick()
+            onNodeWithText("Delete permanently").performClick()
+
+            assertEquals("row_1", discarded)
+        }
+
+    @Test
+    fun aServerTooOldChangeOffersNoRetry() =
+        runComposeUiTest {
+            val change =
+                failed(
+                    OutboxKind.READING_EVENT,
+                    SyncFailure(
+                        SyncFailure.Kind.SERVER_TOO_OLD,
+                        status = 405,
+                        feature = SyncFailure.Feature.READING_EVENTS,
+                    ),
+                )
+            setContent { AppTheme { StorageContent(StorageUiState(changes = listOf(change)), StorageActions()) } }
+
+            onNodeWithText("Your server needs updating").assertExists()
+            onNodeWithText("Needs a newer server \u00b7 Reading events").assertExists()
+            onNodeWithText("Retry").assertDoesNotExist()
+            onNodeWithText("Discard").assertDoesNotExist()
+        }
+
+    @Test
+    fun aRejectedChangeShowsTheServerMessage() =
+        runComposeUiTest {
+            val change =
+                failed(
+                    OutboxKind.DOCUMENT_NOTE,
+                    SyncFailure(SyncFailure.Kind.REJECTED, status = 400, serverMessage = "Note too long"),
+                    detail = "a very long note",
+                )
+            var retried: String? = null
+            setContent {
+                AppTheme {
+                    StorageContent(
+                        StorageUiState(changes = listOf(change)),
+                        StorageActions(sync = SyncActions(onRetry = { retried = it })),
+                    )
+                }
+            }
+
+            onNodeWithText("Rejected by the server").assertExists()
+            onNodeWithText("Note too long").assertExists()
+            onNodeWithText("Discard").assertExists()
+            onNodeWithText("Retry").performClick()
+
+            assertEquals("row_1", retried)
+        }
+
+    @Test
+    fun aNoteConflictOffersViewBoth() =
+        runComposeUiTest {
+            val conflict =
+                SyncFailure(SyncFailure.Kind.NOTE_CONFLICT, serverNoteBody = "theirs", serverNoteUpdatedAtEpochMs = 2L)
+            val change = failed(OutboxKind.DOCUMENT_NOTE, conflict, detail = "mine")
+            var viewed: String? = null
+            setContent {
+                AppTheme {
+                    StorageContent(
+                        StorageUiState(changes = listOf(change)),
+                        StorageActions(sync = SyncActions(onViewBoth = { viewed = it })),
+                    )
+                }
+            }
+
+            onNodeWithText("This note changed on another device").assertExists()
+            onNodeWithText("Retry").assertDoesNotExist()
+            onNodeWithText("View both").performClick()
+
+            assertEquals("row_1", viewed)
+        }
+
+    @Test
+    fun anUnreachableServerReadsAsNotAnsweringWithRetryNow() =
+        runComposeUiTest {
+            val queued = PendingChange("row_1", OutboxKind.DOCUMENT_NOTE, "Doc", ChangeStatus.RETRYING, "timeout", 1L)
+            var retriedNow = 0
+            setContent {
+                AppTheme {
+                    StorageContent(
+                        StorageUiState(changes = listOf(queued), serverUnreachable = true),
+                        StorageActions(sync = SyncActions(onRetryNow = { retriedNow++ })),
+                    )
+                }
+            }
+
+            onNodeWithText("Server not answering").assertExists()
+            onNodeWithText("Will keep trying").assertExists()
+            onNodeWithText("Retry now").performClick()
+
+            assertEquals(1, retriedNow)
+        }
+
+    @Test
+    fun aChangeTheServerIsStillPreparingForSaysSo() =
+        runComposeUiTest {
+            val preparing =
+                PendingChange(
+                    id = "row_1",
+                    kind = OutboxKind.HIGHLIGHT_CREATE,
+                    documentTitle = "Doc",
+                    status = ChangeStatus.RETRYING,
+                    error = STILL_PREPARING_ERROR,
+                    createdAt = 1L,
+                )
+            setContent { AppTheme { StorageContent(StorageUiState(changes = listOf(preparing)), StorageActions()) } }
+
+            onNodeWithText("The server is still preparing this item").assertExists()
         }
 }

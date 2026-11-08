@@ -24,6 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import app.indelible.offline.viewmodel.StorageUiState
 import app.indelible.offline.viewmodel.StorageViewModel
 import app.indelible.ui.components.IndelibleButton
@@ -47,8 +49,17 @@ class StorageActions(
     val onUnpin: (String) -> Unit = {},
     val onRemoveCopy: (String) -> Unit = {},
     val onCapChange: (Long) -> Unit = {},
-    val onRetry: (String) -> Unit = {},
     val onRemoveDownloads: () -> Unit = {},
+    val sync: SyncActions = SyncActions(),
+)
+
+/** What the user can do to a queued change; a copied text goes to the clipboard, the rest to the queue. */
+class SyncActions(
+    val onRetry: (String) -> Unit = {},
+    val onRetryNow: () -> Unit = {},
+    val onDiscard: (String) -> Unit = {},
+    val onCopyText: (String) -> Unit = {},
+    val onViewBoth: (String) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,15 +71,22 @@ fun StorageScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
+    val clipboard = LocalClipboardManager.current
     val actions =
-        remember(viewModel, onOpenReader) {
+        remember(viewModel, onOpenReader, clipboard) {
             StorageActions(
                 onOpenReader = onOpenReader,
                 onUnpin = viewModel::unpin,
                 onRemoveCopy = viewModel::removeCopy,
                 onCapChange = viewModel::setCap,
-                onRetry = viewModel::retry,
                 onRemoveDownloads = viewModel::removeDownloads,
+                sync =
+                    SyncActions(
+                        onRetry = viewModel::retry,
+                        onRetryNow = viewModel::retryNow,
+                        onDiscard = viewModel::discard,
+                        onCopyText = { clipboard.setText(AnnotatedString(it)) },
+                    ),
             )
         }
     Scaffold(
@@ -118,7 +136,7 @@ fun StorageContent(
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item { UsageSection(state, actions.onCapChange, onManageKept = { filter = DownloadFilter.KEPT }) }
         documentSections(state, filter, onFilterChange = { filter = it }, actions = actions)
-        pendingSection(state.changes, actions.onRetry)
+        pendingSection(state.changes, state.serverUnreachable, actions.sync)
         if (state.kept.isNotEmpty() || state.cached.isNotEmpty()) {
             item {
                 IndelibleButton(

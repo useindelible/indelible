@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
@@ -23,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import app.indelible.core.i18n.relativeTimeText
 import app.indelible.core.offline.OutboxKind
+import app.indelible.core.offline.SyncFailure
 import app.indelible.offline.viewmodel.ChangeStatus
 import app.indelible.offline.viewmodel.PendingChange
 import app.indelible.ui.theme.IndelibleSpacing
@@ -40,9 +40,14 @@ import indelible.composeapp.generated.resources.offline_pending
 import indelible.composeapp.generated.resources.offline_pending_changes
 import indelible.composeapp.generated.resources.offline_pending_footnote
 import indelible.composeapp.generated.resources.offline_queue_failed
+import indelible.composeapp.generated.resources.offline_section_decision
+import indelible.composeapp.generated.resources.offline_section_decision_note
+import indelible.composeapp.generated.resources.offline_section_keep_trying
+import indelible.composeapp.generated.resources.offline_section_too_old
 import indelible.composeapp.generated.resources.offline_status_blocked
 import indelible.composeapp.generated.resources.offline_status_failed_reason
 import indelible.composeapp.generated.resources.offline_status_pending
+import indelible.composeapp.generated.resources.offline_status_preparing
 import indelible.composeapp.generated.resources.offline_status_retrying
 import indelible.composeapp.generated.resources.offline_status_superseded
 import kotlinx.datetime.Clock
@@ -53,7 +58,8 @@ import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.pendingSection(
     changes: List<PendingChange>,
-    onRetry: (String) -> Unit,
+    serverUnreachable: Boolean,
+    actions: SyncActions,
 ) {
     if (changes.isEmpty()) return
     item {
@@ -69,35 +75,40 @@ internal fun LazyListScope.pendingSection(
                 ),
         )
     }
-    val rows = changes.flatMap { change -> listOf(change to false) + change.blocked.map { it to true } }
-    itemsIndexed(rows, key = { _, (change, _) -> "change:${change.id}" }) { index, (change, nested) ->
-        ChangeRow(change, nested, first = index == 0, last = index == rows.lastIndex, onRetry = onRetry)
+    if (serverUnreachable) item { UnreachableRow(actions.onRetryNow) }
+    val decisions = changes.filter { it.status == ChangeStatus.FAILED && !it.serverTooOld }
+    val tooOld = changes.filter { it.status == ChangeStatus.FAILED && it.serverTooOld }
+    val waiting = changes - decisions.toSet() - tooOld.toSet()
+    if (decisions.isNotEmpty()) {
+        item { GroupLabel(stringResource(Res.string.offline_section_decision)) }
+        failureRows(decisions, actions)
+        item { StorageNote(stringResource(Res.string.offline_section_decision_note)) }
+    }
+    if (tooOld.isNotEmpty()) {
+        item { GroupLabel(stringResource(Res.string.offline_section_too_old)) }
+        failureRows(tooOld, actions)
+    }
+    if (waiting.isNotEmpty()) {
+        if (waiting.size != changes.size) item { GroupLabel(stringResource(Res.string.offline_section_keep_trying)) }
+        val rows = waiting.flatMap { change -> listOf(change to false) + change.blocked.map { it to true } }
+        itemsIndexed(rows, key = { _, (change, _) -> "change:${change.id}" }) { index, (change, nested) ->
+            ChangeRow(change, nested, CardEdges(first = index == 0, last = index == rows.lastIndex), actions.onRetry)
+        }
     }
     item { StorageNote(stringResource(Res.string.offline_pending_footnote)) }
 }
 
+private val PendingChange.serverTooOld: Boolean get() = failure?.kind == SyncFailure.Kind.SERVER_TOO_OLD
+
 @Composable
-private fun ChangeRow(
+internal fun ChangeRow(
     change: PendingChange,
     nested: Boolean,
-    first: Boolean,
-    last: Boolean,
+    edges: CardEdges,
     onRetry: (String) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    Column(
-        modifier =
-            Modifier
-                .padding(horizontal = IndelibleSpacing.rowPaddingH)
-                .fillMaxWidth()
-                .cardCell(first, last, colors.surfaceVariant, colors.outlineVariant)
-                .padding(
-                    start = if (nested) IndelibleSpacing.step32 else IndelibleSpacing.step14,
-                    end = IndelibleSpacing.step14,
-                    top = IndelibleSpacing.step12,
-                    bottom = IndelibleSpacing.step12,
-                ),
-    ) {
+    Column(modifier = Modifier.changeCard(edges, nested)) {
         Text(
             text = changeTitle(change),
             style = MaterialTheme.typography.titleSmall,
@@ -164,7 +175,7 @@ private fun quoted(detail: String): String {
 }
 
 @Composable
-private fun changeMeta(change: PendingChange): String {
+internal fun changeMeta(change: PendingChange): String {
     val made = relativeTimeText(Instant.fromEpochMilliseconds(change.createdAt), Clock.System.now())
     return change.documentTitle?.let { "$it \u00b7 $made" } ?: made
 }
@@ -173,7 +184,12 @@ private fun changeMeta(change: PendingChange): String {
 private fun statusText(change: PendingChange): String =
     when (change.status) {
         ChangeStatus.PENDING -> stringResource(Res.string.offline_status_pending)
-        ChangeStatus.RETRYING -> stringResource(Res.string.offline_status_retrying)
+        ChangeStatus.RETRYING ->
+            if (change.stillPreparing) {
+                stringResource(Res.string.offline_status_preparing)
+            } else {
+                stringResource(Res.string.offline_status_retrying)
+            }
         ChangeStatus.BLOCKED -> stringResource(Res.string.offline_status_blocked)
         ChangeStatus.SUPERSEDED -> stringResource(Res.string.offline_status_superseded)
         ChangeStatus.FAILED ->
