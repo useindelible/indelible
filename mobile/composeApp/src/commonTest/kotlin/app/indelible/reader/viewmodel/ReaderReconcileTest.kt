@@ -1,5 +1,6 @@
 package app.indelible.reader.viewmodel
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -168,6 +169,29 @@ class ReaderReconcileTest {
             runCurrent()
 
             assertEquals(0, refreshes)
+            job.cancel()
+        }
+
+    @Test
+    fun aTriggerDuringARefreshJoinsIt() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val job =
+                reconcileOn(readerTriggers("doc_1", ReaderTriggers(changes = changes))) {
+                    refreshes++
+                    gate.await()
+                    true
+                }
+            runCurrent()
+
+            changes.tryEmit("doc_1")
+            runCurrent()
+            changes.tryEmit("doc_1")
+            runCurrent()
+            gate.complete(Unit)
+            runCurrent()
+
+            assertEquals(1, refreshes)
             job.cancel()
         }
 }

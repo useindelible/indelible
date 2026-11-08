@@ -145,7 +145,10 @@ class FakeReaderRepository : ReaderRepository {
         return saveToLibraryResult
     }
 
-    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> {
+    override suspend fun listHighlights(
+        itemId: String,
+        fromServer: Boolean,
+    ): Result<List<HighlightData>> {
         listHighlightsCallCount++
         highlightsGate?.await()
         return listHighlightsResult
@@ -215,7 +218,10 @@ class FakeReaderRepository : ReaderRepository {
 
     override suspend fun listTags(): Result<List<TagData>> = listTagsResult
 
-    override suspend fun getItemNote(itemId: String): Result<String?> {
+    override suspend fun getItemNote(
+        itemId: String,
+        fromServer: Boolean,
+    ): Result<String?> {
         getItemNoteCallCount++
         metadataGate?.await()
         return getItemNoteResult

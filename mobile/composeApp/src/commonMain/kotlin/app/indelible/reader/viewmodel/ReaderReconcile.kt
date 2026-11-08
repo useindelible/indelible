@@ -1,12 +1,17 @@
 package app.indelible.reader.viewmodel
 
-import app.indelible.library.ui.reachableAgain
+import app.indelible.core.offline.reachableAgain
+import app.indelible.reader.model.DataPanel
 import app.indelible.reader.repository.ReaderRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
@@ -37,51 +42,76 @@ internal fun readerTriggers(
     )
 
 /**
- * Runs [refresh] on every trigger. A refresh that gets no answer is tried again after each delay in
- * [RETRY_DELAYS_MS], then waits for the next trigger; a new trigger drops a pending retry.
+ * Runs [refresh] on every trigger. A trigger during a refresh joins it rather than starting another; a refresh
+ * that gets no answer is tried again after each delay in [RETRY_DELAYS_MS], and a new trigger drops that wait.
  */
 internal fun CoroutineScope.reconcileOn(
     triggers: Flow<Unit>,
     refresh: suspend () -> Boolean,
-): Job =
-    launch {
+): Job {
+    var inFlight: Deferred<Boolean>? = null
+    return launch {
         triggers.collectLatest {
             var attempt = 0
-            while (!refresh() && attempt < RETRY_DELAYS_MS.size) {
+            while (true) {
+                val current = inFlight?.takeIf { it.isActive } ?: async { refresh() }.also { inFlight = it }
+                if (current.await() || attempt == RETRY_DELAYS_MS.size) return@collectLatest
                 delay(RETRY_DELAYS_MS[attempt++])
             }
         }
     }
+}
 
-/** Re-reads the open document's highlights, note and tags; the document and the position stay. */
+/** Re-reads the open document's highlights, note and tags from the server; the document and position stay. */
 internal fun CoroutineScope.reconcileReader(
     documentId: String,
     repository: ReaderRepository,
     uiState: MutableStateFlow<ReaderUiState>,
+    activePanel: StateFlow<DataPanel>,
     triggers: ReaderTriggers,
 ): Job =
     reconcileOn(readerTriggers(documentId, triggers)) {
-        refreshAnnotations(documentId, repository, uiState)
+        refreshAnnotations(documentId, repository, uiState, activePanel)
     }
 
 private suspend fun refreshAnnotations(
     documentId: String,
     repository: ReaderRepository,
     uiState: MutableStateFlow<ReaderUiState>,
+    activePanel: StateFlow<DataPanel>,
 ): Boolean {
     val open = uiState.value as? ReaderUiState.Success ?: return true
-    val highlights = repository.listHighlights(documentId)
-    val note = repository.getItemNote(documentId)
-    val tags = open.item.libraryEntryId?.let { repository.getItemTags(it) }
-    uiState.update { state ->
-        if (state !is ReaderUiState.Success) return@update state
-        state.copy(
-            highlights = highlights.getOrDefault(state.highlights),
-            highlightsLoaded = state.highlightsLoaded || highlights.isSuccess,
-            itemNote = note.getOrDefault(state.itemNote),
-            itemNoteLoaded = state.itemNoteLoaded || note.isSuccess,
-            itemTags = tags?.getOrDefault(state.itemTags) ?: state.itemTags,
-        )
+    return coroutineScope {
+        val highlights =
+            async {
+                repository.listHighlights(documentId, fromServer = true).onSuccess { fetched ->
+                    uiState.updateIf({ it.highlights === open.highlights }) {
+                        it.copy(highlights = fetched, highlightsLoaded = true)
+                    }
+                }
+            }
+        val note =
+            async {
+                repository.getItemNote(documentId, fromServer = true).onSuccess { fetched ->
+                    uiState.updateIf({ it.itemNote == open.itemNote && activePanel.value != DataPanel.NOTE }) {
+                        it.copy(itemNote = fetched, itemNoteLoaded = true)
+                    }
+                }
+            }
+        launch {
+            val entryId = open.item.libraryEntryId ?: return@launch
+            repository.getItemTags(entryId).onSuccess { fetched ->
+                uiState.updateIf({ it.itemTags === open.itemTags }) { it.copy(itemTags = fetched) }
+            }
+        }
+        highlights.await().isSuccess && note.await().isSuccess
     }
-    return highlights.isSuccess && note.isSuccess
+}
+
+// A part is applied only over the value the fetch started from: a write made meanwhile wins.
+private inline fun MutableStateFlow<ReaderUiState>.updateIf(
+    unchanged: (ReaderUiState.Success) -> Boolean,
+    transform: (ReaderUiState.Success) -> ReaderUiState.Success,
+) {
+    update { state -> if (state is ReaderUiState.Success && unchanged(state)) transform(state) else state }
 }

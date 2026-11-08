@@ -104,7 +104,7 @@ class ReaderViewModel(
     init {
         _uiState.value = ReaderUiState.Loading
         load(initialPreferences)
-        viewModelScope.reconcileReader(documentId, repository, _uiState, triggers)
+        viewModelScope.reconcileReader(documentId, repository, _uiState, _activePanel, triggers)
     }
 
     /**
