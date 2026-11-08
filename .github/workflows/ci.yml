@@ -11,14 +11,11 @@ on:
       - 'prototypes/**'
       - 'obsidian/**'
       - 'linkwarden-docs/**'
+  # No path filter here: main requires the jobs below, and a workflow that never
+  # starts reports nothing, so a docs-only pull request could never merge. The
+  # changes job skips the jobs a pull request does not touch; a skipped job
+  # counts as passed.
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.backlog/**'
-      - 'prototypes/**'
-      - 'obsidian/**'
-      - 'linkwarden-docs/**'
   schedule:
     - cron: '17 3 * * 1'
 
@@ -27,8 +24,46 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    # paths-filter lists a pull request's files through the API.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      # Only a pull request is filtered; every other event runs everything.
+      backend: ${{ steps.filter.outputs.backend || 'true' }}
+      web: ${{ steps.filter.outputs.web || 'true' }}
+      extension: ${{ steps.filter.outputs.extension || 'true' }}
+      mobile: ${{ steps.filter.outputs.mobile || 'true' }}
+    steps:
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'scripts/verify-test-invariants.sh'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - 'shared/**'
+              - '.github/workflows/ci.yml'
+            extension:
+              - 'extension/**'
+              - 'shared/**'
+              - 'scripts/*.mjs'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'mobile/**'
+              - '.github/workflows/ci.yml'
+
   rust-lint:
     name: Rust Lint
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,6 +93,8 @@ jobs:
 
   rust-test:
     name: Rust Test
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -98,6 +135,8 @@ jobs:
 
   web:
     name: Web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -122,6 +161,8 @@ jobs:
 
   extension:
     name: Extension
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -146,6 +187,8 @@ jobs:
 
   mobile:
     name: Mobile
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -161,6 +204,8 @@ jobs:
 
   mobile-ios:
     name: Mobile (iOS compile)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     # The Xcode project is format 77, which needs Xcode 16.3+; macos-14 tops
     # out at Xcode 15.4.
     runs-on: macos-15
@@ -228,6 +273,8 @@ jobs:
 
   mobile-android-engine:
     name: Mobile (Android engine contract)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
