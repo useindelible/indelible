@@ -230,11 +230,11 @@ class OfflineStoreEnqueueTest {
             signedIn.installNow(serverDocument(note = "server"))
 
             store.enqueue(session, OutboxKind.DOCUMENT_NOTE, VIEW_DOC, VIEW_DOC) {
-                OutboxPayload.DocumentNote("mine", cachedServerNoteUpdatedAt(VIEW_DOC)) to Unit
+                OutboxPayload.DocumentNote("mine", noteBase(VIEW_DOC)) to Unit
             }
             val uncachedBase =
                 store.enqueue(session, OutboxKind.DOCUMENT_NOTE, "doc_9", "doc_9") {
-                    OutboxPayload.DocumentNote("x", null) to cachedServerNoteUpdatedAt("doc_9")
+                    OutboxPayload.DocumentNote("x", null) to noteBase("doc_9")
                 }
 
             val row = store.pendingOrdered(signedIn.scope).first { it.documentId == VIEW_DOC }

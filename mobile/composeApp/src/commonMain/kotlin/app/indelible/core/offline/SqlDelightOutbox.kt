@@ -193,7 +193,7 @@ internal class SqlDelightOutboxObservation(
 
     override fun observeWaitingByScope(): Flow<Map<String, Int>> =
         context.queries
-            .liveRowCountsByScope()
+            .waitingChangesByScope()
             .asFlow()
             .mapToList(context.dispatcher)
             .map { rows -> rows.associate { it.scope to it.waiting.toInt() } }

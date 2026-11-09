@@ -69,6 +69,7 @@ interface OutboxObservation {
 
     fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>>
 
+    /** Changes a sign-in would send, per scope not being purged: a document's reading events count once. */
     fun observeWaitingByScope(): Flow<Map<String, Int>>
 }
 
@@ -281,7 +282,8 @@ interface EnqueueTx {
         body: String,
     )
 
-    fun cachedServerNoteUpdatedAt(documentId: String): Long?
+    /** The base of a note edit: the queued note's own base while one is live, else the copy's server stamp. */
+    fun noteBase(documentId: String): Long?
 
     fun patchCachedProgress(
         documentId: String,

@@ -69,14 +69,18 @@ internal fun OfflineQueries.acknowledge(
     }
 }
 
+// The acked text is now the server's; a later note that had conflicted was judged against a version that
+// is gone, so it goes back to pending for the sender to check again.
 private fun OfflineQueries.rebaseNotes(
     acked: OutboxRow,
     serverUpdatedAt: Long,
 ) {
-    setCachedServerNoteUpdatedAt(serverUpdatedAt, acked.scope, acked.documentId)
+    val body = (acked.payload as OutboxPayload.DocumentNote).body
+    setCachedServerNoteStamp(body, serverUpdatedAt, acked.scope, acked.documentId)
     for (later in laterLiveNotesForDocument(acked.scope, acked.documentId, acked.seq).executeAsList()) {
-        val note = offlineJson.decodeFromString<OutboxPayload>(later.payload_json) as OutboxPayload.DocumentNote
-        val rebased = note.copy(baseUpdatedAtEpochMs = serverUpdatedAt)
-        setPayloadJson(offlineJson.encodeToString<OutboxPayload>(rebased), acked.scope, later.id)
+        val row = outboxRowFrom(later)
+        val rebased = (row.payload as OutboxPayload.DocumentNote).copy(baseUpdatedAtEpochMs = serverUpdatedAt)
+        setPayloadJson(offlineJson.encodeToString<OutboxPayload>(rebased), row.scope, row.id)
+        if (row.failure?.kind == SyncFailure.Kind.NOTE_CONFLICT) resetForRetry(row.scope, row.id)
     }
 }

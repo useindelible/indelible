@@ -8,7 +8,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private const val HLT = "hlt_1"
@@ -74,7 +73,7 @@ class OfflineStoreDiscardTest {
             assertEquals("later", s.store.cachedDocument(s.scope, VIEW_DOC)?.noteBody)
 
             s.discard(later)
-            assertNull(s.store.cachedDocument(s.scope, VIEW_DOC)?.noteBody)
+            assertEquals("server", s.store.cachedDocument(s.scope, VIEW_DOC)?.noteBody)
         }
 
     @Test
@@ -130,6 +129,8 @@ class OfflineStoreDiscardTest {
         runTest {
             val s = signedInStore(scope = "a")
             s.enqueueProgress(basisPoints = 1_000)
+            s.enqueueProgress(basisPoints = 2_000)
+            s.store.markFailed(s.scope, s.enqueue(OutboxPayload.HighlightColor(HLT, "red")), rejected("no"))
             s.enqueue(OutboxPayload.DocumentNote("a", null))
             s.store.remove(s.scope, s.enqueue(OutboxPayload.DocumentNote("b", null)))
             val b = s.switchTo("b")

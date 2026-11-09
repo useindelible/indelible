@@ -1,1 +1,2 @@
 ALTER TABLE outbox ADD COLUMN failure_json TEXT;
+ALTER TABLE cached_document ADD COLUMN note_server_body TEXT;

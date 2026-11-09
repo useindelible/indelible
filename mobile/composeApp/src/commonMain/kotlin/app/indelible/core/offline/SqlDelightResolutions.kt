@@ -42,8 +42,9 @@ internal class SqlDelightResolutions(
     ): Boolean =
         resolveConflict(session, rowId, seenServerUpdatedAt) { row ->
             queries.deleteOutboxRow(row.scope, row.id)
-            queries.setCachedServerNoteUpdatedAt(seenServerUpdatedAt, row.scope, row.documentId)
-            rebuildNote(row.scope, row.documentId, row.failure?.serverNoteBody)
+            val theirs = row.failure?.serverNoteBody
+            queries.setCachedServerNoteStamp(theirs, seenServerUpdatedAt, row.scope, row.documentId)
+            rebuildNote(row.scope, row.documentId)
             queries.moveRevision(row.scope, row.documentId, row.payload)
         }
 
@@ -80,7 +81,7 @@ internal class SqlDelightResolutions(
                 deleted += queries.changedRows().executeAsOne().toInt()
                 queries.deleteCachedHighlight(scope, row.entityId)
             }
-            OutboxKind.DOCUMENT_NOTE -> rebuildNote(scope, row.documentId, row.failure?.serverNoteBody)
+            OutboxKind.DOCUMENT_NOTE -> rebuildNote(scope, row.documentId)
             else -> Unit
         }
         queries.moveRevision(scope, row.documentId, row.payload)
@@ -92,8 +93,8 @@ internal class SqlDelightResolutions(
     private fun rebuildNote(
         scope: String,
         documentId: String,
-        serverBody: String?,
     ) {
+        val serverBody = queries.cachedDocument(scope, documentId).executeAsOneOrNull()?.note_server_body
         queries.setCachedNote(queries.localChanges(scope, documentId).note(serverBody), scope, documentId)
     }
 }

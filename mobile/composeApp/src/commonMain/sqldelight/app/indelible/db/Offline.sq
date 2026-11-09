@@ -11,6 +11,7 @@ CREATE TABLE cached_document (
     generation INTEGER NOT NULL DEFAULT 0,
     note_body TEXT,
     note_server_updated_at INTEGER,
+    note_server_body TEXT,
     progress_percent INTEGER,
     max_progress_percent INTEGER,
     chapter_locator TEXT,
@@ -170,11 +171,12 @@ UPDATE outbox SET state = ? WHERE scope = ? AND entity_id = ? AND state = ?;
 deleteBlockedRowsForEntity:
 DELETE FROM outbox WHERE scope = ? AND entity_id = ? AND state = 'blocked';
 
-liveRowCountsByScope:
-SELECT o.scope, COUNT(*) AS waiting
+waitingChangesByScope:
+SELECT o.scope,
+  COUNT(DISTINCT CASE WHEN o.kind = 'reading_event' THEN 'doc:' || o.document_id ELSE o.id END) AS waiting
 FROM outbox o
 JOIN client_state c ON c.scope = o.scope
-WHERE o.superseded = 0 AND c.purge_pending = 0
+WHERE o.superseded = 0 AND o.state != 'failed' AND c.purge_pending = 0
 GROUP BY o.scope;
 
 resetForRetry:
@@ -218,10 +220,10 @@ UPDATE cached_document SET bytes = ? WHERE scope = ? AND document_id = ?;
 installDocument:
 INSERT OR REPLACE INTO cached_document(
     scope, document_id, document_type, title, reader_json, pinned, last_opened_at, last_synced_at, bytes,
-    generation, note_body, note_server_updated_at, progress_percent, max_progress_percent, chapter_locator,
-    chapter_offset
+    generation, note_body, note_server_updated_at, note_server_body, progress_percent, max_progress_percent,
+    chapter_locator, chapter_offset
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 refreshDocumentMeta:
 UPDATE cached_document SET title = ?, reader_json = ? WHERE scope = ? AND document_id = ?;
@@ -242,10 +244,11 @@ setCachedNote:
 UPDATE cached_document SET note_body = ? WHERE scope = ? AND document_id = ?;
 
 setCachedServerNote:
-UPDATE cached_document SET note_body = ?, note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
+UPDATE cached_document SET note_body = ?, note_server_body = ?, note_server_updated_at = ?
+WHERE scope = ? AND document_id = ?;
 
-setCachedServerNoteUpdatedAt:
-UPDATE cached_document SET note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
+setCachedServerNoteStamp:
+UPDATE cached_document SET note_server_body = ?, note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
 
 catalog:
 SELECT document_id, document_type, title, pinned, last_opened_at, last_synced_at, bytes, generation

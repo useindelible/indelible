@@ -133,6 +133,7 @@ internal class SqlDelightCachedContent(
             generation = request.generation,
             note_body = changes.note(server.note?.body),
             note_server_updated_at = server.note?.updatedAtEpochMs,
+            note_server_body = server.note?.body,
             progress_percent = progress.percent?.toLong(),
             max_progress_percent = progress.maxPercent?.toLong(),
             chapter_locator = progress.position?.locator,
@@ -181,7 +182,8 @@ internal class SqlDelightCachedContent(
                         RefreshResult.Stale
                     } else {
                         val note = changes.note(part.note?.body)
-                        queries.setCachedServerNote(note, part.note?.updatedAtEpochMs, scope, documentId)
+                        val server = part.note
+                        queries.setCachedServerNote(note, server?.body, server?.updatedAtEpochMs, scope, documentId)
                         RefreshResult.Applied
                     }
             }

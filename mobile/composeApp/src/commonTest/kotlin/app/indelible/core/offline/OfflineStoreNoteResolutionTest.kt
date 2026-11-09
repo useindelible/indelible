@@ -21,7 +21,7 @@ class OfflineStoreNoteResolutionTest {
     private suspend fun SignedIn.edit(body: String): String {
         store.enqueue(session, OutboxKind.DOCUMENT_NOTE, VIEW_DOC, VIEW_DOC) {
             setCachedNote(VIEW_DOC, body)
-            OutboxPayload.DocumentNote(body, cachedServerNoteUpdatedAt(VIEW_DOC)) to Unit
+            OutboxPayload.DocumentNote(body, noteBase(VIEW_DOC)) to Unit
         }
         return store.pendingOrdered(scope).last().id
     }
