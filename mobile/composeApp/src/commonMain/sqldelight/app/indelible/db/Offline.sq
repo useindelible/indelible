@@ -176,7 +176,7 @@ SELECT o.scope,
   COUNT(DISTINCT CASE WHEN o.kind = 'reading_event' THEN 'doc:' || o.document_id ELSE o.id END) AS waiting
 FROM outbox o
 JOIN client_state c ON c.scope = o.scope
-WHERE o.superseded = 0 AND o.state != 'failed' AND c.purge_pending = 0
+WHERE o.superseded = 0 AND o.state = 'pending' AND c.purge_pending = 0
 GROUP BY o.scope;
 
 resetForRetry:
