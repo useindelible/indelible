@@ -28,6 +28,24 @@ class OutboxWorkerNoteTest {
         }
 
     @Test
+    fun aSecondEditInTheSameWalkIsSentOverTheFirstOnesStamp() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            signedIn.enqueue(OutboxPayload.DocumentNote("first", 1_000L))
+            signedIn.enqueue(OutboxPayload.DocumentNote("second", 1_000L))
+            sender.enqueueOutcome(SendOutcome.Success(noteUpdatedAtEpochMs = 2_000L))
+            sender.enqueueOutcome(SendOutcome.Success(noteUpdatedAtEpochMs = 3_000L))
+
+            worker.requestDrain()
+            runCurrent()
+
+            assertEquals(OutboxPayload.DocumentNote("second", 2_000L), sender.calls[1].single().payload)
+            assertTrue(signedIn.store.pendingOrdered(signedIn.scope).isEmpty())
+        }
+
+    @Test
     fun aNoteConflictFailsTheRowWithTheServersNote() =
         runTest {
             val signedIn = signedInTestStore()

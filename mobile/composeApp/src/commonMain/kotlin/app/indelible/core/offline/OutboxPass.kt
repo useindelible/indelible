@@ -86,26 +86,38 @@ internal class OutboxPass(
         tooOld: MutableSet<OutboxKind>,
     ): PassResult? {
         val scope = session.scope
-        val head = batch.first()
-        val outcome = sender.send(session, clientId, batch)
+        val rows = currentRows(scope, batch) ?: return null
+        val head = rows.first()
+        val outcome = sender.send(session, clientId, rows)
         val outcomeAt = clock()
         return when (val classification = classify(head.kind, outcome, head.attempts, outcomeAt, isNetwork)) {
             is Classification.Retryable -> {
-                applyRetryable(scope, batch, classification, outcome, outcomeAt)
+                applyRetryable(scope, rows, classification, outcome, outcomeAt)
                 PassResult.RetryableStop(classification.nextAttemptAt)
             }
             Classification.AuthBlocked -> PassResult.AuthPaused
             Classification.Stale -> PassResult.Stale
             is Classification.Terminal -> {
-                applyTerminal(scope, batch, classification, shielded)
+                applyTerminal(scope, rows, classification, shielded)
                 if (classification.failure.kind == SyncFailure.Kind.SERVER_TOO_OLD) tooOld += head.kind
                 null
             }
             Classification.Done -> {
-                applyDone(scope, batch, outcome, outcomeAt)
+                applyDone(scope, rows, outcome, outcomeAt)
                 null
             }
         }
+    }
+
+    // An earlier note in this walk rebases the later ones in storage, so a note is sent as it is now, not as
+    // it was read at the start; a row that is gone meanwhile is simply skipped.
+    private suspend fun currentRows(
+        scope: String,
+        batch: List<OutboxRow>,
+    ): List<OutboxRow>? {
+        val head = batch.first()
+        if (head.kind != OutboxKind.DOCUMENT_NOTE) return batch
+        return store.pendingOrdered(scope).firstOrNull { it.id == head.id }?.let(::listOf)
     }
 
     private fun nextBatch(
