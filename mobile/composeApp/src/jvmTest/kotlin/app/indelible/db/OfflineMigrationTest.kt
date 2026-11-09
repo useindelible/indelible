@@ -62,8 +62,48 @@ class OfflineMigrationTest {
         val columns = columnsOf(driver, "outbox")
         assertTrue("failure_json" in columns, columns.toString())
         assertTrue("note_server_body" in columnsOf(driver, "cached_document"))
-        assertEquals(2L, OfflineDatabase.Schema.version)
+        assertEquals(3L, OfflineDatabase.Schema.version)
     }
+
+    @Test
+    fun aVersionTwoCopyKeepsItsNoteAsTheServersUnlessAnEditIsQueued() {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        driver.execute(null, V1_OUTBOX, 0)
+        driver.execute(null, V1_CACHED_DOCUMENT, 0)
+        driver.execute(null, "ALTER TABLE outbox ADD COLUMN failure_json TEXT", 0)
+        driver.execute(null, cachedDocument("doc_synced", "server words"), 0)
+        driver.execute(null, cachedDocument("doc_edited", "local words"), 0)
+        driver.execute(null, queuedNote("doc_edited"), 0)
+
+        OfflineDatabase.Schema.migrate(driver, 2, OfflineDatabase.Schema.version).value
+
+        assertEquals(mapOf("doc_synced" to "server words", "doc_edited" to null), serverNotes(driver))
+    }
+
+    private fun cachedDocument(
+        id: String,
+        note: String,
+    ): String =
+        "INSERT INTO cached_document " +
+            "(scope, document_id, document_type, title, reader_json, last_opened_at, note_body) " +
+            "VALUES ('s', '$id', 'article', 't', '{}', 0, '$note')"
+
+    private fun queuedNote(documentId: String): String =
+        "INSERT INTO outbox (scope, id, kind, entity_id, document_id, payload_json, created_at) " +
+            "VALUES ('s', 'obx_1', 'document_note', '$documentId', '$documentId', '{}', 0)"
+
+    private fun serverNotes(driver: JdbcSqliteDriver): Map<String, String?> =
+        driver
+            .executeQuery(
+                null,
+                "SELECT document_id, note_server_body FROM cached_document ORDER BY document_id",
+                { cursor ->
+                    val notes = mutableMapOf<String, String?>()
+                    while (cursor.next().value) notes[checkNotNull(cursor.getString(0))] = cursor.getString(1)
+                    QueryResult.Value(notes)
+                },
+                0,
+            ).value
 
     private fun columnsOf(
         driver: JdbcSqliteDriver,

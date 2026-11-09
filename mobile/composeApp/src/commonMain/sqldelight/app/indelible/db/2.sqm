@@ -1,0 +1,7 @@
+ALTER TABLE cached_document ADD COLUMN note_server_body TEXT;
+UPDATE cached_document SET note_server_body = note_body
+WHERE NOT EXISTS (
+  SELECT 1 FROM outbox
+  WHERE outbox.scope = cached_document.scope AND outbox.document_id = cached_document.document_id
+    AND outbox.kind = 'document_note' AND outbox.superseded = 0
+);
