@@ -197,4 +197,23 @@ class OutboxClassifierTest {
             SyncFailure(SyncFailure.Kind.NOTE_CONFLICT, serverNoteBody = "theirs", serverNoteUpdatedAtEpochMs = 2_000L)
         assertEquals(expected, failureOf(classification))
     }
+
+    @Test
+    fun aValidationErrorShowsTheFieldMessageNotTheGenericDetail() {
+        val problem = ApiProblem("validation_error", "validation error", listOf(FieldError("body", "Note too long")))
+
+        val failure = failureOf(classify(NOTE, http(422, "{}", problem), attempts = 0, now = 0L, isNetwork))
+
+        assertEquals("Note too long", failure.serverMessage)
+    }
+
+    @Test
+    fun aNotFoundWithAProblemBodyButNoCodeIsRejected() {
+        val problem = ApiProblem(code = null, detail = "no such thing")
+
+        val failure = failureOf(classify(NOTE, http(404, "{}", problem), attempts = 0, now = 0L, isNetwork))
+
+        assertEquals(SyncFailure.Kind.REJECTED, failure.kind)
+        assertEquals("no such thing", failure.serverMessage)
+    }
 }

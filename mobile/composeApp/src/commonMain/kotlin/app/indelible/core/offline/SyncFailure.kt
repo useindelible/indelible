@@ -54,6 +54,6 @@ fun serverMessageOf(
     problem: ApiProblem?,
     body: String,
 ): String? =
-    problem?.detail
-        ?: problem?.errors?.firstOrNull()?.message
+    problem?.errors?.firstOrNull()?.message
+        ?: problem?.detail
         ?: body.take(MESSAGE_CUT).takeIf { it.isNotBlank() }

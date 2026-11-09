@@ -185,9 +185,9 @@ private fun notFound(
     kind: OutboxKind,
     outcome: SendOutcome.Http,
 ): SyncFailure =
-    when (outcome.problem?.code) {
-        null -> serverTooOld(kind, outcome)
-        "not_found" -> outcome.failure(SyncFailure.Kind.DELETED_ELSEWHERE)
+    when {
+        outcome.problem == null -> serverTooOld(kind, outcome)
+        outcome.problem.code == "not_found" -> outcome.failure(SyncFailure.Kind.DELETED_ELSEWHERE)
         else -> outcome.failure(SyncFailure.Kind.REJECTED)
     }
 
