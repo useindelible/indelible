@@ -4,6 +4,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -63,11 +65,13 @@ internal fun NoteConflictContent(
 ) {
     Column(
         modifier =
-            Modifier.padding(
-                start = IndelibleSpacing.rowPaddingH,
-                end = IndelibleSpacing.rowPaddingH,
-                bottom = IndelibleSpacing.step32,
-            ),
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    start = IndelibleSpacing.rowPaddingH,
+                    end = IndelibleSpacing.rowPaddingH,
+                    bottom = IndelibleSpacing.step32,
+                ),
     ) {
         Text(
             text = stringResource(Res.string.offline_failure_conflict_title),
