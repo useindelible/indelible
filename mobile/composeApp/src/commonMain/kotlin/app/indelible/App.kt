@@ -97,7 +97,7 @@ private fun AppContent(
             AuthNavigation(
                 viewModel = authViewModel,
                 connectServerViewModel = appContainer.connectServerViewModel,
-                waitingChanges = appContainer.offlineAccount.waitingChanges(),
+                waitingChanges = appContainer.offlineAccount::waitingChanges,
             )
         is AuthState.NeedsOnboarding ->
             OnboardingFlow(
