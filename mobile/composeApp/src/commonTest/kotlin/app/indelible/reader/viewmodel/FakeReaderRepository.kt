@@ -66,6 +66,7 @@ class FakeReaderRepository : ReaderRepository {
     var getItemNoteCallCount = 0
     var upsertItemNoteResult: Result<String>? = null
     var getItemTagsResult: Result<List<String>> = Result.success(emptyList())
+    var getItemTagsCallCount = 0
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
     var createHighlightCallCount = 0
@@ -237,6 +238,7 @@ class FakeReaderRepository : ReaderRepository {
 
     override suspend fun getItemTags(itemId: String): Result<List<String>> {
         lastGetItemTagsId = itemId
+        getItemTagsCallCount++
         metadataGate?.await()
         return getItemTagsResult
     }

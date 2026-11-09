@@ -164,4 +164,58 @@ class ReaderViewModelReconcileTest {
             val after = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
             assertEquals(1, after.highlights.size)
         }
+
+    @Test
+    fun aLateFirstNoteReadDoesNotOverwriteTheReconciledNote() =
+        runTest(testDispatcher) {
+            val firstRead = CompletableDeferred<Unit>()
+            repository.metadataGate = firstRead
+            val viewModel = reader()
+            advanceUntilIdle()
+            assertIs<ReaderUiState.Success>(viewModel.uiState.value)
+            repository.metadataGate = null
+            repository.getItemNoteResult = Result.success("fresh")
+
+            changes.tryEmit("doc_test1")
+            advanceUntilIdle()
+            repository.getItemNoteResult = Result.success(null)
+            firstRead.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals("fresh", assertIs<ReaderUiState.Success>(viewModel.uiState.value).itemNote)
+        }
+
+    @Test
+    fun aNoteNeverLoadedIsAppliedEvenWithTheSheetOpen() =
+        runTest(testDispatcher) {
+            repository.getItemNoteResult = Result.failure(IllegalStateException("offline"))
+            val viewModel = reader()
+            advanceUntilIdle()
+            viewModel.openPanel(DataPanel.NOTE)
+            repository.getItemNoteResult = Result.success("from the web")
+
+            changes.tryEmit("doc_test1")
+            advanceUntilIdle()
+
+            val open = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
+            assertEquals("from the web" to true, open.itemNote to open.itemNoteLoaded)
+        }
+
+    @Test
+    fun aFailedTagReadIsTriedAgain() =
+        runTest(testDispatcher) {
+            val viewModel = reader()
+            advanceUntilIdle()
+            repository.getItemTagsResult = Result.failure(IllegalStateException("no answer"))
+            val before = repository.getItemTagsCallCount
+
+            changes.tryEmit("doc_test1")
+            runCurrent()
+            repository.getItemTagsResult = Result.success(listOf("later"))
+            advanceTimeBy(RECONCILE_FIRST_RETRY_MS)
+            runCurrent()
+
+            assertEquals(before + 2, repository.getItemTagsCallCount)
+            assertEquals(listOf("later"), assertIs<ReaderUiState.Success>(viewModel.uiState.value).itemTags)
+        }
 }

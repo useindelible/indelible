@@ -81,6 +81,8 @@ private suspend fun refreshAnnotations(
     activePanel: StateFlow<DataPanel>,
 ): Boolean {
     val open = uiState.value as? ReaderUiState.Success ?: return true
+    // A note that never loaded has no draft to protect, so the sheet being open does not hold it back.
+    fun noteSheetOpen() = activePanel.value == DataPanel.NOTE
     return coroutineScope {
         val highlights =
             async {
@@ -93,18 +95,21 @@ private suspend fun refreshAnnotations(
         val note =
             async {
                 repository.getItemNote(documentId, fromServer = true).onSuccess { fetched ->
-                    uiState.updateIf({ it.itemNote == open.itemNote && activePanel.value != DataPanel.NOTE }) {
+                    uiState.updateIf({ !it.itemNoteLoaded || it.itemNote == open.itemNote && !noteSheetOpen() }) {
                         it.copy(itemNote = fetched, itemNoteLoaded = true)
                     }
                 }
             }
-        launch {
-            val entryId = open.item.libraryEntryId ?: return@launch
-            repository.getItemTags(entryId).onSuccess { fetched ->
-                uiState.updateIf({ it.itemTags === open.itemTags }) { it.copy(itemTags = fetched) }
+        val tags =
+            async {
+                val entryId = open.item.libraryEntryId ?: return@async true
+                repository
+                    .getItemTags(entryId)
+                    .onSuccess { fetched ->
+                        uiState.updateIf({ it.itemTags === open.itemTags }) { it.copy(itemTags = fetched) }
+                    }.isSuccess
             }
-        }
-        highlights.await().isSuccess && note.await().isSuccess
+        highlights.await().isSuccess && note.await().isSuccess && tags.await()
     }
 }
 

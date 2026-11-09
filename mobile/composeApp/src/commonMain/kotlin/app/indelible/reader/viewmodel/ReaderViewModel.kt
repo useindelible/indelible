@@ -248,9 +248,14 @@ class ReaderViewModel(
 
     private fun CoroutineScope.loadItemNoteAndTags() {
         launch {
+            // A reconnect refresh may have landed the note first; this older read must not replace it.
             repository
                 .getItemNote(documentId)
-                .onSuccess { note -> updateSuccessState { it.copy(itemNote = note, itemNoteLoaded = true) } }
+                .onSuccess { note ->
+                    updateSuccessState {
+                        if (it.itemNoteLoaded) it else it.copy(itemNote = note, itemNoteLoaded = true)
+                    }
+                }
         }
         val libraryEntryId = (_uiState.value as? ReaderUiState.Success)?.item?.libraryEntryId ?: return
         launch {
