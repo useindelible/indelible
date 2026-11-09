@@ -9,6 +9,7 @@ import app.indelible.core.offline.enqueue
 import app.indelible.core.offline.seed
 import app.indelible.home.repository.homeRow
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -42,14 +43,16 @@ class OfflineShelfViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private suspend fun TestScope.shelf(): Pair<DownloadHarness, OfflineShelfViewModel> {
+    private suspend fun TestScope.shelf(
+        probe: suspend () -> Unit = { probes++ },
+    ): Pair<DownloadHarness, OfflineShelfViewModel> {
         val h = downloadHarness()
         val viewModel =
             OfflineShelfViewModel(
                 h.signedIn.registry,
                 h.store,
                 reachable,
-                probe = { probes++ },
+                probe = probe,
                 online = online,
                 requestDrain = { drains++ },
             )
@@ -69,6 +72,34 @@ class OfflineShelfViewModelTest {
 
             assertEquals(1, probes)
             assertEquals(1, drains)
+        }
+
+    @Test
+    fun retryNowRequestsADrainBeforeTheProbeAnswers() =
+        runTest {
+            reachable.value = true
+            val (_, shelf) = shelf(probe = { awaitCancellation() })
+            runCurrent()
+
+            shelf.retryNow()
+            runCurrent()
+
+            assertEquals(1, drains)
+        }
+
+    @Test
+    fun blockedDependantsStayQueuedWhenTheirCreateFails() =
+        runTest {
+            reachable.value = true
+            val (h, shelf) = shelf()
+            val create = h.signedIn.enqueue(OutboxPayload.HighlightCreate("hlt_1", "yellow", "quoted", null, null))
+            h.signedIn.enqueue(OutboxPayload.HighlightColor("hlt_1", "blue"))
+            h.signedIn.enqueue(OutboxPayload.HighlightNote("hlt_1", "a note"))
+            h.store.failCreateAndBlockDependants(DL_SCOPE, create, "hlt_1", "bad locator")
+            runCurrent()
+
+            assertEquals(1, shelf.progress.value.attention)
+            assertEquals(2, shelf.progress.value.queued)
         }
 
     @Test

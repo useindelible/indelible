@@ -127,8 +127,8 @@ class OfflineShelfViewModel(
         retry =
             viewModelScope.launch {
                 scope?.let { store.resetBackoff(it) }
-                probe()
                 requestDrain()
+                probe()
             }
     }
 
@@ -290,8 +290,9 @@ private fun queueCounts(
     catalog: List<CatalogEntry>,
 ): QueueCounts {
     val changes = pendingChanges(rows, catalog)
+    val every = changes.flatMap { listOf(it) + it.blocked }
     return QueueCounts(
-        queued = changes.count { it.status != ChangeStatus.SUPERSEDED && it.status != ChangeStatus.FAILED },
-        attention = changes.count { it.status == ChangeStatus.FAILED },
+        queued = every.count { it.status != ChangeStatus.SUPERSEDED && it.status != ChangeStatus.FAILED },
+        attention = every.count { it.status == ChangeStatus.FAILED },
     )
 }
