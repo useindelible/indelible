@@ -25,6 +25,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -69,8 +70,8 @@ class SyncActions(
     val onRetryNow: () -> Unit = {},
     val onDiscard: (String) -> Unit = {},
     val onCopyText: (String) -> Unit = {},
-    val onKeepMine: (String) -> Unit = {},
-    val onKeepOther: (String) -> Unit = {},
+    val onKeepMine: (changeId: String, seenServerUpdatedAt: Long) -> Unit = { _, _ -> },
+    val onKeepOther: (changeId: String, seenServerUpdatedAt: Long) -> Unit = { _, _ -> },
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,14 +83,10 @@ fun StorageScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
-    val notice by viewModel.notice.collectAsState()
-    val noticeText = notice?.let { stringResource(it.text()) }
+    val noticeTexts = StorageNotice.entries.associateWith { stringResource(it.text()) }
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(notice) {
-        if (noticeText != null) {
-            snackbarHostState.showSnackbar(noticeText)
-            viewModel.dismissNotice()
-        }
+    LaunchedEffect(viewModel) {
+        viewModel.notices.collect { snackbarHostState.showSnackbar(noticeTexts.getValue(it)) }
     }
     val clipboard = LocalClipboardManager.current
     val actions =
@@ -162,13 +159,15 @@ fun StorageContent(
             onDismiss = { confirmRemoval = false },
         )
     }
-    var conflict by remember { mutableStateOf<PendingChange?>(null) }
-    conflict?.let { change -> ConflictSheet(change, actions.sync, onDismiss = { conflict = null }) }
+    var conflictId by rememberSaveable { mutableStateOf<String?>(null) }
+    state.changes.firstOrNull { it.id == conflictId }?.let { change ->
+        ConflictSheet(change, actions.sync, onDismiss = { conflictId = null })
+    }
     var filter by remember { mutableStateOf(DownloadFilter.ALL) }
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item { UsageSection(state, actions.onCapChange, onManageKept = { filter = DownloadFilter.KEPT }) }
         documentSections(state, filter, onFilterChange = { filter = it }, actions = actions)
-        pendingSection(state.changes, state.serverUnreachable, actions.sync, onViewBoth = { conflict = it })
+        pendingSection(state.changes, state.serverUnreachable, actions.sync, onViewBoth = { conflictId = it.id })
         if (state.kept.isNotEmpty() || state.cached.isNotEmpty()) {
             item {
                 IndelibleButton(
@@ -203,11 +202,11 @@ private fun ConflictSheet(
         theirsAt = Instant.fromEpochMilliseconds(theirsAt),
         onKeepMine = {
             onDismiss()
-            actions.onKeepMine(change.id)
+            actions.onKeepMine(change.id, theirsAt)
         },
         onKeepOther = {
             onDismiss()
-            actions.onKeepOther(change.id)
+            actions.onKeepOther(change.id, theirsAt)
         },
         onDismiss = onDismiss,
     )

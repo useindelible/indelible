@@ -9,21 +9,24 @@ import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxState
+import app.indelible.core.offline.ScopeNotLiveException
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.StaleWriteException
 import app.indelible.core.storage.UserPreferencesStorage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import okio.IOException
@@ -38,8 +41,10 @@ class StorageViewModel(
     private val unreachable: Flow<Boolean> = flowOf(false),
 ) : ViewModel() {
     private val capBytes = MutableStateFlow<Long?>(null)
-    private val _notice = MutableStateFlow<StorageNotice?>(null)
-    val notice: StateFlow<StorageNotice?> = _notice.asStateFlow()
+    private val _notices = Channel<StorageNotice>(Channel.BUFFERED)
+
+    /** Each resolution's outcome once, in order; a screen collects it while it is shown. */
+    val notices: Flow<StorageNotice> = _notices.receiveAsFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<StorageUiState> =
@@ -85,39 +90,51 @@ class StorageViewModel(
     /** Deletes the change and the changes blocked behind it; nothing reaches the server. */
     fun discard(changeId: String) {
         val session = registry.current.value.session ?: return
-        val change = state.value.changes.firstOrNull { it.id == changeId } ?: return
+        val change = state.value.changes.firstOrNull { it.id == changeId }?.takeIf { it.canDiscard } ?: return
         val rowIds = change.rowIds + change.blocked.flatMap { it.rowIds }
-        viewModelScope.launch { store.discardRows(session, rowIds) }
+        viewModelScope.launch { withSession { store.discardRows(session, rowIds) } }
     }
 
-    fun keepMine(changeId: String) {
-        resolveNote(changeId, StorageNotice.KEPT_MINE) { session, id, seen ->
+    /** [seenServerUpdatedAt] is the server version the sheet showed; a row that moved on since is refused. */
+    fun keepMine(
+        changeId: String,
+        seenServerUpdatedAt: Long,
+    ) {
+        resolveNote(changeId, seenServerUpdatedAt, StorageNotice.KEPT_MINE) { session, id, seen ->
             store.keepLocalNote(session, id, seen).also { if (it) requestDrain() }
         }
     }
 
-    fun keepOther(changeId: String) {
-        resolveNote(changeId, StorageNotice.KEPT_OTHER, store::keepServerNote)
+    fun keepOther(
+        changeId: String,
+        seenServerUpdatedAt: Long,
+    ) {
+        resolveNote(changeId, seenServerUpdatedAt, StorageNotice.KEPT_OTHER, store::keepServerNote)
     }
 
-    fun dismissNotice() {
-        _notice.value = null
-    }
-
-    // The sheet showed one server version; a row that moved on since is refused and the list says why.
     private fun resolveNote(
         changeId: String,
+        seenServerUpdatedAt: Long,
         kept: StorageNotice,
         resolve: suspend (Session, String, Long) -> Boolean,
     ) {
         val session = registry.current.value.session ?: return
-        val change = state.value.changes.firstOrNull { it.id == changeId }
-        val seen = change?.failure?.serverNoteUpdatedAtEpochMs
         viewModelScope.launch {
-            val done = seen != null && resolve(session, changeId, seen)
-            _notice.value = if (done) kept else StorageNotice.CHANGED_REFRESHED
+            val outcome = withSession { resolve(session, changeId, seenServerUpdatedAt) }
+            val done = outcome == true
+            _notices.send(if (done) kept else StorageNotice.CHANGED_REFRESHED)
         }
     }
+
+    // A session that ended between the tap and the write has nothing left to resolve.
+    private suspend fun <T> withSession(block: suspend () -> T): T? =
+        try {
+            block()
+        } catch (ignored: StaleWriteException) {
+            null
+        } catch (ignored: ScopeNotLiveException) {
+            null
+        }
 
     /** Leaves the copy in place; only the mark that protects it from eviction goes. */
     fun unpin(documentId: String) {

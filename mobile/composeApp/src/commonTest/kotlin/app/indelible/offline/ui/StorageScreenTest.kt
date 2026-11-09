@@ -270,12 +270,12 @@ class StorageScreenTest {
             val conflict =
                 SyncFailure(SyncFailure.Kind.NOTE_CONFLICT, serverNoteBody = "theirs", serverNoteUpdatedAtEpochMs = 2L)
             val change = failed(OutboxKind.DOCUMENT_NOTE, conflict, detail = "mine")
-            var kept: String? = null
+            var kept: Pair<String, Long>? = null
             setContent {
                 AppTheme {
                     StorageContent(
                         StorageUiState(changes = listOf(change)),
-                        StorageActions(sync = SyncActions(onKeepMine = { kept = it })),
+                        StorageActions(sync = SyncActions(onKeepMine = { id, seenAt -> kept = id to seenAt })),
                     )
                 }
             }
@@ -287,7 +287,7 @@ class StorageScreenTest {
             onNodeWithText("theirs").assertExists()
             onNodeWithText("Keep mine").performClick()
 
-            assertEquals("row_1", kept)
+            assertEquals("row_1" to 2L, kept)
         }
 
     @Test

@@ -40,9 +40,9 @@ import app.indelible.core.offline.OutboxSender
 import app.indelible.core.offline.OutboxWorker
 import app.indelible.core.offline.ScopePurger
 import app.indelible.core.offline.SessionRegistry
-import app.indelible.core.offline.serverUnreachable
 import app.indelible.core.offline.SessionTransitions
 import app.indelible.core.offline.SqlDelightOfflineStore
+import app.indelible.core.offline.serverUnreachable
 import app.indelible.core.storage.TokenStorage
 import app.indelible.core.storage.UserPreferencesStorage
 import app.indelible.db.DatabaseDriverFactory

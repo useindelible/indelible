@@ -5,6 +5,7 @@ import app.indelible.core.offline.DL_SCOPE
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxState
 import app.indelible.core.offline.STILL_PREPARING_ERROR
+import app.indelible.core.offline.SessionState
 import app.indelible.core.offline.SyncFailure
 import app.indelible.core.offline.enqueue
 import app.indelible.core.offline.enqueueProgress
@@ -25,7 +26,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private const val THEIRS_AT = 2_000L
@@ -82,14 +82,14 @@ class StorageFailureViewModelTest {
             assertFalse(s.change(id).canRetry)
             assertFalse(s.change(id).canDiscard)
 
-            s.viewModel.keepMine(id)
+            s.viewModel.keepMine(id, THEIRS_AT)
             advanceUntilIdle()
 
             val row = s.h.signedIn.row(id)
             assertEquals(OutboxState.PENDING, row.state)
             assertEquals(OutboxPayload.DocumentNote("mine", THEIRS_AT), row.payload)
             assertEquals(1, s.drains)
-            assertEquals(StorageNotice.KEPT_MINE, s.viewModel.notice.value)
+            assertEquals(listOf(StorageNotice.KEPT_MINE), s.notices())
         }
 
     @Test
@@ -99,7 +99,7 @@ class StorageFailureViewModelTest {
             val id = s.conflictedNote()
             advanceUntilIdle()
 
-            s.viewModel.keepOther(id)
+            s.viewModel.keepOther(id, THEIRS_AT)
             advanceUntilIdle()
 
             assertTrue(s.state.changes.isEmpty())
@@ -107,7 +107,7 @@ class StorageFailureViewModelTest {
             assertEquals("theirs", copy.noteBody)
             assertEquals(THEIRS_AT, copy.noteServerUpdatedAt)
             assertEquals(0, s.drains)
-            assertEquals(StorageNotice.KEPT_OTHER, s.viewModel.notice.value)
+            assertEquals(listOf(StorageNotice.KEPT_OTHER), s.notices())
         }
 
     @Test
@@ -118,15 +118,12 @@ class StorageFailureViewModelTest {
             s.h.store.markFailed(DL_SCOPE, id, rejected("Note too long"))
             advanceUntilIdle()
 
-            s.viewModel.keepMine(id)
+            s.viewModel.keepMine(id, THEIRS_AT)
             advanceUntilIdle()
 
-            assertEquals(StorageNotice.CHANGED_REFRESHED, s.viewModel.notice.value)
+            assertEquals(listOf(StorageNotice.CHANGED_REFRESHED), s.notices())
             assertEquals(ChangeStatus.FAILED, s.change(id).status)
             assertEquals(0, s.drains)
-
-            s.viewModel.dismissNotice()
-            assertNull(s.viewModel.notice.value)
         }
 
     @Test
@@ -207,5 +204,50 @@ class StorageFailureViewModelTest {
 
             assertEquals(1, s.drains)
             assertEquals(0L, s.h.signedIn.row(id).nextAttemptAt)
+        }
+
+    @Test
+    fun aResolutionAgainstAnOlderSheetIsRefused() =
+        runTest {
+            val s = storage()
+            val id = s.conflictedNote()
+            advanceUntilIdle()
+
+            s.viewModel.keepOther(id, seenServerUpdatedAt = 1_500L)
+            advanceUntilIdle()
+
+            assertEquals(listOf(StorageNotice.CHANGED_REFRESHED), s.notices())
+            assertEquals(ChangeStatus.FAILED, s.change(id).status)
+        }
+
+    @Test
+    fun discardIsRefusedWhenTheChangeCannotBeDiscarded() =
+        runTest {
+            val s = storage()
+            val id = s.h.signedIn.enqueueProgress(5_000)
+            s.h.store.markFailed(DL_SCOPE, id, TOO_OLD)
+            advanceUntilIdle()
+
+            s.viewModel.discard(id)
+            advanceUntilIdle()
+
+            assertEquals(ChangeStatus.FAILED, s.change(id).status)
+        }
+
+    @Test
+    fun aSignOutBetweenTapAndWriteIsSwallowed() =
+        runTest {
+            val s = storage()
+            val id = s.conflictedNote()
+            advanceUntilIdle()
+            val registry = s.h.signedIn.registry
+
+            s.viewModel.keepMine(id, THEIRS_AT)
+            s.viewModel.discard(id)
+            registry.publish(SessionState(registry.current.value.epoch, session = null))
+            advanceUntilIdle()
+
+            assertEquals(OutboxState.FAILED, s.h.signedIn.row(id).state)
+            assertEquals(0, s.drains)
         }
 }
