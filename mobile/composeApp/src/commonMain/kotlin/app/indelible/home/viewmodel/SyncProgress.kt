@@ -62,6 +62,7 @@ private fun SyncProgress.reconnected(inputs: SyncInputs): SyncProgress =
             )
         net == ShelfNet.OFFLINE -> online(inputs)
         net == ShelfNet.SENDING && inputs.queued == 0 -> finished(inputs.attention)
+        net == ShelfNet.SYNCED && (inputs.queued > 0 || inputs.attention > 0) -> online(inputs)
         net == ShelfNet.SENDING ->
             copy(
                 queued = inputs.queued,

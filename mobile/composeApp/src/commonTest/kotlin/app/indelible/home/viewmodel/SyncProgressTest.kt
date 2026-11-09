@@ -34,6 +34,15 @@ class SyncProgressTest {
     }
 
     @Test
+    fun newWorkDuringTheHoldEndsIt() {
+        val synced = offlineWith(1).step(inputs(queued = 1)).step(inputs(queued = 0))
+        assertEquals(ShelfNet.SYNCED, synced.net)
+
+        assertEquals(ShelfNet.ONLINE, synced.step(inputs(queued = 1)).net)
+        assertEquals(ShelfNet.ONLINE, synced.step(inputs(attention = 1)).net)
+    }
+
+    @Test
     fun reconnectingWithFailuresEndsOnlineNotSynced() {
         val sending = offlineWith(2).step(inputs(queued = 2))
         val oneSent = sending.step(inputs(queued = 1))
