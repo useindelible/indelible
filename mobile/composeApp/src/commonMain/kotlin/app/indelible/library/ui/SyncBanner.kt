@@ -150,7 +150,7 @@ private fun BannerContent(
                 Box(Modifier.size(IndelibleSpacing.step8).clip(IndelibleShape.full).background(tone.fg))
                 Text(
                     text = headline(banner),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
                 )
                 BannerAction(banner, onReview, onRetryNow)
