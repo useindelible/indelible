@@ -1,6 +1,7 @@
 package app.indelible.feed.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -48,16 +49,22 @@ import app.indelible.feed.viewmodel.FeedEffect
 import app.indelible.feed.viewmodel.FeedFilter
 import app.indelible.feed.viewmodel.FeedUiState
 import app.indelible.feed.viewmodel.FeedViewModel
+import app.indelible.library.ui.ReloadWhenReachable
+import app.indelible.ui.components.IndelibleButton
+import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.theme.AppTheme
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import indelible.composeapp.generated.resources.Res
+import indelible.composeapp.generated.resources.common_retry
 import indelible.composeapp.generated.resources.feed_action_mark_all_seen
 import indelible.composeapp.generated.resources.feed_action_save_library_cd
 import indelible.composeapp.generated.resources.feed_filter_seen
 import indelible.composeapp.generated.resources.feed_filter_unseen
 import indelible.composeapp.generated.resources.feed_save
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import org.jetbrains.compose.resources.stringResource
 
 private const val PAGINATION_TRIGGER_ROWS = 5
@@ -75,9 +82,14 @@ fun FeedScreen(
     userDisplayName: String? = null,
     avatarUrl: String? = null,
     avatarBytes: ByteArray? = null,
+    online: Flow<Boolean> = emptyFlow(),
+    reachable: Flow<Boolean?> = emptyFlow(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val feedFilter by viewModel.feedFilter.collectAsState()
+    ReloadWhenReachable(online, reachable) {
+        if (viewModel.uiState.value is FeedUiState.Error) viewModel.refresh()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     var popoverOpen by remember { mutableStateOf(false) }
 
@@ -129,14 +141,22 @@ fun FeedScreen(
                         }
 
                     is FeedUiState.Error ->
-                        Box(
+                        Column(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
                                 text = state.message.resolve(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.error,
+                            )
+                            IndelibleButton(
+                                text = stringResource(Res.string.common_retry),
+                                onClick = { viewModel.refresh() },
+                                style = IndelibleButtonStyle.Secondary,
+                                compact = true,
+                                modifier = Modifier.padding(top = IndelibleSpacing.step12),
                             )
                         }
 
