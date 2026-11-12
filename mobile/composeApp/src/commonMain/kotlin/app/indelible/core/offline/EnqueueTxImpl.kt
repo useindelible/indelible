@@ -62,7 +62,9 @@ internal class EnqueueTxImpl(
                 .rows
                 .lastOrNull { it.kind == OutboxKind.DOCUMENT_NOTE && !it.superseded }
         if (queued != null) return (queued.payload as OutboxPayload.DocumentNote).baseUpdatedAtEpochMs
-        return queries.cachedDocument(scope, documentId).executeAsOneOrNull()?.note_server_updated_at
+        // A copy that saw no server note has a base of zero: a note that appears later is someone else's.
+        val copy = queries.cachedDocument(scope, documentId).executeAsOneOrNull()
+        return copy?.let { it.note_server_updated_at ?: 0L }
     }
 
     override fun patchCachedProgress(

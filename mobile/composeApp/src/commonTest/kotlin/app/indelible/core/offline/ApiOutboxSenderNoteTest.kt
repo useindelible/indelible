@@ -89,6 +89,16 @@ class ApiOutboxSenderNoteTest {
         }
 
     @Test
+    fun aNoteWrittenSinceTheCopyHadNoneIsAConflict() =
+        runTest {
+            val capture = SenderCapture()
+            val sender = noteServer(capture, noteJson("theirs", NEWER_MS))
+
+            assertEquals(SendOutcome.NoteConflict("theirs", NEWER_MS), sender.sendNote(note(base = 0L)))
+            assertEquals(listOf(HttpMethod.Get), capture.methods)
+        }
+
+    @Test
     fun aLostPutResponseIsSeenAsAppliedOnRetry() =
         runTest {
             val capture = SenderCapture()

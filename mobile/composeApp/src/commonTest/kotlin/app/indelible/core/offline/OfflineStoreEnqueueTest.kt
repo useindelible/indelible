@@ -241,4 +241,18 @@ class OfflineStoreEnqueueTest {
             assertEquals(OutboxPayload.DocumentNote("mine", 1_000L), row.payload)
             assertNull(uncachedBase)
         }
+
+    @Test
+    fun aCopyWithoutAServerNoteGivesABaseOfZero() =
+        runTest {
+            val signedIn = signedInStore()
+            signedIn.installNow(serverDocument(note = null))
+
+            val base =
+                signedIn.store.enqueue(signedIn.session, OutboxKind.DOCUMENT_NOTE, VIEW_DOC, VIEW_DOC) {
+                    OutboxPayload.DocumentNote("mine", noteBase(VIEW_DOC)) to noteBase(VIEW_DOC)
+                }
+
+            assertEquals(0L, base)
+        }
 }
