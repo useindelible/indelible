@@ -33,6 +33,58 @@ class OutboxWorkerTest {
         }
 
     @Test
+    fun theNetworkReturningDropsTheBackoff() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            val rowId = signedIn.store.enqueueNote(signedIn.session, "doc_1")
+            signedIn.store.markAttempt(scope, rowId, 0, HOURLY_CAP_MS, "no answer")
+            worker.setNetwork(false)
+            runCurrent()
+            sender.enqueueOutcome(SendOutcome.Success())
+
+            worker.setNetwork(true)
+            runCurrent()
+
+            assertTrue(signedIn.store.pendingOrdered(scope).isEmpty())
+        }
+
+    @Test
+    fun theServerAnsweringAgainDropsTheBackoff() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            val rowId = signedIn.store.enqueueNote(signedIn.session, "doc_1")
+            signedIn.store.markAttempt(scope, rowId, 0, HOURLY_CAP_MS, "no answer")
+            worker.setServerReachable(false)
+            runCurrent()
+            sender.enqueueOutcome(SendOutcome.Success())
+
+            worker.setServerReachable(true)
+            runCurrent()
+
+            assertTrue(signedIn.store.pendingOrdered(scope).isEmpty())
+        }
+
+    @Test
+    fun aRepeatedUpSampleKeepsTheBackoff() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            val rowId = signedIn.store.enqueueNote(signedIn.session, "doc_1")
+            signedIn.store.markAttempt(scope, rowId, 0, HOURLY_CAP_MS, "no answer")
+
+            worker.setNetwork(true)
+            worker.setServerReachable(true)
+            runCurrent()
+
+            assertTrue(sender.calls.isEmpty())
+        }
+
+    @Test
     fun theQueueWaitsForTheFirstNetworkSample() =
         runTest {
             val signedIn = signedInTestStore()
