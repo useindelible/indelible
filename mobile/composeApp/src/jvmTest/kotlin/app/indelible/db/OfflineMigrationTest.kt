@@ -50,6 +50,9 @@ private val V1_OUTBOX =
     )
     """.trimIndent()
 
+private val LIST_SNAPSHOT_COLUMNS =
+    listOf("scope", "list_key", "position", "item_id", "document_id", "document_type", "title", "row_json", "seen_at")
+
 class OfflineMigrationTest {
     @Test
     fun aVersionOneOutboxGainsTheFailureColumn() {
@@ -62,7 +65,27 @@ class OfflineMigrationTest {
         val columns = columnsOf(driver, "outbox")
         assertTrue("failure_json" in columns, columns.toString())
         assertTrue("note_server_body" in columnsOf(driver, "cached_document"))
-        assertEquals(3L, OfflineDatabase.Schema.version)
+        assertEquals(4L, OfflineDatabase.Schema.version)
+    }
+
+    @Test
+    fun aCopyCreatedBeforeListSnapshotsGainsTheTable() {
+        val driver = versionThreeWithoutListSnapshots()
+
+        OfflineDatabase.Schema.migrate(driver, 3, OfflineDatabase.Schema.version).value
+
+        assertEquals(LIST_SNAPSHOT_COLUMNS, columnsOf(driver, "list_snapshot"))
+    }
+
+    @Test
+    fun aCopyThatHasListSnapshotsKeepsItsRows() {
+        val driver = versionThreeWithoutListSnapshots()
+        driver.execute(null, "CREATE TABLE list_snapshot (${LIST_SNAPSHOT_COLUMNS.joinToString()})", 0)
+        driver.execute(null, "INSERT INTO list_snapshot (scope) VALUES ('s')", 0)
+
+        OfflineDatabase.Schema.migrate(driver, 3, OfflineDatabase.Schema.version).value
+
+        assertEquals(1L, countOf(driver, "list_snapshot"))
     }
 
     @Test
@@ -79,6 +102,27 @@ class OfflineMigrationTest {
 
         assertEquals(mapOf("doc_synced" to "server words", "doc_edited" to null), serverNotes(driver))
     }
+
+    private fun versionThreeWithoutListSnapshots(): JdbcSqliteDriver {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        driver.execute(null, V1_OUTBOX, 0)
+        driver.execute(null, V1_CACHED_DOCUMENT, 0)
+        driver.execute(null, "ALTER TABLE outbox ADD COLUMN failure_json TEXT", 0)
+        driver.execute(null, "ALTER TABLE cached_document ADD COLUMN note_server_body TEXT", 0)
+        return driver
+    }
+
+    private fun countOf(
+        driver: JdbcSqliteDriver,
+        table: String,
+    ): Long =
+        driver
+            .executeQuery(
+                null,
+                "SELECT count(*) FROM $table",
+                { cursor -> QueryResult.Value(if (cursor.next().value) cursor.getLong(0) else null) },
+                0,
+            ).value ?: 0L
 
     private fun cachedDocument(
         id: String,
