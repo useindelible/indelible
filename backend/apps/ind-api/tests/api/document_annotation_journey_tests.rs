@@ -142,6 +142,84 @@ async fn annotations_require_the_completed_canonical_asset_for_each_document_for
     .await;
 }
 
+#[tokio::test]
+async fn a_note_write_on_a_stale_base_is_refused_with_the_current_note() {
+    let app = spawn_app().await;
+    let owner = app.create_web_session().await;
+    let client = app.authed_client(&owner);
+    let document = annotatable_article(&app, &owner).await;
+    let path = format!("/api/v1/documents/{}/note", document.id);
+
+    let first = assert_json_response(
+        client.put_json(&path, &json!({"body": "first"})).await,
+        StatusCode::OK,
+    )
+    .await;
+    assert_json_response(
+        client.put_json(&path, &json!({"body": "theirs"})).await,
+        StatusCode::OK,
+    )
+    .await;
+
+    let stale = json!({"body": "mine", "base_updated_at": first["updated_at"]});
+    let refused = client.put_json(&path, &stale).await;
+    let content_type = refused.headers()[reqwest::header::CONTENT_TYPE]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let conflict = assert_json_response(refused, StatusCode::CONFLICT).await;
+    assert!(
+        content_type.starts_with("application/problem+json"),
+        "{content_type}"
+    );
+    assert_eq!(conflict["code"], "note_conflict");
+    assert_eq!(conflict["status"], 409);
+    assert_eq!(conflict["note"]["body"], "theirs");
+    let stored = assert_json_response(client.get(&path).await, StatusCode::OK).await;
+    assert_eq!(stored["body"], "theirs");
+
+    let forced = json!({"body": "mine", "base_updated_at": first["updated_at"], "force": true});
+    assert_json_response(client.put_json(&path, &forced).await, StatusCode::OK).await;
+    let stored = assert_json_response(client.get(&path).await, StatusCode::OK).await;
+    assert_eq!(stored["body"], "mine");
+}
+
+#[tokio::test]
+async fn a_note_write_on_the_seen_base_is_applied() {
+    let app = spawn_app().await;
+    let owner = app.create_web_session().await;
+    let client = app.authed_client(&owner);
+    let document = annotatable_article(&app, &owner).await;
+    let path = format!("/api/v1/documents/{}/note", document.id);
+
+    let first = assert_json_response(
+        client.put_json(&path, &json!({"body": "first"})).await,
+        StatusCode::OK,
+    )
+    .await;
+    let seen = json!({"body": "second", "base_updated_at": first["updated_at"]});
+    let second = assert_json_response(client.put_json(&path, &seen).await, StatusCode::OK).await;
+    assert_eq!(second["body"], "second");
+
+    let epoch = json!({"body": "third", "base_updated_at": "1970-01-01T00:00:00Z"});
+    assert_status(client.put_json(&path, &epoch).await, StatusCode::CONFLICT).await;
+}
+
+async fn annotatable_article(app: &TestApp, owner: &ind_test_support::TestAuthSession) -> Document {
+    let document = DocumentFactory::new(owner.user.id)
+        .with_document_type(DocumentType::Article)
+        .insert(app.pool())
+        .await;
+    insert_asset(
+        app,
+        &document,
+        ArchiveAssetKind::ReadableHtml,
+        ArchiveAssetStatus::Completed,
+    )
+    .await;
+    document
+}
+
 fn canonical_asset(document_type: DocumentType) -> ArchiveAssetKind {
     match document_type {
         DocumentType::Book => ArchiveAssetKind::Epub,

@@ -333,6 +333,7 @@ pub use ui::{scalar_ui, swagger_ui};
             crate::routes::documents::DocumentAssetResponse,
             crate::routes::documents::DocumentReprocessResponse,
             crate::routes::documents::DocumentNoteResponse,
+            crate::routes::documents::DocumentNoteConflictResponse,
             crate::routes::documents::DocumentUpsertNoteBody,
             crate::routes::documents::UpdateDocumentProgressBody,
             crate::routes::documents::AppendReadingEventsBody,

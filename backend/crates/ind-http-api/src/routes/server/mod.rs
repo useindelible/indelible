@@ -7,7 +7,7 @@ pub use dto::ServerCapabilitiesResponse;
 
 use crate::state::AppState;
 
-const CAPABILITIES: &[&str] = &["epub_chapter_list"];
+const CAPABILITIES: &[&str] = &["epub_chapter_list", "note_precondition"];
 
 /// List the optional capabilities this server supports.
 #[utoipa::path(

@@ -1,14 +1,9 @@
 use super::*;
-use ind_domain::DocumentNote;
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
+use ind_application::repos::document_note::NoteWrite;
 
-fn note_response(note: DocumentNote) -> DocumentNoteResponse {
-    DocumentNoteResponse {
-        id: note.id.to_string(),
-        body: note.body,
-        created_at: note.created_at,
-        updated_at: note.updated_at,
-    }
-}
+use super::dto::{note_conflict_response, note_response};
 
 #[utoipa::path(
     get,
@@ -54,6 +49,7 @@ pub async fn get_document_note(
         (status = 200, description = "Document note upserted", body = DocumentNoteResponse),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Document not found"),
+        (status = 409, description = "The note changed since the base the client saw", body = DocumentNoteConflictResponse, content_type = "application/problem+json"),
         (status = 422, description = "Document not yet rendered"),
         (status = 503, description = "Document reader service not configured"),
     ),
@@ -69,12 +65,25 @@ pub async fn upsert_document_note(
     State(state): State<AppState>,
     Path(document_id): Path<String>,
     ValidatedJson(body): ValidatedJson<DocumentUpsertNoteBody>,
-) -> Result<axum::Json<DocumentNoteResponse>, ApiError> {
+) -> Result<Response, ApiError> {
     let ops = require_document_reader_ops(&state)?;
     let document_id = parse_document_id(&document_id)?;
-    let note = ops
-        .upsert_note(auth_user.user_id, document_id, body.body)
+    let base = if body.force {
+        None
+    } else {
+        body.base_updated_at
+    };
+    let written = ops
+        .upsert_note(auth_user.user_id, document_id, body.body, base)
         .await
         .map_err(ApiError::from)?;
-    Ok(axum::Json(note_response(note)))
+    Ok(match written {
+        NoteWrite::Written(note) => axum::Json(note_response(note)).into_response(),
+        NoteWrite::Conflict(current) => (
+            StatusCode::CONFLICT,
+            [(http::header::CONTENT_TYPE, "application/problem+json")],
+            axum::Json(note_conflict_response(current)),
+        )
+            .into_response(),
+    })
 }

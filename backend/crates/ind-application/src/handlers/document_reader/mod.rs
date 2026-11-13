@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use ind_domain::{
     ArchiveAssetKind, ArchiveAssetStatus, Document, DocumentAsset, DocumentId, DocumentNote,
     DocumentType, DomainError, EventOrigin, Highlight, HighlightId, NewHighlight, NewReadingEvent,
@@ -327,23 +327,20 @@ impl DocumentReaderService {
         user_id: UserId,
         document_id: DocumentId,
         body: String,
-    ) -> Result<DocumentNote, AppError> {
+        base: Option<DateTime<Utc>>,
+    ) -> Result<NoteWrite, AppError> {
         let document = self.require_document(user_id, document_id).await?;
         self.require_annotation_source(&document).await?;
         let now = Utc::now();
-        match self
-            .note_repo
+        self.note_repo
             .upsert_for_document(
                 user_id,
                 document_id,
                 &body,
-                None,
+                base,
                 vec![search_reindex_document_outbox(document_id, now)],
             )
-            .await?
-        {
-            NoteWrite::Written(note) | NoteWrite::Conflict(note) => Ok(note),
-        }
+            .await
     }
 
     pub async fn update_progress(
@@ -446,8 +443,9 @@ impl DocumentReaderOperations for DocumentReaderService {
         user_id: UserId,
         document_id: DocumentId,
         body: String,
-    ) -> BoxFuture<'_, Result<DocumentNote, AppError>> {
-        Box::pin(self.upsert_note(user_id, document_id, body))
+        base: Option<DateTime<Utc>>,
+    ) -> BoxFuture<'_, Result<NoteWrite, AppError>> {
+        Box::pin(self.upsert_note(user_id, document_id, body, base))
     }
 
     fn update_progress(
