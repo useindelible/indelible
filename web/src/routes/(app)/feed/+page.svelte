@@ -94,6 +94,8 @@
 			url: fd.url ?? null,
 			author: fd.author ?? null,
 			excerpt: fd.excerpt ?? null,
+			finished_at: null,
+			max_progress_percent: null,
 			published_at: fd.published_at ?? null,
 			saved_at: fd.delivered_at,
 			created_at: fd.delivered_at,

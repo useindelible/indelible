@@ -64,6 +64,20 @@ export type AppearanceSettingsDto = {
 	accent_color: AccentColorDto;
 };
 
+export type AppendReadingEventsBody = {
+	/**
+	 * Stable per-install id, `cli_` prefixed. Omitted by callers with no device
+	 * identity, who are attributed from their credential instead.
+	 */
+	client_id?: string | null;
+	events: Array<ReadingEventBody>;
+};
+
+export type AppendReadingEventsResponse = {
+	accepted: number;
+	replayed: number;
+};
+
 export type ArchivalProcessingSettingsDto = {
 	ai_auto_processing: boolean;
 	browser_timeout_secs: number;
@@ -211,6 +225,11 @@ export type CreateEmailAliasRequest = {
 
 export type CreateHighlightBody = {
 	color: string;
+	/**
+	 * Client-generated `hlt_` id. Replaying it with identical content returns the stored
+	 * highlight with 200; reusing it with different content is a conflict.
+	 */
+	id?: string | null;
 	locator: LocatorSchemaFlat;
 	source_locator?: null | SourceLocatorSchemaFlat;
 	text_content: string;
@@ -310,6 +329,21 @@ export type DocumentAssetResponse = {
 	status: string;
 };
 
+/**
+ * The 409 problem body of a note write whose `base_updated_at` is older than the stored note.
+ */
+export type DocumentNoteConflictResponse = {
+	code: string;
+	detail: string;
+	/**
+	 * The note as stored now; the client resolves against this version.
+	 */
+	note: DocumentNoteResponse;
+	status: number;
+	title: string;
+	type: string;
+};
+
 export type DocumentNoteResponse = {
 	body: string;
 	created_at: string;
@@ -348,11 +382,13 @@ export type DocumentReaderResponse = {
 	lead_image_url?: string | null;
 	library_entry_id?: string | null;
 	max_progress_percent?: number | null;
+	position?: null | ReadingPositionSchema;
 	progress_percent?: number | null;
 	published_at?: string | null;
 	readable_ready: boolean;
 	reading_time_minutes?: number | null;
 	saved: boolean;
+	saved_at?: string | null;
 	/**
 	 * Resolved short summary. Returns the stored AI summary when present,
 	 * falling back to `excerpt`. `null` when neither is available.
@@ -360,6 +396,7 @@ export type DocumentReaderResponse = {
 	summary?: string | null;
 	thumbnail_url?: string | null;
 	title: string;
+	triage_state?: string | null;
 	url?: string | null;
 	word_count?: number | null;
 };
@@ -371,7 +408,16 @@ export type DocumentReprocessResponse = {
 };
 
 export type DocumentUpsertNoteBody = {
+	/**
+	 * The note's `updated_at` this client last saw. When the stored note is newer, the write is
+	 * refused with 409 and the stored note. Absent: the write always applies.
+	 */
+	base_updated_at?: string | null;
 	body: string;
+	/**
+	 * Write even when the stored note is newer than `base_updated_at`.
+	 */
+	force?: boolean;
 };
 
 export type DuplicateActionDto = 'notify_me' | 'skip_silently' | 'merge_with_existing';
@@ -474,8 +520,18 @@ export type EntitySummaryResponse = {
 	total_mentions: number;
 };
 
+/**
+ * Whether `metadata.chapters` is present, and what brings it when it is not: `pending` waits
+ * for the server's backfill, `needs_reprocess` for a reprocess, `needs_reupload` for a new upload.
+ */
+export type EpubChapterList = 'ready' | 'pending' | 'needs_reprocess' | 'needs_reupload';
+
 export type EpubMetadata = {
 	author?: string | null;
+	/**
+	 * Every chapter `/epub/chapters/{index}` serves, by spine index; absent on older books.
+	 */
+	chapters?: Array<EpubStoredChapter> | null;
 	estimated_pages: number;
 	isbn?: string | null;
 	language?: string | null;
@@ -483,6 +539,18 @@ export type EpubMetadata = {
 	title?: string | null;
 	total_chapters: number;
 	total_words: number;
+};
+
+export type EpubStoredChapter = {
+	/**
+	 * Basename of the spine item's href, the target of intra-book links (e.g. `ch02.xhtml`).
+	 */
+	href: string;
+	spine_index: number;
+	/**
+	 * Title of the first TOC entry for this spine item; empty when the TOC omits the chapter.
+	 */
+	title: string;
 };
 
 export type EpubTocEntry = {
@@ -498,6 +566,7 @@ export type EpubTocEntry = {
 };
 
 export type EpubTocResponse = {
+	chapter_list: EpubChapterList;
 	metadata: EpubMetadata;
 	toc: Array<EpubTocEntry>;
 };
@@ -508,6 +577,11 @@ export type ExtensionCheckUrlParams = {
 
 export type ExtensionCreateHighlightBody = {
 	color: string;
+	/**
+	 * Client-generated `hlt_` id. Replaying it with identical content returns the stored
+	 * highlight with 200; reusing it with different content is a conflict.
+	 */
+	id?: string | null;
 	locator?: null | LocatorSchemaFlat;
 	source_locator?: null | SourceLocatorSchemaFlat;
 	text_content: string;
@@ -949,6 +1023,7 @@ export type LibraryEntryResponse = {
 	document_type: string;
 	domain?: string | null;
 	excerpt?: string | null;
+	finished_at: string | null;
 	/**
 	 * Why readable-content ingestion terminally failed. Always serialized:
 	 * null means the entry is healthy (or still processing); a string is the
@@ -958,9 +1033,16 @@ export type LibraryEntryResponse = {
 	is_favorite: boolean;
 	is_shortlisted: boolean;
 	language?: string | null;
+	last_read_at: string | null;
 	lead_image_url?: string | null;
 	library_entry_id: string;
+	max_progress_percent: number | null;
 	object: string;
+	/**
+	 * Reader progress for the signed-in user. Always serialized so a client can tell
+	 * unread (`null`) apart from unknown.
+	 */
+	progress_percent: number | null;
 	published_at?: string | null;
 	reading_time_minutes?: number | null;
 	saved_at: string;
@@ -1695,6 +1777,113 @@ export type ReaderSettingsDto = {
 	line_height: ReaderLineHeightDto;
 };
 
+/**
+ * The structural landmark a position sits on. A closed set: an unrecognised `type` is a
+ * malformed body, not a validation error.
+ */
+export type ReadingAnchorSchema =
+	| {
+			page: number;
+			type: 'page';
+	  }
+	| {
+			chapter: string;
+			type: 'spine';
+	  }
+	| {
+			cue: string;
+			type: 'cue';
+	  }
+	| {
+			section: string;
+			type: 'section';
+	  };
+
+/**
+ * Schema-only flat representation of `ReadingAnchorSchema` for OpenAPI code generators, which
+ * map an undiscriminated `oneOf` to `Any`. Mirrors the `LocatorSchemaFlat` treatment.
+ */
+export type ReadingAnchorSchemaFlat = {
+	/**
+	 * spine: EPUB spine key.
+	 */
+	chapter?: string | null;
+	/**
+	 * cue: transcript cue id.
+	 */
+	cue?: string | null;
+	/**
+	 * page: 1-based page number.
+	 */
+	page?: number | null;
+	/**
+	 * section: article, email or tweet section id.
+	 */
+	section?: string | null;
+	/**
+	 * Discriminator: "page", "spine", "cue" or "section".
+	 */
+	type: string;
+};
+
+export type ReadingEventBody = {
+	active_ms?: number | null;
+	/**
+	 * Which readable representation `position` refers to.
+	 */
+	asset_kind?: string | null;
+	/**
+	 * Which pass through the document. Increment to start a reread; a higher attempt
+	 * outranks a lower one regardless of arrival time.
+	 */
+	attempt?: number | null;
+	/**
+	 * Why the event happened. Defaults to `reader` telemetry.
+	 */
+	cause?: string | null;
+	/**
+	 * `rev_` prefixed, generated by the client so retries are idempotent.
+	 */
+	id: string;
+	kind: string;
+	/**
+	 * Required when the batch carries a `client_id`; the server allocates it otherwise.
+	 */
+	origin_seq?: number | null;
+	position?: null | ReadingPositionSchema;
+	position_version?: number | null;
+	/**
+	 * Hundredths of a percent: 42.37% is 4237.
+	 */
+	progress_basis_points?: number | null;
+	recorded_at: string;
+	/**
+	 * Groups one continuous sitting; omit if the client does not track sessions.
+	 */
+	session_id?: string | null;
+};
+
+/**
+ * Where the reader stopped, in coordinates every artifact type can speak. The fields are
+ * independent, not a union keyed on document type: an article sends `anchor` + `offset`, a
+ * PDF `anchor` + `fraction`, a video or podcast adds `seconds`.
+ */
+export type ReadingPositionSchema = {
+	anchor?: null | ReadingAnchorSchemaFlat;
+	/**
+	 * `0..=1` through the whole artifact.
+	 */
+	fraction?: number | null;
+	/**
+	 * Units into `anchor` — characters for text.
+	 */
+	offset?: number | null;
+	/**
+	 * Media playhead in seconds, for video and podcast.
+	 */
+	seconds?: number | null;
+};
+
 export type ReadingStatsWidget = {
 	documents_read: number;
 	highlights_made: number;
@@ -1955,6 +2144,13 @@ export type SearchSuggestionsResponse = {
 	suggestions: Array<SearchSuggestionResponse>;
 };
 
+export type ServerCapabilitiesResponse = {
+	/**
+	 * Optional behaviours this server supports; clients treat an absent entry as unsupported.
+	 */
+	capabilities: Array<string>;
+};
+
 export type SessionManifestResponse = {
 	chunks: Array<PlannedChunkResponse>;
 	document_title: string;
@@ -2114,6 +2310,9 @@ export type UpdateCollectionBody = {
 	sort_order?: number | null;
 };
 
+/**
+ * `chapter_locator` and `chapter_offset` map onto `ReadingPositionSchema::anchor` / `offset`.
+ */
 export type UpdateDocumentProgressBody = {
 	chapter_locator?: string | null;
 	chapter_offset?: number | null;
@@ -3583,6 +3782,10 @@ export type CreateDocumentHighlightData = {
 
 export type CreateDocumentHighlightErrors = {
 	/**
+	 * Malformed body or highlight id
+	 */
+	400: unknown;
+	/**
 	 * Authentication required
 	 */
 	401: unknown;
@@ -3590,6 +3793,10 @@ export type CreateDocumentHighlightErrors = {
 	 * Document not found
 	 */
 	404: unknown;
+	/**
+	 * Highlight id already used with different content
+	 */
+	409: unknown;
 	/**
 	 * Document not yet rendered, or validation error
 	 */
@@ -3601,6 +3808,10 @@ export type CreateDocumentHighlightErrors = {
 };
 
 export type CreateDocumentHighlightResponses = {
+	/**
+	 * Highlight already existed with identical content
+	 */
+	200: HighlightResponse;
 	/**
 	 * Highlight created
 	 */
@@ -3705,6 +3916,10 @@ export type UpsertDocumentNoteErrors = {
 	 */
 	404: unknown;
 	/**
+	 * The note changed since the base the client saw
+	 */
+	409: DocumentNoteConflictResponse;
+	/**
 	 * Document not yet rendered
 	 */
 	422: unknown;
@@ -3713,6 +3928,8 @@ export type UpsertDocumentNoteErrors = {
 	 */
 	503: unknown;
 };
+
+export type UpsertDocumentNoteError = UpsertDocumentNoteErrors[keyof UpsertDocumentNoteErrors];
 
 export type UpsertDocumentNoteResponses = {
 	/**
@@ -3825,6 +4042,51 @@ export type UpdateDocumentProgressResponses = {
 
 export type UpdateDocumentProgressResponse =
 	UpdateDocumentProgressResponses[keyof UpdateDocumentProgressResponses];
+
+export type AppendReadingEventsData = {
+	body: AppendReadingEventsBody;
+	path: {
+		/**
+		 * Document id with doc_ prefix
+		 */
+		document_id: string;
+	};
+	query?: never;
+	url: '/api/v1/documents/{document_id}/reading-events';
+};
+
+export type AppendReadingEventsErrors = {
+	/**
+	 * Authentication required
+	 */
+	401: unknown;
+	/**
+	 * Document not found
+	 */
+	404: unknown;
+	/**
+	 * An event id or client sequence was reused with different content
+	 */
+	409: unknown;
+	/**
+	 * Validation error
+	 */
+	422: unknown;
+	/**
+	 * Document reader service not configured
+	 */
+	503: unknown;
+};
+
+export type AppendReadingEventsResponses = {
+	/**
+	 * Events appended; exact duplicates counted as replayed
+	 */
+	202: AppendReadingEventsResponse;
+};
+
+export type AppendReadingEventsResponse2 =
+	AppendReadingEventsResponses[keyof AppendReadingEventsResponses];
 
 export type ReprocessDocumentData = {
 	body?: never;
@@ -4828,6 +5090,10 @@ export type ExtensionCreateHighlightData = {
 
 export type ExtensionCreateHighlightErrors = {
 	/**
+	 * Malformed body or highlight id
+	 */
+	400: unknown;
+	/**
 	 * Authentication required
 	 */
 	401: unknown;
@@ -4835,6 +5101,10 @@ export type ExtensionCreateHighlightErrors = {
 	 * Saved entry not found
 	 */
 	404: unknown;
+	/**
+	 * Highlight id already used with different content
+	 */
+	409: unknown;
 	/**
 	 * Validation error
 	 */
@@ -4846,6 +5116,10 @@ export type ExtensionCreateHighlightErrors = {
 };
 
 export type ExtensionCreateHighlightResponses = {
+	/**
+	 * Highlight already existed with identical content
+	 */
+	200: HighlightResponse;
 	/**
 	 * Created highlight
 	 */
@@ -7788,6 +8062,22 @@ export type SuggestionsResponses = {
 };
 
 export type SuggestionsResponse = SuggestionsResponses[keyof SuggestionsResponses];
+
+export type GetCapabilitiesData = {
+	body?: never;
+	path?: never;
+	query?: never;
+	url: '/api/v1/server/capabilities';
+};
+
+export type GetCapabilitiesResponses = {
+	/**
+	 * Capabilities this server supports
+	 */
+	200: ServerCapabilitiesResponse;
+};
+
+export type GetCapabilitiesResponse = GetCapabilitiesResponses[keyof GetCapabilitiesResponses];
 
 export type GetArchivalData = {
 	body?: never;

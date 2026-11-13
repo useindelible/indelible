@@ -38,6 +38,8 @@ export function toPlaceholderEntry(result: SearchResultResponse): DocumentListEn
 		updated_at: result.updated_at,
 		created_at: result.saved_at,
 		author: null,
+		finished_at: null,
+		max_progress_percent: null,
 		published_at: null,
 		word_count: null,
 		reading_time_minutes: null,
