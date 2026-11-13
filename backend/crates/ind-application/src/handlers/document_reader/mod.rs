@@ -27,7 +27,7 @@ use crate::ports::{
 };
 use crate::repos::document::DocumentRepository;
 use crate::repos::document_asset::DocumentAssetRepository;
-use crate::repos::document_note::DocumentNoteRepository;
+use crate::repos::document_note::{DocumentNoteRepository, NoteWrite};
 use crate::repos::document_reprocess::DocumentReprocessRepository;
 use crate::repos::epub_format::{EpubAssetFormat, EpubChapterListState, EpubFormatRepository};
 use crate::repos::event::MutationSideEffects;
@@ -331,14 +331,19 @@ impl DocumentReaderService {
         let document = self.require_document(user_id, document_id).await?;
         self.require_annotation_source(&document).await?;
         let now = Utc::now();
-        self.note_repo
+        match self
+            .note_repo
             .upsert_for_document(
                 user_id,
                 document_id,
                 &body,
+                None,
                 vec![search_reindex_document_outbox(document_id, now)],
             )
-            .await
+            .await?
+        {
+            NoteWrite::Written(note) | NoteWrite::Conflict(note) => Ok(note),
+        }
     }
 
     pub async fn update_progress(

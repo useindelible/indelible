@@ -3,7 +3,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use ind_application::AppError;
-use ind_application::repos::document_note::DocumentNoteRepository;
+use ind_application::repos::document_note::{DocumentNoteRepository, NoteWrite};
 use ind_application::repos::lifecycle_outbox::OutboxEntry;
 use ind_domain::{DocumentId, DocumentNote, ItemNoteId, UserId};
 
@@ -73,33 +73,52 @@ impl DocumentNoteRepository for PgDocumentNoteRepository {
         user_id: UserId,
         document_id: DocumentId,
         body: &str,
+        base: Option<DateTime<Utc>>,
         outbox: Vec<OutboxEntry>,
-    ) -> Result<DocumentNote, AppError> {
+    ) -> Result<NoteWrite, AppError> {
         let id = ItemNoteId::new();
         let now = Utc::now();
         let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
-        let row = sqlx::query_as!(
+        let written = sqlx::query_as!(
             DocumentNoteRow,
             "INSERT INTO item_notes (id, document_id, user_id, body, created_at, updated_at) \
              VALUES ($1, $2, $3, $4, $5, $5) \
              ON CONFLICT (user_id, document_id) WHERE document_id IS NOT NULL DO UPDATE SET \
              body = EXCLUDED.body, \
              updated_at = EXCLUDED.updated_at \
+             WHERE $6::timestamptz IS NULL \
+             OR date_trunc('milliseconds', item_notes.updated_at) <= date_trunc('milliseconds', $6::timestamptz) \
              RETURNING id, document_id AS \"document_id!\", user_id, body, created_at, updated_at",
             id.into_uuid(),
             document_id.into_uuid(),
             user_id.into_uuid(),
             body,
             now,
+            base,
         )
-        .fetch_one(&mut *tx)
+        .fetch_optional(&mut *tx)
         .await
         .map_err(map_sqlx_error)?;
+
+        let Some(row) = written else {
+            let current = sqlx::query_as!(
+                DocumentNoteRow,
+                "SELECT id, document_id AS \"document_id!\", user_id, body, created_at, updated_at \
+                 FROM item_notes \
+                 WHERE document_id = $1 AND user_id = $2",
+                document_id.into_uuid(),
+                user_id.into_uuid()
+            )
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(map_sqlx_error)?;
+            return Ok(NoteWrite::Conflict(DocumentNote::from(current)));
+        };
 
         apply_outbox_tx(&mut tx, &outbox).await?;
 
         tx.commit().await.map_err(map_sqlx_error)?;
-        Ok(DocumentNote::from(row))
+        Ok(NoteWrite::Written(DocumentNote::from(row)))
     }
 
     async fn delete_for_document(
