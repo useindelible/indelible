@@ -115,7 +115,8 @@ class ApiOutboxSenderNoteTest {
         runTest {
             val sender =
                 noteServer(SenderCapture()) {
-                    respond("""{"code":"conflict","detail":"taken"}""", HttpStatusCode.Conflict, senderJsonHeaders)
+                    val other = conflictJson("theirs", NEWER_MS).replace("note_conflict", "conflict")
+                    respond(other, HttpStatusCode.Conflict, senderJsonHeaders)
                 }
 
             assertEquals(409, assertIs<SendOutcome.Http>(sender.sendNote(note())).status)

@@ -5,9 +5,12 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private const val THEIRS_MS = 2_000L
+private const val THIRD_MS = 3_000L
 private val TOO_OLD = SendOutcome.Http(405, null, "method not allowed")
 private val REJECTED = SendOutcome.Http(400, null, "bad request", ApiProblem(detail = "Note too long"))
 private val UNPREPARED =
@@ -41,6 +44,72 @@ class OutboxWorkerFailureTest {
             assertEquals(SyncFailure.Kind.SERVER_TOO_OLD, failed.failure?.kind)
             assertEquals(SyncFailure.Feature.READING_EVENTS, failed.failure?.feature)
             assertEquals(listOf(secondEvent), store.pendingOrdered(scope).map { it.id })
+        }
+
+    @Test
+    fun anUnansweredCapabilityHoldsNotesAndLeavesOtherKindsSending() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(store, sender, signedIn.registry)
+            val note = store.enqueueNote(session, "doc_1")
+            store.enqueueNote(session, "doc_2")
+            store.enqueueReadingEvent(session, "doc_3", recordedAtEpochMs = 1L)
+            sender.enqueueOutcome(SendOutcome.NoAnswer)
+            sender.enqueueOutcome(SendOutcome.Success())
+
+            worker.requestDrain()
+            runCurrent()
+
+            val sentKinds = sender.calls.map { it.single().kind }
+            assertEquals(listOf(OutboxKind.DOCUMENT_NOTE, OutboxKind.READING_EVENT), sentKinds)
+            val waiting = store.pendingOrdered(scope)
+            assertEquals(2, waiting.size)
+            assertEquals(1, waiting.single { it.id == note }.attempts)
+        }
+
+    @Test
+    fun anOldServerHoldsOnlyTheCheckedNote() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            val checked = signedIn.store.enqueueNote(signedIn.session, "doc_1")
+            signedIn.store.enqueueNote(signedIn.session, "doc_2")
+            sender.enqueueOutcome(SendOutcome.Unsupported)
+            sender.enqueueOutcome(SendOutcome.Success())
+
+            worker.requestDrain()
+            runCurrent()
+
+            assertEquals(2, sender.calls.size)
+            val failed = signedIn.store.rowsByState(scope, OutboxState.FAILED).single()
+            assertEquals(checked, failed.id)
+            assertEquals(SyncFailure.Kind.SERVER_TOO_OLD, failed.failure?.kind)
+            assertEquals(SyncFailure.Feature.NOTES, failed.failure?.feature)
+        }
+
+    @Test
+    fun keepMineMeetsAThirdEditAsANewConflict() =
+        runTest {
+            val signedIn = signedInTestStore()
+            val sender = FakeOutboxSender()
+            val worker = startedWorker(signedIn.store, sender, signedIn.registry)
+            val note = signedIn.store.enqueueNote(signedIn.session, "doc_1")
+            sender.enqueueOutcome(SendOutcome.NoteConflict("theirs", THEIRS_MS))
+            sender.enqueueOutcome(SendOutcome.NoteConflict("third", THIRD_MS))
+            worker.requestDrain()
+            runCurrent()
+
+            assertTrue(signedIn.store.keepLocalNote(signedIn.session, note, THEIRS_MS))
+            worker.requestDrain()
+            runCurrent()
+
+            val failed = signedIn.store.rowsByState(scope, OutboxState.FAILED).single()
+            assertEquals(THIRD_MS, failed.failure?.serverNoteUpdatedAtEpochMs)
+            assertFalse(signedIn.store.keepLocalNote(signedIn.session, note, THEIRS_MS))
         }
 
     @Test

@@ -18,6 +18,13 @@ internal sealed interface PassResult {
     data object Failed : PassResult
 }
 
+/** What one walk has learnt so far about rows it must pass over. */
+private class Walk {
+    val shielded = mutableSetOf<String>()
+    val skippedKinds = mutableSetOf<OutboxKind>()
+    var heldUntil: Long? = null
+}
+
 internal class PassOutcome(
     val result: PassResult,
     val waitingDeadline: Long?,
@@ -42,27 +49,27 @@ internal class OutboxPass(
         val clientId = store.clientIdentity(scope).clientId
         val plan = eligibleRows(store.pendingOrdered(scope), clock())
         val rows = plan.admitted
-        val shielded = mutableSetOf<String>()
-        val tooOld = mutableSetOf<OutboxKind>()
+        val walk = Walk()
         var skippedDue = false
         var stop: PassResult? = null
         var index = 0
         while (index < rows.size && stop == null) {
             val row = rows[index]
-            if (row.entityId in shielded || row.kind in tooOld) {
-                if (row.entityId in shielded) skippedDue = true
+            if (row.entityId in walk.shielded || row.kind in walk.skippedKinds) {
+                if (row.entityId in walk.shielded) skippedDue = true
                 index++
                 continue
             }
-            val batch = nextBatch(rows, index, shielded)
+            val batch = nextBatch(rows, index, walk.shielded)
             index += batch.size
             stop =
                 if (registry.current.value.session !== session) {
                     PassResult.Stale
                 } else {
-                    sendAndApply(session, clientId, batch, shielded, tooOld)
+                    sendAndApply(session, clientId, batch, walk)
                 }
         }
+        stop = stop ?: walk.heldUntil?.let { PassResult.RetryableStop(it) }
         return when (stop) {
             null -> PassOutcome(PassResult.Completed, plan.earliestWaitingDeadline, skippedDue)
             is PassResult.RetryableStop -> PassOutcome(stop, plan.earliestWaitingDeadline)
@@ -82,8 +89,7 @@ internal class OutboxPass(
         session: Session,
         clientId: String,
         batch: List<OutboxRow>,
-        shielded: MutableSet<String>,
-        tooOld: MutableSet<OutboxKind>,
+        walk: Walk,
     ): PassResult? {
         val scope = session.scope
         val rows = currentRows(scope, batch) ?: return null
@@ -93,13 +99,23 @@ internal class OutboxPass(
         return when (val classification = classify(head.kind, outcome, head.attempts, outcomeAt, isNetwork)) {
             is Classification.Retryable -> {
                 applyRetryable(scope, rows, classification, outcome, outcomeAt)
-                PassResult.RetryableStop(classification.nextAttemptAt)
+                // Only the capabilities route went unanswered, so the rest of the queue still goes out in this walk.
+                if (outcome == SendOutcome.NoAnswer) {
+                    walk.skippedKinds += head.kind
+                    walk.heldUntil = minOf(walk.heldUntil ?: classification.nextAttemptAt, classification.nextAttemptAt)
+                    null
+                } else {
+                    PassResult.RetryableStop(classification.nextAttemptAt)
+                }
             }
             Classification.AuthBlocked -> PassResult.AuthPaused
             Classification.Stale -> PassResult.Stale
             is Classification.Terminal -> {
-                applyTerminal(scope, rows, classification, shielded)
-                if (classification.failure.kind == SyncFailure.Kind.SERVER_TOO_OLD) tooOld += head.kind
+                applyTerminal(scope, rows, classification, walk.shielded)
+                // A missing route holds the whole kind; a missing capability holds only the rows that need it.
+                val routeMissing = outcome != SendOutcome.Unsupported
+                val tooOld = classification.failure.kind == SyncFailure.Kind.SERVER_TOO_OLD
+                if (tooOld && routeMissing) walk.skippedKinds += head.kind
                 null
             }
             Classification.Done -> {

@@ -33,7 +33,10 @@ internal suspend fun boundSenderRegistry(): SessionRegistry {
     return registry
 }
 
-internal fun senderOver(transport: AuthenticatedApiTransport) = ApiOutboxSender(transport, ServerCapabilities(transport, clock = { 0L }))
+internal fun senderOver(transport: AuthenticatedApiTransport): ApiOutboxSender {
+    val capabilities = ServerCapabilities(transport, clock = { 0L })
+    return ApiOutboxSender(transport, capabilities)
+}
 
 /** A sender over a mock engine with a valid token, so every request reaches [handler] with one authorization. */
 internal suspend fun senderWith(

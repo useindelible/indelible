@@ -193,8 +193,6 @@ class ApiOutboxSender(
         return outcome(response, replayStatus = NOT_FOUND_STATUS)
     }
 
-    // The server keeps no precondition on a note, so the phone compares before it writes: an edit
-    // made on an older base than the server's note must not overwrite the other device's text.
     private suspend fun sendDocumentNote(
         session: Session,
         row: OutboxRow,

@@ -9,8 +9,10 @@ sealed interface SendOutcome {
     /** 200 on a replay, or 404 on a delete that already applied. */
     data object ReplaySuccess : SendOutcome
 
+    /** The server lacks a capability this row needs; nothing was sent. */
     data object Unsupported : SendOutcome
 
+    /** The server could not be asked what it supports; nothing was sent. */
     data object NoAnswer : SendOutcome
 
     data class Http(
@@ -24,7 +26,7 @@ sealed interface SendOutcome {
         val cause: Throwable,
     ) : SendOutcome
 
-    /** The server's note moved past the base this edit was made on; nothing was sent. */
+    /** The server refused the write: its note moved past the base this edit was made on. */
     data class NoteConflict(
         val serverBody: String,
         val serverUpdatedAtEpochMs: Long,
