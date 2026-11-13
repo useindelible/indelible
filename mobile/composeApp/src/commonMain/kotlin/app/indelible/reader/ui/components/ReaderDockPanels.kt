@@ -89,7 +89,7 @@ fun ReaderDockPanels(
             onTagsChanged = onTagsChanged,
             tagsEnabled = state.item.saved,
             onSaveToLibrary = onSaveToLibrary,
-            noteEnabled = state.itemNoteLoaded,
+            noteEnabled = state.itemNoteLoaded && !state.noteRefreshing,
         )
     }
 

@@ -156,24 +156,71 @@ class ReaderViewModelReconcileTest {
             advanceUntilIdle()
 
             assertEquals(reads + 1, repository.getItemNoteCallCount)
+            assertEquals(true, repository.lastItemNoteFromServer)
             assertEquals("from the web", assertIs<ReaderUiState.Success>(viewModel.uiState.value).itemNote)
         }
 
     @Test
-    fun aNoteTypedBeforeTheRefreshLandsIsKept() =
+    fun theNoteEditorWaitsForTheOpenRead() =
         runTest(testDispatcher) {
             val viewModel = reader()
             advanceUntilIdle()
             val gate = CompletableDeferred<Unit>()
             repository.metadataGate = gate
-            repository.getItemNoteResult = Result.success("from the web")
 
             viewModel.openPanel(DataPanel.NOTE)
-            viewModel.saveItemNote("typed")
+            val reading = assertIs<ReaderUiState.Success>(viewModel.uiState.value).noteRefreshing
             gate.complete(Unit)
             advanceUntilIdle()
 
-            assertEquals("typed", assertIs<ReaderUiState.Success>(viewModel.uiState.value).itemNote)
+            assertEquals(true, reading)
+            assertEquals(false, assertIs<ReaderUiState.Success>(viewModel.uiState.value).noteRefreshing)
+        }
+
+    @Test
+    fun aFailedOpenReadKeepsTheNoteAndFreesTheEditor() =
+        runTest(testDispatcher) {
+            repository.getItemNoteResult = Result.success("loaded")
+            val viewModel = reader()
+            advanceUntilIdle()
+            repository.getItemNoteResult = Result.failure(IllegalStateException("offline"))
+
+            viewModel.openPanel(DataPanel.NOTE)
+            advanceUntilIdle()
+
+            val state = assertIs<ReaderUiState.Success>(viewModel.uiState.value)
+            assertEquals("loaded", state.itemNote)
+            assertEquals(false, state.noteRefreshing)
+        }
+
+    @Test
+    fun repeatedOpensShareOneRead() =
+        runTest(testDispatcher) {
+            val viewModel = reader()
+            advanceUntilIdle()
+            val reads = repository.getItemNoteCallCount
+            repository.metadataGate = CompletableDeferred()
+
+            viewModel.openPanel(DataPanel.NOTE)
+            viewModel.closePanel()
+            viewModel.openPanel(DataPanel.NOTE)
+
+            assertEquals(reads + 1, repository.getItemNoteCallCount)
+        }
+
+    @Test
+    fun anOpenSheetHoldsTheReconnectNoteRead() =
+        runTest(testDispatcher) {
+            val viewModel = reader()
+            advanceUntilIdle()
+            viewModel.openPanel(DataPanel.NOTE)
+            advanceUntilIdle()
+            val reads = repository.getItemNoteCallCount
+
+            changes.tryEmit("doc_test1")
+            advanceUntilIdle()
+
+            assertEquals(reads, repository.getItemNoteCallCount)
         }
 
     @Test

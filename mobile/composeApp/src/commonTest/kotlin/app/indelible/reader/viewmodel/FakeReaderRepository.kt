@@ -64,6 +64,7 @@ class FakeReaderRepository : ReaderRepository {
 
     var getItemNoteResult: Result<String?> = Result.success(null)
     var getItemNoteCallCount = 0
+    var lastItemNoteFromServer: Boolean? = null
     var upsertItemNoteResult: Result<String>? = null
     var getItemTagsResult: Result<List<String>> = Result.success(emptyList())
     var getItemTagsCallCount = 0
@@ -224,6 +225,7 @@ class FakeReaderRepository : ReaderRepository {
         fromServer: Boolean,
     ): Result<String?> {
         getItemNoteCallCount++
+        lastItemNoteFromServer = fromServer
         metadataGate?.await()
         return getItemNoteResult
     }

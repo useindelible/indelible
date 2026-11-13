@@ -100,6 +100,7 @@ class ReaderViewModel(
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
     private var loadJob: Job? = null
+    private var noteRead: Job? = null
 
     init {
         _uiState.value = ReaderUiState.Loading
@@ -297,7 +298,9 @@ class ReaderViewModel(
 
     fun openPanel(panel: DataPanel) {
         _activePanel.value = panel
-        if (panel == DataPanel.NOTE) viewModelScope.refreshNoteOnOpen(documentId, repository, _uiState)
+        if (panel == DataPanel.NOTE && noteRead?.isActive != true) {
+            noteRead = viewModelScope.refreshNoteOnOpen(documentId, repository, _uiState)
+        }
     }
 
     fun closePanel() {

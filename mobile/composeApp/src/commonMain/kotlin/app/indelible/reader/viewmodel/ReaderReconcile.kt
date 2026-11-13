@@ -74,18 +74,26 @@ internal fun CoroutineScope.reconcileReader(
         refreshAnnotations(documentId, repository, uiState, activePanel)
     }
 
-/** Reads the note from the server as its editor opens; text typed before the answer lands wins. */
+/** Reads the note from the server as its editor opens; the editor stays closed to typing until the read ends. */
 internal fun CoroutineScope.refreshNoteOnOpen(
     documentId: String,
     repository: ReaderRepository,
     uiState: MutableStateFlow<ReaderUiState>,
-): Job =
-    launch {
-        val open = uiState.value as? ReaderUiState.Success ?: return@launch
-        repository.getItemNote(documentId, fromServer = true).onSuccess { fetched ->
-            uiState.updateIf({ it.itemNote == open.itemNote }) { it.copy(itemNote = fetched, itemNoteLoaded = true) }
+): Job? {
+    val open = uiState.value as? ReaderUiState.Success ?: return null
+    uiState.updateIf({ true }) { it.copy(noteRefreshing = true) }
+    return launch {
+        try {
+            repository.getItemNote(documentId, fromServer = true).onSuccess { fetched ->
+                uiState.updateIf({ it.itemNote == open.itemNote }) {
+                    it.copy(itemNote = fetched, itemNoteLoaded = true)
+                }
+            }
+        } finally {
+            uiState.updateIf({ true }) { it.copy(noteRefreshing = false) }
         }
     }
+}
 
 private suspend fun refreshAnnotations(
     documentId: String,
@@ -94,8 +102,10 @@ private suspend fun refreshAnnotations(
     activePanel: StateFlow<DataPanel>,
 ): Boolean {
     val open = uiState.value as? ReaderUiState.Success ?: return true
+
     // A note that never loaded has no draft to protect, so the sheet being open does not hold it back.
     fun noteSheetOpen() = activePanel.value == DataPanel.NOTE
+
     return coroutineScope {
         val highlights =
             async {
@@ -107,6 +117,8 @@ private suspend fun refreshAnnotations(
             }
         val note =
             async {
+                // The copy's stamp is the next edit's base, so it moves only together with what the open sheet shows.
+                if (open.itemNoteLoaded && noteSheetOpen()) return@async Result.success(open.itemNote)
                 repository.getItemNote(documentId, fromServer = true).onSuccess { fetched ->
                     uiState.updateIf({ !it.itemNoteLoaded || it.itemNote == open.itemNote && !noteSheetOpen() }) {
                         it.copy(itemNote = fetched, itemNoteLoaded = true)
