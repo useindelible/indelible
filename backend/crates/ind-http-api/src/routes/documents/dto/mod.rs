@@ -9,7 +9,10 @@ use crate::extract::Validate;
 
 mod reading_events;
 
-pub use reading_events::*;
+pub use reading_events::{
+    AppendReadingEventsBody, AppendReadingEventsResponse, ReadingAnchorSchema,
+    ReadingAnchorSchemaFlat, ReadingEventBody, ReadingPositionSchema,
+};
 
 pub(crate) fn parse_document_id(raw: &str) -> Result<DocumentId, ApiError> {
     raw.parse().map_err(|_| ApiError::NotFound {
