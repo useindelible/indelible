@@ -74,6 +74,19 @@ internal fun CoroutineScope.reconcileReader(
         refreshAnnotations(documentId, repository, uiState, activePanel)
     }
 
+/** Reads the note from the server as its editor opens; text typed before the answer lands wins. */
+internal fun CoroutineScope.refreshNoteOnOpen(
+    documentId: String,
+    repository: ReaderRepository,
+    uiState: MutableStateFlow<ReaderUiState>,
+): Job =
+    launch {
+        val open = uiState.value as? ReaderUiState.Success ?: return@launch
+        repository.getItemNote(documentId, fromServer = true).onSuccess { fetched ->
+            uiState.updateIf({ it.itemNote == open.itemNote }) { it.copy(itemNote = fetched, itemNoteLoaded = true) }
+        }
+    }
+
 private suspend fun refreshAnnotations(
     documentId: String,
     repository: ReaderRepository,

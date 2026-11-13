@@ -145,6 +145,51 @@ class ReaderViewModelReconcileTest {
         }
 
     @Test
+    fun openingTheNoteEditorReadsTheServersNote() =
+        runTest(testDispatcher) {
+            val viewModel = reader()
+            advanceUntilIdle()
+            val reads = repository.getItemNoteCallCount
+            repository.getItemNoteResult = Result.success("from the web")
+
+            viewModel.openPanel(DataPanel.NOTE)
+            advanceUntilIdle()
+
+            assertEquals(reads + 1, repository.getItemNoteCallCount)
+            assertEquals("from the web", assertIs<ReaderUiState.Success>(viewModel.uiState.value).itemNote)
+        }
+
+    @Test
+    fun aNoteTypedBeforeTheRefreshLandsIsKept() =
+        runTest(testDispatcher) {
+            val viewModel = reader()
+            advanceUntilIdle()
+            val gate = CompletableDeferred<Unit>()
+            repository.metadataGate = gate
+            repository.getItemNoteResult = Result.success("from the web")
+
+            viewModel.openPanel(DataPanel.NOTE)
+            viewModel.saveItemNote("typed")
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals("typed", assertIs<ReaderUiState.Success>(viewModel.uiState.value).itemNote)
+        }
+
+    @Test
+    fun openingAnotherPanelReadsNothing() =
+        runTest(testDispatcher) {
+            val viewModel = reader()
+            advanceUntilIdle()
+            val reads = repository.getItemNoteCallCount
+
+            viewModel.openPanel(DataPanel.AA)
+            advanceUntilIdle()
+
+            assertEquals(reads, repository.getItemNoteCallCount)
+        }
+
+    @Test
     fun aRefreshWithoutAnAnswerIsTriedAgain() =
         runTest(testDispatcher) {
             val viewModel = reader()

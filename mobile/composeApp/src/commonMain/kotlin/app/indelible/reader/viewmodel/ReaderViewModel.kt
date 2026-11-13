@@ -297,6 +297,7 @@ class ReaderViewModel(
 
     fun openPanel(panel: DataPanel) {
         _activePanel.value = panel
+        if (panel == DataPanel.NOTE) viewModelScope.refreshNoteOnOpen(documentId, repository, _uiState)
     }
 
     fun closePanel() {
