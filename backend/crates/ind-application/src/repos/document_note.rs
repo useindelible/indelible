@@ -18,9 +18,11 @@ pub trait DocumentNoteRepository: Send + Sync {
         body: &str,
         outbox: Vec<OutboxEntry>,
     ) -> Result<DocumentNote, AppError>;
+    /// Delete the document note and commit any `outbox` rows atomically with the removal.
     async fn delete_for_document(
         &self,
         user_id: UserId,
         document_id: DocumentId,
+        outbox: Vec<OutboxEntry>,
     ) -> Result<(), AppError>;
 }

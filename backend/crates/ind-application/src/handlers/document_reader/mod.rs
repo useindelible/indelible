@@ -341,6 +341,22 @@ impl DocumentReaderService {
             .await
     }
 
+    pub async fn delete_note(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> Result<(), AppError> {
+        self.require_document(user_id, document_id).await?;
+        let now = Utc::now();
+        self.note_repo
+            .delete_for_document(
+                user_id,
+                document_id,
+                vec![search_reindex_document_outbox(document_id, now)],
+            )
+            .await
+    }
+
     pub async fn update_progress(
         &self,
         user_id: UserId,
@@ -443,6 +459,14 @@ impl DocumentReaderOperations for DocumentReaderService {
         body: String,
     ) -> BoxFuture<'_, Result<DocumentNote, AppError>> {
         Box::pin(self.upsert_note(user_id, document_id, body))
+    }
+
+    fn delete_note(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<(), AppError>> {
+        Box::pin(self.delete_note(user_id, document_id))
     }
 
     fn update_progress(
