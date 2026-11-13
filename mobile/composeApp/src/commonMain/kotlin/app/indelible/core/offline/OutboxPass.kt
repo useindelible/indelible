@@ -199,6 +199,8 @@ internal class OutboxPass(
             is SendOutcome.Transport -> outcome.cause.message ?: outcome.cause.toString()
             is SendOutcome.Success, SendOutcome.ReplaySuccess -> "success"
             is SendOutcome.NoteConflict -> "note changed on another device"
+            SendOutcome.Unsupported -> "the server needs updating"
+            SendOutcome.NoAnswer -> "the server could not be asked what it supports"
             SendOutcome.Stale -> "stale session"
         }
 }

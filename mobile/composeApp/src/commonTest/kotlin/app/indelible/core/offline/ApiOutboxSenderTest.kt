@@ -192,7 +192,7 @@ class ApiOutboxSenderTest {
                     }
                 }
             val transport = AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundSenderRegistry())
-            val sender = ApiOutboxSender(transport)
+            val sender = senderOver(transport)
 
             val outcome = sender.send(SENDER_SESSION, SENDER_CLIENT_ID, listOf(noteRow()))
 
@@ -215,7 +215,7 @@ class ApiOutboxSenderTest {
                     }
                 }
             val transport = AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundSenderRegistry())
-            val sender = ApiOutboxSender(transport)
+            val sender = senderOver(transport)
 
             val outcome = sender.send(SENDER_SESSION, SENDER_CLIENT_ID, listOf(noteRow()))
 

@@ -2,6 +2,7 @@ package app.indelible.core.offline
 
 import app.indelible.api.generated.models.AppendReadingEventsBody
 import app.indelible.api.generated.models.CreateHighlightBody
+import app.indelible.api.generated.models.DocumentNoteConflictResponse
 import app.indelible.api.generated.models.DocumentNoteResponse
 import app.indelible.api.generated.models.DocumentUpsertNoteBody
 import app.indelible.api.generated.models.HighlightTagsBody
@@ -12,10 +13,11 @@ import app.indelible.api.generated.models.ReadingPositionSchema
 import app.indelible.api.generated.models.SourceLocatorSchemaFlat
 import app.indelible.api.generated.models.UpsertNoteBody
 import app.indelible.core.network.AuthenticatedApiTransport
+import app.indelible.core.network.NOTE_PRECONDITION
 import app.indelible.core.network.RawApiResponse
+import app.indelible.core.network.ServerCapabilities
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
-import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
@@ -37,10 +39,13 @@ interface OutboxSender {
 
 private const val REPLAYED_STATUS = 200
 private const val NOT_FOUND_STATUS = 404
+private const val CONFLICT_STATUS = 409
+private const val NOTE_CONFLICT_CODE = "note_conflict"
 private val SUCCESS_STATUS_RANGE = 200..299
 
 class ApiOutboxSender(
     private val transport: AuthenticatedApiTransport,
+    private val capabilities: ServerCapabilities,
 ) : OutboxSender {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -195,50 +200,50 @@ class ApiOutboxSender(
         row: OutboxRow,
     ): SendOutcome {
         val payload = row.payload as OutboxPayload.DocumentNote
-        val path = "/api/v1/documents/${row.documentId}/note"
-        val settled = payload.baseUpdatedAtEpochMs?.let { base -> checkServerNote(session, path, payload.body, base) }
-        if (settled != null) return settled
+        val base = payload.baseUpdatedAtEpochMs
+        if (base != null) preconditionMissing(session)?.let { return it }
         val response =
             transport.rawAuthenticatedRequest(session, readSuccessBody = true) { client, baseUrl, token ->
-                client.put(baseUrl + path) {
+                client.put(baseUrl + "/api/v1/documents/${row.documentId}/note") {
                     authorize(token)
-                    setBody(DocumentUpsertNoteBody(body = payload.body))
+                    setBody(
+                        DocumentUpsertNoteBody(
+                            baseUpdatedAt = base?.let(Instant::fromEpochMilliseconds),
+                            body = payload.body,
+                            force = false,
+                        ),
+                    )
                 }
             }
         return when {
             response.status in SUCCESS_STATUS_RANGE -> SendOutcome.Success(noteStamp(response))
+            response.status == CONFLICT_STATUS -> noteConflict(response, payload.body) ?: outcome(response)
             else -> outcome(response)
         }
     }
 
-    /** The outcome that ends the send without a PUT, or null when the PUT may go ahead. */
-    private suspend fun checkServerNote(
-        session: Session,
-        path: String,
-        body: String,
-        base: Long,
-    ): SendOutcome? {
-        val current =
-            transport.rawAuthenticatedRequest(session, readSuccessBody = true) { client, baseUrl, token ->
-                client.get(baseUrl + path) { authorize(token) }
-            }
-        return when {
-            current.status == NOT_FOUND_STATUS -> null
-            current.status !in SUCCESS_STATUS_RANGE -> outcome(current)
-            else -> compareNote(json.decodeFromString<DocumentNoteResponse>(current.bodyText), body, base)
+    // An older server would take the base and overwrite anyway, so a checked note waits for one that lists it.
+    private suspend fun preconditionMissing(session: Session): SendOutcome? =
+        when (capabilities.supports(session, NOTE_PRECONDITION)) {
+            true -> null
+            false -> SendOutcome.Unsupported
+            null -> SendOutcome.NoAnswer
         }
-    }
 
-    private fun compareNote(
-        server: DocumentNoteResponse,
+    /** The refused write's answer: ours already stored is a success, anything else is the conflict to resolve. */
+    private fun noteConflict(
+        response: RawApiResponse,
         body: String,
-        base: Long,
     ): SendOutcome? {
-        val serverAt = server.updatedAt.toEpochMilliseconds()
-        return when {
-            server.body == body -> SendOutcome.Success(serverAt)
-            serverAt > base -> SendOutcome.NoteConflict(server.body, serverAt)
-            else -> null
+        val refused =
+            runCatching { json.decodeFromString<DocumentNoteConflictResponse>(response.bodyText) }
+                .getOrNull()
+                ?.takeIf { it.code == NOTE_CONFLICT_CODE }
+                ?: return null
+        val serverAt = refused.note.updatedAt.toEpochMilliseconds()
+        return when (refused.note.body) {
+            body -> SendOutcome.Success(serverAt)
+            else -> SendOutcome.NoteConflict(refused.note.body, serverAt)
         }
     }
 

@@ -212,7 +212,7 @@ private fun Module.readerRepositories() {
 }
 
 private fun Module.offlineServices(deps: AppDependencies) {
-    single<OutboxSender> { ApiOutboxSender(get()) }
+    single<OutboxSender> { ApiOutboxSender(get(), get()) }
     single {
         OutboxWorker(
             store = get(),

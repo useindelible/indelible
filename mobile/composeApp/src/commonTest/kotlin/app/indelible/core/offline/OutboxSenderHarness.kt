@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import app.indelible.core.network.AuthenticatedApiTransport
+import app.indelible.core.network.ServerCapabilities
 import app.indelible.core.storage.InMemoryTokenStorage
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -32,6 +33,8 @@ internal suspend fun boundSenderRegistry(): SessionRegistry {
     return registry
 }
 
+internal fun senderOver(transport: AuthenticatedApiTransport) = ApiOutboxSender(transport, ServerCapabilities(transport, clock = { 0L }))
+
 /** A sender over a mock engine with a valid token, so every request reaches [handler] with one authorization. */
 internal suspend fun senderWith(
     capture: SenderCapture = SenderCapture(),
@@ -47,7 +50,7 @@ internal suspend fun senderWith(
             capture.bodies += (request.body as? TextContent)?.text
             handler(request)
         }
-    return ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundSenderRegistry()))
+    return senderOver(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = boundSenderRegistry()))
 }
 
 internal fun senderRow(

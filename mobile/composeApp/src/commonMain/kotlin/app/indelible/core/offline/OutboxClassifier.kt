@@ -9,6 +9,10 @@ sealed interface SendOutcome {
     /** 200 on a replay, or 404 on a delete that already applied. */
     data object ReplaySuccess : SendOutcome
 
+    data object Unsupported : SendOutcome
+
+    data object NoAnswer : SendOutcome
+
     data class Http(
         val status: Int,
         val retryAfterSeconds: Long?,
@@ -90,6 +94,9 @@ fun classify(
     when (outcome) {
         is SendOutcome.Success, is SendOutcome.ReplaySuccess -> Classification.Done
         SendOutcome.Stale -> Classification.Stale
+        SendOutcome.Unsupported ->
+            Classification.Terminal(SyncFailure(SyncFailure.Kind.SERVER_TOO_OLD, feature = kind.feature()))
+        SendOutcome.NoAnswer -> Classification.Retryable(now + backoffMs(attempts + 1))
         is SendOutcome.NoteConflict ->
             Classification.Terminal(
                 SyncFailure(

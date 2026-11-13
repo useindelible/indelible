@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 const val EPUB_CHAPTER_LIST = "epub_chapter_list"
+const val NOTE_PRECONDITION = "note_precondition"
 
 /**
  * Answers whether the signed-in server offers a feature: `true` when listed, `false` when the

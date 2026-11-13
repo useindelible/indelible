@@ -109,6 +109,21 @@ class OutboxClassifierTest {
     }
 
     @Test
+    fun anUnsupportedSendIsServerTooOldForTheKindsFeature() {
+        val classification = classify(NOTE, SendOutcome.Unsupported, attempts = 0, now = 0L, isNetwork)
+
+        assertEquals(SyncFailure.Kind.SERVER_TOO_OLD, failureOf(classification).kind)
+        assertEquals(SyncFailure.Feature.NOTES, failureOf(classification).feature)
+    }
+
+    @Test
+    fun aSendWithoutACapabilityAnswerRetriesOnTheBackoff() {
+        val classification = classify(NOTE, SendOutcome.NoAnswer, attempts = 0, now = 0L, isNetwork)
+
+        assertEquals(Classification.Retryable(backoffMs(1)), classification)
+    }
+
+    @Test
     fun row17BareNotFoundIsServerTooOld() {
         val classification = classify(NOTE, http(404), attempts = 0, now = 0L, isNetwork)
 

@@ -31,7 +31,7 @@ class RetryAfterTest {
         tokenStorage.saveExpiresAt(FAR_FUTURE_EXPIRY)
         val registry = SessionRegistry().apply { publish(SessionState(0, SESSION)) }
         val engine = MockEngine { respond("slow down", status, headersOf(HttpHeaders.RetryAfter, header)) }
-        val sender = ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = registry))
+        val sender = senderOver(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = registry))
         val row =
             OutboxRow(
                 seq = 1,
