@@ -155,7 +155,7 @@ async fn a_note_write_on_a_stale_base_is_refused_with_the_current_note() {
         StatusCode::OK,
     )
     .await;
-    assert_json_response(
+    let theirs = assert_json_response(
         client.put_json(&path, &json!({"body": "theirs"})).await,
         StatusCode::OK,
     )
@@ -172,9 +172,15 @@ async fn a_note_write_on_a_stale_base_is_refused_with_the_current_note() {
         content_type.starts_with("application/problem+json"),
         "{content_type}"
     );
+    assert_eq!(
+        conflict["type"],
+        "https://indelible.app/problems/note-conflict"
+    );
+    assert_eq!(conflict["title"], "Conflict");
     assert_eq!(conflict["code"], "note_conflict");
     assert_eq!(conflict["status"], 409);
     assert_eq!(conflict["note"]["body"], "theirs");
+    assert_eq!(conflict["note"]["updated_at"], theirs["updated_at"]);
     let stored = assert_json_response(client.get(&path).await, StatusCode::OK).await;
     assert_eq!(stored["body"], "theirs");
 

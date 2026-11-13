@@ -391,13 +391,18 @@ pub async fn extension_upsert_note(
                 .ok_or(ApiError::ServiceUnavailable {
                     message: "document reader service not configured".into(),
                 })?;
-        // The extension names no base, so the write always applies and never comes back refused.
         match document_reader_ops
             .upsert_note(auth_user.user_id, joined.document.id, note_body, None)
             .await
             .map_err(ApiError::from)?
         {
-            NoteWrite::Written(note) | NoteWrite::Conflict(note) => Some(note),
+            NoteWrite::Written(note) => Some(note),
+            NoteWrite::Conflict(_) => {
+                return Err(ApiError::Conflict {
+                    entity: "DocumentNote",
+                    message: "the note changed while it was being written".into(),
+                });
+            }
         }
     };
 
