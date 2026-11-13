@@ -79,13 +79,16 @@ impl DocumentNoteRepository for PgDocumentNoteRepository {
         let id = ItemNoteId::new();
         let now = Utc::now();
         let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
+        // The stored stamp stays ahead of the previous one by at least the millisecond the
+        // precondition compares at, so a write that waited on the row cannot stamp itself older
+        // than a write that overtook it and defeat the next client's base.
         let written = sqlx::query_as!(
             DocumentNoteRow,
             "INSERT INTO item_notes (id, document_id, user_id, body, created_at, updated_at) \
              VALUES ($1, $2, $3, $4, $5, $5) \
              ON CONFLICT (user_id, document_id) WHERE document_id IS NOT NULL DO UPDATE SET \
              body = EXCLUDED.body, \
-             updated_at = EXCLUDED.updated_at \
+             updated_at = GREATEST(EXCLUDED.updated_at, item_notes.updated_at + interval '1 millisecond') \
              WHERE $6::timestamptz IS NULL \
              OR date_trunc('milliseconds', item_notes.updated_at) <= date_trunc('milliseconds', $6::timestamptz) \
              RETURNING id, document_id AS \"document_id!\", user_id, body, created_at, updated_at",
@@ -112,6 +115,7 @@ impl DocumentNoteRepository for PgDocumentNoteRepository {
             .fetch_one(&mut *tx)
             .await
             .map_err(map_sqlx_error)?;
+            tx.rollback().await.map_err(map_sqlx_error)?;
             return Ok(NoteWrite::Conflict(DocumentNote::from(current)));
         };
 
