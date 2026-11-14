@@ -1,6 +1,6 @@
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use ind_test_support::{TestAppOptions, spawn_app, spawn_app_with_options};
+use ind_test_support::{TestApp, TestAppOptions, spawn_app, spawn_app_with_options};
 use reqwest::StatusCode;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -199,6 +199,18 @@ async fn extension_pkce_crosses_authorize_exchange_refresh_status_and_revoke_bou
     .await;
     let rotated_refresh = rotated["refresh_token"].as_str().unwrap();
     assert_ne!(rotated_refresh, refresh);
+    shift_expiry(&app, web.user.id.into_uuid(), "-").await;
+    assert_eq!(
+        app.post_json_anon(
+            "/api/v1/auth/extension/refresh",
+            &json!({"refresh_token": rotated_refresh}),
+        )
+        .await
+        .status(),
+        StatusCode::UNAUTHORIZED,
+        "an expired refresh token ends the session"
+    );
+    shift_expiry(&app, web.user.id.into_uuid(), "+").await;
     assert_eq!(
         app.post_json_anon(
             "/api/v1/auth/extension/revoke",
@@ -208,6 +220,15 @@ async fn extension_pkce_crosses_authorize_exchange_refresh_status_and_revoke_bou
         .status(),
         StatusCode::NO_CONTENT
     );
+    assert_eq!(
+        app.post_json_anon(
+            "/api/v1/auth/extension/refresh",
+            &json!({"refresh_token": rotated_refresh}),
+        )
+        .await
+        .status(),
+        StatusCode::UNAUTHORIZED
+    );
     let active_refresh_tokens: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM refresh_tokens WHERE user_id = $1 AND revoked_at IS NULL",
     )
@@ -216,4 +237,15 @@ async fn extension_pkce_crosses_authorize_exchange_refresh_status_and_revoke_bou
     .await
     .unwrap();
     assert_eq!(active_refresh_tokens, 0);
+}
+
+async fn shift_expiry(app: &TestApp, user: uuid::Uuid, shift: &str) {
+    sqlx::query(&format!(
+        "UPDATE refresh_tokens SET expires_at = now() {shift} interval '1 hour' \
+         WHERE user_id = $1 AND revoked_at IS NULL"
+    ))
+    .bind(user)
+    .execute(app.pool())
+    .await
+    .unwrap();
 }

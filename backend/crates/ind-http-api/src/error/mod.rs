@@ -302,6 +302,23 @@ impl From<DomainError> for ApiError {
     }
 }
 
+impl ApiError {
+    /// A refresh token the server will not honour ends the session, so the
+    /// client must sign in again: that is a 401, not a malformed request.
+    pub fn refresh_rejected(err: ind_auth::AuthError) -> Self {
+        use ind_auth::AuthError;
+        match err {
+            AuthError::TokenExpired
+            | AuthError::TokenInvalid
+            | AuthError::TokenRevoked
+            | AuthError::TokenAlreadyUsed => Self::Unauthorized {
+                message: "refresh token invalid".to_string(),
+            },
+            other => Self::from(other),
+        }
+    }
+}
+
 impl From<ind_auth::AuthError> for ApiError {
     fn from(err: ind_auth::AuthError) -> Self {
         use ind_auth::AuthError;

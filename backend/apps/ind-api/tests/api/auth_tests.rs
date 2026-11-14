@@ -214,10 +214,12 @@ async fn cli_refresh_family_routes_rotate_list_and_revoke() {
         .await
         .unwrap();
     assert_eq!(all.status(), StatusCode::NO_CONTENT);
-    assert_eq!(
-        refresh(second_refresh).await.unwrap().status(),
-        StatusCode::BAD_REQUEST
-    );
+    for dead in [second_refresh, "not-a-refresh-token"] {
+        assert_eq!(
+            refresh(dead).await.unwrap().status(),
+            StatusCode::UNAUTHORIZED
+        );
+    }
 }
 
 #[tokio::test]

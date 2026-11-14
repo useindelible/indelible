@@ -223,7 +223,7 @@ pub async fn extension_refresh(
         .auth_service
         .refresh(&body.refresh_token, ip, user_agent)
         .await
-        .map_err(ApiError::from)?;
+        .map_err(ApiError::refresh_rejected)?;
 
     Ok(axum::Json(ExtensionTokenResponse {
         access_token: result.access_token,
