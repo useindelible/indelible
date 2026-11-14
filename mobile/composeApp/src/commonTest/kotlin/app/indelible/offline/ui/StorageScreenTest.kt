@@ -2,12 +2,15 @@ package app.indelible.offline.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.unit.dp
 import app.indelible.core.offline.CatalogEntry
 import app.indelible.core.offline.OutboxKind
 import app.indelible.offline.viewmodel.ChangeStatus
@@ -73,24 +76,34 @@ class StorageScreenTest {
         }
 
     @Test
-    fun aKeptRowOffersUnpinAndACachedRowOffersRemove() =
+    fun aKeptRowOffersUnpinAndACachedRowOffersKeepAndRemove() =
         runComposeUiTest {
             val kept = cached.copy(documentId = "doc_b", title = "Kept book", documentType = "book", pinned = true)
             var unpinned: String? = null
+            var keptId: String? = null
             var removed: String? = null
             setContent {
                 AppTheme {
                     StorageContent(
                         StorageUiState(kept = listOf(kept), cached = listOf(cached)),
-                        StorageActions(onUnpin = { unpinned = it }, onRemoveCopy = { removed = it }),
+                        StorageActions(
+                            copies =
+                                CopyActions(
+                                    onKeep = { keptId = it },
+                                    onUnpin = { unpinned = it },
+                                    onRemove = { removed = it },
+                                ),
+                        ),
                     )
                 }
             }
 
             onNodeWithText("Unpin").performClick()
-            onNodeWithText("Remove").performClick()
+            onNodeWithText("Keep").performClick()
+            onNodeWithContentDescription("Remove").assertTouchHeightIsEqualTo(48.dp).performClick()
 
             assertEquals("doc_b", unpinned)
+            assertEquals("doc_a", keptId)
             assertEquals("doc_a", removed)
         }
 

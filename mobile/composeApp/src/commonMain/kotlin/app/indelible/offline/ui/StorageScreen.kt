@@ -44,11 +44,17 @@ import org.jetbrains.compose.resources.stringResource
 
 class StorageActions(
     val onOpenReader: (String) -> Unit = {},
-    val onUnpin: (String) -> Unit = {},
-    val onRemoveCopy: (String) -> Unit = {},
+    val copies: CopyActions = CopyActions(),
     val onCapChange: (Long) -> Unit = {},
     val onRetry: (String) -> Unit = {},
     val onRemoveDownloads: () -> Unit = {},
+)
+
+/** What the user can do to one copy on the device: pin it, release it, or delete it. */
+class CopyActions(
+    val onKeep: (String) -> Unit = {},
+    val onUnpin: (String) -> Unit = {},
+    val onRemove: (String) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,8 +70,7 @@ fun StorageScreen(
         remember(viewModel, onOpenReader) {
             StorageActions(
                 onOpenReader = onOpenReader,
-                onUnpin = viewModel::unpin,
-                onRemoveCopy = viewModel::removeCopy,
+                copies = CopyActions(viewModel::keep, viewModel::unpin, viewModel::removeCopy),
                 onCapChange = viewModel::setCap,
                 onRetry = viewModel::retry,
                 onRemoveDownloads = viewModel::removeDownloads,

@@ -28,7 +28,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,41 +47,10 @@ class DocumentOfflineViewModelTest {
         documentId: String = DL_DOC,
     ): DocumentOfflineViewModel {
         val statuses = OfflineStatuses(h.signedIn.registry, h.store, h.manager.acquisitions)
-        return DocumentOfflineViewModel(documentId, h.signedIn.registry, statuses, h.manager).also { viewModel ->
+        return DocumentOfflineViewModel(documentId, statuses).also { viewModel ->
             backgroundScope.launch { viewModel.status.collect {} }
         }
     }
-
-    @Test
-    fun keepOfflinePinsAndDownloadsWhenAbsent() =
-        runTest {
-            val h = downloadHarness()
-            h.seed("doc_a", bytes = 10)
-            val present = offline(h, "doc_a")
-            val absent = offline(h)
-
-            present.setKeepOffline(true)
-            absent.setKeepOffline(true)
-            advanceUntilIdle()
-
-            assertEquals(Availability.KEPT, present.status.value.availability)
-            assertEquals(Availability.KEPT, absent.status.value.availability)
-            assertEquals(1L, h.store.cachedDocument(DL_SCOPE, DL_DOC)?.generation)
-        }
-
-    @Test
-    fun turningOffUnpinsOnly() =
-        runTest {
-            val h = downloadHarness()
-            h.seed(DL_DOC, bytes = 10, pinned = true)
-            val offline = offline(h)
-
-            offline.setKeepOffline(false)
-            advanceUntilIdle()
-
-            assertEquals(Availability.CACHED, offline.status.value.availability)
-            assertFalse(checkNotNull(h.store.cachedDocument(DL_SCOPE, DL_DOC)).pinned)
-        }
 
     @Test
     fun statusFollowsTheSignedInScope() =
@@ -109,7 +77,7 @@ class DocumentOfflineViewModelTest {
             advanceUntilIdle()
             assertEquals(SyncBadge.Pending(1), offline.status.value.sync)
 
-            offline.removeFromDevice()
+            h.manager.removeFromDevice(DL_SCOPE, DL_DOC)
             advanceUntilIdle()
 
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
@@ -126,7 +94,7 @@ class DocumentOfflineViewModelTest {
             advanceUntilIdle()
             assertEquals(Availability.KEPT, offline.status.value.availability)
 
-            offline.removeFromDevice()
+            h.manager.removeFromDevice(DL_SCOPE, DL_DOC)
             advanceUntilIdle()
 
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
@@ -138,11 +106,11 @@ class DocumentOfflineViewModelTest {
         runTest {
             val h = downloadHarness()
             val offline = offline(h)
-            offline.setKeepOffline(true)
+            h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
             assertEquals(Availability.KEPT, offline.status.value.availability)
 
-            offline.removeFromDevice()
+            h.manager.removeFromDevice(DL_SCOPE, DL_DOC)
             advanceUntilIdle()
 
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
@@ -154,10 +122,10 @@ class DocumentOfflineViewModelTest {
         runTest {
             val h = downloadHarness()
             val offline = offline(h)
-            offline.setKeepOffline(true)
+            h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
 
-            offline.removeFromDevice()
+            h.manager.removeFromDevice(DL_SCOPE, DL_DOC)
             advanceUntilIdle()
             advanceUntilIdle()
 
@@ -167,28 +135,28 @@ class DocumentOfflineViewModelTest {
         }
 
     @Test
-    fun keepOfflineForABookOnAnOldServerExplainsTheUpdate() =
+    fun aFailedKeepOnAnOldServerShowsTheUpdateReason() =
         runTest {
             val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
             val offline = offline(h)
 
-            offline.setKeepOffline(true)
+            h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
 
             assertEquals(Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD), offline.status.value.acquisition)
         }
 
     @Test
-    fun keepOfflineWithoutConnectionOffersRetry() =
+    fun aFailedKeepWithoutConnectionShowsNetworkThenKept() =
         runTest {
             val h = book { route(CAPABILITIES) { respond("", HttpStatusCode.ServiceUnavailable) } }
             val offline = offline(h)
-            offline.setKeepOffline(true)
+            h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
             assertEquals(Acquisition.Failed(DownloadFailure.NETWORK), offline.status.value.acquisition)
 
             h.server.route(CAPABILITIES) { json(CHAPTER_LIST_SUPPORTED) }
-            offline.setKeepOffline(true)
+            h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
 
             assertEquals(Availability.KEPT, offline.status.value.availability)

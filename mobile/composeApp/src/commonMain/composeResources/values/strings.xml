@@ -213,11 +213,11 @@
     <string name="home_offline_empty_body_last_loaded">Nothing is saved on this phone yet. What you saw last is still here to look through; opening it needs a network until it has a copy.</string>
     <string name="home_offline_empty_next">Next time you are online</string>
     <string name="home_offline_empty_shelf">Your shelf will sit here</string>
-    <string name="home_offline_empty_step_keep">Tap Keep offline in its info sheet.</string>
+    <string name="home_offline_empty_step_keep">Tap Keep next to it in Storage &amp; downloads.</string>
     <string name="home_offline_empty_step_open">Open an article or book to read it once.</string>
     <string name="home_offline_empty_step_space">Set how much space Indelible may use in Profile › Storage.</string>
     <string name="home_offline_empty_subtitle">The shelf is empty.</string>
-    <string name="home_offline_hint">Before a trip, open an item and turn on Keep offline. Kept items stay on this phone and are never removed to make space.</string>
+    <string name="home_offline_hint">Before a trip, open the items you want, then tap Keep next to each one in Storage &amp; downloads. Kept items stay on this phone and are never removed to make space.</string>
     <plurals name="home_offline_items_on_board">
         <item quantity="one">item on board</item>
         <item quantity="other">items on board</item>
@@ -456,7 +456,6 @@
         <item quantity="one">Reading progress</item>
         <item quantity="other">Reading progress · %1$d updates</item>
     </plurals>
-    <string name="offline_download_failed">Download failed</string>
     <string name="offline_downloads">Downloads</string>
     <string name="offline_filter_all">All</string>
     <string name="offline_filter_cached">Cached</string>
@@ -466,7 +465,7 @@
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
-    <string name="offline_keep">Keep offline</string>
+    <string name="offline_keep">Keep</string>
     <string name="offline_kept">Kept</string>
     <string name="offline_key_cached">Cached %1$s</string>
     <string name="offline_key_free">Free %1$s</string>
@@ -476,9 +475,6 @@
     <string name="offline_manage_kept">Manage kept items</string>
     <string name="offline_manage_kept_body">Kept items alone use more than the limit. Remove some to free space.</string>
     <string name="offline_manage_storage">Manage storage</string>
-    <string name="offline_no_space">Not enough space</string>
-    <string name="offline_not_on_device">Not on this device</string>
-    <string name="offline_not_synced">%1$s · not synced yet</string>
     <string name="offline_note_all">Kept items are pinned and never evicted. Cached items were taken automatically when you opened them.</string>
     <string name="offline_note_cached">Cached automatically from what you open. Oldest first when the cap needs room; anything kept is skipped.</string>
     <string name="offline_note_kept">Unpinning leaves the copy cached. It deletes nothing.</string>
@@ -492,7 +488,6 @@
     <string name="offline_queue_failed">Needs attention</string>
     <string name="offline_remove">Remove</string>
     <string name="offline_remove_all">Remove all offline data on this server</string>
-    <string name="offline_remove_copy">Remove from device</string>
     <string name="offline_remove_downloads">Remove downloads</string>
     <plurals name="offline_remove_downloads_body">
         <item quantity="one">Every downloaded copy is deleted from this device. %1$d queued change stays and will still sync.</item>
@@ -500,8 +495,6 @@
     </plurals>
     <string name="offline_remove_downloads_none_queued">Every downloaded copy is deleted from this device.</string>
     <string name="offline_remove_downloads_title">Remove %1$s of downloads from this phone?</string>
-    <string name="offline_section">Offline</string>
-    <string name="offline_server_too_old">Update your server to keep books on this device</string>
     <string name="offline_size_gb">%1$s GB</string>
     <string name="offline_size_kb">%1$s KB</string>
     <string name="offline_size_mb">%1$s MB</string>
@@ -511,15 +504,12 @@
     <string name="offline_status_pending">Queued</string>
     <string name="offline_status_retrying">Retrying</string>
     <string name="offline_status_superseded">Replaced by a later change</string>
-    <string name="offline_synced">%1$s · synced %2$s</string>
     <string name="offline_title">Storage &amp; downloads</string>
     <string name="offline_unpin">Unpin</string>
     <string name="offline_used">%1$s of %2$s used</string>
     <string name="offline_used_line">%1$s of %2$s · %3$s</string>
     <string name="offline_used_of">of %1$s · %2$s</string>
     <string name="offline_view_empty">Nothing in this view.</string>
-    <string name="offline_waiting">Waiting to download</string>
-    <string name="offline_waiting_connection">Waiting for a connection</string>
     <string name="onboarding_account_display_name">Display name</string>
     <string name="onboarding_account_subtitle">Personalize your Indelible experience</string>
     <string name="onboarding_account_theme">Theme</string>
@@ -752,7 +742,6 @@
         <item quantity="one">%1$d highlight</item>
         <item quantity="other">%1$d highlights</item>
     </plurals>
-    <string name="reader_info_actions">Actions</string>
     <string name="reader_info_entities">Entities</string>
     <string name="reader_info_info">Info</string>
     <string name="reader_info_length">Length</string>
@@ -763,7 +752,6 @@
     <string name="reader_info_progress">Progress</string>
     <string name="reader_info_published">Published</string>
     <string name="reader_info_saved">Saved</string>
-    <string name="reader_info_share_link">Share link</string>
     <string name="reader_info_source">Source</string>
     <string name="reader_info_summary">Summary</string>
     <string name="reader_info_tags">Tags</string>
@@ -773,8 +761,6 @@
     <string name="reader_line_spacing_loose">Loose</string>
     <string name="reader_line_spacing_normal">Normal</string>
     <string name="reader_line_spacing_tight">Tight</string>
-    <string name="reader_link_copied">Link copied to clipboard</string>
-    <string name="reader_link_missing">No link to share</string>
     <plurals name="reader_minutes_short">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>
