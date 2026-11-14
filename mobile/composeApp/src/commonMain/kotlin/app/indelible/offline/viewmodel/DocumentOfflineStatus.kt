@@ -22,9 +22,6 @@ sealed interface SyncBadge {
 data class DocumentOfflineStatus(
     val availability: Availability = Availability.NOT_ON_DEVICE,
     val sync: SyncBadge? = null,
-    val bytes: Long? = null,
-    val lastSyncedAt: Long? = null,
-    val acquisition: Acquisition? = null,
 )
 
 fun documentOfflineStatus(
@@ -41,9 +38,6 @@ fun documentOfflineStatus(
                 else -> Availability.NOT_ON_DEVICE
             },
         sync = counts?.let(::syncBadge),
-        bytes = copy?.bytes,
-        lastSyncedAt = copy?.lastSyncedAt,
-        acquisition = acquisition,
     )
 
 // A failure needs the user, so it outranks a retry, which outranks changes simply waiting.

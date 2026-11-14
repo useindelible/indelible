@@ -43,9 +43,6 @@ class DocumentOfflineStatusTest {
         assertEquals(Availability.DOWNLOADING, availability(null, Acquisition.WaitingForConnection))
         assertEquals(Availability.NOT_ON_DEVICE, availability(null, Acquisition.Failed(DownloadFailure.NO_SPACE)))
         assertEquals(Availability.NOT_ON_DEVICE, availability(null, null))
-        val kept = documentOfflineStatus(copy(pinned = true), null, null)
-        assertEquals(42L, kept.bytes)
-        assertEquals(7L, kept.lastSyncedAt)
     }
 
     @Test

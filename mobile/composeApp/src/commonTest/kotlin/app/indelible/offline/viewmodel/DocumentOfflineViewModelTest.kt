@@ -98,7 +98,6 @@ class DocumentOfflineViewModelTest {
             advanceUntilIdle()
 
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
-            assertNull(offline.status.value.bytes)
         }
 
     @Test
@@ -114,7 +113,6 @@ class DocumentOfflineViewModelTest {
             advanceUntilIdle()
 
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
-            assertNull(offline.status.value.bytes)
         }
 
     @Test
@@ -131,11 +129,10 @@ class DocumentOfflineViewModelTest {
 
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
             assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
-            assertNull(offline.status.value.bytes)
         }
 
     @Test
-    fun aFailedKeepOnAnOldServerShowsTheUpdateReason() =
+    fun aFailedKeepOnAnOldServerFailsOnTheBoard() =
         runTest {
             val h = book { route(CAPABILITIES) { json("""{"capabilities":[]}""") } }
             val offline = offline(h)
@@ -143,17 +140,18 @@ class DocumentOfflineViewModelTest {
             h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
 
-            assertEquals(Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD), offline.status.value.acquisition)
+            assertEquals(Acquisition.Failed(DownloadFailure.SERVER_TOO_OLD), h.acquisition())
         }
 
     @Test
-    fun aFailedKeepWithoutConnectionShowsNetworkThenKept() =
+    fun aFailedKeepWithoutConnectionIsBlankThenKept() =
         runTest {
             val h = book { route(CAPABILITIES) { respond("", HttpStatusCode.ServiceUnavailable) } }
             val offline = offline(h)
             h.manager.keepOffline(h.session, DL_DOC)
             advanceUntilIdle()
-            assertEquals(Acquisition.Failed(DownloadFailure.NETWORK), offline.status.value.acquisition)
+            assertEquals(Acquisition.Failed(DownloadFailure.NETWORK), h.acquisition())
+            assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
 
             h.server.route(CAPABILITIES) { json(CHAPTER_LIST_SUPPORTED) }
             h.manager.keepOffline(h.session, DL_DOC)
