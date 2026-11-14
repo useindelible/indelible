@@ -1,5 +1,8 @@
 package app.indelible.offline.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
@@ -19,6 +22,7 @@ import app.indelible.offline.viewmodel.StorageUiState
 import app.indelible.ui.theme.AppTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class StorageScreenTest {
@@ -50,6 +54,21 @@ class StorageScreenTest {
             onNodeWithText("Cached article").performClick()
 
             assertEquals("doc_a", opened)
+        }
+
+    @Test
+    fun aFullDiskShowsThePauseLineAboveEverything() =
+        runComposeUiTest {
+            val line = "This device is out of space. New copies are paused until you remove some here."
+            var state by mutableStateOf(StorageUiState(cached = listOf(cached)))
+            setContent { AppTheme { StorageContent(state, StorageActions()) } }
+            onNodeWithText(line).assertDoesNotExist()
+
+            state = state.copy(autoCachePaused = true)
+
+            val pause = onNodeWithText(line).fetchSemanticsNode().boundsInRoot.top
+            val cap = onNodeWithText("Cap on this device").fetchSemanticsNode().boundsInRoot.top
+            assertTrue(pause < cap, "the pause line sits above the cap")
         }
 
     @Test

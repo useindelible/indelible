@@ -437,6 +437,7 @@
     <string name="nav_profile">Profile</string>
     <string name="nav_review">Review</string>
     <string name="nav_search">Search</string>
+    <string name="offline_auto_cache_paused">This device is out of space. New copies are paused until you remove some here.</string>
     <string name="offline_badge_cached">Cached</string>
     <string name="offline_badge_downloading">Downloading</string>
     <string name="offline_badge_kept">Kept</string>

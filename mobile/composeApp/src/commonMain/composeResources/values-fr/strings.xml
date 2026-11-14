@@ -437,6 +437,7 @@
     <string name="nav_profile">Profil</string>
     <string name="nav_review">Révision</string>
     <string name="nav_search">Recherche</string>
+    <string name="offline_auto_cache_paused">Cet appareil n’a plus d’espace. Les nouvelles copies sont en pause jusqu’à ce que vous en supprimiez ici.</string>
     <string name="offline_badge_cached">En cache</string>
     <string name="offline_badge_downloading">En téléchargement</string>
     <string name="offline_badge_kept">Conservé</string>

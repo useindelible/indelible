@@ -33,6 +33,7 @@ import app.indelible.ui.theme.IndelibleTheme
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.common_back
 import indelible.composeapp.generated.resources.common_cancel
+import indelible.composeapp.generated.resources.offline_auto_cache_paused
 import indelible.composeapp.generated.resources.offline_remove
 import indelible.composeapp.generated.resources.offline_remove_all
 import indelible.composeapp.generated.resources.offline_remove_downloads_body
@@ -121,6 +122,7 @@ fun StorageContent(
     }
     var filter by remember { mutableStateOf(DownloadFilter.ALL) }
     LazyColumn(modifier = modifier.fillMaxSize()) {
+        if (state.autoCachePaused) item { PauseLine() }
         item { UsageSection(state, actions.onCapChange, onManageKept = { filter = DownloadFilter.KEPT }) }
         documentSections(state, filter, onFilterChange = { filter = it }, actions = actions)
         pendingSection(state.changes, actions.onRetry)
@@ -142,6 +144,22 @@ fun StorageContent(
         }
         item { Spacer(modifier = Modifier.height(IndelibleSpacing.step32)) }
     }
+}
+
+/** The one thing a full disk needs the user to know, before the meter that explains it. */
+@Composable
+private fun PauseLine() {
+    Text(
+        text = stringResource(Res.string.offline_auto_cache_paused),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier =
+            Modifier.padding(
+                start = IndelibleSpacing.rowPaddingH,
+                end = IndelibleSpacing.rowPaddingH,
+                top = IndelibleSpacing.step20,
+            ),
+    )
 }
 
 /** The quiet line under a section: an empty list, or what the section means. */

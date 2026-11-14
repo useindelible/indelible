@@ -105,12 +105,14 @@ class StorageViewModel(
             store.observeCatalog(scope),
             store.observeOutbox(scope),
             capBytes.filterNotNull(),
-        ) { catalog, rows, cap ->
+            downloads.observeAutoCachePaused(scope),
+        ) { catalog, rows, cap, paused ->
             StorageUiState(
                 capBytes = cap,
                 kept = catalog.filter { it.pinned },
                 cached = catalog.filterNot { it.pinned },
                 changes = pendingChanges(rows, catalog),
+                autoCachePaused = paused,
             )
         }
 
