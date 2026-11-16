@@ -46,6 +46,7 @@ class ReaderViewModel(
     private val initialPreferences: ReaderPreferences = ReaderPreferences(),
     private val readingEvents: ReadingEventWriter,
     openPdf: suspend (String) -> PdfDocument = PdfEngine::open,
+    triggers: ReaderTriggers = ReaderTriggers(),
 ) : ViewModel() {
     /** One sitting: every event this reader records is grouped under it. */
     private val sessionId = uuidV7()
@@ -99,10 +100,12 @@ class ReaderViewModel(
     private var initialScrollRequested = false
     private var progressTrackingEnabled = false
     private var loadJob: Job? = null
+    private var noteRead: Job? = null
 
     init {
         _uiState.value = ReaderUiState.Loading
         load(initialPreferences)
+        viewModelScope.reconcileReader(documentId, repository, _uiState, _activePanel, triggers)
     }
 
     /**
@@ -246,9 +249,14 @@ class ReaderViewModel(
 
     private fun CoroutineScope.loadItemNoteAndTags() {
         launch {
+            // A reconnect refresh may have landed the note first; this older read must not replace it.
             repository
                 .getItemNote(documentId)
-                .onSuccess { note -> updateSuccessState { it.copy(itemNote = note, itemNoteLoaded = true) } }
+                .onSuccess { note ->
+                    updateSuccessState {
+                        if (it.itemNoteLoaded) it else it.copy(itemNote = note, itemNoteLoaded = true)
+                    }
+                }
         }
         val libraryEntryId = (_uiState.value as? ReaderUiState.Success)?.item?.libraryEntryId ?: return
         launch {
@@ -290,6 +298,9 @@ class ReaderViewModel(
 
     fun openPanel(panel: DataPanel) {
         _activePanel.value = panel
+        if (panel == DataPanel.NOTE && noteRead?.isActive != true) {
+            noteRead = viewModelScope.refreshNoteOnOpen(documentId, repository, _uiState)
+        }
     }
 
     fun closePanel() {

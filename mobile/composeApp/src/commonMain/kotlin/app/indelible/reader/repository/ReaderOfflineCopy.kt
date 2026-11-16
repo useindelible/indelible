@@ -83,13 +83,14 @@ class ReaderOfflineCopy(
     ): Result<ReaderDocument> {
         val session = sessionProvider() ?: return fetch().map { it.toReaderDocument() }
         store.touchDocumentOpened(session.scope, documentId, clock())
-        val fromCopy =
-            fromCopy(session, documentId, fetch, { it.readerPart() }) { copy ->
+        val readerPart =
+            CopyPart<DocumentReaderResponse, ReaderDocument>({ it.readerPart() }) { copy ->
                 json
                     .decodeFromString(DocumentReaderResponse.serializer(), copy.readerJson)
                     .toReaderDocument()
                     .withProgress(Progress(copy.progressPercent, copy.maxProgressPercent, copy.position))
             }
+        val fromCopy = fromCopy(session, documentId, fetch, readerPart)
         // Progress is append-only; the server never lets an older event win, so an overtaken view still stands.
         return fromCopy ?: steady(session.scope, documentId, { it.position }, fetch)
             .map { it.server.toReaderDocument().withProgress(it.changes.progress(it.server.progress())) }
@@ -101,14 +102,16 @@ class ReaderOfflineCopy(
 
     suspend fun highlights(
         documentId: String,
+        serverOnly: Boolean = false,
         fetch: suspend () -> Result<HighlightListResponse>,
     ): Result<List<HighlightData>> {
         val session =
             sessionProvider() ?: return fetch().map { response -> response.highlights.map { it.toHighlightData() } }
-        val fromCopy =
-            fromCopy(session, documentId, fetch, { ServerPart.Highlights(it.toCached(documentId)) }) {
+        val highlightsPart =
+            CopyPart<HighlightListResponse, List<HighlightData>>({ ServerPart.Highlights(it.toCached(documentId)) }) {
                 store.cachedHighlights(session.scope, documentId).map { it.toHighlightData(clock()) }
             }
+        val fromCopy = fromCopy(session, documentId, fetch, highlightsPart, serverOnly)
         return fromCopy ?: steady(session.scope, documentId, { it.content }, fetch).whenHeld { steady ->
             steady.changes.highlights(steady.server.toCached(documentId)).map { it.toHighlightData(clock()) }
         }
@@ -116,10 +119,12 @@ class ReaderOfflineCopy(
 
     suspend fun note(
         documentId: String,
+        serverOnly: Boolean = false,
         fetch: suspend () -> Result<DocumentNoteResponse?>,
     ): Result<String?> {
         val session = sessionProvider() ?: return fetch().map { it?.body }
-        val fromCopy = fromCopy(session, documentId, fetch, { ServerPart.Note(it?.toServerNote()) }) { it.noteBody }
+        val notePart = CopyPart<DocumentNoteResponse?, String?>({ ServerPart.Note(it?.toServerNote()) }) { it.noteBody }
+        val fromCopy = fromCopy(session, documentId, fetch, notePart, serverOnly)
         return fromCopy ?: steady(session.scope, documentId, { it.content }, fetch).whenHeld { steady ->
             steady.changes.note(steady.server?.body)
         }
@@ -166,25 +171,32 @@ class ReaderOfflineCopy(
         fetch: suspend () -> Result<String>,
     ): Result<String> = copyFirst(documentId, AssetSlot(EPUB_CHAPTER, spineIndex), fetch) { it }
 
+    /** How a fetched server value is stored in the copy, and how the copy is read back as the view. */
+    private class CopyPart<S, V>(
+        val part: (S) -> ServerPart,
+        val read: suspend (CachedDocumentRow) -> V,
+    )
+
     // Copy's view after refreshing with the fetched part, or null without a copy; an overtaken part is dropped.
+    // With serverOnly the copy never stands in for a server that gave no answer.
     private suspend fun <S, V> fromCopy(
         session: Session,
         documentId: String,
         fetch: suspend () -> Result<S>,
-        part: (S) -> ServerPart,
-        read: suspend (CachedDocumentRow) -> V,
+        copyPart: CopyPart<S, V>,
+        serverOnly: Boolean = false,
     ): Result<V>? {
         val scope = session.scope
         val revision = store.localChanges(scope, documentId).revision
         if (store.cachedDocument(scope, documentId) == null) return null
         val fetched = attemptWithin(FALLBACK_BUDGET_MS, fetch)
-        fetched.onSuccess { refresh(session, RefreshRequest(documentId, revision, part(it), clock())) }
-        val refused = fetched.exceptionOrNull()?.takeUnless { it.fallsBack() }
+        fetched.onSuccess { refresh(session, RefreshRequest(documentId, revision, copyPart.part(it), clock())) }
+        val refused = fetched.exceptionOrNull()?.takeUnless { !serverOnly && it.fallsBack() }
         val copy = store.cachedDocument(scope, documentId)
         return when {
             refused != null -> Result.failure(refused)
             copy == null -> null
-            else -> Result.success(read(copy))
+            else -> Result.success(copyPart.read(copy))
         }
     }
 

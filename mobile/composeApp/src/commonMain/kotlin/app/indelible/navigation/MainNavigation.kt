@@ -25,6 +25,7 @@ import app.indelible.core.di.AppContainer
 import app.indelible.core.i18n.AppLanguageSettings
 import app.indelible.core.preferences.DefaultViewPreference
 import app.indelible.profile.viewmodel.UserPreferencesViewModel
+import app.indelible.reader.viewmodel.ReaderTriggers
 import io.ktor.http.encodeURLQueryComponent
 import org.jetbrains.compose.resources.stringResource
 
@@ -241,6 +242,12 @@ fun MainNavigation(
                     tagsRepository = appContainer.tagsRepository,
                     trashRepository = appContainer.trashRepository,
                     documentOffline = appContainer.documentOffline,
+                    readerTriggers =
+                        ReaderTriggers(
+                            online = appContainer.connectivityObserver.online,
+                            reachable = appContainer.apiTransport.reachable,
+                            changes = appContainer.localChangeEvents.documentChanged,
+                        ),
                 )
                 profileRoutes(
                     navController = navController,

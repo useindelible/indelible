@@ -38,6 +38,8 @@ sealed class ReaderUiState {
         val itemNote: String? = null,
         /** The note came from the server or a complete copy; until then it cannot be edited. */
         val itemNoteLoaded: Boolean = false,
+        /** The server's note is being read for the editor; typing waits so no draft is made on the old version. */
+        val noteRefreshing: Boolean = false,
         val itemTags: List<String> = emptyList(),
         val entities: List<DocumentEntity> = emptyList(),
         val contentStatus: ReaderContentStatus = ReaderContentStatus.LOADING,
