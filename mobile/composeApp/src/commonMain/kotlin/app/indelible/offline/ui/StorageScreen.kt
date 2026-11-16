@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -18,11 +19,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import app.indelible.offline.viewmodel.StorageUiState
 import app.indelible.offline.viewmodel.StorageViewModel
@@ -39,6 +42,7 @@ import indelible.composeapp.generated.resources.offline_remove_downloads_body
 import indelible.composeapp.generated.resources.offline_remove_downloads_none_queued
 import indelible.composeapp.generated.resources.offline_remove_downloads_title
 import indelible.composeapp.generated.resources.offline_title
+import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -58,6 +62,7 @@ fun StorageScreen(
     onNavigateBack: () -> Unit,
     onOpenReader: (String) -> Unit,
     modifier: Modifier = Modifier,
+    scrollToPending: Boolean = false,
 ) {
     val state by viewModel.state.collectAsState()
     val actions =
@@ -92,7 +97,7 @@ fun StorageScreen(
             )
         },
     ) { padding ->
-        StorageContent(state, actions, Modifier.padding(top = padding.calculateTopPadding()))
+        StorageContent(state, actions, Modifier.padding(top = padding.calculateTopPadding()), scrollToPending)
     }
 }
 
@@ -101,6 +106,7 @@ fun StorageContent(
     state: StorageUiState,
     actions: StorageActions,
     modifier: Modifier = Modifier,
+    scrollToPending: Boolean = false,
 ) {
     var confirmRemoval by remember { mutableStateOf(false) }
     if (confirmRemoval) {
@@ -115,7 +121,13 @@ fun StorageContent(
         )
     }
     var filter by remember { mutableStateOf(DownloadFilter.ALL) }
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(scrollToPending, state.changes.isEmpty()) {
+        if (!scrollToPending || state.changes.isEmpty()) return@LaunchedEffect
+        val total = snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
+        listState.scrollToItem(pendingHeadIndex(state, total))
+    }
+    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         item { UsageSection(state, actions.onCapChange, onManageKept = { filter = DownloadFilter.KEPT }) }
         documentSections(state, filter, onFilterChange = { filter = it }, actions = actions)
         pendingSection(state.changes, actions.onRetry)
@@ -137,6 +149,16 @@ fun StorageContent(
         }
         item { Spacer(modifier = Modifier.height(IndelibleSpacing.step32)) }
     }
+}
+
+// The pending section sits before the remove-all button and the end spacer; count back from the end.
+private fun pendingHeadIndex(
+    state: StorageUiState,
+    totalItems: Int,
+): Int {
+    val trailing = 1 + if (state.kept.isNotEmpty() || state.cached.isNotEmpty()) 1 else 0
+    val pendingItems = 2 + state.changes.sumOf { 1 + it.blocked.size }
+    return (totalItems - trailing - pendingItems).coerceAtLeast(0)
 }
 
 /** The quiet line under a section: an empty list, or what the section means. */

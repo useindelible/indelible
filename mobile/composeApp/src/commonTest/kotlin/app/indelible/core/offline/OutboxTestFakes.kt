@@ -93,6 +93,8 @@ private object UnreachableOfflineStore : OfflineStore {
         id: String,
     ): Boolean = unreachable()
 
+    override suspend fun resetBackoff(scope: String): Unit = unreachable()
+
     override fun observeOutbox(scope: String): Flow<List<OutboxRow>> = unreachable()
 
     override fun observeOutboxForDocument(

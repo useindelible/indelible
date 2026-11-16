@@ -4,6 +4,7 @@ import androidx.compose.runtime.remember
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import androidx.savedstate.read
 import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.core.i18n.AppLanguageSettings
@@ -146,11 +147,16 @@ fun NavGraphBuilder.profileRoutes(
             onAccountDeleted = { authViewModel.forceLogout() },
         )
     }
-    composable(MainRoutes.PROFILE_STORAGE) {
+    composable(
+        MainRoutes.PROFILE_STORAGE,
+        arguments = listOf(navArgument("section") { nullable = true }),
+    ) { backStackEntry ->
+        val section = backStackEntry.arguments?.read { getStringOrNull("section") }
         StorageScreen(
             viewModel = storageViewModel,
             onNavigateBack = { navController.popBackStack() },
             onOpenReader = { documentId -> navController.navigate(MainRoutes.reader(documentId)) },
+            scrollToPending = section == MainRoutes.STORAGE_PENDING,
         )
     }
     composable(MainRoutes.PROFILE_CHANGE_PASSWORD) {

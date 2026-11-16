@@ -53,6 +53,9 @@ interface OutboxStore {
         scope: String,
         id: String,
     ): Boolean
+
+    /** Makes every live PENDING row of the scope due now, so the next pass sends it whatever its backoff. */
+    suspend fun resetBackoff(scope: String)
 }
 
 interface OutboxObservation {
