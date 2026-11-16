@@ -15,6 +15,9 @@ import type {
 	AddEntryToCollectionData,
 	AddEntryToCollectionErrors,
 	AddEntryToCollectionResponses,
+	AppendReadingEventsData,
+	AppendReadingEventsErrors,
+	AppendReadingEventsResponses,
 	AuthorizeIntegrationData,
 	AuthorizeIntegrationErrors,
 	AuthorizeIntegrationResponses,
@@ -174,6 +177,8 @@ import type {
 	GetArticleTocData,
 	GetArticleTocErrors,
 	GetArticleTocResponses,
+	GetCapabilitiesData,
+	GetCapabilitiesResponses,
 	GetCollectionData,
 	GetCollectionErrors,
 	GetCollectionResponses,
@@ -1335,6 +1340,26 @@ export const updateDocumentProgress = <ThrowOnError extends boolean = false>(
 			{ scheme: 'bearer', type: 'http' }
 		],
 		url: '/api/v1/documents/{document_id}/progress',
+		...options,
+		headers: {
+			'Content-Type': 'application/json',
+			...options.headers
+		}
+	});
+
+export const appendReadingEvents = <ThrowOnError extends boolean = false>(
+	options: Options<AppendReadingEventsData, ThrowOnError>
+) =>
+	(options.client ?? client).post<
+		AppendReadingEventsResponses,
+		AppendReadingEventsErrors,
+		ThrowOnError
+	>({
+		security: [
+			{ scheme: 'bearer', type: 'http' },
+			{ scheme: 'bearer', type: 'http' }
+		],
+		url: '/api/v1/documents/{document_id}/reading-events',
 		...options,
 		headers: {
 			'Content-Type': 'application/json',
@@ -3166,6 +3191,17 @@ export const suggestions = <ThrowOnError extends boolean = false>(
 			{ scheme: 'bearer', type: 'http' }
 		],
 		url: '/api/v1/search/suggestions',
+		...options
+	});
+
+/**
+ * List the optional capabilities this server supports.
+ */
+export const getCapabilities = <ThrowOnError extends boolean = false>(
+	options?: Options<GetCapabilitiesData, ThrowOnError>
+) =>
+	(options?.client ?? client).get<GetCapabilitiesResponses, unknown, ThrowOnError>({
+		url: '/api/v1/server/capabilities',
 		...options
 	});
 

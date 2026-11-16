@@ -13,11 +13,8 @@ export type DocumentListEntry = Omit<LibraryEntryResponse, 'library_entry_id'> &
 	chapter_locator?: string | null;
 	chapter_offset?: number | null;
 	deleted_at?: string | null;
-	last_read_at?: string | null;
-	max_progress_percent?: number | null;
 	pipeline_error?: string | null;
 	pipeline_status?: string | null;
-	progress_percent?: number | null;
 	readable_ready?: boolean;
 	saved?: boolean;
 	sender?: SearchEmbeddedSenderResponse | null;
