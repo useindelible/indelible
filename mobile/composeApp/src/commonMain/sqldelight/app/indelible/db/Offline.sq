@@ -11,6 +11,7 @@ CREATE TABLE cached_document (
     generation INTEGER NOT NULL DEFAULT 0,
     note_body TEXT,
     note_server_updated_at INTEGER,
+    note_server_body TEXT,
     progress_percent INTEGER,
     max_progress_percent INTEGER,
     chapter_locator TEXT,
@@ -37,6 +38,15 @@ CREATE TABLE cached_highlight (
     PRIMARY KEY (scope, id)
 );
 
+-- The server's version of each cached highlight, so a discarded change can be taken back out of the copy.
+CREATE TABLE server_highlight (
+    scope TEXT NOT NULL,
+    id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    PRIMARY KEY (scope, id)
+);
+
 CREATE TABLE outbox (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     scope TEXT NOT NULL,
@@ -51,7 +61,8 @@ CREATE TABLE outbox (
     next_attempt_at INTEGER NOT NULL DEFAULT 0,
     state TEXT NOT NULL DEFAULT 'pending',
     last_error TEXT,
-    superseded INTEGER NOT NULL DEFAULT 0
+    superseded INTEGER NOT NULL DEFAULT 0,
+    failure_json TEXT
 );
 CREATE UNIQUE INDEX outbox_scope_id ON outbox(scope, id);
 CREATE INDEX outbox_drain ON outbox(scope, state, next_attempt_at, seq);
@@ -97,6 +108,14 @@ SELECT * FROM outbox WHERE scope = ? AND state = 'pending' AND superseded = 0 OR
 
 liveOutboxForDocument:
 SELECT * FROM outbox WHERE scope = ? AND document_id = ? AND superseded = 0 ORDER BY seq;
+
+laterLiveNotesForDocument:
+SELECT * FROM outbox
+WHERE scope = ? AND document_id = ? AND kind = 'document_note' AND superseded = 0 AND seq > ?
+ORDER BY seq;
+
+setPayloadJson:
+UPDATE outbox SET payload_json = ? WHERE scope = ? AND id = ?;
 
 supersedeField:
 UPDATE outbox SET superseded = 1 WHERE scope = ? AND entity_id = ? AND kind = ? AND seq < ?;
@@ -152,13 +171,30 @@ WHERE scope = ? AND id = ?;
 setState:
 UPDATE outbox SET state = ?, last_error = ? WHERE scope = ? AND id = ?;
 
+setFailed:
+UPDATE outbox SET state = 'failed', last_error = ?, failure_json = ? WHERE scope = ? AND id = ?;
+
 setStateForEntity:
 UPDATE outbox SET state = ? WHERE scope = ? AND entity_id = ? AND state = ?;
 
+deleteBlockedRowsForEntity:
+DELETE FROM outbox WHERE scope = ? AND entity_id = ? AND state = 'blocked';
+
+waitingChangesByScope:
+SELECT o.scope,
+  COUNT(DISTINCT CASE WHEN o.kind = 'reading_event' THEN 'doc:' || o.document_id ELSE o.id END) AS waiting
+FROM outbox o
+JOIN client_state c ON c.scope = o.scope
+WHERE o.superseded = 0 AND o.state = 'pending' AND c.purge_pending = 0
+GROUP BY o.scope;
+
 resetForRetry:
 UPDATE outbox
-SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL
+SET state = 'pending', attempts = 0, next_attempt_at = 0, last_error = NULL, failure_json = NULL
 WHERE scope = ? AND id = ?;
+
+resetBackoff:
+UPDATE outbox SET next_attempt_at = 0 WHERE scope = ? AND state = 'pending' AND superseded = 0;
 
 outboxForScope:
 SELECT * FROM outbox WHERE scope = ? ORDER BY seq;
@@ -193,10 +229,10 @@ UPDATE cached_document SET bytes = ? WHERE scope = ? AND document_id = ?;
 installDocument:
 INSERT OR REPLACE INTO cached_document(
     scope, document_id, document_type, title, reader_json, pinned, last_opened_at, last_synced_at, bytes,
-    generation, note_body, note_server_updated_at, progress_percent, max_progress_percent, chapter_locator,
-    chapter_offset
+    generation, note_body, note_server_updated_at, note_server_body, progress_percent, max_progress_percent,
+    chapter_locator, chapter_offset
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 refreshDocumentMeta:
 UPDATE cached_document SET title = ?, reader_json = ? WHERE scope = ? AND document_id = ?;
@@ -217,7 +253,11 @@ setCachedNote:
 UPDATE cached_document SET note_body = ? WHERE scope = ? AND document_id = ?;
 
 setCachedServerNote:
-UPDATE cached_document SET note_body = ?, note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
+UPDATE cached_document SET note_body = ?, note_server_body = ?, note_server_updated_at = ?
+WHERE scope = ? AND document_id = ?;
+
+setCachedServerNoteStamp:
+UPDATE cached_document SET note_server_body = ?, note_server_updated_at = ? WHERE scope = ? AND document_id = ?;
 
 catalog:
 SELECT document_id, document_type, title, pinned, last_opened_at, last_synced_at, bytes, generation
@@ -255,16 +295,41 @@ DELETE FROM cached_highlight WHERE scope = ? AND id = ?;
 deleteHighlightsForDocument:
 DELETE FROM cached_highlight WHERE scope = ? AND document_id = ?;
 
-deleteHighlightsWithoutLiveRows:
-DELETE FROM cached_highlight
-WHERE scope = :scope AND document_id = :document_id
-  AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+deleteHighlightsWithoutLiveRows {
+  DELETE FROM cached_highlight
+  WHERE scope = :scope AND document_id = :document_id
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+  DELETE FROM server_highlight
+  WHERE scope = :scope AND document_id = :document_id
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+}
 
-deleteOrphanHighlights:
-DELETE FROM cached_highlight
-WHERE scope = :scope
-  AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
-  AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+deleteOrphanHighlights {
+  DELETE FROM cached_highlight
+  WHERE scope = :scope
+    AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+  DELETE FROM server_highlight
+  WHERE scope = :scope
+    AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+}
+
+upsertServerHighlight:
+INSERT OR REPLACE INTO server_highlight(scope, id, document_id, payload_json)
+VALUES (?, ?, ?, ?);
+
+deleteServerHighlight:
+DELETE FROM server_highlight WHERE scope = ? AND id = ?;
+
+deleteServerHighlightsForDocument:
+DELETE FROM server_highlight WHERE scope = ? AND document_id = ?;
+
+serverHighlight:
+SELECT payload_json FROM server_highlight WHERE scope = ? AND id = ?;
+
+serverHighlightsForDocument:
+SELECT payload_json FROM server_highlight WHERE scope = ? AND document_id = ?;
 
 highlightsForDocument:
 SELECT * FROM cached_highlight WHERE scope = ? AND document_id = ?;
@@ -348,6 +413,7 @@ purgeRows {
   DELETE FROM cached_document WHERE scope = :scope;
   DELETE FROM cached_asset WHERE scope = :scope;
   DELETE FROM cached_highlight WHERE scope = :scope;
+  DELETE FROM server_highlight WHERE scope = :scope;
   DELETE FROM outbox WHERE scope = :scope;
   DELETE FROM document_revision WHERE scope = :scope;
   DELETE FROM list_snapshot WHERE scope = :scope;

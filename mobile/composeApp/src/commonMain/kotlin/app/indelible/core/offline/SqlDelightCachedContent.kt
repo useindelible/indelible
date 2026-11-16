@@ -133,6 +133,7 @@ internal class SqlDelightCachedContent(
             generation = request.generation,
             note_body = changes.note(server.note?.body),
             note_server_updated_at = server.note?.updatedAtEpochMs,
+            note_server_body = server.note?.body,
             progress_percent = progress.percent?.toLong(),
             max_progress_percent = progress.maxPercent?.toLong(),
             chapter_locator = progress.position?.locator,
@@ -142,7 +143,7 @@ internal class SqlDelightCachedContent(
         request.assets.forEach { asset ->
             queries.insertCachedAsset(scope, asset.documentId, asset.kind, asset.idx.toLong(), asset.path, asset.bytes)
         }
-        replaceHighlights(scope, request.documentId, changes.highlights(server.highlights))
+        replaceHighlights(scope, request.documentId, server.highlights, changes)
     }
 
     private fun refresh(
@@ -173,7 +174,7 @@ internal class SqlDelightCachedContent(
                     if (stale.content) {
                         RefreshResult.Stale
                     } else {
-                        replaceHighlights(scope, documentId, changes.highlights(part.highlights))
+                        replaceHighlights(scope, documentId, part.highlights, changes)
                         RefreshResult.Applied
                     }
                 is ServerPart.Note ->
@@ -181,7 +182,8 @@ internal class SqlDelightCachedContent(
                         RefreshResult.Stale
                     } else {
                         val note = changes.note(part.note?.body)
-                        queries.setCachedServerNote(note, part.note?.updatedAtEpochMs, scope, documentId)
+                        val server = part.note
+                        queries.setCachedServerNote(note, server?.body, server?.updatedAtEpochMs, scope, documentId)
                         RefreshResult.Applied
                     }
             }
@@ -192,17 +194,11 @@ internal class SqlDelightCachedContent(
     private fun replaceHighlights(
         scope: String,
         documentId: String,
-        highlights: List<CachedHighlight>,
+        server: List<CachedHighlight>,
+        changes: LocalChanges,
     ) {
-        queries.deleteHighlightsForDocument(scope, documentId)
-        highlights.forEach { highlight ->
-            queries.upsertCachedHighlight(
-                scope,
-                highlight.id,
-                documentId,
-                offlineJson.encodeToString(CachedHighlight.serializer(), highlight),
-                highlight.updatedAtEpochMs ?: 0L,
-            )
-        }
+        queries.deleteServerHighlightsForDocument(scope, documentId)
+        server.forEach { queries.upsertServerHighlight(scope, it.id, documentId, encodeHighlight(it)) }
+        queries.writeCachedHighlights(scope, documentId, changes.highlights(server))
     }
 }

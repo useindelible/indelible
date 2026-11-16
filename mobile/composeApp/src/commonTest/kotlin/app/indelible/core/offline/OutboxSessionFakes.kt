@@ -36,10 +36,11 @@ suspend fun signedInStore(
     database: OfflineDatabase = testOfflineDatabase(),
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
     registry: SessionRegistry = SessionRegistry(),
+    events: LocalChangeEvents = LocalChangeEvents(),
 ): SignedIn {
     val session = testSession(scope, registry.current.value.epoch)
     registry.publish(SessionState(session.epoch, session))
-    val store = SqlDelightOfflineStore(database, registry = registry, dispatcher = dispatcher)
+    val store = SqlDelightOfflineStore(database, registry = registry, dispatcher = dispatcher, events = events)
     store.clientIdentity(scope)
     return SignedIn(registry, store, session)
 }
@@ -47,7 +48,8 @@ suspend fun signedInStore(
 suspend fun TestScope.signedInTestStore(
     scope: String = "scope",
     database: OfflineDatabase = testOfflineDatabase(),
-): SignedIn = signedInStore(scope, database, StandardTestDispatcher(testScheduler))
+    events: LocalChangeEvents = LocalChangeEvents(),
+): SignedIn = signedInStore(scope, database, StandardTestDispatcher(testScheduler), events = events)
 
 class TransitionsHarness(
     val registry: SessionRegistry,

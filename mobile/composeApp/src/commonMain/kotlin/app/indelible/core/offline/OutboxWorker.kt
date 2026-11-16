@@ -25,7 +25,7 @@ import kotlinx.coroutines.sync.withLock
  * auth pause and a network, so offline changes never spend attempts that would delay them later.
  */
 class OutboxWorker(
-    store: OfflineStore,
+    private val store: OfflineStore,
     private val registry: SessionRegistry,
     sender: OutboxSender,
     private val clock: () -> Long,
@@ -44,6 +44,7 @@ class OutboxWorker(
 
     // Down until the first sample: iOS reports it only after its monitor starts.
     private val networkUp = MutableStateFlow(false)
+    private val serverUp = MutableStateFlow<Boolean?>(null)
 
     private var consecutiveFailures = 0
     val authPaused: StateFlow<Boolean> = authPausedState.asStateFlow()
@@ -65,9 +66,17 @@ class OutboxWorker(
         requests.trySend(Unit)
     }
 
+    /** Also gives every change an old server refused one more try, in case the server was upgraded since. */
     fun markStartupReady() {
         startupReady.value = true
         requestDrain()
+        workerScope.value?.launch {
+            val scope = registry.current.value.session?.scope ?: return@launch
+            val revived =
+                runCatching { pass.reviveServerTooOld(scope) }
+                    .getOrElse { if (it is CancellationException) throw it else 0 }
+            if (revived > 0) requestDrain()
+        }
     }
 
     /** Returns once no pass is running; passes stay blocked until [endTransition]. */
@@ -82,8 +91,26 @@ class OutboxWorker(
     }
 
     fun setNetwork(up: Boolean) {
+        val returned = up && !networkUp.value
         networkUp.value = up
-        if (up) requestDrain()
+        if (returned) retryNow() else if (up) requestDrain()
+    }
+
+    fun setServerReachable(up: Boolean?) {
+        val returned = up == true && serverUp.value == false
+        serverUp.value = up
+        if (returned) retryNow()
+    }
+
+    /** The waits were set against a network or server that is back, so every queued row is due now. */
+    fun retryNow() {
+        val owner = workerScope.value ?: return requestDrain()
+        owner.launch {
+            registry.current.value.session?.scope?.let { scope ->
+                runCatching { store.resetBackoff(scope) }.onFailure { if (it is CancellationException) throw it }
+            }
+            requestDrain()
+        }
     }
 
     fun resumeAuth() {

@@ -20,7 +20,7 @@ class OfflineStoreRetryTest {
             val failedId = store.enqueueNote(session, "hlt_1", "doc_1")
             val blockedId = store.enqueueNote(session, "hlt_1", "doc_1")
             store.markAttempt(scope, failedId, now = 5L, nextAttemptAt = 999L, error = "boom")
-            store.failCreateAndBlockDependants(scope, failedId, "hlt_1", "boom")
+            store.failCreateAndBlockDependants(scope, failedId, "hlt_1", rejected("boom"))
             val blockedBeforeRetry = store.rowsByState(scope, OutboxState.BLOCKED).single { it.id == blockedId }
             assertEquals(OutboxState.BLOCKED, blockedBeforeRetry.state)
 
@@ -60,7 +60,7 @@ class OfflineStoreRetryTest {
             val scope = signedIn.scope
             val failedId = store.enqueueNote(session, "hlt_1", "doc_1")
             val blockedId = store.enqueueNote(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, failedId, "hlt_1", "boom")
+            store.failCreateAndBlockDependants(scope, failedId, "hlt_1", rejected("boom"))
             val blockedBefore = store.rowsByState(scope, OutboxState.BLOCKED).single { it.id == blockedId }
             assertEquals(OutboxState.BLOCKED, blockedBefore.state)
 

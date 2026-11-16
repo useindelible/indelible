@@ -54,6 +54,19 @@ internal class EnqueueTxImpl(
         queries.setCachedNote(body, scope, documentId)
     }
 
+    override fun noteBase(documentId: String): Long? {
+        checkOpen()
+        val queued =
+            queries
+                .localChanges(scope, documentId)
+                .rows
+                .lastOrNull { it.kind == OutboxKind.DOCUMENT_NOTE && !it.superseded }
+        if (queued != null) return (queued.payload as OutboxPayload.DocumentNote).baseUpdatedAtEpochMs
+        // A copy that saw no server note has a base of zero: a note that appears later is someone else's.
+        val copy = queries.cachedDocument(scope, documentId).executeAsOneOrNull()
+        return copy?.let { it.note_server_updated_at ?: 0L }
+    }
+
     override fun patchCachedProgress(
         documentId: String,
         percent: Int,

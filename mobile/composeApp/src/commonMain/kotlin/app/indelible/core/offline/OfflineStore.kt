@@ -20,10 +20,11 @@ interface OutboxStore {
         state: OutboxState,
     ): List<OutboxRow>
 
-    /** Deletes the row, supersedes older same-field rows, moves the revision; never supersedes reading events. */
+    /** Acknowledges the row; [ackedNoteUpdatedAt] stamps the copy's note and rebases the later queued notes. */
     suspend fun remove(
         scope: String,
         id: String,
+        ackedNoteUpdatedAt: Long? = null,
     )
 
     suspend fun markAttempt(
@@ -37,7 +38,7 @@ interface OutboxStore {
     suspend fun markFailed(
         scope: String,
         id: String,
-        error: String?,
+        failure: SyncFailure,
     )
 
     /** One transaction: the create becomes FAILED and every PENDING row for its entity becomes BLOCKED. */
@@ -45,7 +46,7 @@ interface OutboxStore {
         scope: String,
         id: String,
         entityId: String,
-        error: String?,
+        failure: SyncFailure,
     )
 
     /** Resets the row to PENDING, unblocks its BLOCKED rows, and returns true; false unless FAILED and unsuperseded. */
@@ -53,6 +54,9 @@ interface OutboxStore {
         scope: String,
         id: String,
     ): Boolean
+
+    /** Makes every live PENDING row of the scope due now, so the next pass sends it whatever its backoff. */
+    suspend fun resetBackoff(scope: String)
 }
 
 interface OutboxObservation {
@@ -64,6 +68,29 @@ interface OutboxObservation {
     ): Flow<List<OutboxRow>>
 
     fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>>
+
+    /** Changes a sign-in would send, per scope not being purged: a document's reading events count once. */
+    fun observeWaitingByScope(): Flow<Map<String, Int>>
+}
+
+/** Ends failed rows the way the user chose, and announces each document's change once it has committed. */
+interface OutboxResolutionStore {
+    suspend fun discardRows(
+        session: Session,
+        rowIds: List<String>,
+    ): Int
+
+    suspend fun keepLocalNote(
+        session: Session,
+        rowId: String,
+        seenServerUpdatedAt: Long,
+    ): Boolean
+
+    suspend fun keepServerNote(
+        session: Session,
+        rowId: String,
+        seenServerUpdatedAt: Long,
+    ): Boolean
 }
 
 interface CachedDocumentStore {
@@ -230,6 +257,7 @@ interface ListSnapshotStore {
 interface OfflineStore :
     OutboxStore,
     OutboxObservation,
+    OutboxResolutionStore,
     CachedDocumentStore,
     CachedContentStore,
     ListSnapshotStore,
@@ -253,6 +281,9 @@ interface EnqueueTx {
         documentId: String,
         body: String,
     )
+
+    /** The base of a note edit: the queued note's own base while one is live, else the copy's server stamp. */
+    fun noteBase(documentId: String): Long?
 
     fun patchCachedProgress(
         documentId: String,

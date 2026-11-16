@@ -23,7 +23,7 @@ class OfflineStoreOutboxQueriesTest {
             val secondId = store.enqueueNote(session, "doc_2")
             val thirdId = store.enqueueNote(session, "doc_3")
             store.markAttempt(scope, firstId, now = 10L, nextAttemptAt = 1_000_000L, error = "500")
-            store.markFailed(scope, thirdId, error = "fatal")
+            store.markFailed(scope, thirdId, rejected("fatal"))
 
             val ids = store.pendingOrdered(scope).map { it.id }
 
@@ -41,7 +41,7 @@ class OfflineStoreOutboxQueriesTest {
             val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
             val unrelated = store.enqueueNote(session, "doc_2")
 
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422 anchor")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422 anchor"))
 
             assertEquals(listOf(createId), store.rowsByState(scope, OutboxState.FAILED).map { it.id })
             assertEquals(listOf(colorId), store.rowsByState(scope, OutboxState.BLOCKED).map { it.id })
@@ -58,9 +58,9 @@ class OfflineStoreOutboxQueriesTest {
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
             val failedColor = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
-            store.markFailed(scope, failedColor, "400")
+            store.markFailed(scope, failedColor, rejected("400"))
 
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
 
             val failedIds = store.rowsByState(scope, OutboxState.FAILED).map { it.id }.toSet()
             assertEquals(setOf(createId, failedColor), failedIds)
@@ -80,7 +80,7 @@ class OfflineStoreOutboxQueriesTest {
             val faulting = SqlDelightOfflineStore(database, failCreateHook = { throw InjectedStoreFailure() })
 
             assertFailsWith<InjectedStoreFailure> {
-                faulting.failCreateAndBlockDependants(scope, createId, "hlt_1", "422 anchor")
+                faulting.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422 anchor"))
             }
 
             assertTrue(store.rowsByState(scope, OutboxState.FAILED).isEmpty())
@@ -97,7 +97,7 @@ class OfflineStoreOutboxQueriesTest {
             val scope = signedIn.scope
             val failedId = store.enqueueNote(session, "doc_1")
             store.enqueueNote(session, "doc_2")
-            store.markFailed(scope, failedId, "boom")
+            store.markFailed(scope, failedId, rejected("boom"))
 
             val failedRows = store.rowsByState(scope, OutboxState.FAILED)
             val pendingRows = store.rowsByState(scope, OutboxState.PENDING)
@@ -134,7 +134,7 @@ class OfflineStoreOutboxQueriesTest {
             val scope = signedIn.scope
             val id = store.enqueueNote(session, "doc_1")
 
-            store.markFailed(scope, id, "unrecoverable")
+            store.markFailed(scope, id, rejected("unrecoverable"))
 
             val row = store.rowsByState(scope, OutboxState.FAILED).single()
             assertEquals(OutboxState.FAILED, row.state)

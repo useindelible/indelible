@@ -165,7 +165,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
 
             store.enqueueHighlightColor(session, "hlt_1", "doc_1")
 
@@ -181,7 +181,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
             store.retryRow(scope, createId)
 
             store.enqueueHighlightColor(session, "hlt_1", "doc_1")
@@ -198,7 +198,7 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val colorId = store.enqueueHighlightColor(session, "hlt_1", "doc_1")
-            store.markFailed(scope, colorId, "400")
+            store.markFailed(scope, colorId, rejected("400"))
 
             store.enqueueHighlightDelete(session, "hlt_1", "doc_1")
 
@@ -214,10 +214,45 @@ class OfflineStoreEnqueueTest {
             val session = signedIn.session
             val scope = signedIn.scope
             val createId = store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
-            store.failCreateAndBlockDependants(scope, createId, "hlt_1", "422")
+            store.failCreateAndBlockDependants(scope, createId, "hlt_1", rejected("422"))
 
             store.enqueueHighlightCreate(session, "hlt_1", "doc_1")
 
             assertEquals(1, store.pendingOrdered(scope).size)
+        }
+
+    @Test
+    fun aNoteEnqueueCapturesTheCopysServerUpdatedAtAsItsBase() =
+        runTest {
+            val signedIn = signedInStore()
+            val store = signedIn.store
+            val session = signedIn.session
+            signedIn.installNow(serverDocument(note = "server"))
+
+            store.enqueue(session, OutboxKind.DOCUMENT_NOTE, VIEW_DOC, VIEW_DOC) {
+                OutboxPayload.DocumentNote("mine", noteBase(VIEW_DOC)) to Unit
+            }
+            val uncachedBase =
+                store.enqueue(session, OutboxKind.DOCUMENT_NOTE, "doc_9", "doc_9") {
+                    OutboxPayload.DocumentNote("x", null) to noteBase("doc_9")
+                }
+
+            val row = store.pendingOrdered(signedIn.scope).first { it.documentId == VIEW_DOC }
+            assertEquals(OutboxPayload.DocumentNote("mine", 1_000L), row.payload)
+            assertNull(uncachedBase)
+        }
+
+    @Test
+    fun aCopyWithoutAServerNoteGivesABaseOfZero() =
+        runTest {
+            val signedIn = signedInStore()
+            signedIn.installNow(serverDocument(note = null))
+
+            val base =
+                signedIn.store.enqueue(signedIn.session, OutboxKind.DOCUMENT_NOTE, VIEW_DOC, VIEW_DOC) {
+                    OutboxPayload.DocumentNote("mine", noteBase(VIEW_DOC)) to noteBase(VIEW_DOC)
+                }
+
+            assertEquals(0L, base)
         }
 }

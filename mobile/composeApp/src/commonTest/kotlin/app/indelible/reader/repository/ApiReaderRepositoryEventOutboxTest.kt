@@ -3,11 +3,13 @@ package app.indelible.reader.repository
 import app.indelible.api.generated.models.ReadingAnchorSchemaFlat
 import app.indelible.api.generated.models.ReadingPositionSchema
 import app.indelible.core.offline.ChapterPosition
+import app.indelible.core.offline.DocumentRevision
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.PagePosition
 import app.indelible.core.offline.VIEW_DOC
 import app.indelible.core.offline.installRequest
+import app.indelible.core.offline.serverDocument
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -157,5 +159,18 @@ class ApiReaderRepositoryEventOutboxTest {
             val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.DOCUMENT_NOTE).single()
             assertEquals(OFFLINE_DOCUMENT_ID, row.entityId)
             assertEquals(OutboxPayload.DocumentNote("a note", null), row.payload)
+        }
+
+    @Test
+    fun item_note_carries_the_copys_server_timestamp_as_its_base() =
+        runTest {
+            val harness = readerOutboxHarness()
+            val fresh = DocumentRevision(content = 0, position = 0, ackedProgressSeq = -1)
+            harness.store.installCachedDocument(harness.session, installRequest(fresh, serverDocument(note = "server")))
+
+            harness.repository.upsertItemNote(VIEW_DOC, "mine").getOrThrow()
+
+            val row = harness.store.rowsOf(OFFLINE_SCOPE, OutboxKind.DOCUMENT_NOTE).single()
+            assertEquals(OutboxPayload.DocumentNote("mine", 1_000L), row.payload)
         }
 }

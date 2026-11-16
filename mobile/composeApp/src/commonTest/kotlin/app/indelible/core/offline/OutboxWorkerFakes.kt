@@ -45,7 +45,7 @@ class GatedSender : OutboxSender {
             current.release.await()
             if (hold === current) hold = null
         }
-        return outcomes.removeFirstOrNull() ?: SendOutcome.Success
+        return outcomes.removeFirstOrNull() ?: SendOutcome.Success()
     }
 }
 

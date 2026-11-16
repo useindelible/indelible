@@ -35,4 +35,8 @@ fun SyncDrainEffect(
     LaunchedEffect(transport, worker) {
         transport.requestSucceeded.collect { worker.requestDrain() }
     }
+
+    LaunchedEffect(transport, worker) {
+        transport.reachable.collect(worker::setServerReachable)
+    }
 }

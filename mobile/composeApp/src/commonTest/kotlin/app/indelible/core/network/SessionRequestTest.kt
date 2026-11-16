@@ -233,4 +233,21 @@ class SessionRequestTest {
             assertEquals("Bearer old", f.sent.first().authorization)
             assertNull(f.sent.last().authorization)
         }
+
+    @Test
+    fun aRawRequestReadsASuccessBodyOnlyWhenAsked() =
+        runTest {
+            val f = fixture { respond("""{"ok":true}""", HttpStatusCode.OK, jsonHeaders) }
+            val session = signedIn(f.registry)
+
+            val skipped =
+                f.transport.rawAuthenticatedRequest(session) { client, baseUrl, _ -> client.get("$baseUrl$PING") }
+            val read =
+                f.transport.rawAuthenticatedRequest(session, readSuccessBody = true) { client, baseUrl, _ ->
+                    client.get("$baseUrl$PING")
+                }
+
+            assertEquals("", skipped.bodyText)
+            assertEquals("""{"ok":true}""", read.bodyText)
+        }
 }
