@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +38,7 @@ import indelible.composeapp.generated.resources.offline_filter_cached
 import indelible.composeapp.generated.resources.offline_filter_kept
 import indelible.composeapp.generated.resources.offline_inventory_count
 import indelible.composeapp.generated.resources.offline_items
+import indelible.composeapp.generated.resources.offline_keep
 import indelible.composeapp.generated.resources.offline_note_all
 import indelible.composeapp.generated.resources.offline_note_cached
 import indelible.composeapp.generated.resources.offline_note_kept
@@ -77,7 +82,8 @@ internal fun LazyListScope.documentSections(
             first = index == 0,
             last = index == entries.lastIndex,
             onOpen = { actions.onOpenReader(entry.documentId) },
-            onAct = { if (entry.pinned) actions.onUnpin(entry.documentId) else actions.onRemoveCopy(entry.documentId) },
+            onKeepOrUnpin = { (if (entry.pinned) actions.copies.onUnpin else actions.copies.onKeep)(entry.documentId) },
+            onRemove = { actions.copies.onRemove(entry.documentId) },
         )
     }
     item { StorageNote(stringResource(noteFor(filter))) }
@@ -156,7 +162,8 @@ private fun DocumentRow(
     first: Boolean,
     last: Boolean,
     onOpen: () -> Unit,
-    onAct: () -> Unit,
+    onKeepOrUnpin: () -> Unit,
+    onRemove: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     Row(
@@ -186,9 +193,19 @@ private fun DocumentRow(
             color = colors.onSurfaceVariant,
         )
         RowAction(
-            text = stringResource(if (entry.pinned) Res.string.offline_unpin else Res.string.offline_remove),
-            onClick = onAct,
+            text = stringResource(if (entry.pinned) Res.string.offline_unpin else Res.string.offline_keep),
+            onClick = onKeepOrUnpin,
+            accent = !entry.pinned,
         )
+        if (!entry.pinned) {
+            IconButton(onClick = onRemove, modifier = Modifier.size(IndelibleSpacing.step32)) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = stringResource(Res.string.offline_remove),
+                    tint = colors.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

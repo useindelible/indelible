@@ -67,6 +67,12 @@ class StorageViewModel(
         }
     }
 
+    /** Pins the copy already on the device, so the cap stops counting it as evictable. */
+    fun keep(documentId: String) {
+        val session = registry.current.value.session ?: return
+        viewModelScope.launch { downloads.keepOffline(session, documentId) }
+    }
+
     /** Leaves the copy in place; only the mark that protects it from eviction goes. */
     fun unpin(documentId: String) {
         val scope = currentScope() ?: return
@@ -99,12 +105,14 @@ class StorageViewModel(
             store.observeCatalog(scope),
             store.observeOutbox(scope),
             capBytes.filterNotNull(),
-        ) { catalog, rows, cap ->
+            downloads.observeAutoCachePaused(scope),
+        ) { catalog, rows, cap, paused ->
             StorageUiState(
                 capBytes = cap,
                 kept = catalog.filter { it.pinned },
                 cached = catalog.filterNot { it.pinned },
                 changes = pendingChanges(rows, catalog),
+                autoCachePaused = paused,
             )
         }
 

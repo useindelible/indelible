@@ -33,24 +33,19 @@ import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.ReaderDocument
 import app.indelible.reader.model.TagData
-import app.indelible.ui.components.IndelibleButton
-import app.indelible.ui.components.IndelibleButtonStyle
 import app.indelible.ui.theme.IndelibleShape
 import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.SerifFontFamily
 import app.indelible.ui.theme.geistMonoFontFamily
 import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.offline_section
 import indelible.composeapp.generated.resources.reader_highlights_count
-import indelible.composeapp.generated.resources.reader_info_actions
 import indelible.composeapp.generated.resources.reader_info_entities
 import indelible.composeapp.generated.resources.reader_info_info
 import indelible.composeapp.generated.resources.reader_info_note
 import indelible.composeapp.generated.resources.reader_info_note_add
 import indelible.composeapp.generated.resources.reader_info_note_edit
 import indelible.composeapp.generated.resources.reader_info_note_empty
-import indelible.composeapp.generated.resources.reader_info_share_link
 import indelible.composeapp.generated.resources.reader_info_summary
 import indelible.composeapp.generated.resources.reader_info_tags
 import indelible.composeapp.generated.resources.reader_tags_requires_library
@@ -78,31 +73,12 @@ fun ItemRecordPanel(
     modifier: Modifier = Modifier,
     entities: List<DocumentEntity> = emptyList(),
     onSaveToLibrary: () -> Unit = {},
-    onShare: () -> Unit = {},
-    offline: ItemOffline? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step24),
     ) {
         RecordHero(item)
-
-        // Share moved here when the reader's top bar was removed: it is an action on
-        // the item, and the item record is where the item's actions live.
-        if ((item.canonicalUrl ?: item.url) != null) {
-            RecordSection(stringResource(Res.string.reader_info_actions)) {
-                IndelibleButton(
-                    text = stringResource(Res.string.reader_info_share_link),
-                    onClick = onShare,
-                    style = IndelibleButtonStyle.Secondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
-        offline?.let {
-            RecordSection(stringResource(Res.string.offline_section)) { ItemOfflineSection(it) }
-        }
 
         RecordSection(stringResource(Res.string.reader_info_info)) {
             InfoGrid(item = item, progress = progress)
