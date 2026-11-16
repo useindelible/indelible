@@ -379,17 +379,21 @@ pub async fn extension_upsert_note(
 
     tracing::debug!(library_entry_id = %entry_id, "upsert extension saved-entry note");
 
+    let document_reader_ops =
+        state
+            .document_reader_ops
+            .as_ref()
+            .ok_or(ApiError::ServiceUnavailable {
+                message: "document reader service not configured".into(),
+            })?;
     let note_body = body.body;
     let note = if note_body.is_empty() {
+        document_reader_ops
+            .delete_note(auth_user.user_id, joined.document.id)
+            .await
+            .map_err(ApiError::from)?;
         None
     } else {
-        let document_reader_ops =
-            state
-                .document_reader_ops
-                .as_ref()
-                .ok_or(ApiError::ServiceUnavailable {
-                    message: "document reader service not configured".into(),
-                })?;
         Some(
             document_reader_ops
                 .upsert_note(auth_user.user_id, joined.document.id, note_body)

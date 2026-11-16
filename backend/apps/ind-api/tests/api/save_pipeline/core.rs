@@ -253,4 +253,12 @@ async fn extension_check_url_annotations_share_the_saved_document_contract() {
     )
     .await;
     assert!(cleared.is_null());
+    let context = assert_json_response(
+        client
+            .get(&format!("/api/v1/extension/entries/{entry_id}"))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    assert!(context["note"].is_null(), "{}", context["note"]);
 }

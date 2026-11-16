@@ -103,6 +103,12 @@ pub trait DocumentReaderOperations: Send + Sync {
         body: String,
     ) -> BoxFuture<'_, Result<DocumentNote, AppError>>;
 
+    fn delete_note(
+        &self,
+        user_id: UserId,
+        document_id: DocumentId,
+    ) -> BoxFuture<'_, Result<(), AppError>>;
+
     fn update_progress(
         &self,
         user_id: UserId,

@@ -106,16 +106,21 @@ impl DocumentNoteRepository for PgDocumentNoteRepository {
         &self,
         user_id: UserId,
         document_id: DocumentId,
+        outbox: Vec<OutboxEntry>,
     ) -> Result<(), AppError> {
+        let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
         sqlx::query!(
             "DELETE FROM item_notes WHERE document_id = $1 AND user_id = $2",
             document_id.into_uuid(),
             user_id.into_uuid()
         )
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(map_sqlx_error)?;
 
+        apply_outbox_tx(&mut tx, &outbox).await?;
+
+        tx.commit().await.map_err(map_sqlx_error)?;
         Ok(())
     }
 }
