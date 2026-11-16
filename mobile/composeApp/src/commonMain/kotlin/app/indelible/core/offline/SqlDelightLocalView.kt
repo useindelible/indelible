@@ -53,6 +53,7 @@ internal fun OfflineQueries.acknowledge(
     if (row.kind == OutboxKind.DOCUMENT_NOTE && ackedNoteUpdatedAt != null) {
         rebaseNotes(row, ackedNoteUpdatedAt)
     }
+    if (row.kind.isHighlight()) acknowledgeHighlight(row)
     when (row.kind) {
         OutboxKind.DOCUMENT_NOTE,
         OutboxKind.HIGHLIGHT_COLOR,
@@ -68,6 +69,41 @@ internal fun OfflineQueries.acknowledge(
         raiseAckedProgressSeq(seq = event.originSeq, scope = row.scope, document_id = row.documentId)
     }
 }
+
+private fun OfflineQueries.acknowledgeHighlight(acked: OutboxRow) {
+    val server = serverHighlight(acked.scope, acked.entityId).executeAsOneOrNull()?.let(::decodeHighlight)
+    when (val next = applyPayload(server, acked.payload, acked.documentId)) {
+        null -> deleteServerHighlight(acked.scope, acked.entityId)
+        else -> upsertServerHighlight(acked.scope, acked.entityId, acked.documentId, encodeHighlight(next))
+    }
+}
+
+/** Puts the server's highlights back in the copy with the live queued changes replayed on top. */
+internal fun OfflineQueries.rebuildCachedHighlights(
+    scope: String,
+    documentId: String,
+) {
+    val server = serverHighlightsForDocument(scope, documentId).executeAsList().map(::decodeHighlight)
+    writeCachedHighlights(scope, documentId, localChanges(scope, documentId).highlights(server))
+}
+
+internal fun OfflineQueries.writeCachedHighlights(
+    scope: String,
+    documentId: String,
+    highlights: List<CachedHighlight>,
+) {
+    deleteHighlightsForDocument(scope, documentId)
+    highlights.forEach { highlight ->
+        val updatedAt = highlight.updatedAtEpochMs ?: 0L
+        upsertCachedHighlight(scope, highlight.id, documentId, encodeHighlight(highlight), updatedAt)
+    }
+}
+
+private val highlightSerializer = CachedHighlight.serializer()
+
+internal fun encodeHighlight(value: CachedHighlight): String = offlineJson.encodeToString(highlightSerializer, value)
+
+private fun decodeHighlight(json: String): CachedHighlight = offlineJson.decodeFromString(highlightSerializer, json)
 
 // The acked text is now the server's; a later note that had conflicted was judged against a version that
 // is gone, so it goes back to pending for the sender to check again.

@@ -38,6 +38,15 @@ CREATE TABLE cached_highlight (
     PRIMARY KEY (scope, id)
 );
 
+-- The server's version of each cached highlight, so a discarded change can be taken back out of the copy.
+CREATE TABLE server_highlight (
+    scope TEXT NOT NULL,
+    id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    PRIMARY KEY (scope, id)
+);
+
 CREATE TABLE outbox (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     scope TEXT NOT NULL,
@@ -286,16 +295,41 @@ DELETE FROM cached_highlight WHERE scope = ? AND id = ?;
 deleteHighlightsForDocument:
 DELETE FROM cached_highlight WHERE scope = ? AND document_id = ?;
 
-deleteHighlightsWithoutLiveRows:
-DELETE FROM cached_highlight
-WHERE scope = :scope AND document_id = :document_id
-  AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+deleteHighlightsWithoutLiveRows {
+  DELETE FROM cached_highlight
+  WHERE scope = :scope AND document_id = :document_id
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+  DELETE FROM server_highlight
+  WHERE scope = :scope AND document_id = :document_id
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+}
 
-deleteOrphanHighlights:
-DELETE FROM cached_highlight
-WHERE scope = :scope
-  AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
-  AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+deleteOrphanHighlights {
+  DELETE FROM cached_highlight
+  WHERE scope = :scope
+    AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+  DELETE FROM server_highlight
+  WHERE scope = :scope
+    AND document_id NOT IN (SELECT document_id FROM cached_document WHERE scope = :scope)
+    AND id NOT IN (SELECT entity_id FROM outbox WHERE scope = :scope AND superseded = 0);
+}
+
+upsertServerHighlight:
+INSERT OR REPLACE INTO server_highlight(scope, id, document_id, payload_json)
+VALUES (?, ?, ?, ?);
+
+deleteServerHighlight:
+DELETE FROM server_highlight WHERE scope = ? AND id = ?;
+
+deleteServerHighlightsForDocument:
+DELETE FROM server_highlight WHERE scope = ? AND document_id = ?;
+
+serverHighlight:
+SELECT payload_json FROM server_highlight WHERE scope = ? AND id = ?;
+
+serverHighlightsForDocument:
+SELECT payload_json FROM server_highlight WHERE scope = ? AND document_id = ?;
 
 highlightsForDocument:
 SELECT * FROM cached_highlight WHERE scope = ? AND document_id = ?;
@@ -379,6 +413,7 @@ purgeRows {
   DELETE FROM cached_document WHERE scope = :scope;
   DELETE FROM cached_asset WHERE scope = :scope;
   DELETE FROM cached_highlight WHERE scope = :scope;
+  DELETE FROM server_highlight WHERE scope = :scope;
   DELETE FROM outbox WHERE scope = :scope;
   DELETE FROM document_revision WHERE scope = :scope;
   DELETE FROM list_snapshot WHERE scope = :scope;

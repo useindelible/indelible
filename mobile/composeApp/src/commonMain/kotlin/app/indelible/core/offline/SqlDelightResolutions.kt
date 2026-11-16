@@ -79,11 +79,12 @@ internal class SqlDelightResolutions(
             OutboxKind.HIGHLIGHT_CREATE -> {
                 queries.deleteBlockedRowsForEntity(scope, row.entityId)
                 deleted += queries.changedRows().executeAsOne().toInt()
-                queries.deleteCachedHighlight(scope, row.entityId)
+                queries.deleteServerHighlight(scope, row.entityId)
             }
             OutboxKind.DOCUMENT_NOTE -> rebuildNote(scope, row.documentId)
             else -> Unit
         }
+        if (row.kind.isHighlight()) queries.rebuildCachedHighlights(scope, row.documentId)
         queries.moveRevision(scope, row.documentId, row.payload)
         documents += row.documentId
         return deleted

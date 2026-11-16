@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS server_highlight (
+    scope TEXT NOT NULL,
+    id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    PRIMARY KEY (scope, id)
+);
+-- A copy from before this table cannot tell its queued edits from the server's text, so it takes the
+-- copy as it stands; the next refresh replaces it with the server's own.
+INSERT OR IGNORE INTO server_highlight(scope, id, document_id, payload_json)
+SELECT scope, id, document_id, payload_json FROM cached_highlight;

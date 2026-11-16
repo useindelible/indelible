@@ -53,19 +53,19 @@ private val V1_OUTBOX =
 private val LIST_SNAPSHOT_COLUMNS =
     listOf("scope", "list_key", "position", "item_id", "document_id", "document_type", "title", "row_json", "seen_at")
 
+private val HIGHLIGHT_COLUMNS = listOf("scope", "id", "document_id", "payload_json", "updated_at")
+
 class OfflineMigrationTest {
     @Test
     fun aVersionOneOutboxGainsTheFailureColumn() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        driver.execute(null, V1_OUTBOX, 0)
-        driver.execute(null, V1_CACHED_DOCUMENT, 0)
+        val driver = versionOne()
 
         OfflineDatabase.Schema.migrate(driver, 1, OfflineDatabase.Schema.version).value
 
         val columns = columnsOf(driver, "outbox")
         assertTrue("failure_json" in columns, columns.toString())
         assertTrue("note_server_body" in columnsOf(driver, "cached_document"))
-        assertEquals(4L, OfflineDatabase.Schema.version)
+        assertEquals(5L, OfflineDatabase.Schema.version)
     }
 
     @Test
@@ -90,9 +90,7 @@ class OfflineMigrationTest {
 
     @Test
     fun aVersionTwoCopyKeepsItsNoteAsTheServersUnlessAnEditIsQueued() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        driver.execute(null, V1_OUTBOX, 0)
-        driver.execute(null, V1_CACHED_DOCUMENT, 0)
+        val driver = versionOne()
         driver.execute(null, "ALTER TABLE outbox ADD COLUMN failure_json TEXT", 0)
         driver.execute(null, cachedDocument("doc_synced", "server words"), 0)
         driver.execute(null, cachedDocument("doc_edited", "local words"), 0)
@@ -103,10 +101,27 @@ class OfflineMigrationTest {
         assertEquals(mapOf("doc_synced" to "server words", "doc_edited" to null), serverNotes(driver))
     }
 
-    private fun versionThreeWithoutListSnapshots(): JdbcSqliteDriver {
+    @Test
+    fun aCopyFromBeforeServerHighlightsTakesItsHighlightsAsTheServers() {
+        val driver = versionOne()
+        driver.execute(null, "INSERT INTO cached_highlight VALUES ('s', 'hlt_1', 'doc_1', '{\"color\":\"red\"}', 5)", 0)
+
+        OfflineDatabase.Schema.migrate(driver, 1, OfflineDatabase.Schema.version).value
+
+        val seeded = "server_highlight WHERE id = 'hlt_1' AND payload_json = '{\"color\":\"red\"}'"
+        assertEquals(1L, countOf(driver, seeded))
+    }
+
+    private fun versionOne(): JdbcSqliteDriver {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         driver.execute(null, V1_OUTBOX, 0)
         driver.execute(null, V1_CACHED_DOCUMENT, 0)
+        driver.execute(null, "CREATE TABLE cached_highlight (${HIGHLIGHT_COLUMNS.joinToString()})", 0)
+        return driver
+    }
+
+    private fun versionThreeWithoutListSnapshots(): JdbcSqliteDriver {
+        val driver = versionOne()
         driver.execute(null, "ALTER TABLE outbox ADD COLUMN failure_json TEXT", 0)
         driver.execute(null, "ALTER TABLE cached_document ADD COLUMN note_server_body TEXT", 0)
         return driver
