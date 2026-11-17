@@ -181,7 +181,7 @@ pub async fn refresh(
         .auth_service
         .refresh(&raw_refresh, ip, user_agent)
         .await
-        .map_err(ApiError::from)?;
+        .map_err(ApiError::refresh_rejected)?;
 
     let mut cookie_headers = HeaderMap::new();
     if !is_non_browser_client(client_type)
