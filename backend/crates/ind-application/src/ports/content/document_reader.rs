@@ -1,9 +1,11 @@
 use super::*;
+use chrono::{DateTime, Utc};
 use ind_domain::{
     Document, DocumentAsset, DocumentId, EventOrigin, LibraryEntry, NewReadingEvent,
     ReadingPosition, UserDocumentState,
 };
 
+use crate::repos::document_note::NoteWrite;
 use crate::repos::epub_format::EpubChapterListState;
 use crate::repos::user_document_state::AppendOutcome;
 
@@ -96,12 +98,15 @@ pub trait DocumentReaderOperations: Send + Sync {
         document_id: DocumentId,
     ) -> BoxFuture<'_, Result<Option<DocumentNote>, AppError>>;
 
+    /// `base` is the note version the client last saw; the write is refused with the stored
+    /// note when that version is stale. No base writes unconditionally.
     fn upsert_note(
         &self,
         user_id: UserId,
         document_id: DocumentId,
         body: String,
-    ) -> BoxFuture<'_, Result<DocumentNote, AppError>>;
+        base: Option<DateTime<Utc>>,
+    ) -> BoxFuture<'_, Result<NoteWrite, AppError>>;
 
     fn update_progress(
         &self,

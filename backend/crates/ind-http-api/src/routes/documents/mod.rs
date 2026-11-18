@@ -31,8 +31,8 @@ use crate::state::AppState;
 
 pub(crate) use dto::{
     AppendReadingEventsBody, AppendReadingEventsResponse, DocumentAssetResponse,
-    DocumentNoteResponse, DocumentReaderAssetResponse, DocumentReaderResponse,
-    DocumentReprocessResponse, DocumentUpsertNoteBody, ReadingAnchorSchema,
+    DocumentNoteConflictResponse, DocumentNoteResponse, DocumentReaderAssetResponse,
+    DocumentReaderResponse, DocumentReprocessResponse, DocumentUpsertNoteBody, ReadingAnchorSchema,
     ReadingAnchorSchemaFlat, ReadingEventBody, ReadingPositionSchema, UpdateDocumentProgressBody,
     parse_document_id,
 };

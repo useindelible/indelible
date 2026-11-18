@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO item_notes (id, document_id, user_id, body, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $5) ON CONFLICT (user_id, document_id) WHERE document_id IS NOT NULL DO UPDATE SET body = EXCLUDED.body, updated_at = EXCLUDED.updated_at RETURNING id, document_id AS \"document_id!\", user_id, body, created_at, updated_at",
+  "query": "INSERT INTO item_notes (id, document_id, user_id, body, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $5) ON CONFLICT (user_id, document_id) WHERE document_id IS NOT NULL DO UPDATE SET body = EXCLUDED.body, updated_at = GREATEST(EXCLUDED.updated_at, item_notes.updated_at + interval '1 millisecond') WHERE $6::timestamptz IS NULL OR date_trunc('milliseconds', item_notes.updated_at) <= date_trunc('milliseconds', $6::timestamptz) RETURNING id, document_id AS \"document_id!\", user_id, body, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -40,6 +40,7 @@
         "Uuid",
         "Uuid",
         "Text",
+        "Timestamptz",
         "Timestamptz"
       ]
     },
@@ -52,5 +53,5 @@
       false
     ]
   },
-  "hash": "fccc2cb9f2906e33547a725d2924043fc2d8ef8f64e2394c010bc257de89c4cb"
+  "hash": "dc0321125af551c96a78f4ba473a2106d51731ad0186ebe80c6f5eb5737fbeac"
 }

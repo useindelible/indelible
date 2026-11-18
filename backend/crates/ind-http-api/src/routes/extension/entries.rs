@@ -2,6 +2,7 @@ use super::library_alias::{
     library_context_response, library_entry_for_alias, patch_library_context_response,
 };
 use super::*;
+use ind_application::repos::document_note::NoteWrite;
 
 pub(super) fn parse_extension_document_type(s: Option<&str>) -> Result<Option<ItemType>, ApiError> {
     let Some(s) = s else { return Ok(None) };
@@ -390,12 +391,19 @@ pub async fn extension_upsert_note(
                 .ok_or(ApiError::ServiceUnavailable {
                     message: "document reader service not configured".into(),
                 })?;
-        Some(
-            document_reader_ops
-                .upsert_note(auth_user.user_id, joined.document.id, note_body)
-                .await
-                .map_err(ApiError::from)?,
-        )
+        match document_reader_ops
+            .upsert_note(auth_user.user_id, joined.document.id, note_body, None)
+            .await
+            .map_err(ApiError::from)?
+        {
+            NoteWrite::Written(note) => Some(note),
+            NoteWrite::Conflict(_) => {
+                return Err(ApiError::Conflict {
+                    entity: "DocumentNote",
+                    message: "the note changed while it was being written".into(),
+                });
+            }
+        }
     };
 
     Ok(axum::Json(note.map(|n| ExtensionNoteResponse {
