@@ -652,6 +652,10 @@
     <string name="profile_settings">Réglages</string>
     <string name="profile_sign_out">Se déconnecter</string>
     <string name="profile_sign_out_confirm">Voulez-vous vraiment vous déconnecter ?</string>
+    <plurals name="profile_sign_out_waiting">
+        <item quantity="one">1 modification n’a pas encore atteint le serveur. La déconnexion la supprime de ce téléphone.</item>
+        <item quantity="other">%1$d modifications n’ont pas encore atteint le serveur. La déconnexion les supprime de ce téléphone.</item>
+    </plurals>
     <string name="profile_storage">Stockage et téléchargements</string>
     <string name="profile_storage_description">Copies hors ligne et modifications en attente de synchronisation</string>
     <string name="profile_storage_usage">Espace utilisé</string>
