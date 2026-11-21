@@ -25,6 +25,8 @@
 	let error = $state('');
 	let conflict = $state<DocumentNoteResponse | null>(null);
 	let refusedBody = $state('');
+	// The draft at refusal time tells a repeated delete apart from text typed since the conflict showed.
+	let refusedDraft = $state('');
 
 	const hasNote = $derived(!!note?.body);
 	const base = $derived(note?.updated_at ?? EPOCH);
@@ -59,6 +61,7 @@
 			if (refused) {
 				conflict = refused.note;
 				refusedBody = body;
+				refusedDraft = editText;
 				return;
 			}
 			if (failure || !data) throw failure;
@@ -73,7 +76,8 @@
 	}
 
 	function keepMine() {
-		if (conflict) writeNote(refusedBody === '' ? '' : editText, conflict.updated_at);
+		if (conflict)
+			writeNote(editText === refusedDraft ? refusedBody : editText, conflict.updated_at);
 	}
 
 	function useTheirs() {
@@ -124,7 +128,7 @@
 						type="button"
 						class="conflict-mine"
 						onclick={keepMine}
-						disabled={saving || (refusedBody !== '' && !editText.trim())}
+						disabled={saving || (editText !== refusedDraft && !editText.trim())}
 					>
 						{$t('library_notebook_conflict_keep_mine')}
 					</button>

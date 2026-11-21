@@ -147,6 +147,37 @@ describe('DocumentNoteSection', () => {
 		expect((screen.getByText('Keep mine') as HTMLButtonElement).disabled).toBe(true);
 	});
 
+	it('keeps mine after a refused delete by deleting', async () => {
+		upsertNote
+			.mockResolvedValueOnce(conflict('theirs', T2))
+			.mockResolvedValueOnce(written(stored('', T2)));
+		render(DocumentNoteSection, { documentId: 'doc_a' });
+		await openEditor('first');
+
+		await fireEvent.click(screen.getByText('Delete'));
+		await screen.findByRole('alert');
+		await fireEvent.click(screen.getByText('Keep mine'));
+
+		await waitFor(() => expect(sentBodies()[1]).toEqual({ body: '', base_updated_at: T2 }));
+	});
+
+	it('keeps what was typed after a refused delete instead of deleting it', async () => {
+		upsertNote
+			.mockResolvedValueOnce(conflict('theirs', T2))
+			.mockResolvedValueOnce(written(stored('typed since', '2026-11-12T22:30:00.000Z')));
+		render(DocumentNoteSection, { documentId: 'doc_a' });
+		const input = await openEditor('first');
+
+		await fireEvent.click(screen.getByText('Delete'));
+		await screen.findByRole('alert');
+		await type(input, 'typed since');
+		await fireEvent.click(screen.getByText('Keep mine'));
+
+		await waitFor(() =>
+			expect(sentBodies()[1]).toEqual({ body: 'typed since', base_updated_at: T2 })
+		);
+	});
+
 	it('reports a note that could not be loaded', async () => {
 		getNote.mockResolvedValue({ data: undefined, error: {}, response: { status: 503 } });
 		render(DocumentNoteSection, { documentId: 'doc_a' });
