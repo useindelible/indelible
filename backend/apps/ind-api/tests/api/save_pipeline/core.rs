@@ -297,3 +297,46 @@ async fn extension_note_with_a_stale_base_is_refused_with_the_stored_note() {
     assert_eq!(refused["note"]["body"], "first");
     assert_eq!(written["body"], "second");
 }
+
+#[tokio::test]
+async fn extension_note_clear_keeps_the_stamp_the_precondition_compares_against() {
+    let scenario = SaveScenario::new().await;
+    let saved = scenario
+        .extension_reader_save("https://example.com/save-pipeline/extension-note-clear")
+        .await;
+    let entry_id = saved["library_entry_id"].as_str().unwrap();
+    let client = scenario.extension_client();
+    let note_path = format!("/api/v1/extension/entries/{entry_id}/note");
+    let first = assert_json_response(
+        client
+            .put_json(&note_path, &serde_json::json!({"body": "first"}))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+
+    let cleared = assert_json_response(
+        client
+            .put_json(&note_path, &serde_json::json!({"body": ""}))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    let context = assert_json_response(
+        client
+            .get(&format!("/api/v1/extension/entries/{entry_id}"))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+    let stale = client
+        .put_json(
+            &note_path,
+            &serde_json::json!({"body": "stale", "base_updated_at": first["updated_at"]}),
+        )
+        .await;
+
+    assert!(cleared.is_null());
+    assert!(context["note"].is_null(), "{}", context["note"]);
+    assert_eq!(stale.status(), StatusCode::CONFLICT);
+}
