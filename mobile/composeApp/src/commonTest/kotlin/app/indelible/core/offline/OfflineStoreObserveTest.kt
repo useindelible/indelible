@@ -89,7 +89,7 @@ class OfflineStoreObserveTest {
             s.store.markAttempt(s.scope, retrying, now = 1L, nextAttemptAt = 2L, error = "503")
             s.enqueue(OutboxPayload.HighlightColor("hlt_1", "blue"))
             val failed = s.enqueue(OutboxPayload.HighlightTags("hlt_1", listOf("x")))
-            s.store.markFailed(s.scope, failed, "rejected")
+            s.store.markFailed(s.scope, failed, rejected("rejected"))
             s.store.enqueue(s.session, OutboxKind.DOCUMENT_NOTE, "doc_2", "doc_2") {
                 OutboxPayload.DocumentNote("b", null) to Unit
             }

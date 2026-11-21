@@ -9,9 +9,13 @@ import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
 import app.indelible.core.offline.OutboxState
+import app.indelible.core.offline.ScopeNotLiveException
+import app.indelible.core.offline.Session
 import app.indelible.core.offline.SessionRegistry
+import app.indelible.core.offline.StaleWriteException
 import app.indelible.core.storage.UserPreferencesStorage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +26,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import okio.IOException
@@ -33,8 +38,13 @@ class StorageViewModel(
     private val downloads: DownloadManager,
     private val preferences: UserPreferencesStorage,
     private val requestDrain: () -> Unit,
+    private val unreachable: Flow<Boolean> = flowOf(false),
 ) : ViewModel() {
     private val capBytes = MutableStateFlow<Long?>(null)
+    private val _notices = Channel<StorageNotice>(Channel.BUFFERED)
+
+    /** Each resolution's outcome once, in order; a screen collects it while it is shown. */
+    val notices: Flow<StorageNotice> = _notices.receiveAsFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<StorageUiState> =
@@ -60,12 +70,71 @@ class StorageViewModel(
     fun retry(changeId: String) {
         val scope = currentScope() ?: return
         val change = state.value.changes.firstOrNull { it.id == changeId }
+        if (change?.canRetry == false) return
         val rowIds = change?.rowIds ?: listOf(changeId)
         viewModelScope.launch {
             val retried = rowIds.map { store.retryRow(scope, it) }
             if (retried.any { it }) requestDrain()
         }
     }
+
+    /** Sends what is queued now, whatever backoff the rows were in. */
+    fun retryNow() {
+        val scope = currentScope() ?: return
+        viewModelScope.launch {
+            store.resetBackoff(scope)
+            requestDrain()
+        }
+    }
+
+    /** Deletes the change and the changes blocked behind it; nothing reaches the server. */
+    fun discard(changeId: String) {
+        val session = registry.current.value.session ?: return
+        val change = state.value.changes.firstOrNull { it.id == changeId }?.takeIf { it.canDiscard } ?: return
+        val rowIds = change.rowIds + change.blocked.flatMap { it.rowIds }
+        viewModelScope.launch { withSession { store.discardRows(session, rowIds) } }
+    }
+
+    /** [seenServerUpdatedAt] is the server version the sheet showed; a row that moved on since is refused. */
+    fun keepMine(
+        changeId: String,
+        seenServerUpdatedAt: Long,
+    ) {
+        resolveNote(changeId, seenServerUpdatedAt, StorageNotice.KEPT_MINE) { session, id, seen ->
+            store.keepLocalNote(session, id, seen).also { if (it) requestDrain() }
+        }
+    }
+
+    fun keepOther(
+        changeId: String,
+        seenServerUpdatedAt: Long,
+    ) {
+        resolveNote(changeId, seenServerUpdatedAt, StorageNotice.KEPT_OTHER, store::keepServerNote)
+    }
+
+    private fun resolveNote(
+        changeId: String,
+        seenServerUpdatedAt: Long,
+        kept: StorageNotice,
+        resolve: suspend (Session, String, Long) -> Boolean,
+    ) {
+        val session = registry.current.value.session ?: return
+        viewModelScope.launch {
+            val outcome = withSession { resolve(session, changeId, seenServerUpdatedAt) }
+            val done = outcome == true
+            _notices.send(if (done) kept else StorageNotice.CHANGED_REFRESHED)
+        }
+    }
+
+    // A session that ended between the tap and the write has nothing left to resolve.
+    private suspend fun <T> withSession(block: suspend () -> T): T? =
+        try {
+            block()
+        } catch (ignored: StaleWriteException) {
+            null
+        } catch (ignored: ScopeNotLiveException) {
+            null
+        }
 
     /** Leaves the copy in place; only the mark that protects it from eviction goes. */
     fun unpin(documentId: String) {
@@ -99,12 +168,14 @@ class StorageViewModel(
             store.observeCatalog(scope),
             store.observeOutbox(scope),
             capBytes.filterNotNull(),
-        ) { catalog, rows, cap ->
+            unreachable,
+        ) { catalog, rows, cap, serverUnreachable ->
             StorageUiState(
                 capBytes = cap,
                 kept = catalog.filter { it.pinned },
                 cached = catalog.filterNot { it.pinned },
                 changes = pendingChanges(rows, catalog),
+                serverUnreachable = serverUnreachable,
             )
         }
 
@@ -138,6 +209,7 @@ internal fun pendingChanges(
         createdAt = row.createdAt,
         detail = row.payload.detail(),
         blocked = dependants,
+        failure = row.failure,
     )
     val progress = rows.filter { it.isLiveProgress() }.groupBy { it.documentId }
     return rows.mapNotNull { row ->
@@ -162,6 +234,7 @@ private fun List<OutboxRow>.progressChange(titles: Map<String, String?>): Pendin
         error = lastOrNull { it.lastError != null }?.lastError,
         createdAt = maxOf { it.createdAt },
         rowIds = map { it.id },
+        failure = firstOrNull { it.state == OutboxState.FAILED }?.failure,
     )
 
 private val STATUS_WEIGHT =

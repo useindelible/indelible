@@ -5,6 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -19,6 +21,8 @@ import app.indelible.auth.viewmodel.AuthViewModel
 import app.indelible.auth.viewmodel.ConnectServerViewModel
 import app.indelible.auth.viewmodel.ServerSetupState
 import app.indelible.ui.components.AppStartupSplash
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 object AuthRoutes {
     const val CONNECT_SERVER = "connect_server"
@@ -34,6 +38,7 @@ object AuthRoutes {
 fun AuthNavigation(
     viewModel: AuthViewModel,
     connectServerViewModel: ConnectServerViewModel,
+    waitingChanges: (serverUrl: Flow<String?>) -> Flow<Int> = { emptyFlow() },
 ) {
     val serverSetup by connectServerViewModel.setupState.collectAsState()
     if (serverSetup is ServerSetupState.Unknown) {
@@ -51,6 +56,9 @@ fun AuthNavigation(
         }
     val serverHost =
         (serverSetup as? ServerSetupState.Configured)?.let { ServerUrlForm.displayHost(it.serverUrl) }
+    val configuredUrl = rememberUpdatedState((serverSetup as? ServerSetupState.Configured)?.serverUrl)
+    val waiting by remember(waitingChanges) { waitingChanges(snapshotFlow { configuredUrl.value }) }
+        .collectAsState(initial = 0)
 
     val verificationEmail =
         when (val state = authState) {
@@ -103,6 +111,7 @@ fun AuthNavigation(
                     navController.navigate(AuthRoutes.FORGOT_PASSWORD)
                 },
                 serverHost = serverHost,
+                waitingChanges = waiting,
                 onChangeServer = {
                     navController.navigate(AuthRoutes.CONNECT_SERVER) {
                         launchSingleTop = true

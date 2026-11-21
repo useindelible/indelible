@@ -1,7 +1,6 @@
 package app.indelible.api
 
 import app.indelible.core.network.AuthenticatedApiTransport
-import app.indelible.core.offline.ApiOutboxSender
 import app.indelible.core.offline.OutboxKind
 import app.indelible.core.offline.OutboxPayload
 import app.indelible.core.offline.OutboxRow
@@ -10,6 +9,7 @@ import app.indelible.core.offline.SendOutcome
 import app.indelible.core.offline.Session
 import app.indelible.core.offline.SessionRegistry
 import app.indelible.core.offline.SessionState
+import app.indelible.core.offline.senderOver
 import app.indelible.core.storage.InMemoryTokenStorage
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -87,7 +87,7 @@ class ReadingEventsParityTest {
                     respond("""{"accepted":2,"replayed":0}""", HttpStatusCode.Accepted, jsonHeaders)
                 }
             val registry = SessionRegistry().apply { publish(SessionState(0, SESSION)) }
-            val sender = ApiOutboxSender(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = registry))
+            val sender = senderOver(AuthenticatedApiTransport(tokenStorage, engine = engine, registry = registry))
 
             val outcome =
                 sender.send(
@@ -99,7 +99,7 @@ class ReadingEventsParityTest {
                     ),
                 )
 
-            assertEquals(SendOutcome.Success, outcome)
+            assertEquals(SendOutcome.Success(), outcome)
             assertEquals(HttpMethod.Post, sent.method)
             assertEquals("/api/v1/documents/$DOCUMENT_ID/reading-events", sent.path)
             assertEquals("Bearer test-token", sent.authorization)

@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -12,6 +13,12 @@ fun reachableAgain(
     online: Flow<Boolean>,
     reachable: Flow<Boolean?>,
 ): Flow<Unit> = merge(online.risingEdges(), reachable.map { it == true }.risingEdges())
+
+/** The phone has a network but the last request to the server got no answer. */
+fun serverUnreachable(
+    online: Flow<Boolean>,
+    reachable: Flow<Boolean?>,
+): Flow<Boolean> = combine(online, reachable) { isOnline, up -> isOnline && up == false }
 
 private fun Flow<Boolean>.risingEdges(): Flow<Unit> =
     distinctUntilChanged()

@@ -14,7 +14,7 @@ class OfflineStoreRevisionTest {
 
             val note = s.enqueue(OutboxPayload.DocumentNote("mine", null))
             val afterEnqueue = s.revision()
-            s.store.markFailed(s.scope, note, "rejected")
+            s.store.markFailed(s.scope, note, rejected("rejected"))
             s.store.retryRow(s.scope, note)
             val afterFailAndRetry = s.revision()
             s.store.remove(s.scope, note)

@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS list_snapshot (
+    scope TEXT NOT NULL,
+    list_key TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    item_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    row_json TEXT NOT NULL,
+    seen_at INTEGER NOT NULL,
+    PRIMARY KEY (scope, list_key, position)
+);
+CREATE INDEX IF NOT EXISTS list_snapshot_document ON list_snapshot(scope, document_id);

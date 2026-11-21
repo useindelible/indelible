@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -55,6 +56,12 @@ class OfflineAccount(
             if (user != null || !current()) return user
         }
     }
+
+    fun waitingChanges(serverUrl: Flow<String?>): Flow<Int> =
+        combine(store.observeWaitingByScope(), serverUrl) { byScope, url ->
+            val origin = url?.let(::normalizedOrigin) ?: return@combine 0
+            byScope.filterKeys { it.substringBeforeLast('|') == origin }.values.sum()
+        }
 
     /** Runs inside a sign-in transition, once the user id is saved. */
     suspend fun register() {

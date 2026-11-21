@@ -27,6 +27,7 @@ internal fun outboxRowFrom(row: Outbox): OutboxRow =
         state = OutboxState.valueOf(row.state.uppercase()),
         lastError = row.last_error,
         superseded = row.superseded != 0L,
+        failure = row.failure_json?.let { offlineJson.decodeFromString(SyncFailure.serializer(), it) },
     )
 
 internal fun cachedDocumentRowFrom(row: Cached_document): CachedDocumentRow =

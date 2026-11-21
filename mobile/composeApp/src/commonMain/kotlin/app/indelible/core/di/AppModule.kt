@@ -42,6 +42,7 @@ import app.indelible.core.offline.ScopePurger
 import app.indelible.core.offline.SessionRegistry
 import app.indelible.core.offline.SessionTransitions
 import app.indelible.core.offline.SqlDelightOfflineStore
+import app.indelible.core.offline.serverUnreachable
 import app.indelible.core.storage.TokenStorage
 import app.indelible.core.storage.UserPreferencesStorage
 import app.indelible.db.DatabaseDriverFactory
@@ -119,7 +120,7 @@ internal fun appModule(
         single { OfflineDatabase(deps.databaseDriverFactory.createDriver()) }
         single { SessionRegistry() }
         single { LocalChangeEvents() }
-        single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get()) }
+        single<OfflineStore> { SqlDelightOfflineStore(get(), registry = get(), events = get()) }
         single {
             AuthenticatedApiTransport(
                 tokenStorage = get(),
@@ -211,7 +212,7 @@ private fun Module.readerRepositories() {
 }
 
 private fun Module.offlineServices(deps: AppDependencies) {
-    single<OutboxSender> { ApiOutboxSender(get()) }
+    single<OutboxSender> { ApiOutboxSender(get(), get()) }
     single {
         OutboxWorker(
             store = get(),
@@ -270,7 +271,15 @@ private fun Module.viewModels() {
     single { SearchViewModel(get()) }
     single { SidebarViewModel(get()) }
     single {
-        StorageViewModel(get(), get(), get(), get(), get<OutboxWorker>()::requestDrain)
+        val transport = get<AuthenticatedApiTransport>()
+        StorageViewModel(
+            registry = get(),
+            store = get(),
+            downloads = get(),
+            preferences = get(),
+            requestDrain = get<OutboxWorker>()::requestDrain,
+            unreachable = serverUnreachable(get<ConnectivityObserver>().online, transport.reachable),
+        )
     }
     single {
         val transport = get<AuthenticatedApiTransport>()

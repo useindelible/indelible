@@ -77,11 +77,12 @@ internal class SqlDelightOutbox(
     override suspend fun remove(
         scope: String,
         id: String,
+        ackedNoteUpdatedAt: Long?,
     ) {
         context.write {
             context.database.transaction {
                 val row = context.queries.outboxRow(scope, id).executeAsOneOrNull()
-                if (row != null) context.queries.acknowledge(outboxRowFrom(row))
+                if (row != null) context.queries.acknowledge(outboxRowFrom(row), ackedNoteUpdatedAt)
             }
         }
     }
@@ -107,22 +108,29 @@ internal class SqlDelightOutbox(
     override suspend fun markFailed(
         scope: String,
         id: String,
-        error: String?,
+        failure: SyncFailure,
     ) {
-        context.write {
-            context.queries.setState(OutboxState.FAILED.wireName(), error, scope, id)
-        }
+        context.write { setFailed(scope, id, failure) }
+    }
+
+    private fun setFailed(
+        scope: String,
+        id: String,
+        failure: SyncFailure,
+    ) {
+        val json = offlineJson.encodeToString(SyncFailure.serializer(), failure)
+        context.queries.setFailed(failure.serverMessage ?: failure.kind.name, json, scope, id)
     }
 
     override suspend fun failCreateAndBlockDependants(
         scope: String,
         id: String,
         entityId: String,
-        error: String?,
+        failure: SyncFailure,
     ) {
         context.write {
             context.database.transaction {
-                context.queries.setState(OutboxState.FAILED.wireName(), error, scope, id)
+                setFailed(scope, id, failure)
                 failCreateHook()
                 context.queries.setStateForEntity(
                     OutboxState.BLOCKED.wireName(),
@@ -132,6 +140,10 @@ internal class SqlDelightOutbox(
                 )
             }
         }
+    }
+
+    override suspend fun resetBackoff(scope: String) {
+        context.write { context.queries.resetBackoff(scope) }
     }
 
     override suspend fun retryRow(
@@ -178,6 +190,13 @@ internal class SqlDelightOutboxObservation(
             .asFlow()
             .mapToList(context.dispatcher)
             .map { rows -> rows.map(::outboxRowFrom) }
+
+    override fun observeWaitingByScope(): Flow<Map<String, Int>> =
+        context.queries
+            .waitingChangesByScope()
+            .asFlow()
+            .mapToList(context.dispatcher)
+            .map { rows -> rows.associate { it.scope to it.waiting.toInt() } }
 
     override fun observeDocumentSyncCounts(scope: String): Flow<Map<String, DocumentSyncCounts>> =
         context.queries

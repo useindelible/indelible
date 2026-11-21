@@ -1,6 +1,7 @@
 package app.indelible.core.offline
 
 import app.indelible.db.OfflineQueries
+import kotlinx.serialization.encodeToString
 
 private val NO_REVISION = DocumentRevision(content = 0, position = 0, ackedProgressSeq = -1)
 
@@ -44,8 +45,15 @@ internal fun OfflineQueries.moveRevision(
 }
 
 // An older same-field row here failed or was retried after, so it is superseded, never replayed over the server value.
-internal fun OfflineQueries.acknowledge(row: OutboxRow) {
+internal fun OfflineQueries.acknowledge(
+    row: OutboxRow,
+    ackedNoteUpdatedAt: Long? = null,
+) {
     deleteOutboxRow(row.scope, row.id)
+    if (row.kind == OutboxKind.DOCUMENT_NOTE && ackedNoteUpdatedAt != null) {
+        rebaseNotes(row, ackedNoteUpdatedAt)
+    }
+    if (row.kind.isHighlight()) acknowledgeHighlight(row)
     when (row.kind) {
         OutboxKind.DOCUMENT_NOTE,
         OutboxKind.HIGHLIGHT_COLOR,
@@ -59,5 +67,56 @@ internal fun OfflineQueries.acknowledge(row: OutboxRow) {
     val event = row.payload as? OutboxPayload.ReadingEvent
     if (event?.progressBasisPoints != null) {
         raiseAckedProgressSeq(seq = event.originSeq, scope = row.scope, document_id = row.documentId)
+    }
+}
+
+private fun OfflineQueries.acknowledgeHighlight(acked: OutboxRow) {
+    val server = serverHighlight(acked.scope, acked.entityId).executeAsOneOrNull()?.let(::decodeHighlight)
+    when (val next = applyPayload(server, acked.payload, acked.documentId)) {
+        null -> deleteServerHighlight(acked.scope, acked.entityId)
+        else -> upsertServerHighlight(acked.scope, acked.entityId, acked.documentId, encodeHighlight(next))
+    }
+}
+
+/** Puts the server's highlights back in the copy with the live queued changes replayed on top. */
+internal fun OfflineQueries.rebuildCachedHighlights(
+    scope: String,
+    documentId: String,
+) {
+    val server = serverHighlightsForDocument(scope, documentId).executeAsList().map(::decodeHighlight)
+    writeCachedHighlights(scope, documentId, localChanges(scope, documentId).highlights(server))
+}
+
+internal fun OfflineQueries.writeCachedHighlights(
+    scope: String,
+    documentId: String,
+    highlights: List<CachedHighlight>,
+) {
+    deleteHighlightsForDocument(scope, documentId)
+    highlights.forEach { highlight ->
+        val updatedAt = highlight.updatedAtEpochMs ?: 0L
+        upsertCachedHighlight(scope, highlight.id, documentId, encodeHighlight(highlight), updatedAt)
+    }
+}
+
+private val highlightSerializer = CachedHighlight.serializer()
+
+internal fun encodeHighlight(value: CachedHighlight): String = offlineJson.encodeToString(highlightSerializer, value)
+
+private fun decodeHighlight(json: String): CachedHighlight = offlineJson.decodeFromString(highlightSerializer, json)
+
+// The acked text is now the server's; a later note that had conflicted was judged against a version that
+// is gone, so it goes back to pending for the sender to check again.
+private fun OfflineQueries.rebaseNotes(
+    acked: OutboxRow,
+    serverUpdatedAt: Long,
+) {
+    val body = (acked.payload as OutboxPayload.DocumentNote).body
+    setCachedServerNoteStamp(body, serverUpdatedAt, acked.scope, acked.documentId)
+    for (later in laterLiveNotesForDocument(acked.scope, acked.documentId, acked.seq).executeAsList()) {
+        val row = outboxRowFrom(later)
+        val rebased = (row.payload as OutboxPayload.DocumentNote).copy(baseUpdatedAtEpochMs = serverUpdatedAt)
+        setPayloadJson(offlineJson.encodeToString<OutboxPayload>(rebased), row.scope, row.id)
+        if (row.failure?.kind == SyncFailure.Kind.NOTE_CONFLICT) resetForRetry(row.scope, row.id)
     }
 }

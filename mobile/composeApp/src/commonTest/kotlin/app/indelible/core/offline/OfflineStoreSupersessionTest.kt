@@ -15,7 +15,7 @@ class OfflineStoreSupersessionTest {
         runTest {
             val s = signedInStore()
             val older = s.enqueue(OutboxPayload.DocumentNote("older", null))
-            s.store.markFailed(s.scope, older, "rejected")
+            s.store.markFailed(s.scope, older, rejected("rejected"))
             s.store.remove(s.scope, s.enqueue(OutboxPayload.DocumentNote("newer", null)))
 
             s.installNow(serverDocument(note = "newer"))
@@ -30,7 +30,7 @@ class OfflineStoreSupersessionTest {
         runTest {
             val s = signedInStore()
             val older = s.enqueue(OutboxPayload.HighlightColor("hlt_1", "red"))
-            s.store.markFailed(s.scope, older, "rejected")
+            s.store.markFailed(s.scope, older, rejected("rejected"))
             s.store.remove(s.scope, s.enqueue(OutboxPayload.HighlightColor("hlt_1", "blue")))
 
             s.installNow(serverDocument(highlights = listOf(serverHighlight("hlt_1", color = "blue"))))
@@ -43,7 +43,7 @@ class OfflineStoreSupersessionTest {
         runTest {
             val s = signedInStore()
             val older = s.enqueueProgress(basisPoints = 3_000)
-            s.store.markFailed(s.scope, older, "rejected")
+            s.store.markFailed(s.scope, older, rejected("rejected"))
             s.store.remove(s.scope, s.enqueueProgress(basisPoints = 6_000))
 
             s.installNow(serverDocument(progress = Progress(percent = 60, maxPercent = 60)))
@@ -57,7 +57,7 @@ class OfflineStoreSupersessionTest {
         runTest {
             val s = signedInStore()
             val older = s.enqueueProgress(basisPoints = 3_000)
-            s.store.markFailed(s.scope, older, "rejected")
+            s.store.markFailed(s.scope, older, rejected("rejected"))
             s.store.remove(s.scope, s.enqueueProgress(basisPoints = 6_000))
 
             assertTrue(s.store.retryRow(s.scope, older))
@@ -70,8 +70,8 @@ class OfflineStoreSupersessionTest {
             val s = signedInStore()
             val colour = s.enqueue(OutboxPayload.HighlightColor("hlt_1", "red"))
             val tags = s.enqueue(OutboxPayload.HighlightTags("hlt_1", listOf("a")))
-            s.store.markFailed(s.scope, colour, "rejected")
-            s.store.markFailed(s.scope, tags, "rejected")
+            s.store.markFailed(s.scope, colour, rejected("rejected"))
+            s.store.markFailed(s.scope, tags, rejected("rejected"))
             val unrelated = s.enqueue(OutboxPayload.HighlightColor("hlt_2", "red"))
 
             s.store.remove(s.scope, s.enqueue(OutboxPayload.HighlightDelete("hlt_1")))
@@ -94,7 +94,7 @@ class OfflineStoreSupersessionTest {
         runTest {
             val s = signedInStore()
             val tags = s.enqueue(OutboxPayload.HighlightTags("hlt_1", listOf("mine")))
-            s.store.markFailed(s.scope, tags, "rejected")
+            s.store.markFailed(s.scope, tags, rejected("rejected"))
             s.store.remove(s.scope, s.enqueue(OutboxPayload.HighlightColor("hlt_1", "blue")))
 
             s.installNow(serverDocument(highlights = listOf(serverHighlight("hlt_1", color = "blue"))))
@@ -110,7 +110,7 @@ class OfflineStoreSupersessionTest {
         runTest {
             val s = signedInStore()
             val older = s.enqueue(OutboxPayload.DocumentNote("older", null))
-            s.store.markFailed(s.scope, older, "rejected")
+            s.store.markFailed(s.scope, older, rejected("rejected"))
             s.store.remove(s.scope, s.enqueue(OutboxPayload.DocumentNote("newer", null)))
 
             assertFalse(s.store.retryRow(s.scope, older))

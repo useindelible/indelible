@@ -42,7 +42,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 
-/** [bodyText] is empty on success; a caller that only needs the status pays nothing for the body. */
+/** [bodyText] is empty on success unless the caller asked for it; one that only needs the status pays nothing. */
 data class RawApiResponse(
     val status: Int,
     val retryAfterSeconds: Long?,
@@ -151,6 +151,7 @@ class AuthenticatedApiTransport(
     /** Rethrows a 401 inside [block] to trigger the refresh; one reaching the caller already survived a refresh. */
     suspend fun rawAuthenticatedRequest(
         session: Session,
+        readSuccessBody: Boolean = false,
         block: suspend (client: HttpClient, baseUrl: String, token: String) -> HttpResponse,
     ): RawApiResponse =
         try {
@@ -162,7 +163,7 @@ class AuthenticatedApiTransport(
                 RawApiResponse(
                     status = response.status.value,
                     retryAfterSeconds = response.headers[HttpHeaders.RetryAfter]?.let(::retryAfterSeconds),
-                    bodyText = if (response.status.isSuccess()) "" else response.bodyAsText(),
+                    bodyText = if (response.status.isSuccess() && !readSuccessBody) "" else response.bodyAsText(),
                 )
             }.also { if (it.status in SUCCESS_STATUS_RANGE) requestSucceededState.tryEmit(Unit) }
         } catch (error: ApiException) {

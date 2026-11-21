@@ -1055,6 +1055,41 @@
         ],
         "type": "object"
       },
+      "DocumentNoteConflictResponse": {
+        "description": "The 409 problem body of a note write whose `base_updated_at` is older than the stored note.",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "note": {
+            "$ref": "#/components/schemas/DocumentNoteResponse",
+            "description": "The note as stored now; the client resolves against this version."
+          },
+          "status": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code",
+          "note"
+        ],
+        "type": "object"
+      },
       "DocumentNoteResponse": {
         "properties": {
           "body": {
@@ -1326,8 +1361,20 @@
       },
       "DocumentUpsertNoteBody": {
         "properties": {
+          "base_updated_at": {
+            "description": "The note's `updated_at` this client last saw. When the stored note is newer, the write is\nrefused with 409 and the stored note. Absent: the write always applies.",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "body": {
             "type": "string"
+          },
+          "force": {
+            "description": "Write even when the stored note is newer than `base_updated_at`.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -10995,6 +11042,16 @@
           },
           "404": {
             "description": "Document not found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentNoteConflictResponse"
+                }
+              }
+            },
+            "description": "The note changed since the base the client saw"
           },
           "422": {
             "description": "Document not yet rendered"
