@@ -209,6 +209,7 @@
     <string name="home_offline_chip_back">Reconnecté</string>
     <string name="home_offline_chip_offline">Hors ligne</string>
     <string name="home_offline_chip_synced">En ligne</string>
+    <string name="home_offline_chip_unreachable">Serveur sans réponse</string>
     <string name="home_offline_empty_body">Rien n’est encore enregistré sur ce téléphone. Les éléments que vous ouvrez sont gardés pour plus tard, et vous pouvez garder n’importe quel élément hors ligne.</string>
     <string name="home_offline_empty_body_last_loaded">Rien n’est encore enregistré sur ce téléphone. Ce que vous avez vu en dernier reste consultable ; l’ouvrir demande une connexion tant qu’il n’est pas copié sur le téléphone.</string>
     <string name="home_offline_empty_next">La prochaine fois que vous êtes en ligne</string>

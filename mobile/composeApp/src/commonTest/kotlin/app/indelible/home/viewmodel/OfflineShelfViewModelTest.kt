@@ -133,6 +133,8 @@ class OfflineShelfViewModelTest {
             reachable.value = false
             runCurrent()
             assertEquals(true, shelf.progress.value.unreachable)
+            assertEquals(true, shelf.state.value.unreachable)
+            assertEquals(checkNotNull(shelf.host.value), shelf.state.value.host)
         }
 
     @Test

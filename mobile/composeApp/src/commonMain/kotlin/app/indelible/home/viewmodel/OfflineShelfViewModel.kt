@@ -54,7 +54,10 @@ data class ShelfItem(
     val onPhone: Boolean = true,
 )
 
-/** [queued] changes still to send; [sendTotal] is the queue when the network came back, for "n of m". */
+/**
+ * [queued] changes still to send; [sendTotal] is the queue when the network came back, for "n of m".
+ * [unreachable] is a phone online while the server at [host] gives no answer, which reads differently from offline.
+ */
 data class OfflineShelfState(
     val net: ShelfNet = ShelfNet.ONLINE,
     val items: List<ShelfItem> = emptyList(),
@@ -63,6 +66,8 @@ data class OfflineShelfState(
     val continueReading: List<ShelfItem> = emptyList(),
     val recentlySaved: List<ShelfItem> = emptyList(),
     val loadedAt: Long? = null,
+    val unreachable: Boolean = false,
+    val host: String? = null,
 ) {
     val sent: Int get() = (sendTotal - queued).coerceAtLeast(0)
 }
@@ -170,6 +175,8 @@ class OfflineShelfViewModel(
                 continueReading = shelf.continueReading,
                 recentlySaved = shelf.recentlySaved,
                 loadedAt = shelf.loadedAt,
+                unreachable = progress.unreachable,
+                host = host.value,
             )
     }
 

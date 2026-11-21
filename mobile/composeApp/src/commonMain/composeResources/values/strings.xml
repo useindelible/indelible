@@ -209,6 +209,7 @@
     <string name="home_offline_chip_back">Reconnected</string>
     <string name="home_offline_chip_offline">Offline</string>
     <string name="home_offline_chip_synced">Online</string>
+    <string name="home_offline_chip_unreachable">Server not answering</string>
     <string name="home_offline_empty_body">Nothing is saved on this phone yet. Items you open are kept for later, and you can keep any item offline on purpose.</string>
     <string name="home_offline_empty_body_last_loaded">Nothing is saved on this phone yet. What you saw last is still here to look through; opening it needs a network until it has a copy.</string>
     <string name="home_offline_empty_next">Next time you are online</string>
