@@ -1,15 +1,12 @@
 <script lang="ts">
 	import * as apiSdk from '$lib/api';
-	import type {
-		DocumentListEntry,
-		DocumentNoteResponse,
-		HighlightWithNoteResponse
-	} from '$lib/api';
+	import type { DocumentListEntry, HighlightWithNoteResponse } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { t } from '$lib/i18n';
 	import { resolve } from '$app/paths';
 	import { browser } from '$app/environment';
-	import { date } from '$lib/i18n';
+	import DocumentNoteSection from './DocumentNoteSection.svelte';
+	import NoteEditor from './NoteEditor.svelte';
 
 	interface Props {
 		item: DocumentListEntry;
@@ -20,14 +17,6 @@
 	let highlights = $state<HighlightWithNoteResponse[]>([]);
 	let highlightsLoading = $state(false);
 	let highlightsError = $state('');
-
-	let note = $state<DocumentNoteResponse | null>(null);
-	let noteLoading = $state(false);
-	let editing = $state(false);
-	let editText = $state('');
-	let saving = $state(false);
-	let noteError = $state('');
-	let noteInputEl = $state<HTMLTextAreaElement | undefined>(undefined);
 
 	let editingHighlightNoteId = $state<string | null>(null);
 	let highlightNoteText = $state('');
@@ -60,69 +49,6 @@
 				highlightsLoading = false;
 			});
 	});
-
-	$effect(() => {
-		const id = item.id;
-		note = null;
-		noteLoading = true;
-		noteError = '';
-		editing = false;
-		apiSdk
-			.getDocumentEntryNote({ path: { document_id: id } })
-			.then(({ data }) => {
-				note = data ?? null;
-			})
-			.catch(() => {
-				noteError = $t('library_notebook_error_load_note');
-			})
-			.finally(() => {
-				noteLoading = false;
-			});
-	});
-
-	$effect(() => {
-		if (editing && noteInputEl) noteInputEl.focus();
-	});
-
-	async function saveNote() {
-		saving = true;
-		noteError = '';
-		const body = editText;
-		try {
-			const { data } = await apiSdk.upsertDocumentEntryNote({
-				path: { document_id: item.id },
-				body: { body }
-			});
-			note = data ?? null;
-			editing = false;
-		} catch {
-			noteError = $t('library_notebook_error_save_note');
-		} finally {
-			saving = false;
-		}
-	}
-
-	async function deleteNote() {
-		saving = true;
-		noteError = '';
-		try {
-			await apiSdk.upsertDocumentEntryNote({
-				path: { document_id: item.id },
-				body: { body: '' }
-			});
-			note = null;
-			editing = false;
-		} catch {
-			noteError = $t('library_notebook_error_delete_note');
-		} finally {
-			saving = false;
-		}
-	}
-
-	function startEdit() {
-		editText = note?.body ?? '';
-		editing = true;
-	}
 
 	async function deleteHighlight(highlightId: string) {
 		try {
@@ -258,52 +184,19 @@
 
 						{#if editingHighlightNoteId === hl.id}
 							<div
-								class="add-note-form"
 								onclick={(e) => e.stopPropagation()}
 								onkeydown={(e) => e.stopPropagation()}
 								role="none"
 							>
-								<textarea
+								<NoteEditor
 									bind:value={highlightNoteText}
-									class="add-note-input"
 									placeholder={$t('library_notebook_add_note')}
 									rows={3}
-									onkeydown={(e) => {
-										if (e.key === 'Escape') {
-											editingHighlightNoteId = null;
-										}
-									}}
-								></textarea>
-								<div class="add-note-actions">
-									{#if hl.note}
-										<button
-											type="button"
-											class="note-delete"
-											onclick={() => deleteHighlightNote(hl.id)}
-											disabled={highlightNoteSaving}
-										>
-											{$t('common_delete')}
-										</button>
-									{/if}
-									<button
-										type="button"
-										class="note-cancel"
-										onclick={() => {
-											editingHighlightNoteId = null;
-										}}
-										disabled={highlightNoteSaving}
-									>
-										{$t('common_cancel')}
-									</button>
-									<button
-										type="button"
-										class="note-save"
-										disabled={highlightNoteSaving || !highlightNoteText.trim()}
-										onclick={saveHighlightNote}
-									>
-										{highlightNoteSaving ? $t('common_saving') : $t('common_save')}
-									</button>
-								</div>
+									saving={highlightNoteSaving}
+									onSave={saveHighlightNote}
+									onCancel={() => (editingHighlightNoteId = null)}
+									onDelete={hl.note ? () => deleteHighlightNote(hl.id) : undefined}
+								/>
 							</div>
 						{/if}
 
@@ -369,79 +262,9 @@
 	<div class="section">
 		<span class="section-heading">{$t('library_notebook_note')}</span>
 
-		{#if noteLoading}
-			<div class="note-loading">{$t('common_loading')}</div>
-		{:else if editing}
-			<div class="add-note-form">
-				<textarea
-					bind:this={noteInputEl}
-					bind:value={editText}
-					class="add-note-input"
-					placeholder={$t('library_notebook_write_note')}
-					rows={4}
-					onkeydown={(e) => {
-						if (e.key === 'Escape') {
-							editing = false;
-						}
-					}}
-				></textarea>
-				{#if noteError}
-					<p class="note-error">{noteError}</p>
-				{/if}
-				<div class="add-note-actions">
-					{#if note}
-						<button type="button" class="note-delete" onclick={deleteNote} disabled={saving}>
-							{$t('common_delete')}
-						</button>
-					{/if}
-					<button
-						type="button"
-						class="note-cancel"
-						onclick={() => {
-							editing = false;
-						}}
-						disabled={saving}
-					>
-						{$t('common_cancel')}
-					</button>
-					<button
-						type="button"
-						class="note-save"
-						disabled={saving || !editText.trim()}
-						onclick={saveNote}
-					>
-						{saving ? $t('common_saving') : $t('common_save')}
-					</button>
-				</div>
-			</div>
-		{:else if note}
-			<div
-				class="note-card"
-				role="button"
-				tabindex="0"
-				onclick={startEdit}
-				onkeydown={(e) => e.key === 'Enter' && startEdit()}
-			>
-				<p class="note-text">{note.body}</p>
-				<span class="note-timestamp">
-					{$date(new Date(note.updated_at), {
-						month: 'short',
-						day: 'numeric'
-					})}
-				</span>
-			</div>
-		{:else}
-			{#if noteError}
-				<p class="note-error">{noteError}</p>
-			{/if}
-			<button type="button" class="add-note-row" onclick={startEdit}>
-				<svg viewBox="0 0 24 24" aria-hidden="true">
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
-				{$t('library_notebook_add_note')}
-			</button>
-		{/if}
+		{#key item.id}
+			<DocumentNoteSection documentId={item.id} />
+		{/key}
 	</div>
 </div>
 
@@ -629,38 +452,6 @@
 		height: 14px;
 	}
 
-	.note-card {
-		background: var(--fill-hover);
-		border-radius: 10px;
-		padding: 12px;
-		cursor: pointer;
-		transition: background 120ms ease;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.note-card:hover {
-		background: var(--border-secondary);
-	}
-
-	.note-text {
-		font-size: 13px;
-		font-weight: 400;
-		letter-spacing: -0.01em;
-		line-height: 1.55;
-		color: var(--text-primary);
-		font-family: var(--font-sans);
-		margin: 0;
-	}
-
-	.note-timestamp {
-		font-size: 11px;
-		font-weight: 400;
-		color: var(--text-tertiary);
-		font-family: var(--font-sans);
-	}
-
 	.note-loading {
 		font-size: 13px;
 		color: var(--text-tertiary);
@@ -673,117 +464,5 @@
 		color: var(--destructive);
 		font-family: var(--font-sans);
 		margin: 0 0 4px;
-	}
-
-	.note-delete {
-		font-size: 13px;
-		font-family: var(--font-sans);
-		color: var(--destructive);
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 4px 10px;
-		margin-right: auto;
-	}
-
-	.note-delete:hover:not(:disabled) {
-		opacity: 0.8;
-	}
-
-	.note-delete:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	.add-note-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 9px 12px;
-		border-radius: 8px;
-		border: 1px dashed var(--border-secondary);
-		cursor: pointer;
-		font-size: 13px;
-		font-family: var(--font-sans);
-		color: var(--text-tertiary);
-		background: none;
-		width: 100%;
-		text-align: left;
-		transition: all 120ms ease;
-	}
-
-	.add-note-row:hover {
-		background: var(--fill-hover);
-		color: var(--text-secondary);
-	}
-
-	.add-note-row :global(svg) {
-		width: 14px;
-		height: 14px;
-		stroke: currentColor;
-		fill: none;
-		stroke-width: 1.5;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-		flex-shrink: 0;
-	}
-
-	.add-note-form {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.add-note-input {
-		width: 100%;
-		padding: 10px;
-		border-radius: 8px;
-		border: 1.5px solid var(--accent);
-		background: var(--fill-hover);
-		font-size: 13px;
-		font-family: var(--font-sans);
-		color: var(--text-primary);
-		line-height: 1.55;
-		resize: none;
-		outline: none;
-		box-sizing: border-box;
-	}
-
-	.add-note-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
-	}
-
-	.note-cancel {
-		font-size: 13px;
-		font-family: var(--font-sans);
-		color: var(--text-secondary);
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 4px 10px;
-	}
-
-	.note-cancel:hover {
-		color: var(--text-primary);
-	}
-
-	.note-save {
-		font-size: 13px;
-		font-family: var(--font-sans);
-		font-weight: 500;
-		color: var(--text-on-color);
-		background: var(--accent);
-		border: none;
-		border-radius: 6px;
-		cursor: pointer;
-		padding: 4px 14px;
-		transition: opacity 120ms ease;
-	}
-
-	.note-save:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
 	}
 </style>
