@@ -384,36 +384,33 @@ pub async fn extension_upsert_note(
 
     tracing::debug!(library_entry_id = %entry_id, "upsert extension saved-entry note");
 
-    let note_body = body.body;
-    let note = if note_body.is_empty() {
-        None
-    } else {
-        let document_reader_ops =
-            state
-                .document_reader_ops
-                .as_ref()
-                .ok_or(ApiError::ServiceUnavailable {
-                    message: "document reader service not configured".into(),
-                })?;
-        match document_reader_ops
-            .upsert_note(
-                auth_user.user_id,
-                joined.document.id,
-                note_body,
-                body.base_updated_at,
+    let document_reader_ops =
+        state
+            .document_reader_ops
+            .as_ref()
+            .ok_or(ApiError::ServiceUnavailable {
+                message: "document reader service not configured".into(),
+            })?;
+    // A clear writes an empty body instead of deleting the row, so the stamp a client bases
+    // its next write on still exists for the precondition to compare against.
+    let note = match document_reader_ops
+        .upsert_note(
+            auth_user.user_id,
+            joined.document.id,
+            body.body,
+            body.base_updated_at,
+        )
+        .await
+        .map_err(ApiError::from)?
+    {
+        NoteWrite::Written(note) => Some(note).filter(|note| !note.body.is_empty()),
+        NoteWrite::Conflict(current) => {
+            return Ok((
+                StatusCode::CONFLICT,
+                [(http::header::CONTENT_TYPE, "application/problem+json")],
+                axum::Json(note_conflict_response(current)),
             )
-            .await
-            .map_err(ApiError::from)?
-        {
-            NoteWrite::Written(note) => Some(note),
-            NoteWrite::Conflict(current) => {
-                return Ok((
-                    StatusCode::CONFLICT,
-                    [(http::header::CONTENT_TYPE, "application/problem+json")],
-                    axum::Json(note_conflict_response(current)),
-                )
-                    .into_response());
-            }
+                .into_response());
         }
     };
 

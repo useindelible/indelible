@@ -60,6 +60,7 @@ pub(super) async fn library_context_response(
             .get_note(user_id, joined.document.id)
             .await
             .map_err(ApiError::from)?
+            .filter(|note| !note.body.is_empty())
     } else {
         None
     };
