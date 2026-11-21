@@ -134,6 +134,11 @@ pub struct TagResponse {
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct ExtensionUpsertNoteBody {
     pub body: String,
+    /// The `updated_at` of the note the client last saw; a newer stored note answers 409.
+    /// Absent, the write is unconditional.
+    #[serde(default)]
+    #[schema(value_type = Option<String>, format = DateTime)]
+    pub base_updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
