@@ -254,3 +254,46 @@ async fn extension_check_url_annotations_share_the_saved_document_contract() {
     .await;
     assert!(cleared.is_null());
 }
+
+#[tokio::test]
+async fn extension_note_with_a_stale_base_is_refused_with_the_stored_note() {
+    let scenario = SaveScenario::new().await;
+    let saved = scenario
+        .extension_reader_save("https://example.com/save-pipeline/extension-note-base")
+        .await;
+    let entry_id = saved["library_entry_id"].as_str().unwrap();
+    let client = scenario.extension_client();
+    let note_path = format!("/api/v1/extension/entries/{entry_id}/note");
+    let first = assert_json_response(
+        client
+            .put_json(&note_path, &serde_json::json!({"body": "first"}))
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+
+    let refused = assert_json_response(
+        client
+            .put_json(
+                &note_path,
+                &serde_json::json!({"body": "stale", "base_updated_at": "1970-01-01T00:00:00Z"}),
+            )
+            .await,
+        StatusCode::CONFLICT,
+    )
+    .await;
+    let written = assert_json_response(
+        client
+            .put_json(
+                &note_path,
+                &serde_json::json!({"body": "second", "base_updated_at": first["updated_at"]}),
+            )
+            .await,
+        StatusCode::OK,
+    )
+    .await;
+
+    assert_eq!(refused["code"], "note_conflict");
+    assert_eq!(refused["note"]["body"], "first");
+    assert_eq!(written["body"], "second");
+}

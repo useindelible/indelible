@@ -2,6 +2,9 @@ use super::library_alias::{
     library_context_response, library_entry_for_alias, patch_library_context_response,
 };
 use super::*;
+use crate::routes::documents::dto::{DocumentNoteConflictResponse, note_conflict_response};
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
 use ind_application::repos::document_note::NoteWrite;
 
 pub(super) fn parse_extension_document_type(s: Option<&str>) -> Result<Option<ItemType>, ApiError> {
@@ -364,6 +367,7 @@ pub(super) fn parse_published_at(s: &str) -> Option<chrono::DateTime<chrono::Utc
         (status = 200, description = "Upserted note, null when cleared", body = Option<ExtensionNoteResponse>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Saved entry not found"),
+        (status = 409, description = "The note changed since the base the client saw", body = DocumentNoteConflictResponse, content_type = "application/problem+json"),
         (status = 503, description = "Document reader service not configured"),
     ),
     security(("bearer" = [])),
@@ -374,7 +378,7 @@ pub async fn extension_upsert_note(
     RequireExtensionAccess(auth_user): RequireExtensionAccess,
     Path(library_entry_id): Path<String>,
     axum::Json(body): axum::Json<ExtensionUpsertNoteBody>,
-) -> Result<axum::Json<Option<ExtensionNoteResponse>>, ApiError> {
+) -> Result<Response, ApiError> {
     let entry_id = parse_extension_entry_id(&library_entry_id)?;
     let joined = library_entry_for_alias(&state, auth_user.user_id, entry_id).await?;
 
@@ -392,16 +396,23 @@ pub async fn extension_upsert_note(
                     message: "document reader service not configured".into(),
                 })?;
         match document_reader_ops
-            .upsert_note(auth_user.user_id, joined.document.id, note_body, None)
+            .upsert_note(
+                auth_user.user_id,
+                joined.document.id,
+                note_body,
+                body.base_updated_at,
+            )
             .await
             .map_err(ApiError::from)?
         {
             NoteWrite::Written(note) => Some(note),
-            NoteWrite::Conflict(_) => {
-                return Err(ApiError::Conflict {
-                    entity: "DocumentNote",
-                    message: "the note changed while it was being written".into(),
-                });
+            NoteWrite::Conflict(current) => {
+                return Ok((
+                    StatusCode::CONFLICT,
+                    [(http::header::CONTENT_TYPE, "application/problem+json")],
+                    axum::Json(note_conflict_response(current)),
+                )
+                    .into_response());
             }
         }
     };
@@ -411,7 +422,8 @@ pub async fn extension_upsert_note(
         body: n.body,
         created_at: n.created_at,
         updated_at: n.updated_at,
-    })))
+    }))
+    .into_response())
 }
 
 #[utoipa::path(
