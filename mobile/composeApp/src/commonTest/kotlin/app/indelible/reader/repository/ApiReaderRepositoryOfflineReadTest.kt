@@ -141,4 +141,16 @@ class ApiReaderRepositoryOfflineReadTest {
 
             assertTrue(h.repository.getItem(DL_DOC).isFailure)
         }
+
+    @Test
+    fun a_server_only_read_never_lets_the_copy_stand_in() =
+        runTest {
+            val h = readerOfflineHarness()
+            h.keepCopy()
+            h.goOffline()
+
+            assertTrue(h.repository.listHighlights(DL_DOC, fromServer = true).isFailure)
+            assertTrue(h.repository.getItemNote(DL_DOC, fromServer = true).isFailure)
+            assertTrue(h.repository.listHighlights(DL_DOC).isSuccess)
+        }
 }

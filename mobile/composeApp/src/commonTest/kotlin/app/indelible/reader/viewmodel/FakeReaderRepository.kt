@@ -40,6 +40,7 @@ class FakeReaderRepository : ReaderRepository {
     var epubChapterResult: suspend (Int) -> Result<String> = { Result.success("<p>chapter $it</p>") }
     val epubChapterCalls = mutableListOf<Int>()
     var listHighlightsResult: Result<List<HighlightData>> = Result.success(emptyList())
+    var listHighlightsCallCount = 0
     var highlightsGate: CompletableDeferred<Unit>? = null
 
     /** When set, the note, tag and entity reads wait for it. */
@@ -62,8 +63,11 @@ class FakeReaderRepository : ReaderRepository {
     var lastSavedUrl: String? = null
 
     var getItemNoteResult: Result<String?> = Result.success(null)
+    var getItemNoteCallCount = 0
+    var lastItemNoteFromServer: Boolean? = null
     var upsertItemNoteResult: Result<String>? = null
     var getItemTagsResult: Result<List<String>> = Result.success(emptyList())
+    var getItemTagsCallCount = 0
     var setItemTagsResult: Result<List<String>> = Result.success(emptyList())
 
     var createHighlightCallCount = 0
@@ -143,7 +147,11 @@ class FakeReaderRepository : ReaderRepository {
         return saveToLibraryResult
     }
 
-    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> {
+    override suspend fun listHighlights(
+        itemId: String,
+        fromServer: Boolean,
+    ): Result<List<HighlightData>> {
+        listHighlightsCallCount++
         highlightsGate?.await()
         return listHighlightsResult
     }
@@ -212,7 +220,12 @@ class FakeReaderRepository : ReaderRepository {
 
     override suspend fun listTags(): Result<List<TagData>> = listTagsResult
 
-    override suspend fun getItemNote(itemId: String): Result<String?> {
+    override suspend fun getItemNote(
+        itemId: String,
+        fromServer: Boolean,
+    ): Result<String?> {
+        getItemNoteCallCount++
+        lastItemNoteFromServer = fromServer
         metadataGate?.await()
         return getItemNoteResult
     }
@@ -227,6 +240,7 @@ class FakeReaderRepository : ReaderRepository {
 
     override suspend fun getItemTags(itemId: String): Result<List<String>> {
         lastGetItemTagsId = itemId
+        getItemTagsCallCount++
         metadataGate?.await()
         return getItemTagsResult
     }

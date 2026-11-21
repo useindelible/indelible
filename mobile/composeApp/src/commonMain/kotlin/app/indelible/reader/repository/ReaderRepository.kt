@@ -57,7 +57,11 @@ interface ReaderRepository {
         itemType: String?,
     ): Result<Unit>
 
-    suspend fun listHighlights(itemId: String): Result<List<HighlightData>>
+    /** With [fromServer], a copy never stands in for the server, so a failure means it gave no answer. */
+    suspend fun listHighlights(
+        itemId: String,
+        fromServer: Boolean = false,
+    ): Result<List<HighlightData>>
 
     suspend fun listDocumentEntities(itemId: String): Result<List<DocumentEntity>>
 
@@ -98,7 +102,10 @@ interface ReaderRepository {
 
     suspend fun listTags(): Result<List<TagData>>
 
-    suspend fun getItemNote(itemId: String): Result<String?>
+    suspend fun getItemNote(
+        itemId: String,
+        fromServer: Boolean = false,
+    ): Result<String?>
 
     suspend fun upsertItemNote(
         itemId: String,
@@ -211,8 +218,11 @@ class ApiReaderRepository internal constructor(
         offlineResult { outbox.readingEvent(session, documentId, kind, sessionId, progress) }
     }
 
-    override suspend fun listHighlights(itemId: String): Result<List<HighlightData>> =
-        offlineCopy.highlights(itemId) { readerApiService.listHighlights(itemId) }
+    override suspend fun listHighlights(
+        itemId: String,
+        fromServer: Boolean,
+    ): Result<List<HighlightData>> =
+        offlineCopy.highlights(itemId, serverOnly = fromServer) { readerApiService.listHighlights(itemId) }
 
     override suspend fun listDocumentEntities(itemId: String) = readerApiService.listDocumentEntities(itemId)
 
@@ -276,10 +286,10 @@ class ApiReaderRepository internal constructor(
     override suspend fun listTags(): Result<List<TagData>> =
         offlineCopy.tags.list { readerApiService.listTags().map { tags -> tags.map { it.toTagData() } } }
 
-    override suspend fun getItemNote(itemId: String): Result<String?> =
-        offlineCopy.note(itemId) {
-            readerApiService.getItemNote(itemId)
-        }
+    override suspend fun getItemNote(
+        itemId: String,
+        fromServer: Boolean,
+    ): Result<String?> = offlineCopy.note(itemId, serverOnly = fromServer) { readerApiService.getItemNote(itemId) }
 
     override suspend fun upsertItemNote(
         itemId: String,

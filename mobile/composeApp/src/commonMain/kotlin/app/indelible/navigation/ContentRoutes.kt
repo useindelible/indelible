@@ -21,6 +21,7 @@ import app.indelible.offline.viewmodel.DocumentOfflineViewModel
 import app.indelible.reader.repository.ReaderRepository
 import app.indelible.reader.repository.ReadingEventWriter
 import app.indelible.reader.ui.ReaderScreen
+import app.indelible.reader.viewmodel.ReaderTriggers
 import app.indelible.reader.viewmodel.ReaderViewModel
 import app.indelible.tags.repository.TagsRepository
 import app.indelible.tags.ui.TagDetailScreen
@@ -41,6 +42,7 @@ fun NavGraphBuilder.contentRoutes(
     tagsRepository: TagsRepository,
     trashRepository: TrashRepository,
     documentOffline: (String) -> DocumentOfflineViewModel,
+    readerTriggers: ReaderTriggers,
 ) {
     composable(MainRoutes.ITEM_DETAIL) { backStackEntry ->
         val itemId: String =
@@ -66,7 +68,12 @@ fun NavGraphBuilder.contentRoutes(
                 ?: return@composable
         val readerViewModel =
             viewModel(key = documentId) {
-                ReaderViewModel(documentId, readerRepository, readingEvents = readingEventWriter)
+                ReaderViewModel(
+                    documentId,
+                    readerRepository,
+                    readingEvents = readingEventWriter,
+                    triggers = readerTriggers,
+                )
             }
         val offlineViewModel = remember(documentId) { documentOffline(documentId) }
         ReaderScreen(
