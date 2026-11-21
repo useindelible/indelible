@@ -5,8 +5,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import app.indelible.offline.viewmodel.Availability
-import app.indelible.offline.viewmodel.DocumentOfflineStatus
 import app.indelible.reader.model.HighlightData
 import app.indelible.reader.model.HighlightNoteData
 import app.indelible.reader.model.ReaderDocument
@@ -91,7 +89,6 @@ private fun ItemRecordPanelPreviewLight() {
                 onTagsChanged = {},
                 modifier = Modifier.padding(IndelibleSpacing.screenPaddingH),
                 entities = previewEntities,
-                offline = ItemOffline(DocumentOfflineStatus(Availability.KEPT, bytes = 1_300_000L)),
             )
         }
     }

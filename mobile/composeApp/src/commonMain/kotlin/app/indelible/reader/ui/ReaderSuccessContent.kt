@@ -59,8 +59,6 @@ import app.indelible.ui.theme.IndelibleSpacing
 import app.indelible.ui.theme.IndelibleTheme
 import indelible.composeapp.generated.resources.Res
 import indelible.composeapp.generated.resources.reader_copied_clipboard
-import indelible.composeapp.generated.resources.reader_link_copied
-import indelible.composeapp.generated.resources.reader_link_missing
 import indelible.composeapp.generated.resources.reader_voice_fallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -121,8 +119,6 @@ internal fun ReaderSuccessContent(
     // The bar keeps reporting its place through its exit animation, so the clearance is gated by visibility.
     val chapterClearance = if (showMiniBar) miniBarClearance else null
     val copiedMessage = stringResource(Res.string.reader_copied_clipboard)
-    val linkCopiedMessage = stringResource(Res.string.reader_link_copied)
-    val linkMissingMessage = stringResource(Res.string.reader_link_missing)
 
     val readerIsDark =
         state.preferences.background == ReaderBackground.SLATE ||
@@ -273,6 +269,7 @@ internal fun ReaderSuccessContent(
         ReaderDockPanels(
             activePanel = activePanel,
             state = state,
+            itemOffline = itemOffline,
             defaultHighlightColor = defaultHighlightColor,
             availableTags = availableTags,
             playbackState = playbackState,
@@ -292,16 +289,6 @@ internal fun ReaderSuccessContent(
             onSelectVoice = { viewModel.selectVoice(it) },
             onSetSleepTimer = { viewModel.setSleepTimer(it) },
             onTocEntryTapped = { viewModel.onTocEntryTapped(it) },
-            itemOffline = itemOffline,
-            onShare = {
-                val url = state.item.canonicalUrl ?: state.item.url
-                if (url != null) {
-                    clipboardManager.setText(AnnotatedString(url))
-                    coroutineScope.launch { snackbarHostState.showSnackbar(linkCopiedMessage) }
-                } else {
-                    coroutineScope.launch { snackbarHostState.showSnackbar(linkMissingMessage) }
-                }
-            },
         )
 
         val highlight = tappedHighlight

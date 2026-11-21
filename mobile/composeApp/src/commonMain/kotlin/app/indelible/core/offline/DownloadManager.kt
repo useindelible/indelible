@@ -14,6 +14,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -60,7 +64,11 @@ class DownloadManager(
     private val parked = LinkedHashMap<DocumentKey, Request>()
 
     // Scopes a full disk paused; lifted wherever space is known to be free again.
-    private val autoCachePaused = mutableSetOf<String>()
+    private val autoCachePaused = MutableStateFlow<Set<String>>(emptySet())
+
+    /** Whether a full disk is holding [scope]'s automatic copies back. */
+    fun observeAutoCachePaused(scope: String): Flow<Boolean> =
+        autoCachePaused.map { scope in it }.distinctUntilChanged()
 
     // One entry per removal in progress, so a request waits for every overlapping removal to end.
     private val removing = mutableListOf<DocumentKey>()
@@ -186,7 +194,7 @@ class DownloadManager(
             withContext(NonCancellable) {
                 lock.withLock {
                     removing -= key
-                    autoCachePaused -= scope
+                    autoCachePaused.update { it - scope }
                 }
             }
             wake.trySend(Unit)
@@ -222,7 +230,7 @@ class DownloadManager(
                 withContext(NonCancellable) {
                     lock.withLock {
                         removingScopes -= scope
-                        autoCachePaused -= scope
+                        autoCachePaused.update { it - scope }
                     }
                 }
                 wake.trySend(Unit)
@@ -234,7 +242,7 @@ class DownloadManager(
         withContext(dispatcher) {
             val freed =
                 acquiring.withLock { copies.enforceCap(scope) { id, remove -> evictUnlessHeld(scope, id, remove) } }
-            if (freed) lock.withLock { autoCachePaused -= scope }
+            if (freed) lock.withLock { autoCachePaused.update { it - scope } }
         }
 
     /** The launch sweep; it waits for the running acquisition, and the next one waits for it. */
@@ -249,7 +257,7 @@ class DownloadManager(
         val key = DocumentKey(session.scope, documentId)
         val wanted = pin || forReading
         lock.withLock {
-            if (!wanted && session.scope in autoCachePaused) return
+            if (!wanted && session.scope in autoCachePaused.value) return
             // An unpinned duplicate of the running acquisition would only download the same set again; one
             // being removed is about to be cancelled, so a request made now must wait for that removal.
             val beingRemoved = key in removing || key.scope in removingScopes
@@ -336,7 +344,7 @@ class DownloadManager(
         }.onSuccess { outcome ->
             when {
                 outcome == FetchResult.Installed -> {
-                    lock.withLock { autoCachePaused -= key.scope }
+                    lock.withLock { autoCachePaused.update { it - key.scope } }
                     finish(key)
                 }
                 // A reader waiting for the copy is told, not left waiting for a retry nothing schedules.
@@ -354,7 +362,7 @@ class DownloadManager(
     ) {
         val key = request.key
         if (error is CancellationException) throw error
-        if (error is NoSpaceException) lock.withLock { autoCachePaused += key.scope }
+        if (error is NoSpaceException) lock.withLock { autoCachePaused.update { it + key.scope } }
         val shown = failureState(error, request.pin, request.forReading, isOnline)
         when {
             shown == null -> finish(key)

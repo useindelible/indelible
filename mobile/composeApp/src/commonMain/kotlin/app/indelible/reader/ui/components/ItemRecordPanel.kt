@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import app.indelible.offline.viewmodel.Availability
 import app.indelible.reader.model.DocumentEntity
 import app.indelible.reader.model.HighlightColor
 import app.indelible.reader.model.HighlightData
@@ -41,18 +42,17 @@ import app.indelible.ui.theme.IndelibleTheme
 import app.indelible.ui.theme.SerifFontFamily
 import app.indelible.ui.theme.geistMonoFontFamily
 import indelible.composeapp.generated.resources.Res
-import indelible.composeapp.generated.resources.offline_section
+import indelible.composeapp.generated.resources.offline_badge_downloading
 import indelible.composeapp.generated.resources.reader_highlights_count
-import indelible.composeapp.generated.resources.reader_info_actions
 import indelible.composeapp.generated.resources.reader_info_entities
 import indelible.composeapp.generated.resources.reader_info_info
 import indelible.composeapp.generated.resources.reader_info_note
 import indelible.composeapp.generated.resources.reader_info_note_add
 import indelible.composeapp.generated.resources.reader_info_note_edit
 import indelible.composeapp.generated.resources.reader_info_note_empty
-import indelible.composeapp.generated.resources.reader_info_share_link
 import indelible.composeapp.generated.resources.reader_info_summary
 import indelible.composeapp.generated.resources.reader_info_tags
+import indelible.composeapp.generated.resources.reader_keep_offline
 import indelible.composeapp.generated.resources.reader_tags_requires_library
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -78,7 +78,6 @@ fun ItemRecordPanel(
     modifier: Modifier = Modifier,
     entities: List<DocumentEntity> = emptyList(),
     onSaveToLibrary: () -> Unit = {},
-    onShare: () -> Unit = {},
     offline: ItemOffline? = null,
 ) {
     Column(
@@ -87,25 +86,11 @@ fun ItemRecordPanel(
     ) {
         RecordHero(item)
 
-        // Share moved here when the reader's top bar was removed: it is an action on
-        // the item, and the item record is where the item's actions live.
-        if ((item.canonicalUrl ?: item.url) != null) {
-            RecordSection(stringResource(Res.string.reader_info_actions)) {
-                IndelibleButton(
-                    text = stringResource(Res.string.reader_info_share_link),
-                    onClick = onShare,
-                    style = IndelibleButtonStyle.Secondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
-        offline?.let {
-            RecordSection(stringResource(Res.string.offline_section)) { ItemOfflineSection(it) }
-        }
-
         RecordSection(stringResource(Res.string.reader_info_info)) {
-            InfoGrid(item = item, progress = progress)
+            Column(verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step14)) {
+                InfoGrid(item = item, progress = progress)
+                offline?.let { KeepButton(it) }
+            }
         }
 
         item.summary?.takeIf { it.isNotBlank() }?.let { summary ->
@@ -148,6 +133,22 @@ fun ItemRecordPanel(
             }
         }
     }
+}
+
+// Storage lists only copies already on the phone, so a document with none, or one too large for the
+// automatic cap, can be kept from here alone. A download under way is a copy on its way.
+@Composable
+private fun KeepButton(offline: ItemOffline) {
+    val availability = offline.status.availability
+    if (availability == Availability.KEPT) return
+    val downloading = availability == Availability.DOWNLOADING
+    val label = if (downloading) Res.string.offline_badge_downloading else Res.string.reader_keep_offline
+    IndelibleButton(
+        text = stringResource(label),
+        onClick = offline.onKeep,
+        enabled = !downloading,
+        style = IndelibleButtonStyle.Secondary,
+    )
 }
 
 // ============================================================

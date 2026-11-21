@@ -3,6 +3,7 @@ package app.indelible.core.offline
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -129,6 +130,25 @@ class DownloadRaceTest {
             assertEquals(0, h.server.count("/api/v1/documents/doc_2"))
             assertEquals(1, h.store.pendingOrdered(DL_SCOPE).size)
             assertNull(h.store.cachedDocument(DL_SCOPE, DL_DOC))
+        }
+
+    @Test
+    fun aFullDiskPauseLiftsWhenACopyGoes() =
+        runTest {
+            val full = FailingWriteFileSystem(FakeFileSystem()) { IOException("write failed: ENOSPC") }
+            full.failing = false
+            val h = downloadHarness(fs = full)
+            h.seed("doc_2", bytes = 10)
+            full.failing = true
+
+            h.manager.cacheOnOpen(h.session, DL_DOC)
+            runCurrent()
+            assertTrue(h.manager.observeAutoCachePaused(DL_SCOPE).first())
+
+            h.manager.removeFromDevice(DL_SCOPE, "doc_2")
+            runCurrent()
+
+            assertFalse(h.manager.observeAutoCachePaused(DL_SCOPE).first())
         }
 
     @Test

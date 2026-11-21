@@ -213,11 +213,11 @@
     <string name="home_offline_empty_body_last_loaded">Rien n’est encore enregistré sur ce téléphone. Ce que vous avez vu en dernier reste consultable ; l’ouvrir demande une connexion tant qu’il n’est pas copié sur le téléphone.</string>
     <string name="home_offline_empty_next">La prochaine fois que vous êtes en ligne</string>
     <string name="home_offline_empty_shelf">Votre étagère sera ici</string>
-    <string name="home_offline_empty_step_keep">Touchez Garder hors ligne dans sa fiche.</string>
+    <string name="home_offline_empty_step_keep">Touchez Garder à côté dans Stockage et téléchargements.</string>
     <string name="home_offline_empty_step_open">Ouvrez un article ou un livre pour le lire une fois.</string>
     <string name="home_offline_empty_step_space">Choisissez l’espace qu’Indelible peut utiliser dans Profil › Stockage.</string>
     <string name="home_offline_empty_subtitle">L’étagère est vide.</string>
-    <string name="home_offline_hint">Avant un voyage, ouvrez un élément et activez Garder hors ligne. Les éléments gardés restent sur ce téléphone et ne sont jamais supprimés pour libérer de l’espace.</string>
+    <string name="home_offline_hint">Avant un voyage, ouvrez les éléments voulus, puis touchez Garder à côté de chacun dans Stockage et téléchargements. Les éléments gardés restent sur ce téléphone et ne sont jamais supprimés pour libérer de l’espace.</string>
     <plurals name="home_offline_items_on_board">
         <item quantity="one">élément à bord</item>
         <item quantity="other">éléments à bord</item>
@@ -437,6 +437,7 @@
     <string name="nav_profile">Profil</string>
     <string name="nav_review">Révision</string>
     <string name="nav_search">Recherche</string>
+    <string name="offline_auto_cache_paused">Cet appareil n’a plus d’espace. Les nouvelles copies sont en pause jusqu’à ce que vous en supprimiez ici.</string>
     <string name="offline_badge_cached">En cache</string>
     <string name="offline_badge_downloading">En téléchargement</string>
     <string name="offline_badge_kept">Conservé</string>
@@ -456,7 +457,6 @@
         <item quantity="one">Progression de lecture</item>
         <item quantity="other">Progression de lecture · %1$d mises à jour</item>
     </plurals>
-    <string name="offline_download_failed">Échec du téléchargement</string>
     <string name="offline_downloads">Téléchargements</string>
     <string name="offline_filter_all">Tout</string>
     <string name="offline_filter_cached">En cache</string>
@@ -466,7 +466,7 @@
         <item quantity="one">%1$d élément</item>
         <item quantity="other">%1$d éléments</item>
     </plurals>
-    <string name="offline_keep">Garder hors ligne</string>
+    <string name="offline_keep">Garder</string>
     <string name="offline_kept">Conservés</string>
     <string name="offline_key_cached">En cache %1$s</string>
     <string name="offline_key_free">Libre %1$s</string>
@@ -476,9 +476,6 @@
     <string name="offline_manage_kept">Gérer les éléments conservés</string>
     <string name="offline_manage_kept_body">Les éléments conservés dépassent à eux seuls la limite. Retirez-en pour libérer de l’espace.</string>
     <string name="offline_manage_storage">Gérer le stockage</string>
-    <string name="offline_no_space">Espace insuffisant</string>
-    <string name="offline_not_on_device">Pas sur cet appareil</string>
-    <string name="offline_not_synced">%1$s · pas encore synchronisé</string>
     <string name="offline_note_all">Les éléments conservés sont épinglés et jamais supprimés. Les éléments en cache ont été pris automatiquement à l’ouverture.</string>
     <string name="offline_note_cached">Mis en cache automatiquement à l’ouverture. Les plus anciens partent d’abord quand la limite manque de place ; les éléments conservés sont ignorés.</string>
     <string name="offline_note_kept">Désépingler laisse la copie en cache. Rien n’est supprimé.</string>
@@ -492,7 +489,6 @@
     <string name="offline_queue_failed">Action requise</string>
     <string name="offline_remove">Supprimer</string>
     <string name="offline_remove_all">Supprimer toutes les données hors ligne de ce serveur</string>
-    <string name="offline_remove_copy">Retirer de l’appareil</string>
     <string name="offline_remove_downloads">Supprimer les téléchargements</string>
     <plurals name="offline_remove_downloads_body">
         <item quantity="one">Toutes les copies téléchargées sont supprimées de cet appareil. %1$d modification en attente est conservée et sera synchronisée.</item>
@@ -500,8 +496,6 @@
     </plurals>
     <string name="offline_remove_downloads_none_queued">Toutes les copies téléchargées sont supprimées de cet appareil.</string>
     <string name="offline_remove_downloads_title">Supprimer %1$s de téléchargements de ce téléphone ?</string>
-    <string name="offline_section">Hors ligne</string>
-    <string name="offline_server_too_old">Mettez à jour votre serveur pour garder les livres sur cet appareil</string>
     <string name="offline_size_gb">%1$s Go</string>
     <string name="offline_size_kb">%1$s Ko</string>
     <string name="offline_size_mb">%1$s Mo</string>
@@ -511,15 +505,12 @@
     <string name="offline_status_pending">En file</string>
     <string name="offline_status_retrying">Nouvelle tentative en cours</string>
     <string name="offline_status_superseded">Remplacée par une modification ultérieure</string>
-    <string name="offline_synced">%1$s · synchronisé %2$s</string>
     <string name="offline_title">Stockage et téléchargements</string>
     <string name="offline_unpin">Désépingler</string>
     <string name="offline_used">%1$s utilisés sur %2$s</string>
     <string name="offline_used_line">%1$s sur %2$s · %3$s</string>
     <string name="offline_used_of">sur %1$s · %2$s</string>
     <string name="offline_view_empty">Rien dans cette vue.</string>
-    <string name="offline_waiting">En attente de téléchargement</string>
-    <string name="offline_waiting_connection">En attente de connexion</string>
     <string name="onboarding_account_display_name">Nom d’affichage</string>
     <string name="onboarding_account_subtitle">Personnalisez votre expérience Indelible</string>
     <string name="onboarding_account_theme">Thème</string>
@@ -752,7 +743,6 @@
         <item quantity="one">%1$d surlignage</item>
         <item quantity="other">%1$d surlignages</item>
     </plurals>
-    <string name="reader_info_actions">Actions</string>
     <string name="reader_info_entities">Entités</string>
     <string name="reader_info_info">Informations</string>
     <string name="reader_info_length">Longueur</string>
@@ -763,18 +753,16 @@
     <string name="reader_info_progress">Progression</string>
     <string name="reader_info_published">Publié</string>
     <string name="reader_info_saved">Enregistré</string>
-    <string name="reader_info_share_link">Partager le lien</string>
     <string name="reader_info_source">Source</string>
     <string name="reader_info_summary">Résumé</string>
     <string name="reader_info_tags">Étiquettes</string>
     <string name="reader_info_type">Type</string>
     <string name="reader_item_details">Détails du contenu</string>
+    <string name="reader_keep_offline">Garder sur ce téléphone</string>
     <string name="reader_line_spacing">Interligne</string>
     <string name="reader_line_spacing_loose">Large</string>
     <string name="reader_line_spacing_normal">Normal</string>
     <string name="reader_line_spacing_tight">Serré</string>
-    <string name="reader_link_copied">Lien copié dans le presse-papiers</string>
-    <string name="reader_link_missing">Aucun lien à partager</string>
     <plurals name="reader_minutes_short">
         <item quantity="one">%1$d min</item>
         <item quantity="other">%1$d min</item>

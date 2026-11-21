@@ -48,7 +48,6 @@ fun ReaderDockPanels(
     onSetSpeed: (Float) -> Unit,
     onSelectVoice: (String) -> Unit,
     onSetSleepTimer: (Int?) -> Unit,
-    onShare: () -> Unit,
     onTocEntryTapped: (app.indelible.reader.model.ArticleTocEntry) -> Unit,
     itemOffline: ItemOffline? = null,
 ) {
@@ -128,7 +127,6 @@ fun ReaderDockPanels(
             onTagsChanged = onTagsChanged,
             entities = state.entities,
             onSaveToLibrary = onSaveToLibrary,
-            onShare = onShare,
             offline = itemOffline,
         )
     }

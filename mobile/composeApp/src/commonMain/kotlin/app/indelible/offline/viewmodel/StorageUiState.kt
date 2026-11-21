@@ -27,6 +27,8 @@ data class StorageUiState(
     val kept: List<CatalogEntry> = emptyList(),
     val cached: List<CatalogEntry> = emptyList(),
     val changes: List<PendingChange> = emptyList(),
+    /** A full disk is holding automatic copies back until something on the device goes. */
+    val autoCachePaused: Boolean = false,
 ) {
     val keptBytes: Long get() = kept.sumOf { it.bytes }
 
