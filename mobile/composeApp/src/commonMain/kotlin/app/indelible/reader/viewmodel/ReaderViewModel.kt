@@ -229,11 +229,16 @@ class ReaderViewModel(
     }
 
     // These reads are children of the open, so a Retry that replaces it also drops their late answers.
+    // A reconnect refresh may have landed first; these older reads must not replace what it wrote.
     private fun CoroutineScope.loadHighlights() {
         launch {
             val loaded = repository.listHighlights(documentId)
             updateSuccessState { state ->
-                state.copy(highlights = loaded.getOrDefault(state.highlights), highlightsLoaded = true)
+                if (state.highlightsLoaded) {
+                    state
+                } else {
+                    state.copy(highlights = loaded.getOrDefault(state.highlights), highlightsLoaded = true)
+                }
             }
         }
     }
@@ -249,7 +254,6 @@ class ReaderViewModel(
 
     private fun CoroutineScope.loadItemNoteAndTags() {
         launch {
-            // A reconnect refresh may have landed the note first; this older read must not replace it.
             repository
                 .getItemNote(documentId)
                 .onSuccess { note ->
@@ -258,11 +262,14 @@ class ReaderViewModel(
                     }
                 }
         }
-        val libraryEntryId = (_uiState.value as? ReaderUiState.Success)?.item?.libraryEntryId ?: return
+        val open = _uiState.value as? ReaderUiState.Success
+        val libraryEntryId = open?.item?.libraryEntryId ?: return
         launch {
             repository
                 .getItemTags(libraryEntryId)
-                .onSuccess { tags -> updateSuccessState { it.copy(itemTags = tags) } }
+                .onSuccess { tags ->
+                    updateSuccessState { if (it.itemTags === open.itemTags) it.copy(itemTags = tags) else it }
+                }
         }
     }
 
