@@ -11,15 +11,19 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 
-/** The OS reporting the network back, or any request getting through to the server; the first values are a baseline. */
+/**
+ * The OS reporting the network back, or any request getting through to the server; the first values are a baseline.
+ * A screen that shows [stale] content takes a server that already answers as a reason to reload at once.
+ */
 internal fun reachableAgain(
     online: Flow<Boolean>,
     reachable: Flow<Boolean?>,
-): Flow<Unit> = merge(online.risingEdges(), reachable.map { it == true }.risingEdges())
+    stale: Boolean = false,
+): Flow<Unit> = merge(online.risingEdges(), reachable.map { it == true }.risingEdges(withCurrent = stale))
 
-private fun Flow<Boolean>.risingEdges(): Flow<Unit> =
+private fun Flow<Boolean>.risingEdges(withCurrent: Boolean = false): Flow<Unit> =
     distinctUntilChanged()
-        .drop(1)
+        .drop(if (withCurrent) 0 else 1)
         .filter { it }
         .map { }
 
@@ -27,10 +31,11 @@ private fun Flow<Boolean>.risingEdges(): Flow<Unit> =
 internal fun ReloadWhenReachable(
     online: Flow<Boolean>,
     reachable: Flow<Boolean?>,
+    stale: Boolean = false,
     onBack: () -> Unit,
 ) {
     val latest by rememberUpdatedState(onBack)
     LaunchedEffect(online, reachable) {
-        reachableAgain(online, reachable).collect { latest() }
+        reachableAgain(online, reachable, stale).collect { latest() }
     }
 }

@@ -121,6 +121,8 @@ fun NavGraphBuilder.tabRoutes(
         val avatarBytes by authViewModel.avatarBytes.collectAsState()
         FeedScreen(
             viewModel = feedViewModel,
+            online = online,
+            reachable = reachable,
             onNavigateToAddFeed = {
                 navController.navigate(MainRoutes.PROFILE_ADD_FEED)
             },

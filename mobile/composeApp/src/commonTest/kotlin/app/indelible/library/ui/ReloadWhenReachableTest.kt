@@ -12,10 +12,10 @@ class ReloadWhenReachableTest {
     private val online = MutableStateFlow(false)
     private val reachable = MutableStateFlow<Boolean?>(null)
 
-    private fun TestScope.edges(): MutableList<Unit> {
+    private fun TestScope.edges(stale: Boolean = false): MutableList<Unit> {
         val seen = mutableListOf<Unit>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            reachableAgain(online, reachable).collect { seen += it }
+            reachableAgain(online, reachable, stale).collect { seen += it }
         }
         return seen
     }
@@ -27,6 +27,28 @@ class ReloadWhenReachableTest {
             reachable.value = true
 
             assertEquals(0, edges().size)
+        }
+
+    @Test
+    fun aStaleScreenReloadsAtOnceWhenTheServerAlreadyAnswers() =
+        runTest {
+            online.value = true
+            reachable.value = true
+
+            assertEquals(1, edges(stale = true).size)
+        }
+
+    @Test
+    fun aStaleScreenWaitsForTheServerToAnswer() =
+        runTest {
+            online.value = true
+            reachable.value = false
+            val seen = edges(stale = true)
+            assertEquals(0, seen.size)
+
+            reachable.value = true
+
+            assertEquals(1, seen.size)
         }
 
     @Test
