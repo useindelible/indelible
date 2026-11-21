@@ -12,15 +12,18 @@ import indelible.composeapp.generated.resources.profile_sign_out_waiting
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
-/** Signing out purges the device's queue, so [waitingChanges] above zero turns the question into a warning. */
+/**
+ * Signing out purges the device's queue, so [waitingChanges] above zero turns the question into a warning,
+ * and a count not yet known (null) holds the confirmation until it is.
+ */
 @Composable
 fun SignOutDialog(
-    waitingChanges: Int,
+    waitingChanges: Int?,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val body =
-        if (waitingChanges > 0) {
+        if (waitingChanges != null && waitingChanges > 0) {
             pluralStringResource(Res.plurals.profile_sign_out_waiting, waitingChanges, waitingChanges)
         } else {
             stringResource(Res.string.profile_sign_out_confirm)
@@ -29,7 +32,11 @@ fun SignOutDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.profile_sign_out)) },
         text = { Text(body) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(Res.string.profile_sign_out)) } },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = waitingChanges != null) {
+                Text(stringResource(Res.string.profile_sign_out))
+            }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.common_cancel)) } },
     )
 }

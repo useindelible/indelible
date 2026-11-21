@@ -147,7 +147,7 @@ fun NavGraphBuilder.profileRoutes(
             onNavigateToChangePassword = { navController.navigate(MainRoutes.PROFILE_CHANGE_PASSWORD) },
             onSignOut = { authViewModel.logout() },
             onAccountDeleted = { authViewModel.forceLogout() },
-            waitingChanges = storage.queuedChanges,
+            waitingChanges = storage.waitingChanges,
         )
     }
     composable(MainRoutes.PROFILE_STORAGE) {

@@ -70,7 +70,7 @@ fun AccountScreen(
     onSignOut: () -> Unit,
     onAccountDeleted: () -> Unit,
     modifier: Modifier = Modifier,
-    waitingChanges: Int = 0,
+    waitingChanges: Int? = 0,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 

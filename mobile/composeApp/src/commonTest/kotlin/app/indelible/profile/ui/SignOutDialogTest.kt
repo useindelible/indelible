@@ -2,6 +2,7 @@ package app.indelible.profile.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
@@ -13,6 +14,17 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class SignOutDialogTest {
+    @Test
+    fun untilTheCountIsKnownItCannotBeConfirmed() =
+        runComposeUiTest {
+            setContent {
+                AppTheme { SignOutDialog(waitingChanges = null, onConfirm = {}, onDismiss = {}) }
+            }
+
+            onNodeWithText("Are you sure you want to sign out?").assertIsDisplayed()
+            onNode(hasText("Sign Out") and hasClickAction()).assertIsNotEnabled()
+        }
+
     @Test
     fun withNothingWaitingItOnlyAsksToConfirm() =
         runComposeUiTest {
