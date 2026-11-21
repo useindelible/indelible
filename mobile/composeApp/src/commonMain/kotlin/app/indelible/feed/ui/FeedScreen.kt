@@ -87,7 +87,7 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val feedFilter by viewModel.feedFilter.collectAsState()
-    ReloadWhenReachable(online, reachable) {
+    ReloadWhenReachable(online, reachable, stale = uiState is FeedUiState.Error) {
         if (viewModel.uiState.value is FeedUiState.Error) viewModel.refresh()
     }
     val snackbarHostState = remember { SnackbarHostState() }
