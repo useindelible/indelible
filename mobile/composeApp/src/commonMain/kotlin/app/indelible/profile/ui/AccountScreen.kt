@@ -57,7 +57,6 @@ import indelible.composeapp.generated.resources.profile_delete_confirm_label
 import indelible.composeapp.generated.resources.profile_delete_description
 import indelible.composeapp.generated.resources.profile_export_data_first
 import indelible.composeapp.generated.resources.profile_sign_out
-import indelible.composeapp.generated.resources.profile_sign_out_confirm
 import indelible.composeapp.generated.resources.profile_storage_usage
 import indelible.composeapp.generated.resources.profile_storage_usage_description
 import org.jetbrains.compose.resources.stringResource
@@ -71,6 +70,7 @@ fun AccountScreen(
     onSignOut: () -> Unit,
     onAccountDeleted: () -> Unit,
     modifier: Modifier = Modifier,
+    waitingChanges: Int? = 0,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -87,23 +87,13 @@ fun AccountScreen(
     }
 
     if (showSignOutDialog) {
-        AlertDialog(
-            onDismissRequest = { showSignOutDialog = false },
-            title = { Text(stringResource(Res.string.profile_sign_out)) },
-            text = { Text(stringResource(Res.string.profile_sign_out_confirm)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSignOutDialog = false
-                        onSignOut()
-                    },
-                ) { Text(stringResource(Res.string.profile_sign_out)) }
+        SignOutDialog(
+            waitingChanges = waitingChanges,
+            onConfirm = {
+                showSignOutDialog = false
+                onSignOut()
             },
-            dismissButton = {
-                TextButton(onClick = { showSignOutDialog = false }) {
-                    Text(stringResource(Res.string.common_cancel))
-                }
-            },
+            onDismiss = { showSignOutDialog = false },
         )
     }
 

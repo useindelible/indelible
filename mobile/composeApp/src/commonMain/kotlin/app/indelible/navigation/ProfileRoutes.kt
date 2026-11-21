@@ -1,5 +1,7 @@
 package app.indelible.navigation
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -138,12 +140,14 @@ fun NavGraphBuilder.profileRoutes(
         )
     }
     composable(MainRoutes.PROFILE_ACCOUNT) {
+        val storage by storageViewModel.state.collectAsState()
         AccountScreen(
             viewModel = accountViewModel,
             onNavigateBack = { navController.popBackStack() },
             onNavigateToChangePassword = { navController.navigate(MainRoutes.PROFILE_CHANGE_PASSWORD) },
             onSignOut = { authViewModel.logout() },
             onAccountDeleted = { authViewModel.forceLogout() },
+            waitingChanges = storage.waitingChanges,
         )
     }
     composable(MainRoutes.PROFILE_STORAGE) {

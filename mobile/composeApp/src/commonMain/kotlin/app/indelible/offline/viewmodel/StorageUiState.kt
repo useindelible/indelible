@@ -27,6 +27,7 @@ data class StorageUiState(
     val kept: List<CatalogEntry> = emptyList(),
     val cached: List<CatalogEntry> = emptyList(),
     val changes: List<PendingChange> = emptyList(),
+    val queueRead: Boolean = false,
 ) {
     val keptBytes: Long get() = kept.sumOf { it.bytes }
 
@@ -40,4 +41,7 @@ data class StorageUiState(
 
     val queuedChanges: Int
         get() = changes.flatMap { listOf(it) + it.blocked }.count { it.status != ChangeStatus.SUPERSEDED }
+
+    /** Null until the queue has been read once, so a warning that depends on it cannot be skipped by being early. */
+    val waitingChanges: Int? get() = queuedChanges.takeIf { queueRead }
 }

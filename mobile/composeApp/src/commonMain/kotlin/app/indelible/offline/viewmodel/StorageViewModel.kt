@@ -105,6 +105,7 @@ class StorageViewModel(
                 kept = catalog.filter { it.pinned },
                 cached = catalog.filterNot { it.pinned },
                 changes = pendingChanges(rows, catalog),
+                queueRead = true,
             )
         }
 
