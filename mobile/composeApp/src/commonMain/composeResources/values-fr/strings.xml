@@ -758,6 +758,7 @@
     <string name="reader_info_tags">Étiquettes</string>
     <string name="reader_info_type">Type</string>
     <string name="reader_item_details">Détails du contenu</string>
+    <string name="reader_keep_offline">Garder sur ce téléphone</string>
     <string name="reader_line_spacing">Interligne</string>
     <string name="reader_line_spacing_loose">Large</string>
     <string name="reader_line_spacing_normal">Normal</string>

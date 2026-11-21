@@ -47,10 +47,26 @@ class DocumentOfflineViewModelTest {
         documentId: String = DL_DOC,
     ): DocumentOfflineViewModel {
         val statuses = OfflineStatuses(h.signedIn.registry, h.store, h.manager.acquisitions)
-        return DocumentOfflineViewModel(documentId, statuses).also { viewModel ->
+        return DocumentOfflineViewModel(documentId, statuses, h.signedIn.registry, h.manager).also { viewModel ->
             backgroundScope.launch { viewModel.status.collect {} }
         }
     }
+
+    @Test
+    fun keepAcquiresAPinnedCopyPastTheAutomaticCap() =
+        runTest {
+            val h = downloadHarness()
+            h.capBytes = 0L
+            val offline = offline(h)
+            advanceUntilIdle()
+            assertEquals(Availability.NOT_ON_DEVICE, offline.status.value.availability)
+
+            offline.keep()
+            advanceUntilIdle()
+
+            assertEquals(Availability.KEPT, offline.status.value.availability)
+            assertEquals(1L, h.store.cachedDocument(DL_SCOPE, DL_DOC)?.generation)
+        }
 
     @Test
     fun statusFollowsTheSignedInScope() =

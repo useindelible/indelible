@@ -758,6 +758,7 @@
     <string name="reader_info_tags">Tags</string>
     <string name="reader_info_type">Type</string>
     <string name="reader_item_details">Item details</string>
+    <string name="reader_keep_offline">Keep on this phone</string>
     <string name="reader_line_spacing">Line spacing</string>
     <string name="reader_line_spacing_loose">Loose</string>
     <string name="reader_line_spacing_normal">Normal</string>

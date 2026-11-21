@@ -49,6 +49,7 @@ fun ReaderDockPanels(
     onSelectVoice: (String) -> Unit,
     onSetSleepTimer: (Int?) -> Unit,
     onTocEntryTapped: (app.indelible.reader.model.ArticleTocEntry) -> Unit,
+    itemOffline: ItemOffline? = null,
 ) {
     ReaderBottomSheetScaffold(
         visible = activePanel == DataPanel.AA,
@@ -126,6 +127,7 @@ fun ReaderDockPanels(
             onTagsChanged = onTagsChanged,
             entities = state.entities,
             onSaveToLibrary = onSaveToLibrary,
+            offline = itemOffline,
         )
     }
 

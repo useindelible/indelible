@@ -269,6 +269,7 @@ internal fun ReaderSuccessContent(
         ReaderDockPanels(
             activePanel = activePanel,
             state = state,
+            itemOffline = itemOffline,
             defaultHighlightColor = defaultHighlightColor,
             availableTags = availableTags,
             playbackState = playbackState,

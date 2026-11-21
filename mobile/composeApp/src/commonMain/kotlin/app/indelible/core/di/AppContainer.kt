@@ -171,5 +171,5 @@ private fun appContainer(
         downloads = koin.get(),
         storageViewModel = koin.get(),
         offlineShelf = koin.get(),
-        documentOffline = { id -> DocumentOfflineViewModel(id, koin.get()) },
+        documentOffline = { id -> DocumentOfflineViewModel(id, koin.get(), koin.get(), koin.get()) },
     )
