@@ -50,6 +50,7 @@ import indelible.composeapp.generated.resources.home_offline_body
 import indelible.composeapp.generated.resources.home_offline_chip_back
 import indelible.composeapp.generated.resources.home_offline_chip_offline
 import indelible.composeapp.generated.resources.home_offline_chip_synced
+import indelible.composeapp.generated.resources.home_offline_chip_unreachable
 import indelible.composeapp.generated.resources.home_offline_empty_body
 import indelible.composeapp.generated.resources.home_offline_empty_body_last_loaded
 import indelible.composeapp.generated.resources.home_offline_empty_subtitle
@@ -64,6 +65,8 @@ import indelible.composeapp.generated.resources.home_offline_synced_body
 import indelible.composeapp.generated.resources.home_offline_synced_pill
 import indelible.composeapp.generated.resources.home_offline_synced_title
 import indelible.composeapp.generated.resources.home_offline_title
+import indelible.composeapp.generated.resources.library_sync_banner_unreachable
+import indelible.composeapp.generated.resources.library_sync_banner_unreachable_body
 import indelible.composeapp.generated.resources.home_offline_to_send
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -93,7 +96,7 @@ internal fun OfflineHero(
     ) {
         Box(Modifier.fillMaxWidth().height(SCENE_HEIGHT).clip(IndelibleShape.xl)) {
             WindowSceneView(variant.sky(), clock, Modifier.fillMaxWidth().fillMaxHeight())
-            SceneChip(variant, Modifier.align(Alignment.TopStart).padding(IndelibleSpacing.step12))
+            SceneChip(variant, shelf.unreachable, Modifier.align(Alignment.TopStart).padding(IndelibleSpacing.step12))
             SceneCount(
                 shelf.items.size,
                 Modifier
@@ -129,12 +132,14 @@ private fun HeroBody(
 ) {
     when (variant) {
         HeroVariant.OFFLINE -> {
-            HeroTitle(
-                stringResource(Res.string.home_offline_title),
-                stringResource(Res.string.home_offline_subtitle),
-                mono,
-            )
-            HeroText(stringResource(Res.string.home_offline_body), mono)
+            HeroTitle(offlineTitle(shelf), stringResource(Res.string.home_offline_subtitle), mono)
+            val body =
+                if (shelf.unreachableHost != null) {
+                    Res.string.library_sync_banner_unreachable_body
+                } else {
+                    Res.string.home_offline_body
+                }
+            HeroText(stringResource(body), mono)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
                 verticalArrangement = Arrangement.spacedBy(IndelibleSpacing.step8),
@@ -150,11 +155,7 @@ private fun HeroBody(
             }
         }
         HeroVariant.EMPTY -> {
-            HeroTitle(
-                stringResource(Res.string.home_offline_title),
-                stringResource(Res.string.home_offline_empty_subtitle),
-                mono,
-            )
+            HeroTitle(offlineTitle(shelf), stringResource(Res.string.home_offline_empty_subtitle), mono)
             val lastLoaded = shelf.continueReading.isNotEmpty() || shelf.recentlySaved.isNotEmpty()
             val body =
                 if (lastLoaded) Res.string.home_offline_empty_body_last_loaded else Res.string.home_offline_empty_body
@@ -216,15 +217,26 @@ private fun HeroText(
     )
 }
 
+// The server not answering and the phone having no network ask for different things of the user, so the
+// hero names the host the Library banner names instead of saying "offline".
+private val OfflineShelfState.unreachableHost: String? get() = host?.takeIf { unreachable }
+
+@Composable
+private fun offlineTitle(shelf: OfflineShelfState): String =
+    shelf.unreachableHost?.let { stringResource(Res.string.library_sync_banner_unreachable, it) }
+        ?: stringResource(Res.string.home_offline_title)
+
 @Composable
 private fun SceneChip(
     variant: HeroVariant,
+    unreachable: Boolean,
     modifier: Modifier,
 ) {
     val (icon: ImageVector, label) =
-        when (variant) {
-            HeroVariant.SENDING -> OfflineIcons.Wifi to stringResource(Res.string.home_offline_chip_back)
-            HeroVariant.SYNCED -> OfflineIcons.Check to stringResource(Res.string.home_offline_chip_synced)
+        when {
+            variant == HeroVariant.SENDING -> OfflineIcons.Wifi to stringResource(Res.string.home_offline_chip_back)
+            variant == HeroVariant.SYNCED -> OfflineIcons.Check to stringResource(Res.string.home_offline_chip_synced)
+            unreachable -> OfflineIcons.Wifi to stringResource(Res.string.home_offline_chip_unreachable)
             else -> OfflineIcons.Airplane to stringResource(Res.string.home_offline_chip_offline)
         }
     Row(

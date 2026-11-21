@@ -89,6 +89,17 @@ class OfflineHomeTest {
         }
 
     @Test
+    fun aServerThatDoesNotAnswerIsNamedInsteadOfOffline() =
+        runComposeUiTest {
+            val shelf = OfflineShelfState(ShelfNet.OFFLINE, listOf(copy), unreachable = true, host = "home.example")
+            setContent { AppTheme { OfflineHero(shelf) } }
+
+            onNodeWithText("Can’t reach home.example", substring = true).assertExists()
+            onNodeWithText("Server not answering").assertExists()
+            onNodeWithText("You’re offline.", substring = true).assertDoesNotExist()
+        }
+
+    @Test
     fun aLedgeObjectReadsItsTitleOnceAsAButton() =
         runComposeUiTest {
             setContent {

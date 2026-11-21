@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import app.indelible.core.i18n.resolve
 import app.indelible.core.i18n.resolveString
 import app.indelible.core.model.LibraryCounts
+import app.indelible.home.viewmodel.SyncProgress
 import app.indelible.library.ui.components.AddUrlBottomSheet
 import app.indelible.library.ui.components.ContentTypeFilterRow
 import app.indelible.library.ui.components.ItemSwipeableRow
@@ -65,6 +66,7 @@ import indelible.composeapp.generated.resources.library_scope_inbox
 import indelible.composeapp.generated.resources.library_scope_later
 import indelible.composeapp.generated.resources.library_url_queued
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -88,8 +90,14 @@ fun LibraryScreen(
     avatarBytes: ByteArray? = null,
     online: Flow<Boolean> = emptyFlow(),
     reachable: Flow<Boolean?> = emptyFlow(),
+    syncProgress: StateFlow<SyncProgress>? = null,
+    syncHost: StateFlow<String?>? = null,
+    onReview: () -> Unit = {},
+    onRetryNow: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val progress = syncProgress?.collectAsState()?.value
+    val host = syncHost?.collectAsState()?.value
     val addLibraryUiState by addLibraryViewModel.uiState.collectAsState()
     val triageFilter by viewModel.triageFilter.collectAsState()
     val contentTypeFilter by viewModel.contentTypeFilter.collectAsState()
@@ -166,6 +174,9 @@ fun LibraryScreen(
                     onProfileClick = onProfileClick,
                 )
 
+                val banner = syncBannerOf(progress, host)
+                SyncBannerBar(banner, onReview = onReview, onRetryNow = onRetryNow)
+
                 if (scope is LibraryScope.Triage) {
                     ContentTypeFilterRow(
                         selected = contentTypeFilter,
@@ -181,6 +192,7 @@ fun LibraryScreen(
                     triageFilter = triageFilter,
                     offline = offline,
                     onNavigateToItem = onNavigateToItem,
+                    lastLoadedNotice = banner !is SyncBanner.Unreachable,
                 )
             }
 
@@ -230,6 +242,7 @@ private fun LibraryContent(
     triageFilter: TriageFilter,
     offline: Map<String, DocumentOfflineStatus>,
     onNavigateToItem: (String) -> Unit,
+    lastLoadedNotice: Boolean,
 ) {
     when (val state = uiState) {
         is LibraryUiState.Loading ->
@@ -260,7 +273,7 @@ private fun LibraryContent(
             }
 
         is LibraryUiState.Success -> {
-            if (state.fromDevice) {
+            if (state.fromDevice && lastLoadedNotice) {
                 LastLoadedNotice(
                     onRetry = { viewModel.refresh() },
                     modifier = Modifier.padding(bottom = IndelibleSpacing.step8),

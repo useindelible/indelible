@@ -9,6 +9,7 @@ import app.indelible.core.offline.enqueue
 import app.indelible.core.offline.seed
 import app.indelible.home.repository.homeRow
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -28,7 +29,9 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OfflineShelfViewModelTest {
     private val reachable = MutableStateFlow<Boolean?>(false)
+    private val online = MutableStateFlow(true)
     private var probes = 0
+    private var drains = 0
 
     @BeforeTest
     fun setUp() {
@@ -40,12 +43,99 @@ class OfflineShelfViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private suspend fun TestScope.shelf(): Pair<DownloadHarness, OfflineShelfViewModel> {
+    private suspend fun TestScope.shelf(
+        probe: suspend () -> Unit = { probes++ },
+    ): Pair<DownloadHarness, OfflineShelfViewModel> {
         val h = downloadHarness()
-        val viewModel = OfflineShelfViewModel(h.signedIn.registry, h.store, reachable, probe = { probes++ })
+        val viewModel =
+            OfflineShelfViewModel(
+                h.signedIn.registry,
+                h.store,
+                reachable,
+                probe = probe,
+                online = online,
+                requestDrain = { drains++ },
+            )
         backgroundScope.launch { viewModel.state.collect {} }
         return h to viewModel
     }
+
+    @Test
+    fun retryNowProbesAndRequestsADrain() =
+        runTest {
+            reachable.value = true
+            val (_, shelf) = shelf()
+            runCurrent()
+
+            shelf.retryNow()
+            runCurrent()
+
+            assertEquals(1, probes)
+            assertEquals(1, drains)
+        }
+
+    @Test
+    fun retryNowRequestsADrainBeforeTheProbeAnswers() =
+        runTest {
+            reachable.value = true
+            val (_, shelf) = shelf(probe = { awaitCancellation() })
+            runCurrent()
+
+            shelf.retryNow()
+            runCurrent()
+
+            assertEquals(1, drains)
+        }
+
+    @Test
+    fun blockedDependantsStayQueuedWhenTheirCreateFails() =
+        runTest {
+            reachable.value = true
+            val (h, shelf) = shelf()
+            val create = h.signedIn.enqueue(OutboxPayload.HighlightCreate("hlt_1", "yellow", "quoted", null, null))
+            h.signedIn.enqueue(OutboxPayload.HighlightColor("hlt_1", "blue"))
+            h.signedIn.enqueue(OutboxPayload.HighlightNote("hlt_1", "a note"))
+            h.store.failCreateAndBlockDependants(DL_SCOPE, create, "hlt_1", "bad locator")
+            runCurrent()
+
+            assertEquals(1, shelf.progress.value.attention)
+            assertEquals(2, shelf.progress.value.queued)
+        }
+
+    @Test
+    fun attentionCountsFailedChangesTheWayStorageGroupsThem() =
+        runTest {
+            reachable.value = true
+            val (h, shelf) = shelf()
+            val failed = h.signedIn.enqueue(OutboxPayload.DocumentNote("mine", null))
+            h.signedIn.enqueue(OutboxPayload.DocumentNote("later", null))
+            h.store.markFailed(DL_SCOPE, failed, "rejected")
+            runCurrent()
+
+            assertEquals(1, shelf.progress.value.attention)
+            assertEquals(1, shelf.progress.value.queued)
+        }
+
+    @Test
+    fun anAnsweringServerOnAPhoneWithoutNetworkIsOfflineNotUnreachable() =
+        runTest {
+            reachable.value = true
+            val (_, shelf) = shelf()
+            runCurrent()
+            assertEquals(ShelfNet.ONLINE, shelf.progress.value.net)
+
+            online.value = false
+            runCurrent()
+            assertEquals(ShelfNet.OFFLINE, shelf.progress.value.net)
+            assertEquals(false, shelf.progress.value.unreachable)
+
+            online.value = true
+            reachable.value = false
+            runCurrent()
+            assertEquals(true, shelf.progress.value.unreachable)
+            assertEquals(true, shelf.state.value.unreachable)
+            assertEquals(checkNotNull(shelf.host.value), shelf.state.value.host)
+        }
 
     @Test
     fun offlineShowsTheCopiesMostRecentlyOpenedFirst() =
@@ -225,7 +315,8 @@ class OfflineShelfViewModelTest {
             h.store.replaceList(h.session, "home:recent", listOf(homeRow("doc_z", progress = 62.5f)), at = 2)
             runCurrent()
 
-            val item = shelf.state.value.recentlySaved.single()
+            val state = shelf.state.value
+            val item = state.recentlySaved.single()
             assertEquals("doc_z", item.documentId)
             assertEquals(62, item.progressPercent)
         }
@@ -240,6 +331,7 @@ class OfflineShelfViewModelTest {
             h.signedIn.registry.publish(SessionState(own.epoch, own))
             runCurrent()
 
-            assertTrue(shelf.state.value.recentlySaved.isEmpty())
+            val state = shelf.state.value
+            assertTrue(state.recentlySaved.isEmpty())
         }
 }

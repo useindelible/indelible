@@ -85,7 +85,7 @@ fun NavGraphBuilder.contentRoutes(
                 navController.navigate(MainRoutes.reader(id))
             },
             offline = offlineViewModel,
-            onOpenStorage = { navController.navigate(MainRoutes.PROFILE_STORAGE) },
+            onOpenStorage = { navController.navigate(MainRoutes.storage()) },
         )
     }
     composable(MainRoutes.COLLECTIONS) {
